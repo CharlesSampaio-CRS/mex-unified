@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autenticando...</title>
+    <script>
+        // Executa IMEDIATAMENTE antes de renderizar qualquer coisa
+        (function() {
+            console.log('🎯 OAuth Callback - Processing immediately')
+            
+            const urlParams = new URLSearchParams(window.location.search)
+            const accessToken = urlParams.get('access_token')
+            const userId = urlParams.get('user_id')
+            const email = urlParams.get('email')
+            const name = urlParams.get('name')
+            const error = urlParams.get('error')
+            
+            // Se tem erro, deixa mostrar a página
+            if (error) {
+                console.error('❌ OAuth error:', error)
+                return
+            }
+            
+            // Se tem dados válidos, processa e fecha IMEDIATAMENTE
+            if (accessToken && userId && email) {
+                const oauthData = {
+                    type: 'OAUTH_SUCCESS',
+                    access_token: accessToken,
+                    user_id: userId,
+                    email: email,
+                    name: name || '',
+                    timestamp: Date.now()
+                }
+                
+                try {
+                    localStorage.setItem('oauth_result', JSON.stringify(oauthData))
+                    console.log('✅ Saved, closing immediately')
+                    
+                    // Tenta postMessage
+                    try {
+                        if (window.opener && !window.opener.closed) {
+                            window.opener.postMessage(oauthData, '*')
+                        }
+                    } catch (e) {}
+                    
+                    // Fecha IMEDIATAMENTE
+                    window.close()
+                    
+                    // Se não fechou (não é popup), redireciona
+                    setTimeout(() => {
+                        window.location.href = '/'
+                    }, 100)
+                } catch (err) {
+                    console.error('❌ Error:', err)
+                }
+            }
+        })();
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            color: #333;
+            margin: 0 0 0.5rem;
+            font-size: 1.5rem;
+        }
+        p {
+            color: #666;
+            margin: 0;
+        }
+        .success {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body style="display: none;">
+    <!-- Body oculto por padrão - só mostra se houver erro -->
+    <div class="container">
+        <h1 id="title">Erro na Autenticação</h1>
+        <p id="message">Redirecionando...</p>
+    </div>
+    
+    <script>
+        // Se chegou aqui, é porque teve erro ou dados inválidos
+        const urlParams = new URLSearchParams(window.location.search)
+        const error = urlParams.get('error')
+        
+        if (error) {
+            document.body.style.display = 'flex'
+            document.getElementById('message').textContent = `Erro: ${error}`
+            setTimeout(() => window.location.href = '/', 3000)
+        } else {
+            // Dados inválidos, redireciona imediatamente
+            window.location.href = '/'
+        }
+</html>
