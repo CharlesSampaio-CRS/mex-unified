@@ -218,8 +218,8 @@ export function SettingsScreen({ navigation, route }: any) {
                     <Svg width={100} height={100} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
                       <Defs>
                         <LinearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <Stop offset="0%" stopColor="#3B82F6" />
-                          <Stop offset="100%" stopColor="#FBBF24" />
+                          <Stop offset="0%" stopColor={colors.primary} />
+                          <Stop offset="100%" stopColor={colors.warning} />
                         </LinearGradient>
                       </Defs>
                       <Circle cx="50" cy="50" r="50" fill="url(#grad1)" />
@@ -254,10 +254,10 @@ export function SettingsScreen({ navigation, route }: any) {
               </View>
 
               <View style={styles.profileInfo}>
-                <Text style={[styles.profileName, { color: colors.text }]}>
+                <Text style={[styles.profileName, { color: colors.primary }]}>
                   {userData.name}
                 </Text>
-                <Text style={[styles.profileMember, { color: colors.textSecondary }]}>
+                <Text style={[styles.profileMember, { color: colors.primaryLight }]}>
                   {t('profile.memberSince')} {userData.memberSince}
                 </Text>
               </View>

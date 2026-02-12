@@ -305,6 +305,14 @@ const AvailableExchangeCard = memo(({
             </Text>
           </View>
         )}
+        {(exchange._id || exchange.id) && (
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Exchange ID:</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
+              {exchange._id || exchange.id}
+            </Text>
+          </View>
+        )}
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
             {isLinked ? t('exchanges.alreadyConnected') : t('exchanges.readyToConnect')}
@@ -913,43 +921,12 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
 
   // Funções para modal de detalhes
   const openDetailsModal = useCallback(async (exchange: any, type: 'linked' | 'available') => {
-    
-    
-    if (!user?.id) {
-      console.error('❌ No user ID available')
-      alert('Erro: Usuário não autenticado')
-      return
-    }
-    
     setDetailsExchange(exchange)
     setDetailsType(type)
     setDetailsModalVisible(true)
-    setLoadingDetails(true)
+    setLoadingDetails(false)
     setDetailsFullData(null)
-    
-    try {
-      // Busca detalhes completos da exchange
-      const exchangeId = type === 'linked' ? exchange.exchange_id : exchange._id
-      
-      const fullData = await apiService.getExchangeFullDetails(user.id, exchangeId, true, true)
-      
-      setDetailsFullData(fullData)
-    } catch (error: any) {
-      console.error('❌ Error loading exchange details:', {
-        error,
-        message: error?.message,
-        response: error?.response,
-        stack: error?.stack
-      })
-      
-      // Mostra alert para o usuário
-      alert(`Erro ao carregar detalhes: ${error?.message || 'Erro desconhecido'}`)
-      
-      // Continua mostrando o modal com os dados básicos
-    } finally {
-      setLoadingDetails(false)
-    }
-  }, [user])
+  }, [])
 
   const closeDetailsModal = useCallback(() => {
     setDetailsModalVisible(false)

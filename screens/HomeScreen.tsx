@@ -49,6 +49,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     setPnlRefreshTrigger(Date.now())
   }, [])
 
+
   const onAddExchange = useCallback(() => {
     navigation?.navigate('Exchanges', { openTab: 'available' })
   }, [navigation])
@@ -90,6 +91,16 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
         onProfilePress={onProfilePress}
         unreadCount={unreadCount}
       />
+      {/* Botão de teste (comentado)
+      <View style={styles.testActions}>
+        <TouchableOpacity
+          style={[styles.testButton, { backgroundColor: colors.primary }]}
+          onPress={handleAddTestSnapshots}
+        >
+          <Text style={[styles.testButtonText, { color: colors.textOnPrimary || '#fff' }]}>Adicionar snapshots 30d</Text>
+        </TouchableOpacity>
+      </View>
+      */}
       
       {/* Layout tabs não precisa de ScrollView - ele já tem scroll interno */}
       {layout === 'tabs' ? (

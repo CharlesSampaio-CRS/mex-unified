@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, Image, TouchableOpacity, useWindowDimensions } from 'react-native'
 import { memo, useMemo, useState } from 'react'
 import Svg, { G, Circle, Path } from 'react-native-svg'
 import { useTheme } from '../contexts/ThemeContext'
@@ -7,8 +7,8 @@ import { useBalance } from '../contexts/BalanceContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { typography, fontWeights } from '../lib/typography'
 
-const CHART_SIZE = 180 // Tamanho fixo para não ajustar ao redimensionar
-const RADIUS = CHART_SIZE / 2
+const BASE_CHART_SIZE = 180
+const MIN_CHART_SIZE = 140
 const STROKE_WIDTH = 16 // Reduzido de 20 para 16 (mais fino e suave)
 
 // Paleta de cores suaves e elegantes (tons pastéis e menos saturados)
@@ -53,6 +53,8 @@ interface ExchangeData {
 const SkeletonExchangesPieChart = memo(function SkeletonExchangesPieChart() {
   const { colors } = useTheme()
   const { t } = useLanguage()
+  const { width } = useWindowDimensions()
+  const chartSize = Math.max(MIN_CHART_SIZE, Math.min(BASE_CHART_SIZE, width - 80))
   
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
@@ -62,7 +64,7 @@ const SkeletonExchangesPieChart = memo(function SkeletonExchangesPieChart() {
         </Text>
         <View style={styles.chartContainer}>
           {/* Círculo skeleton sem loading indicator */}
-          <View style={[styles.skeletonCircle, { backgroundColor: colors.surfaceSecondary }]} />
+          <View style={[styles.skeletonCircle, { backgroundColor: colors.surfaceSecondary, width: chartSize, height: chartSize, borderRadius: chartSize / 2 }]} />
         </View>
         <View style={styles.legendContainer}>
           {[1, 2, 3].map((i) => (
@@ -83,6 +85,11 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
   const { data, loading, error } = useBalance()
   const { valuesHidden } = usePrivacy()
   const [selectedExchange, setSelectedExchange] = useState<string | null>(null)
+  const { width } = useWindowDimensions()
+  const chartSize = Math.max(MIN_CHART_SIZE, Math.min(BASE_CHART_SIZE, width - 80))
+  const radius = chartSize / 2
+
+  const formatPercent = (value: number) => (Number.isInteger(value) ? `${value}` : value.toFixed(1))
 
   const chartData = useMemo(() => {
     if (!data || !data.exchanges) return []
@@ -125,6 +132,14 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
       hasError: ex.success === false, // 🆕 Marca exchanges com erro
       error: ex.error, // 🆕 Mensagem de erro
     }))
+
+    // Se total zerado, força 100% na primeira exchange para renderizar o pie
+    if (total <= 0 && chartDataItems.length > 0) {
+      chartDataItems[0].percentage = 100
+      for (let i = 1; i < chartDataItems.length; i++) {
+        chartDataItems[i].percentage = 0
+      }
+    }
 
     // Ordenar por valor decrescente
     return chartDataItems.sort((a, b) => b.value - a.value)
@@ -220,29 +235,43 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
 
         <View style={styles.chartContainer}>
           {/* Gráfico de Pizza */}
-          <Svg width={CHART_SIZE} height={CHART_SIZE} viewBox={`${-RADIUS} ${-RADIUS} ${CHART_SIZE} ${CHART_SIZE}`}>
+          <Svg width={chartSize} height={chartSize} viewBox={`${-radius} ${-radius} ${chartSize} ${chartSize}`}>
             <G>
               {pieSegments.map((segment, index) => {
                 const isSelected = selectedExchange === segment.name
                 const strokeWidth = isSelected ? STROKE_WIDTH + 2 : STROKE_WIDTH // Reduzido de +4 para +2
                 const opacity = selectedExchange && !isSelected ? 0.5 : 1 // Aumentado de 0.3 para 0.5 (menos contraste)
+                const isFullCircle = segment.percentage >= 99.99
                 
                 return (
-                  <Path
-                    key={index}
-                    d={createArc(segment.startAngle, segment.endAngle, RADIUS - strokeWidth / 2)}
-                    fill="none"
-                    stroke={segment.color}
-                    strokeWidth={strokeWidth}
-                    strokeLinecap="round"
-                    opacity={opacity}
-                    onPress={() => toggleExchange(segment.name)}
-                  />
+                  isFullCircle ? (
+                    <Circle
+                      key={index}
+                      r={radius - strokeWidth / 2}
+                      fill="none"
+                      stroke={segment.color}
+                      strokeWidth={strokeWidth}
+                      strokeLinecap="round"
+                      opacity={opacity}
+                      onPress={() => toggleExchange(segment.name)}
+                    />
+                  ) : (
+                    <Path
+                      key={index}
+                      d={createArc(segment.startAngle, segment.endAngle, radius - strokeWidth / 2)}
+                      fill="none"
+                      stroke={segment.color}
+                      strokeWidth={strokeWidth}
+                      strokeLinecap="round"
+                      opacity={opacity}
+                      onPress={() => toggleExchange(segment.name)}
+                    />
+                  )
                 )
               })}
               {/* Círculo interno para criar efeito de donut */}
               <Circle
-                r={RADIUS - STROKE_WIDTH - 4}
+                r={radius - STROKE_WIDTH - 4}
                 fill={colors.card}
               />
             </G>
@@ -269,8 +298,8 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
                     <Text style={[styles.centerValue, { color: colors.primary }]}>
                       {formatValue(selectedData.value)}
                     </Text>
-                    <Text style={[styles.centerPercentage, { color: colors.textSecondary }]}>
-                      {selectedData.percentage.toFixed(1)}%
+                    <Text style={[styles.centerPercentage, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {formatPercent(selectedData.percentage)}%
                     </Text>
                   </>
                 )}
@@ -317,7 +346,7 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
                   <View style={[styles.legendColor, { backgroundColor: item.color, opacity }]} />
                 )}
                 <View style={styles.legendTextContainer}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={styles.legendNameRow}>
                     <Text style={[styles.legendName, { color: colors.text, opacity }]} numberOfLines={1}>
                       {item.name}
                     </Text>
@@ -326,8 +355,8 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
                       <Text style={{ fontSize: 12, opacity: opacity * 0.8 }}>⚠️</Text>
                     )}
                   </View>
-                  <Text style={[styles.legendPercentage, { color: colors.textSecondary, opacity }]}>
-                    {item.percentage.toFixed(1)}%
+                  <Text style={[styles.legendPercentage, { color: colors.textSecondary, opacity }]} numberOfLines={1}>
+                    {formatPercent(item.percentage)}%
                   </Text>
                 </View>
                 {isSelected && (
@@ -367,26 +396,33 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignSelf: 'center',
     paddingVertical: 6,         // Reduzido de 10 para 6 (mais compacto)
+    width: '100%',
+    overflow: 'hidden',
   },
   centerText: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+    maxWidth: '70%',
+    alignSelf: 'center',
   },
   centerLabel: {
     fontSize: typography.display, // Mantém 32px
     fontWeight: fontWeights.regular, // light→regular
     letterSpacing: -1,
+    textAlign: 'center',
   },
   centerValue: {
     fontSize: typography.body, // caption→body (16px)
     fontWeight: fontWeights.medium, // regular→medium
     marginTop: 6, // 4→6
+    textAlign: 'center',
   },
   centerPercentage: {
     fontSize: typography.caption, // micro→caption (14px)
     fontWeight: fontWeights.medium, // regular→medium
     marginTop: 4, // 2→4
+    textAlign: 'center',
   },
   legend: {
     gap: 6,                     // Reduzido de 8 para 6 (mais compacto)
@@ -397,6 +433,7 @@ const styles = StyleSheet.create({
     gap: 10,                    // Reduzido de 12 para 10 (mais compacto)
     minHeight: 40,              // Reduzido de 44 para 40 (mais compacto)
     paddingVertical: 4,
+    width: '100%',
   },
   exchangeIconContainer: {
     width: 32, // 22→32
@@ -424,17 +461,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 8,
+    minWidth: 0,
   },
   legendName: {
     fontSize: typography.caption, // Reduzido de body (16px) para caption (14px)
     fontWeight: fontWeights.medium,
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   legendPercentage: {
     fontSize: typography.caption, // Reduzido de body (16px) para caption (14px)
     fontWeight: fontWeights.medium,
-    minWidth: 60,
+    minWidth: 40,
+    maxWidth: 64,
     textAlign: 'right',
+    flexShrink: 0,
+  },
+  legendNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   selectedIndicator: {
     width: 10, // 8→10
@@ -452,9 +502,6 @@ const styles = StyleSheet.create({
   },
   // Skeleton styles
   skeletonCircle: {
-    width: CHART_SIZE,
-    height: CHART_SIZE,
-    borderRadius: CHART_SIZE / 2,
     backgroundColor: 'rgba(128, 128, 128, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
