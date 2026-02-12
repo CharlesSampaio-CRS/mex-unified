@@ -7,6 +7,11 @@
 
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
+import { Buffer } from 'buffer';
+
+if (typeof global !== 'undefined' && !(global as any).Buffer) {
+  (global as any).Buffer = Buffer;
+}
 
 // Encryption key derivation salt (should be unique per app)
 const SALT = 'cryptohub_v1_salt_2026';

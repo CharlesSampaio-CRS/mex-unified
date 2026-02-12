@@ -104,6 +104,9 @@ class SQLiteDatabase {
         await this.migrateSchema()
       }
 
+      // ✅ Ajuste específico de schema para tabelas de balance (não destrutivo)
+      await this.ensureBalanceTablesSchema()
+
       // Criar tabelas
       await this.createTables()
 
@@ -145,26 +148,27 @@ class SQLiteDatabase {
 
       -- Tabela de Snapshots de Balance
       CREATE TABLE IF NOT EXISTS balance_snapshots (
-        id TEXT PRIMARY KEY,
-        exchange_id TEXT NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         total_usd REAL NOT NULL,
+        total_brl REAL NOT NULL,
         timestamp INTEGER NOT NULL,
-        data TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        FOREIGN KEY (exchange_id) REFERENCES user_exchanges(id) ON DELETE CASCADE
+        created_at INTEGER
       );
 
       -- Tabela de Histórico de Balance
       CREATE TABLE IF NOT EXISTS balance_history (
-        id TEXT PRIMARY KEY,
-        exchange_id TEXT NOT NULL,
-        token TEXT NOT NULL,
-        amount REAL NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        exchange_name TEXT NOT NULL,
+        symbol TEXT NOT NULL,
+        free REAL NOT NULL,
+        used REAL NOT NULL,
+        total REAL NOT NULL,
         usd_value REAL NOT NULL,
-        price REAL NOT NULL,
+        brl_value REAL NOT NULL,
         timestamp INTEGER NOT NULL,
-        created_at INTEGER NOT NULL,
-        FOREIGN KEY (exchange_id) REFERENCES user_exchanges(id) ON DELETE CASCADE
+        created_at INTEGER
       );
 
       -- Tabela de Orders
@@ -250,9 +254,10 @@ class SQLiteDatabase {
       );
 
       -- Índices para otimização de queries
-      CREATE INDEX IF NOT EXISTS idx_balance_snapshots_exchange ON balance_snapshots(exchange_id);
+      CREATE INDEX IF NOT EXISTS idx_balance_snapshots_user ON balance_snapshots(user_id);
       CREATE INDEX IF NOT EXISTS idx_balance_snapshots_timestamp ON balance_snapshots(timestamp DESC);
-      CREATE INDEX IF NOT EXISTS idx_balance_history_exchange ON balance_history(exchange_id);
+      CREATE INDEX IF NOT EXISTS idx_balance_history_user ON balance_history(user_id);
+      CREATE INDEX IF NOT EXISTS idx_balance_history_exchange_name ON balance_history(exchange_name);
       CREATE INDEX IF NOT EXISTS idx_balance_history_timestamp ON balance_history(timestamp DESC);
       CREATE INDEX IF NOT EXISTS idx_orders_exchange ON orders(exchange_id);
       CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
@@ -275,29 +280,88 @@ class SQLiteDatabase {
     if (!this.db) return false
 
     try {
-      // Verificar se a coluna user_id existe na tabela user_exchanges
-      const result = await this.db.getFirstAsync<{ name: string }>(
-        `PRAGMA table_info(user_exchanges)`
-      )
-      
-      if (!result) {
-        // Tabela não existe ainda
+      const tableInfo = async (table: string) =>
+        this.db!.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`)
+
+      // Se tabela base não existe, não precisa migrar
+      const baseColumns = await tableInfo('user_exchanges')
+      if (!baseColumns || baseColumns.length === 0) {
         return false
       }
 
-      // Verificar se tem a coluna user_id (nova estrutura)
-      const columns = await this.db.getAllAsync<{ name: string }>(
-        `PRAGMA table_info(user_exchanges)`
-      )
-      
-      const hasUserId = columns.some(col => col.name === 'user_id')
-      const hasExchangeType = columns.some(col => col.name === 'exchange_type')
-      
-      // Se não tem user_id e exchange_type, precisa migrar
-      return !hasUserId || !hasExchangeType
+      const hasUserId = baseColumns.some(col => col.name === 'user_id')
+      const hasExchangeType = baseColumns.some(col => col.name === 'exchange_type')
+
+      // Verifica se tabelas principais (exceto balance_*) possuem exchange_id
+      const tablesNeedingExchangeId = [
+        'orders',
+        'positions',
+        'strategies'
+      ]
+
+      let missingExchangeId = false
+      for (const table of tablesNeedingExchangeId) {
+        const columns = await tableInfo(table)
+        if (columns && columns.length > 0) {
+          const hasExchangeId = columns.some(col => col.name === 'exchange_id')
+          if (!hasExchangeId) {
+            missingExchangeId = true
+            break
+          }
+        }
+      }
+
+      // Se não tem user_id/exchange_type ou falta exchange_id em alguma tabela crítica, migrar
+      return !hasUserId || !hasExchangeType || missingExchangeId
     } catch (error) {
       console.error('❌ [SQLite] Erro ao verificar migração:', error)
       return false
+    }
+  }
+
+  /**
+   * Ajusta schema das tabelas de balance (não destrutivo para outras tabelas)
+   * Se colunas esperadas estiverem ausentes, recria somente a tabela afetada.
+   */
+  private async ensureBalanceTablesSchema(): Promise<void> {
+    if (!this.db) return
+
+    try {
+      const tableInfo = async (table: string) =>
+        this.db!.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`)
+
+      const hasMissingColumns = (columns: { name: string }[], required: string[]) =>
+        required.some(col => !columns.some(c => c.name === col))
+
+      const balanceSnapshotsColumns = await tableInfo('balance_snapshots')
+      if (balanceSnapshotsColumns && balanceSnapshotsColumns.length > 0) {
+        const required = ['user_id', 'total_usd', 'total_brl', 'timestamp']
+        if (hasMissingColumns(balanceSnapshotsColumns, required)) {
+          console.warn('⚠️ [SQLite] balance_snapshots schema desatualizado - recriando tabela')
+          await this.db.execAsync('DROP TABLE IF EXISTS balance_snapshots;')
+        }
+      }
+
+      const balanceHistoryColumns = await tableInfo('balance_history')
+      if (balanceHistoryColumns && balanceHistoryColumns.length > 0) {
+        const required = [
+          'user_id',
+          'exchange_name',
+          'symbol',
+          'free',
+          'used',
+          'total',
+          'usd_value',
+          'brl_value',
+          'timestamp'
+        ]
+        if (hasMissingColumns(balanceHistoryColumns, required)) {
+          console.warn('⚠️ [SQLite] balance_history schema desatualizado - recriando tabela')
+          await this.db.execAsync('DROP TABLE IF EXISTS balance_history;')
+        }
+      }
+    } catch (error) {
+      console.error('❌ [SQLite] Erro ao validar schema de balance:', error)
     }
   }
 
@@ -310,11 +374,17 @@ class SQLiteDatabase {
     try {
       console.log('🔄 [SQLite] Migrando schema...')
 
-      // Dropar tabela antiga e recriar com novo schema
+      // Dropar todas as tabelas para evitar colunas antigas
       await this.db.execAsync(`
         DROP TABLE IF EXISTS user_exchanges;
         DROP TABLE IF EXISTS balance_snapshots;
         DROP TABLE IF EXISTS balance_history;
+        DROP TABLE IF EXISTS orders;
+        DROP TABLE IF EXISTS positions;
+        DROP TABLE IF EXISTS strategies;
+        DROP TABLE IF EXISTS notifications;
+        DROP TABLE IF EXISTS watchlist;
+        DROP TABLE IF EXISTS price_alerts;
       `)
 
       console.log('✅ [SQLite] Schema antigo removido')

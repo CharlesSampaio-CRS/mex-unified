@@ -2,20 +2,46 @@
  * Configurações da aplicação
  */
 
+import { Platform } from 'react-native'
+import Constants from 'expo-constants'
 import { secureStorage } from './secure-storage'
 import { translate, loadLanguage, saveLanguage, type Language } from './translations'
+
+const getDevServerHost = () => {
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).manifest?.hostUri ||
+    (Constants as any).expoGoConfig?.hostUri
+
+  if (!hostUri) return null
+  return hostUri.split(':')[0]
+}
+
+const getDefaultHost = () => {
+  if (Platform.OS === 'android') return '10.0.2.2'
+  return 'localhost'
+}
+
+const resolvedHost =
+  process.env.EXPO_PUBLIC_API_HOST ||
+  getDevServerHost() ||
+  getDefaultHost()
+
+const resolvedApiBaseUrl =
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  'http://54.94.231.254:3002/api/v1'
 
 export const config = {
   /**
    * Trading-Service Rust (ALL ENDPOINTS)
    * Port 3002 - Auth, Balances, Exchanges, Orders, Portfolio, PNL
    */
-  apiBaseUrl: 'http://localhost:3002/api/v1',
+  apiBaseUrl: resolvedApiBaseUrl,
   
   /**
    * Auth via Rust trading-service
    */
-  kongBaseUrl: 'http://localhost:3002/api/v1',
+  kongBaseUrl: resolvedApiBaseUrl,
   
   /**
    * Configurações de Tradução

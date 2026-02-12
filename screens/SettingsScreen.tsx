@@ -25,7 +25,7 @@ import { TabBar } from "../components/TabBar"
 import { LogoIcon } from "../components/LogoIcon"
 import { typography, fontWeights } from "../lib/typography"
 import { commonStyles, spacing, borderRadius, shadows, borders, sizes } from "@/lib/layout"
-import Svg, { Path, Circle } from "react-native-svg"
+import Svg, { Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg"
 
 export function SettingsScreen({ navigation, route }: any) {
   const { theme, setTheme, colors, isDark } = useTheme()
@@ -216,12 +216,12 @@ export function SettingsScreen({ navigation, route }: any) {
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Svg width={100} height={100} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
-                      <defs>
-                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#3B82F6" />
-                          <stop offset="100%" stopColor="#FBBF24" />
-                        </linearGradient>
-                      </defs>
+                      <Defs>
+                        <LinearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <Stop offset="0%" stopColor="#3B82F6" />
+                          <Stop offset="100%" stopColor="#FBBF24" />
+                        </LinearGradient>
+                      </Defs>
                       <Circle cx="50" cy="50" r="50" fill="url(#grad1)" />
                     </Svg>
                     <Text style={styles.avatarText}>

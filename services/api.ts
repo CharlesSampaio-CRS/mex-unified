@@ -1,5 +1,7 @@
 import { BalanceResponse, AvailableExchangesResponse, LinkedExchangesResponse, PortfolioEvolutionResponse, DailyPnlResponse } from '@/types/api';
 import { config } from '@/lib/config';
+import { table } from '@/lib/sqlite/query-builder';
+import { decryptData } from '@/lib/encryption';
 // ❌ CACHE DESABILITADO - Mocks que não fazem nada, sempre busca dados frescos
 const cacheService = { 
   get: <T = any>(...args: any[]): T | null => null, 
@@ -21,6 +23,17 @@ const CACHE_TTL = { BALANCES: 0, PORTFOLIO: 0, EXCHANGES: 0, EXCHANGE_DETAILS: 0
 import { secureStorage } from '@/lib/secure-storage';
 
 const API_BASE_URL = config.apiBaseUrl;
+
+interface LocalUserExchangeRow {
+  id: string;
+  user_id: string;
+  exchange_name: string;
+  exchange_type: string;
+  api_key_encrypted: string;
+  api_secret_encrypted: string;
+  api_passphrase_encrypted?: string | null;
+  is_active: number;
+}
 
 /**
  * Request timeout constants (in milliseconds)
@@ -116,6 +129,46 @@ async function fetchWithTimeout(
   throw new Error('Failed after all retries');
 }
 
+async function buildExchangesPayload(userId: string) {
+  try {
+    const exchanges = await table<LocalUserExchangeRow>('user_exchanges')
+      .where('user_id', '=', userId)
+      .where('is_active', '=', 1)
+      .get();
+
+    if (!exchanges.length) return [];
+
+    const exchangesData = await Promise.all(
+      exchanges.map(async (ex) => {
+        try {
+          const apiKey = await decryptData(ex.api_key_encrypted, userId);
+          const apiSecret = await decryptData(ex.api_secret_encrypted, userId);
+          const passphrase = ex.api_passphrase_encrypted
+            ? await decryptData(ex.api_passphrase_encrypted, userId)
+            : undefined;
+
+          return {
+            exchange_id: ex.id,
+            ccxt_id: ex.exchange_type,
+            name: ex.exchange_name,
+            api_key: apiKey,
+            api_secret: apiSecret,
+            passphrase,
+          };
+        } catch (error) {
+          console.error(`❌ Erro ao decriptar exchange ${ex.exchange_name}:`, error);
+          return null;
+        }
+      })
+    );
+
+    return exchangesData.filter((ex) => ex !== null);
+  } catch (error) {
+    console.error('❌ Falha ao montar exchanges locais:', error);
+    return [];
+  }
+}
+
 export const apiService = {
   /**
    * Busca os balances de todas as exchanges para um usuário
@@ -125,33 +178,44 @@ export const apiService = {
    */
   async getBalances(userId: string, forceRefresh: boolean = false): Promise<BalanceResponse> {
     try {
-      // 🚫 SEM CACHE - Sempre busca direto da API CCXT
+      // 1) Tenta enviar exchanges locais (POST /balances)
+      const exchanges = await buildExchangesPayload(userId);
+      if (exchanges.length > 0) {
+        try {
+          console.log(`📡 [API] Enviando ${exchanges.length} exchanges para /balances (POST)`);
+          const postResponse = await apiService.post<BalanceResponse>('/balances', { exchanges });
+          return postResponse.data;
+        } catch (postError) {
+          console.warn('⚠️ [API] Falha no POST /balances, tentando GET fallback:', postError);
+        }
+      }
+
+      // 2) Fallback: GET /balances com user_id
       const timestamp = Date.now();
-      // ✅ IMPORTANTE: Sempre inclui variações de preço (change_24h)
       const url = `${API_BASE_URL}/balances?user_id=${userId}&include_changes=true&_t=${timestamp}`;
-      
-      console.log('📡 [API] Buscando balances:', url);
-      
+
+      console.log('📡 [API] Buscando balances (GET):', url);
+
       const response = await fetchWithTimeout(
         url,
         {
-          cache: 'no-store' // Sempre força no-cache
+          cache: 'no-store'
         },
-        TIMEOUTS.CRITICAL // Full balance fetch can be slow with many exchanges/tokens
+        TIMEOUTS.CRITICAL
       );
-      
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
-      
+
       const data: BalanceResponse = await response.json();
-      
+
       console.log('✅ [API] Balance recebido:', {
         total_usd: data.total_usd || data.summary?.total_usd,
         timestamp: data.timestamp,
         exchanges: data.exchanges?.length || 0
       });
-      
+
       return data;
     } catch (error) {
       throw error;
@@ -167,32 +231,44 @@ export const apiService = {
    */
   async getBalancesSummary(userId: string, forceRefresh: boolean = false): Promise<BalanceResponse> {
     try {
-      // 🚫 SEM CACHE - Sempre busca direto da API CCXT
+      // 1) Tenta enviar exchanges locais (POST /balances) para obter summary
+      const exchanges = await buildExchangesPayload(userId);
+      if (exchanges.length > 0) {
+        try {
+          console.log(`📡 [API] Enviando ${exchanges.length} exchanges para /balances (POST) [summary]`);
+          const postResponse = await apiService.post<BalanceResponse>('/balances', { exchanges });
+          return postResponse.data;
+        } catch (postError) {
+          console.warn('⚠️ [API] Falha no POST /balances (summary), tentando GET fallback:', postError);
+        }
+      }
+
+      // 2) Fallback: GET /balances/summary
       const timestamp = Date.now();
       const url = `${API_BASE_URL}/balances/summary?user_id=${userId}&_t=${timestamp}`;
-      
-      console.log('📡 [API] Buscando balances summary:', url);
-            
+
+      console.log('📡 [API] Buscando balances summary (GET):', url);
+
       const response = await fetchWithTimeout(
         url,
         {
-          cache: 'no-store' // Sempre força no-cache
+          cache: 'no-store'
         },
-        TIMEOUTS.VERY_SLOW // Cold start tolerance
+        TIMEOUTS.VERY_SLOW
       );
-      
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
-      
+
       const data: BalanceResponse = await response.json();
-      
+
       console.log('✅ [API] Balance summary recebido:', {
         total_usd: data.total_usd || data.summary?.total_usd,
         timestamp: data.timestamp,
         exchanges: data.exchanges?.length || 0
       });
-      
+
       return data;
     } catch (error) {
       throw error;
