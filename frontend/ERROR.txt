@@ -1,4 +1,0 @@
-
- LOG  [REGISTER] Enviando request: http://localhost:3002/api/v1/auth/register {"email": "user@gmail.com", "name": "Teste ", "password": "Ch@rles12344"}
- ERROR  Register error: [TypeError: Network request failed]
-⠋ Stopping server^C
