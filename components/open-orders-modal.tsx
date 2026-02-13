@@ -540,10 +540,10 @@ export function OpenOrdersModal({
             {/* Header */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View style={styles.headerTitleContainer}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.modalTitle, { color: colors.text }]}> 
                   {t('orders.title')}
                 </Text>
-                <Text style={[styles.exchangeName, { color: colors.textSecondary }]}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.exchangeName, { color: colors.textSecondary }]}> 
                   {exchangeName}
                 </Text>
                 {/* Info sobre atualização automática */}
@@ -1208,20 +1208,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   headerTitleContainer: {
     flex: 1,
+    minWidth: 0,
+    paddingRight: 8,
   },
   modalTitle: {
-    fontSize: typography.h3,
+    fontSize: typography.h4,
     fontWeight: fontWeights.medium,
+    flexShrink: 1,
   },
   exchangeName: {
     fontSize: typography.caption,
     fontWeight: fontWeights.light,
-    marginTop: 4,
+    marginTop: 2,
+    flexShrink: 1,
   },
   infoBox: {
     flexDirection: 'row',
@@ -1291,8 +1296,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    alignSelf: "flex-start",
-    paddingTop: 2,
   },
   cancelAllButton: {
     paddingVertical: 10,
@@ -1308,15 +1311,16 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.semibold,
   },
   closeButton: {
-    padding: 4,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
   },
   closeButtonText: {
-    fontSize: 22,
+    fontSize: typography.h3,
     fontWeight: fontWeights.light,
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
   loadingContainer: {
     flex: 1,

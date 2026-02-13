@@ -176,7 +176,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
             api_key: apiKey,
             api_secret: apiSecret,
             passphrase: passphrase,
-            is_active: exchange.is_active,
+            is_active: exchange.is_active === 1,
           },
           symbol: pair, // Ex: 'BTC/USDT', 'REKTCOIN/USDT'
         }),

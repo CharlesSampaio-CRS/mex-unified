@@ -86,7 +86,7 @@ export function OrderDetailsModal({ visible, onClose, order }: OrderDetailsModal
             {/* Header */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View style={styles.headerContent}>
-                <Text style={[styles.symbolText, { color: colors.text }]}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.symbolText, { color: colors.text }]}>
                   {order.symbol}
                 </Text>
                 <View style={styles.badges}>
@@ -257,7 +257,7 @@ export function OrderDetailsModal({ visible, onClose, order }: OrderDetailsModal
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -270,62 +270,67 @@ const styles = StyleSheet.create({
   modalContainer: {
     borderRadius: 20,
     width: "90%",
-    maxHeight: "90%",
+    maxHeight: "85%",
+    height: "85%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    padding: 20,
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   headerContent: {
     flex: 1,
-    gap: 12,
+    minWidth: 0,
+    gap: 8,
   },
   symbolText: {
-    fontSize: typography.h1,
-    fontWeight: fontWeights.bold,
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
   badges: {
     flexDirection: "row",
-    gap: 8,
+    flexWrap: "wrap",
+    gap: 6,
   },
   typeBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
   },
   typeText: {
     fontSize: typography.caption,
-    fontWeight: fontWeights.bold,
+    fontWeight: fontWeights.medium,
   },
   sideBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
   },
   sideText: {
     fontSize: typography.caption,
-    fontWeight: fontWeights.bold,
+    fontWeight: fontWeights.medium,
   },
   closeButton: {
-    padding: 4,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
   },
   closeButtonText: {
-    fontSize: typography.h1,
+    fontSize: typography.h3,
     fontWeight: fontWeights.light,
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
   section: {
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: 12,
+    gap: 10,
   },
   sectionTitle: {
     fontSize: typography.tiny,
@@ -364,7 +369,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   progressText: {
-    fontSize: typography.body,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.medium,
   },
   progressDetails: {
@@ -392,7 +397,7 @@ const styles = StyleSheet.create({
     fontSize: typography.caption,
   },
   detailValue: {
-    fontSize: typography.body,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.medium,
   },
   tradeItem: {
@@ -404,16 +409,16 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
   },
   footer: {
-    padding: 20,
+    padding: 14,
     borderTopWidth: 1,
   },
   closeButtonFooter: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     alignItems: "center",
   },
   closeButtonFooterText: {
-    fontSize: typography.button,
-    fontWeight: fontWeights.semibold,
+    fontSize: typography.body,
+    fontWeight: fontWeights.medium,
   },
 })
