@@ -332,7 +332,7 @@ export const TopGainersLosers: React.FC = () => {
               </View>
 
               {/* Lista completa */}
-              <ScrollView style={styles.modalContent}>
+              <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalContentContainer}>
                 {(modalType === 'gainers' ? allGainers : allLosers).map((token, index) => (
                   <View key={`${token.symbol}-${token.exchange}-${index}`}>
                     {renderTokenItem(token, modalType === 'gainers')}
@@ -490,14 +490,17 @@ const styles = StyleSheet.create({
   modalContainer: {
     borderRadius: 20,
     width: '90%',
-    maxHeight: '90%',
+    maxHeight: '85%',
+    overflow: 'hidden',
+    flexDirection: 'column',
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
+    flexShrink: 0,
   },
   modalTitleContainer: {
     flexDirection: 'row',
@@ -517,13 +520,18 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   modalContent: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+  },
+  modalContentContainer: {
+    gap: 8,
     padding: 20,
   },
   footer: {
     padding: 20,
     borderTopWidth: 1,
     alignItems: 'center',
+    flexShrink: 0,
   },
   footerText: {
     fontSize: 13,
