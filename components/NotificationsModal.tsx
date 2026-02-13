@@ -74,9 +74,9 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
             {/* Header */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.headerTitleContainer}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>{t('notifications.title')}</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.modalTitle, { color: colors.text }]}>{t('notifications.title')}</Text>
                 {unreadCount > 0 && (
-                  <Text style={[styles.unreadText, { color: colors.textSecondary }]}>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.unreadText, { color: colors.textSecondary }]}> 
                     {unreadCount} {t('notifications.unread')}
                   </Text>
                 )}
@@ -84,12 +84,12 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
               <View style={styles.headerActions}>
                 {unreadCount > 0 && (
                   <TouchableOpacity onPress={markAllAsRead}>
-                    <Text style={styles.markAllButton}>{t('notifications.markAll')}</Text>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={styles.markAllButton}>{t('notifications.markAll')}</Text>
                   </TouchableOpacity>
                 )}
                 {notifications.length > 0 && (
                   <TouchableOpacity onPress={() => setConfirmDeleteAllVisible(true)}>
-                    <Text style={styles.markAllButton}>🗑️ Limpar</Text>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={styles.markAllButton}>Limpar</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -123,13 +123,6 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
                   ]}
                   onPress={() => !notification.read && markAsRead(notification.id)}
                 >
-                  {/* Icon */}
-                  <View style={[styles.notificationIcon, { backgroundColor: getTypeColor(notification.type) + '20' }]}>
-                    <Text style={styles.notificationEmoji}>
-                      {notification.icon || getDefaultIcon(notification.type)}
-                    </Text>
-                  </View>
-
                   {/* Content */}
                   <View style={styles.notificationContent}>
                     <View style={styles.notificationHeader}>
@@ -209,36 +202,43 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   headerTitleContainer: {
     flex: 1,
+    minWidth: 0,
+    paddingRight: 8,
   },
   modalTitle: {
-    fontSize: typography.h2,
+    fontSize: typography.h4,
     fontWeight: fontWeights.medium,
+    flexShrink: 1,
   },
   unreadText: {
     fontSize: typography.caption,
     fontWeight: fontWeights.light,
-    marginTop: 4,
+    marginTop: 2,
+    flexShrink: 1,
   },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
+    flexShrink: 0,
   },
   markAllButton: {
     color: "#3b82f6",
-    fontSize: typography.bodySmall,
+    fontSize: typography.caption,
     fontWeight: fontWeights.regular,
   },
   closeButton: {
-    padding: 4,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
   },
   closeButtonText: {
-    fontSize: typography.h1,
+    fontSize: typography.h3,
     fontWeight: fontWeights.light,
   },
   notificationsList: {
@@ -248,17 +248,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 16,
     borderBottomWidth: 1,
-    gap: 12,
-  },
-  notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  notificationEmoji: {
-    fontSize: 20,
+    gap: 0,
   },
   notificationContent: {
     flex: 1,

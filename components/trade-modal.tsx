@@ -618,7 +618,7 @@ export function TradeModal({
             {orderType === 'limit' && (
               <View style={styles.section}>
                 <View style={styles.labelRow}>
-                  <Text style={[styles.label, { color: colors.text }]}>Preço</Text>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.label, { color: colors.text }]}>Preço</Text>
                   {priceDifference && (
                     <Text style={[
                       styles.priceDifferenceText,
@@ -649,10 +649,10 @@ export function TradeModal({
             {/* Quantidade */}
             <View style={styles.section}>
               <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.text }]}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.label, { color: colors.text }]}>
                   Quantidade ({symbol})
                 </Text>
-                <Text style={[styles.balanceText, { color: colors.textSecondary }]}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.balanceText, { color: colors.textSecondary }]}> 
                   Disponível: {availableBalance.toFixed(8)}
                 </Text>
               </View>
@@ -696,10 +696,10 @@ export function TradeModal({
             {/* Preview do Total */}
             <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.previewRow}>
-                <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
                   Total {isBuy ? 'a Pagar' : 'a Receber'}
                 </Text>
-                <Text style={[styles.previewValue, { color: colors.text }]}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
                   $ {apiService.formatUSD(total)}
                 </Text>
               </View>
@@ -707,20 +707,20 @@ export function TradeModal({
               {orderType === 'limit' && (
                 <>
                   <View style={styles.previewRow}>
-                    <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
                       Preço
                     </Text>
-                    <Text style={[styles.previewValue, { color: colors.text }]}>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
                       {parseFloat(price || '0') < 0.01 
                         ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
                         : apiService.formatUSD(parseFloat(price || '0'))}
                     </Text>
                   </View>
                   <View style={styles.previewRow}>
-                    <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
                       Quantidade
                     </Text>
-                    <Text style={[styles.previewValue, { color: colors.text }]}>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
                       {(() => {
                         const qty = parseFloat(amount || '0')
                         if (qty === 0) return '0.00'
@@ -992,15 +992,17 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   label: {
-    fontSize: typography.body,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.medium,
     marginBottom: 10,
+    flexShrink: 1,
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 10,
+    gap: 10,
   },
   priceDifferenceText: {
     fontSize: 11,
@@ -1010,6 +1012,8 @@ const styles = StyleSheet.create({
   balanceText: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.regular,
+    flexShrink: 1,
+    textAlign: 'right',
   },
   orderTypeButtons: {
     flexDirection: 'row',
@@ -1036,7 +1040,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12, // 14→12
     borderRadius: 10, // 12→10
     borderWidth: 1.5, // 2→1.5
-    fontSize: typography.h4,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.medium,
     minHeight: 48, // 52→48
   },
@@ -1075,15 +1079,21 @@ const styles = StyleSheet.create({
   previewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: 8,
   },
   previewLabel: {
-    fontSize: typography.body,
+    fontSize: typography.caption,
     fontWeight: fontWeights.regular,
+    flex: 1,
+    flexShrink: 1,
   },
   previewValue: {
-    fontSize: typography.h4,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.medium, // bold→medium
+    flex: 1,
+    flexShrink: 1,
+    textAlign: 'right',
   },
   submitButton: {
     paddingVertical: 14,
