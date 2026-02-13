@@ -20,7 +20,7 @@ export interface AllOpenOrdersListRef {
   refresh: () => Promise<void>;
 }
 
-export const AllOpenOrdersList = forwardRef<AllOpenOrdersListRef, {}>((props, ref) => {
+export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOrdersListRef>) => {
   const { colors, isDark } = useTheme();
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -184,6 +184,9 @@ export const AllOpenOrdersList = forwardRef<AllOpenOrdersListRef, {}>((props, re
     
     setCancelLoading(true);
     setCancelError(null);
+    // Fecha modal imediatamente para evitar overlay na tela inteira
+    setConfirmCancelVisible(false);
+    setOrderToCancel(null);
     
     // ✅ Marca a ordem como "cancelando" IMEDIATAMENTE
     setCancellingOrderIds(prev => new Set(prev).add(orderId));
@@ -194,10 +197,6 @@ export const AllOpenOrdersList = forwardRef<AllOpenOrdersListRef, {}>((props, re
       if (result.success) {
         // ✅ REMOÇÃO OTIMISTA: Remove da lista IMEDIATAMENTE
         removeOrderLocally(orderId, exchangeId);
-        
-        // ✅ FEEDBACK IMEDIATO: Fecha o modal
-        setConfirmCancelVisible(false);
-        setOrderToCancel(null);
         setCancelLoading(false);
         
         // Remove do Set de "cancelando"
@@ -277,7 +276,6 @@ export const AllOpenOrdersList = forwardRef<AllOpenOrdersListRef, {}>((props, re
 
     try {
       let result;
-      
       if (order.side === 'buy') {
         result = await orderOperationsService.createBuyOrder(
           user.id,
@@ -319,7 +317,7 @@ export const AllOpenOrdersList = forwardRef<AllOpenOrdersListRef, {}>((props, re
     }
   };
 
-  if (loading) {
+  if (loading && localOrdersByExchange.length === 0) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <AnimatedLogoIcon size={48} />
@@ -335,9 +333,6 @@ export const AllOpenOrdersList = forwardRef<AllOpenOrdersListRef, {}>((props, re
       style={[styles.scrollContainer, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={contextRefreshing} onRefresh={refresh} tintColor={colors.primary} />
-      }
     >
       {/* Card Principal com LinearGradient - SEMPRE VISÍVEL */}
       <LinearGradient

@@ -517,7 +517,7 @@ export function SettingsScreen({ navigation, route }: any) {
                   />
                 </Svg>
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={styles.menuTextContainer}>
                 <Text style={[styles.menuItemText, { color: colors.text }]}>{t('profile.language')}</Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
                   {language === 'pt-BR' ? '🇧🇷 Português (Brasil)' : '🇺🇸 English (US)'}
@@ -554,7 +554,7 @@ export function SettingsScreen({ navigation, route }: any) {
                   />
                 </Svg>
               </View>
-              <View>
+              <View style={styles.menuTextContainer}>
                 <Text style={[styles.menuItemText, { color: colors.text }]}>{t('profile.darkMode')}</Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
                   {theme === 'dark' ? t('settings.activated') : t('settings.deactivated')}
@@ -615,7 +615,7 @@ export function SettingsScreen({ navigation, route }: any) {
                     <Circle cx="12" cy="9" r="2.5" stroke={colors.text} strokeWidth="2" />
                   </Svg>
                 </View>
-                <View>
+                <View style={styles.menuTextContainer}>
                   <Text style={[styles.menuItemText, { color: colors.text }]}>{biometricType}</Text>
                   <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
                     {isBiometricEnabled ? 'Ativado' : 'Desativado'}
@@ -1246,6 +1246,10 @@ const styles = StyleSheet.create({
     gap: spacing.itemGap,
     flex: 1,
   },
+  menuTextContainer: {
+    flex: 1,
+    flexShrink: 1,
+  },
   menuIconContainer: {
     width: sizes.iconLarge,
     height: sizes.iconLarge,
@@ -1256,10 +1260,14 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: typography.h4,
     fontWeight: fontWeights.regular,
+    flexShrink: 1,
+    flexWrap: "wrap",
   },
   menuItemSubtext: {
     fontSize: typography.bodySmall,
     marginTop: 2,
+    flexShrink: 1,
+    flexWrap: "wrap",
   },
   menuItemArrow: {
     fontSize: typography.h1,

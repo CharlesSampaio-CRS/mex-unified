@@ -378,6 +378,7 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 24,
     padding: 20,                // Reduzido de 28 para 20 (mais compacto)
+    marginBottom: 25,           // Espaço pequeno do menu
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,

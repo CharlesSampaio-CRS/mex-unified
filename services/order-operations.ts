@@ -11,7 +11,7 @@ import { notificationService } from './notificationService'
  */
 
 interface UserExchange {
-  id?: number
+  id?: string
   user_id: string
   exchange_name: string
   exchange_type: string
@@ -43,9 +43,21 @@ export interface CancelOrderRequest {
  * Busca e decripta credenciais de uma exchange
  */
 async function getExchangeCredentials(exchangeId: string, userId: string) {
-  const exchange = await table<UserExchange>('user_exchanges')
-    .where('id', '=', parseInt(exchangeId))
+  let exchange = await table<UserExchange>('user_exchanges')
+    .where('id', '=', exchangeId)
     .first()
+
+  if (!exchange) {
+    exchange = await table<UserExchange>('user_exchanges')
+      .where('exchange_type', '=', exchangeId)
+      .first()
+  }
+
+  if (!exchange) {
+    exchange = await table<UserExchange>('user_exchanges')
+      .where('exchange_name', '=', exchangeId)
+      .first()
+  }
 
   if (!exchange) {
     throw new Error(`Exchange ${exchangeId} não encontrada`)

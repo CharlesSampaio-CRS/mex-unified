@@ -187,10 +187,10 @@ const LinkedExchangeCard = memo(({
         </View>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            Exchange ID:
+            País de Origem:
           </Text>
           <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
-            {exchangeId}
+            {linkedExchange.country || linkedExchange.pais_de_origem || 'N/A'}
           </Text>
         </View>
       </View>
@@ -305,14 +305,12 @@ const AvailableExchangeCard = memo(({
             </Text>
           </View>
         )}
-        {(exchange._id || exchange.id) && (
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Exchange ID:</Text>
-            <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
-              {exchange._id || exchange.id}
-            </Text>
-          </View>
-        )}
+        <View style={styles.detailRow}>
+          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>País de Origem:</Text>
+          <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
+            {exchange.pais_de_origem || 'N/A'}
+          </Text>
+        </View>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
             {isLinked ? t('exchanges.alreadyConnected') : t('exchanges.readyToConnect')}
@@ -439,21 +437,30 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         availableData = { exchanges: [] }
       }
 
-      setAvailableExchanges(availableData.exchanges || [])
+      const availableList = availableData.exchanges || []
+      setAvailableExchanges(availableList)
       
       // Formata exchanges locais para o formato esperado pelo componente LinkedExchange
-      const formattedLinkedExchanges: LinkedExchange[] = localLinkedExchanges.map(ex => ({
+      const formattedLinkedExchanges: LinkedExchange[] = localLinkedExchanges.map(ex => {
+        const matchedAvailable = availableList.find(av => {
+          const ccxtMatch = av.ccxt_id?.toLowerCase() === ex.exchangeType?.toLowerCase()
+          const nameMatch = av.nome?.toLowerCase() === ex.exchangeName?.toLowerCase()
+          return ccxtMatch || nameMatch
+        })
+
+        return {
         exchange_id: ex.id,
         ccxt_id: ex.exchangeType, // CCXT ID já está em lowercase no banco
         name: ex.exchangeName,
         icon: '',
-        country: '', // Não temos no local
+        country: matchedAvailable?.pais_de_origem || '',
         url: '', // Não temos no local
         status: ex.isActive ? 'active' : 'inactive',
         is_active: ex.isActive,
         linked_at: ex.createdAt?.toISOString() || new Date().toISOString(),
         updated_at: ex.lastSyncAt?.toISOString() || new Date().toISOString()
-      }))
+      }
+      })
       
       setLinkedExchanges(formattedLinkedExchanges)
       setRefreshKey(prev => prev + 1) // Força re-render

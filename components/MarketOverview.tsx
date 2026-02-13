@@ -482,32 +482,32 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.semibold,
   },
   scrollContent: {
-    gap: 12,
-    paddingRight: 16,
+    gap: 10,
+    paddingRight: 12,
   },
   tokenCard: {
-    width: 140,
-    padding: 12,
-    borderRadius: 12,
+    width: 120,
+    padding: 10,
+    borderRadius: 10,
   },
   tokenHeader: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   tokenSymbol: {
-    fontSize: typography.body,  // 16px - Texto principal
-    fontWeight: fontWeights.semibold,  // Reduzido de bold para semibold
-    marginBottom: 2,
+    fontSize: typography.caption,  // 14px - Texto principal
+    fontWeight: fontWeights.semibold,
+    marginBottom: 1,
   },
   tokenName: {
-    fontSize: typography.micro,  // 12px - Metadados
-    fontWeight: fontWeights.regular,  // Reduzido de medium para regular
+    fontSize: typography.tiny,  // 11px - Metadados
+    fontWeight: fontWeights.regular,
   },
   tokenBody: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   tokenPrice: {
-    fontSize: typography.h4,  // 18px - Valor destacado
-    fontWeight: fontWeights.medium,  // Reduzido de semibold para medium
+    fontSize: typography.body,  // 16px - Valor destacado
+    fontWeight: fontWeights.medium,
   },
   tokenFooter: {
     flexDirection: 'row',
