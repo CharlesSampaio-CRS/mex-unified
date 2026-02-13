@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, SafeAreaView, RefreshControl, View } from "react-native"
+import { StyleSheet, ScrollView, SafeAreaView, RefreshControl, View, TouchableOpacity, Text, Alert } from "react-native"
 import { useRef, useState, useCallback, memo } from "react"
 import { Header } from "../components/Header"
 import { HomeVerticalLayout } from "../components/layouts/HomeVerticalLayout"
@@ -13,6 +13,7 @@ import { useLayout } from "../contexts/LayoutContext"
 import { useNotifications } from "../contexts/NotificationsContext"
 import { useAuth } from "../contexts/AuthContext"
 import { commonStyles } from "@/lib/layout"
+import { snapshotService } from "../services/snapshot-service"
 
 export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   
@@ -74,6 +75,68 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     await refreshBalance()
   }, [refreshBalance])
   
+  // Adicionar snapshots de teste para os últimos 30 dias
+  const handleAddTestSnapshots = useCallback(async () => {
+    if (!user?.id) {
+      Alert.alert('Erro', 'Usuário não encontrado')
+      return
+    }
+
+    try {
+      Alert.alert(
+        'Adicionar Snapshots de Teste',
+        'Isso irá criar snapshots fictícios para os últimos 30 dias. Continuar?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Adicionar',
+            onPress: async () => {
+              try {
+                console.log('🧪 Criando snapshots de teste para últimos 30 dias...')
+                
+                // Criar snapshots para os últimos 30 dias
+                const promises = []
+                for (let i = 0; i < 30; i++) {
+                  const date = new Date()
+                  date.setDate(date.getDate() - i)
+                  date.setHours(0, 0, 0, 0) // Meia-noite
+                  
+                  // Gera valor aleatório para simular variação de portfólio
+                  const baseValue = 10000 + (Math.random() * 5000)
+                  const variation = (Math.random() - 0.5) * 1000
+                  const totalUsd = baseValue + variation
+                  const totalBrl = totalUsd * 5.0 // Conversão fictícia
+                  
+                  promises.push(
+                    snapshotService.createSnapshot({
+                      userId: user.id,
+                      totalUsd,
+                      totalBrl,
+                      timestamp: date.getTime()
+                    })
+                  )
+                }
+                
+                await Promise.all(promises)
+                console.log('✅ Snapshots de teste criados com sucesso!')
+                
+                // Atualizar PNL
+                setPnlRefreshTrigger(Date.now())
+                
+                Alert.alert('Sucesso', '30 snapshots de teste foram criados!')
+              } catch (error) {
+                console.error('❌ Erro ao criar snapshots:', error)
+                Alert.alert('Erro', 'Falha ao criar snapshots de teste')
+              }
+            }
+          }
+        ]
+      )
+    } catch (error) {
+      console.error('❌ Erro:', error)
+    }
+  }, [user?.id])
+  
   // Renderizar layout baseado na escolha do usuário
   const renderLayout = () => {
     switch (layout) {
@@ -91,16 +154,14 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
         onProfilePress={onProfilePress}
         unreadCount={unreadCount}
       />
-      {/* Botão de teste (comentado)
       <View style={styles.testActions}>
         <TouchableOpacity
           style={[styles.testButton, { backgroundColor: colors.primary }]}
           onPress={handleAddTestSnapshots}
         >
-          <Text style={[styles.testButtonText, { color: colors.textOnPrimary || '#fff' }]}>Adicionar snapshots 30d</Text>
+          <Text style={[styles.testButtonText, { color: colors.primaryText || '#fff' }]}>Adicionar snapshots 30d</Text>
         </TouchableOpacity>
       </View>
-      */}
       
       {/* Layout tabs não precisa de ScrollView - ele já tem scroll interno */}
       {layout === 'tabs' ? (
@@ -158,4 +219,17 @@ const styles = StyleSheet.create({
   container: commonStyles.screenContainer,
   scrollView: commonStyles.scrollView,
   scrollContent: commonStyles.scrollContent,
+  testActions: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  testButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
 })
