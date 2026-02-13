@@ -183,6 +183,7 @@ function MainTabs() {
             height: 56,
             paddingBottom: 6,
             paddingTop: 6,
+            paddingHorizontal: 12,
             elevation: 0,
             shadowOpacity: 0,
           },
