@@ -213,15 +213,20 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
 
   // 4️⃣ HOOKS: useCallback (depois de useMemo, antes de useEffect)
   const formatLastUpdated = useCallback(() => {
-    if (!lastUpdateTime) return ''
-    
-    const timeStr = lastUpdateTime.toLocaleTimeString(language, { 
+    const timestamp = data?.timestamp
+      ? new Date((typeof data.timestamp === 'number' ? data.timestamp : Number(data.timestamp)) * 1000)
+      : lastUpdateTime
+
+    if (!timestamp) return ''
+
+    const timeStr = timestamp.toLocaleTimeString(language, { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo'
     })
-    
-    return `${t('portfolio.updatedAt')}: ${timeStr}`
-  }, [lastUpdateTime, language, t])
+
+    return `Updated ${timeStr}`
+  }, [data?.timestamp, lastUpdateTime, language])
 
   const handleRefreshAll = useCallback(async () => {
     if (!user?.id) {
@@ -343,29 +348,9 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
       style={[styles.container, { borderColor: colors.border }]}
     >
         <View style={styles.headerRow}>
-          <View style={styles.valueSection}>
-            <View style={styles.valueContainer}>
-              <Text style={[styles.value, { color: colors.text }]}>
-                {hideValue(`$${formattedValue}`)}
-              </Text>
-              <Text style={[styles.currencyLabel, { color: colors.textSecondary }]}>
-                USD
-              </Text>
-              <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
-                {formatLastUpdated()}
-              </Text>
-            </View>
-            {brlValueWithoutSymbol && (
-              <View style={styles.brlContainer}>
-                <Text style={[styles.brlValue, { color: colors.textSecondary }]}>
-                  {hideValue(brlLoading ? '...' : `$${brlValueWithoutSymbol}`)}
-                </Text>
-                <Text style={[styles.currencyLabel, { color: colors.textSecondary }]}>
-                  BRL
-                </Text>
-              </View>
-            )}
-          </View>
+          <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
+            {formatLastUpdated()}
+          </Text>
           <TouchableOpacity 
             style={[styles.refreshButton, isUpdating && styles.refreshButtonDisabled]}
             onPress={handleRefreshAll}
@@ -378,6 +363,27 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
               <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
             )}
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.valueSection}>
+          <View style={styles.valueContainer}>
+            <Text style={[styles.value, { color: colors.text }]}>
+              {hideValue(`$${formattedValue}`)}
+            </Text>
+            <Text style={[styles.currencyLabel, { color: colors.textSecondary }]}>
+              USD
+            </Text>
+          </View>
+          {brlValueWithoutSymbol && (
+            <View style={styles.brlContainer}>
+              <Text style={[styles.brlValue, { color: colors.textSecondary }]}>
+                {hideValue(brlLoading ? '...' : `$${brlValueWithoutSymbol}`)}
+              </Text>
+              <Text style={[styles.currencyLabel, { color: colors.textSecondary }]}>
+                BRL
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* PNL Cards - Diário e Período separados */}
@@ -467,8 +473,8 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,           // era 20 (+20% - mais arredondado)
-    padding: 16,                // Reduzido de 20 para 16 (mais compacto)
+    borderRadius: 20,
+    padding: 14,
     borderWidth: 0,
     shadowColor: "#000",
     shadowOffset: {
@@ -515,35 +521,36 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   valueSection: {
-    gap: 4,
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 0,
   },
   valueContainer: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 8,
-    marginBottom: 0,
-    marginLeft: 12,  // Alinha com o BRL
+    gap: 6,
+    flex: 1,
   },
   value: {
-    fontSize: typography.h4,  // 18px - reduzido
+    fontSize: typography.bodyLarge,  // 17px
     fontWeight: fontWeights.light,
-    letterSpacing: -0.6,
+    letterSpacing: -0.4,
   },
   currencyLabel: {
-    fontSize: typography.micro,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.medium,
     opacity: 0.5,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   brlContainer: {
     flexDirection: "row",
     alignItems: "baseline",
     gap: 6,
-    marginTop: 2,
-    marginLeft: 12,  // Empurra para a direita
+    justifyContent: "flex-end",
   },
   brlValue: {
-    fontSize: typography.caption,  // Menor que USD
+    fontSize: typography.tiny,
     fontWeight: fontWeights.regular,
     opacity: 0.6,
   },

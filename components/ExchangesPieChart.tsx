@@ -89,7 +89,10 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
   const chartSize = Math.max(MIN_CHART_SIZE, Math.min(BASE_CHART_SIZE, width - 80))
   const radius = chartSize / 2
 
-  const formatPercent = (value: number) => (Number.isInteger(value) ? `${value}` : value.toFixed(1))
+  const formatPercent = (value: number) => {
+    const fixed = value.toFixed(1)
+    return fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed
+  }
 
   const chartData = useMemo(() => {
     if (!data || !data.exchanges) return []

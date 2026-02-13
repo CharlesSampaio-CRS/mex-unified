@@ -409,8 +409,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   periodButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
   },
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     // Estilo aplicado dinamicamente
   },
   periodButtonText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
   },
   chartWrapper: {
@@ -431,10 +431,10 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   chartLabel: {
-    fontSize: typography.micro,
+    fontSize: 10,
     fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
     opacity: 0.5,
   },
   tooltip: {
