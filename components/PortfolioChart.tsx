@@ -200,7 +200,7 @@ export const PortfolioChart = memo(function PortfolioChart({
   // Formata a data do timestamp
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
   // Dados do ponto selecionado
@@ -279,6 +279,9 @@ export const PortfolioChart = memo(function PortfolioChart({
           <View style={[styles.tooltip, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.tooltipValue, { color: colors.text }]}>
               {hideValue(`$${apiService.formatUSD(selectedData.value)}`)}
+            </Text>
+            <Text style={[styles.tooltipDate, { color: colors.textSecondary }]}>
+              {formatDate(selectedData.timestamp)}
             </Text>
             <View style={styles.tooltipPnlRow}>
               <Text style={[
