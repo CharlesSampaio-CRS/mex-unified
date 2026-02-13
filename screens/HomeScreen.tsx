@@ -154,14 +154,14 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
         onProfilePress={onProfilePress}
         unreadCount={unreadCount}
       />
-      <View style={styles.testActions}>
+      {/* <View style={styles.testActions}>
         <TouchableOpacity
           style={[styles.testButton, { backgroundColor: colors.primary }]}
           onPress={handleAddTestSnapshots}
         >
           <Text style={[styles.testButtonText, { color: colors.primaryText || '#fff' }]}>Adicionar snapshots 30d</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
       
       {/* Layout tabs não precisa de ScrollView - ele já tem scroll interno */}
       {layout === 'tabs' ? (
