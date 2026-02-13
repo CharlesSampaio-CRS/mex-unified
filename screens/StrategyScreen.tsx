@@ -122,7 +122,7 @@ export function StrategyScreen({ navigation }: any) {
           id: strategy.id,
           name: strategy.name,
           type: strategy.type,
-          exchange: strategy.exchange_id, // SQLite usa snake_case
+          exchange: strategy.exchange_name || strategy.exchange_id, // Usa exchange_name se disponível, senão exchange_id
           token: strategy.symbol,
           isActive: strategy.is_active === 1, // SQLite usa INTEGER para boolean
           description: strategy.description || undefined,

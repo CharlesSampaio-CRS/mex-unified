@@ -113,7 +113,7 @@ export function StrategyDetailsModal({
     }
 
     const strategyId = strategy.id || ''
-    const strategyName = `${strategy.symbol} - ${strategy.exchange_id || 'Exchange'}`
+    const strategyName = `${strategy.symbol} - ${strategy.exchange_name || strategy.exchange_id || 'Exchange'}`
     const template = (JSON.parse(strategy.config || "{}").template) || 'simple'
     const templateNames: Record<string, string> = {
       simple: t('strategy.simple'),
@@ -189,7 +189,7 @@ export function StrategyDetailsModal({
                 </Text>
               </View>
               <Text style={[styles.infoValue, { color: colors.text }]}>
-                {strategy.exchange_id || 'N/A'}
+                {strategy.exchange_name || strategy.exchange_id || 'N/A'}
               </Text>
             </View>
 

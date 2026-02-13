@@ -20,6 +20,7 @@ export interface Strategy {
   type: string
   symbol: string
   exchange_id: string
+  exchange_name?: string // Nome da exchange (via JOIN)
   is_active: number // SQLite usa INTEGER para boolean
   config: string // JSON stringificado
   created_at: number
@@ -58,7 +59,7 @@ class SQLiteStrategyService {
       type: data.type,
       symbol: data.symbol,
       exchange_id: data.exchange_id,
-      is_active: 0,
+      is_active: 1, // Criar como ATIVA por padrão
       config: JSON.stringify(data.config),
       created_at: now,
       updated_at: now
@@ -70,24 +71,39 @@ class SQLiteStrategyService {
 
   /**
    * Buscar estratégia por ID
+   * Inclui o nome da exchange via JOIN com user_exchanges
    */
   async findById(id: string): Promise<Strategy | null> {
-    return await table<Strategy>(this.tableName)
-      .where('id', id)
-      .first()
+    const result = await sqliteDatabase.queryFirst<Strategy>(`
+      SELECT 
+        s.*,
+        e.exchange_name
+      FROM strategies s
+      LEFT JOIN user_exchanges e ON s.exchange_id = e.id
+      WHERE s.id = ?
+    `, [id])
+    
+    return result || null
   }
 
   /**
    * Buscar todas as estratégias
+   * Inclui o nome da exchange via JOIN com user_exchanges
    */
   async findAll(): Promise<Strategy[]> {
     try {
       console.log('🔍 [StrategyService] findAll() iniciado')
       console.log('🔍 [StrategyService] Tabela:', this.tableName)
       
-      const result = await table<Strategy>(this.tableName)
-        .orderBy('created_at', 'DESC')
-        .get()
+      // JOIN com user_exchanges para pegar o exchange_name
+      const result = await sqliteDatabase.queryAll<Strategy>(`
+        SELECT 
+          s.*,
+          e.exchange_name
+        FROM strategies s
+        LEFT JOIN user_exchanges e ON s.exchange_id = e.id
+        ORDER BY s.created_at DESC
+      `)
       
       console.log('✅ [StrategyService] findAll() concluído, resultados:', result.length)
       return result
