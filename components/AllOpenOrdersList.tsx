@@ -988,9 +988,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   orderSymbol: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   sideBadge: {
     paddingHorizontal: 8,

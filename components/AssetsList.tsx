@@ -1761,9 +1761,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tokenSymbol: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   variationBadge: {
     paddingHorizontal: 8,
@@ -1833,9 +1833,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tokenSymbolCard: {
-    fontSize: typography.h4,
+    fontSize: typography.body,
     fontWeight: fontWeights.semibold,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   variationBadgeCard: {
     paddingHorizontal: 8,
@@ -1887,9 +1887,9 @@ const styles = StyleSheet.create({
     gap: 12,                    // +20% espaço entre elementos
   },
   tokenSymbolCompact: {
-    fontSize: typography.body,  // tamanho mais equilibrado
+    fontSize: typography.bodySmall,  // tamanho consistente com orders
     fontWeight: fontWeights.semibold, // semibold é suficiente
-    letterSpacing: 0.3,         // reduzido de 0.4
+    letterSpacing: 0.2,         // reduzido para compactar
     textAlign: "left",
     opacity: 1,                 // 100% opacidade
     textTransform: 'uppercase', // sempre maiúsculo

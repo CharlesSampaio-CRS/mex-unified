@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   symbolText: {
-    fontSize: typography.h4,
+    fontSize: typography.body,
     fontWeight: fontWeights.semibold,
   },
   badges: {

@@ -1449,10 +1449,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   symbolContainer: {
-    minWidth: 80,
+    minWidth: 60,
   },
   orderSymbolCompact: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.semibold,
   },
   orderSideBadgeCompact: {

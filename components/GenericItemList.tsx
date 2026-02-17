@@ -305,9 +305,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   itemSymbol: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   itemSubtitle: {
     marginTop: 4,
