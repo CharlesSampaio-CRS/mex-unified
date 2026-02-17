@@ -205,22 +205,6 @@ export const PortfolioChart = memo(function PortfolioChart({
 
   // Dados do ponto selecionado
   const selectedData = selectedPoint !== null ? chartData[selectedPoint] : null
-  
-  // Calcula PNL do ponto selecionado em relação ao primeiro ponto
-  const pnlData = useMemo(() => {
-    if (!selectedData || chartData.length === 0) return null
-    
-    const firstValue = chartData[0].value
-    const selectedValue = selectedData.value
-    const change = selectedValue - firstValue
-    const changePercent = firstValue !== 0 ? (change / firstValue) * 100 : 0
-    
-    return {
-      change,
-      changePercent,
-      isProfit: change >= 0
-    }
-  }, [selectedData, chartData])
 
   if (chartData.length === 0) {
     return (
@@ -274,8 +258,8 @@ export const PortfolioChart = memo(function PortfolioChart({
       </View>
       
       <View {...panResponder.panHandlers} ref={chartRef} style={styles.chartWrapper}>
-        {/* Tooltip com valor e PNL - aparece só ao tocar */}
-        {selectedData && pnlData && (
+        {/* Tooltip com valor - aparece só ao tocar */}
+        {selectedData && (
           <View style={[styles.tooltip, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.tooltipValue, { color: colors.text }]}>
               {hideValue(`$${apiService.formatUSD(selectedData.value)}`)}
@@ -283,21 +267,6 @@ export const PortfolioChart = memo(function PortfolioChart({
             <Text style={[styles.tooltipDate, { color: colors.textSecondary }]}>
               {formatDate(selectedData.timestamp)}
             </Text>
-            <View style={styles.tooltipPnlRow}>
-              <Text style={[
-                styles.tooltipPnl,
-                { color: pnlData.change === 0 ? colors.textSecondary : (pnlData.isProfit ? colors.success : colors.danger) }
-              ]}>
-                {pnlData.change === 0 ? '━' : (pnlData.isProfit ? '▲' : '▼')}
-                {hideValue(` $${apiService.formatUSD(Math.abs(pnlData.change))}`)}
-              </Text>
-              <Text style={[
-                styles.tooltipPercent,
-                { color: pnlData.change === 0 ? colors.textSecondary : (pnlData.isProfit ? colors.success : colors.danger) }
-              ]}>
-                {hideValue(`(${pnlData.change === 0 ? '0.00' : Math.abs(pnlData.changePercent).toFixed(2)}%)`)}
-              </Text>
-            </View>
           </View>
         )}
 
@@ -464,23 +433,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.semibold,
     letterSpacing: -0.3,
     textAlign: 'center',
-  },
-  tooltipPnlRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-    gap: 4,
-  },
-  tooltipPnl: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.semibold,
-    letterSpacing: -0.2,
-  },
-  tooltipPercent: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.regular,
-    opacity: 0.8,
   },
   tooltipDate: {
     fontSize: typography.micro,
