@@ -28,6 +28,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   const { hideValue } = usePrivacy();
   const { refresh: refreshBalance, data: balanceData } = useBalance();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // 🆕 Estado local para ordens (permite remoção otimista)
   const [localOrdersByExchange, setLocalOrdersByExchange] = useState(ordersByExchange);
@@ -94,8 +95,25 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
 
   // Expõe método refresh via ref
   useImperativeHandle(ref, () => ({
-    refresh,
+    refresh: async () => {
+      setIsUpdating(true);
+      try {
+        await refresh();
+      } finally {
+        setTimeout(() => setIsUpdating(false), 300);
+      }
+    },
   }), [refresh]);
+
+  // Handler para pull-to-refresh
+  const handleRefresh = async () => {
+    setIsUpdating(true);
+    try {
+      await refresh();
+    } finally {
+      setTimeout(() => setIsUpdating(false), 300);
+    }
+  };
 
   // Limpa ordens "cancelando" quando a lista atualiza (elas já foram removidas)
   useEffect(() => {
@@ -324,7 +342,25 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
       style={[styles.scrollContainer, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={contextRefreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
+      }
     >
+      {/* Indicador de atualização */}
+      {isUpdating && totalOrders > 0 && (
+        <View style={[styles.updatingBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="refresh" size={16} color={colors.primary} />
+          <Text style={[styles.updatingText, { color: colors.primary }]}>
+            Atualizando ordens...
+          </Text>
+        </View>
+      )}
+      
       {/* Card Principal com LinearGradient - SEMPRE VISÍVEL */}
       <LinearGradient
         colors={gradientColors}
@@ -1216,5 +1252,22 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimary: {
     // Usa o backgroundColor e borderColor dinâmico no componente
+  },
+  // Banner de atualização
+  updatingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    gap: 8,
+  },
+  updatingText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

@@ -23,6 +23,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   const { user } = useAuth()
   const { refresh: refreshBalance, refreshing } = useBalance()
   const { unreadCount } = useNotifications()
+  const [isUpdating, setIsUpdating] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   // const [searchModalVisible, setSearchModalVisible] = useState(false) // Busca removida - agora está dentro da lista
   const [openOrdersModalVisible, setOpenOrdersModalVisible] = useState(false)
@@ -73,8 +74,14 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   // Refresh completo: apenas balances
   const handleRefresh = useCallback(async () => {
     console.log('🔄 [HomeScreen] Atualizando balances...')
-    await refreshBalance()
-    console.log('✅ [HomeScreen] Balances atualizados')
+    setIsUpdating(true)
+    try {
+      await refreshBalance()
+      console.log('✅ [HomeScreen] Balances atualizados')
+    } finally {
+      // Mantém isUpdating true até que os dados sejam realmente carregados
+      setTimeout(() => setIsUpdating(false), 300)
+    }
   }, [refreshBalance])
   
   // Adicionar snapshots de teste para os últimos 30 dias
@@ -184,7 +191,10 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
             />
           }
         >
-          <HomeVerticalLayout pnlRefreshTrigger={pnlRefreshTrigger} />
+          <HomeVerticalLayout 
+            pnlRefreshTrigger={pnlRefreshTrigger}
+            isUpdating={isUpdating}
+          />
         </ScrollView>
       )}
 
