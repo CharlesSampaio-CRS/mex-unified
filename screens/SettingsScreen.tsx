@@ -38,8 +38,10 @@ export function SettingsScreen({ navigation, route }: any) {
     biometricAvailable, 
     biometricType, 
     isBiometricEnabled,
+    isAutoLoginEnabled,
     enableBiometric,
-    disableBiometric
+    disableBiometric,
+    setAutoLoginEnabled
   } = useAuth()
   
   // Estado da aba ativa
@@ -172,6 +174,14 @@ export function SettingsScreen({ navigation, route }: any) {
       }
     } catch (error) {
       Alert.alert(t('common.error'), t('settings.biometricError'))
+    }
+  }
+
+  const handleAutoLoginToggle = async () => {
+    try {
+      await setAutoLoginEnabled(!isAutoLoginEnabled)
+    } catch (error) {
+      Alert.alert(t('common.error'), 'Erro ao alterar configuração de login automático')
     }
   }
 
@@ -634,6 +644,60 @@ export function SettingsScreen({ navigation, route }: any) {
                   styles.toggleThumb,
                   isBiometricEnabled ? themedToggleStyles.toggleThumbActive : themedToggleStyles.toggleThumb,
                   isBiometricEnabled && styles.toggleThumbActive
+                ]} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Login Automático com Biometria */}
+          {biometricAvailable && isBiometricEnabled && (
+            <View style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.itemGap }]}>
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIconContainer, { backgroundColor: colors.surface }]}>
+                  <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+                      stroke={colors.text}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <Circle cx="9" cy="7" r="4" stroke={colors.text} strokeWidth="2" />
+                    <Path
+                      d="M23 21v-2a4 4 0 0 0-3-3.87"
+                      stroke={colors.text}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <Path
+                      d="M16 3.13a4 4 0 0 1 0 7.75"
+                      stroke={colors.text}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={[styles.menuItemText, { color: colors.text }]}>Login Automático</Text>
+                  <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
+                    {isAutoLoginEnabled ? 'FaceID ao abrir o app' : 'Desativado'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={[
+                  styles.toggle,
+                  isAutoLoginEnabled ? themedToggleStyles.toggleActive : themedToggleStyles.toggle
+                ]}
+                onPress={handleAutoLoginToggle}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.toggleThumb,
+                  isAutoLoginEnabled ? themedToggleStyles.toggleThumbActive : themedToggleStyles.toggleThumb,
+                  isAutoLoginEnabled && styles.toggleThumbActive
                 ]} />
               </TouchableOpacity>
             </View>
