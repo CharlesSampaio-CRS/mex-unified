@@ -396,6 +396,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (!userData || !userId || !userEmail) {
           console.error('❌ Dados do usuário não encontrados')
+          setIsLoadingData(false)
           throw new Error('User data not found. Please login again.')
         }
         
@@ -441,18 +442,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } else {
           // Para email/senha, não podemos fazer login automático (não temos a senha)
           console.error('❌ Login com biometria não suportado para email/senha sem refresh token')
+          setIsLoadingData(false)
           throw new Error('Para usar biometria, faça login com Google ou Apple')
         }
         
         // O loading será desativado pelo App.tsx quando os dados estiverem prontos
       } else {
+        // ❌ Usuário cancelou ou falhou a autenticação
+        console.log('👤 Usuário cancelou a autenticação biométrica')
         setIsLoadingData(false)
-        throw new Error('Biometric authentication failed')
+        
+        // Cria erro específico para cancelamento
+        const cancelError = new Error('User canceled biometric authentication')
+        cancelError.name = 'BiometricCancelError'
+        throw cancelError
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Biometric login error:', error)
       setIsLoadingData(false)
-      throw error
+      
+      // Se já é um erro de cancelamento, apenas repropaga
+      if (error.name === 'BiometricCancelError') {
+        throw error
+      }
+      
+      // Para outros erros, cria um erro genérico
+      const wrappedError = new Error(error.message || 'Biometric authentication failed')
+      wrappedError.name = 'BiometricError'
+      throw wrappedError
     } finally {
       setIsLoading(false)
     }

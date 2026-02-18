@@ -125,6 +125,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const hasProcessedOAuth = useRef(false)
   const [isProcessingOAuth, setIsProcessingOAuth] = useState(false) // 🆕 Estado para processar OAuth
   const hasTriedAutoAuth = useRef(false) // 🆕 Controla se já tentou auth automático
+  const autoAuthCancelled = useRef(false) // 🆕 Indica se usuário cancelou o auto-auth
 
   const isFullLoading = isLoading || isLoadingData
 
@@ -133,6 +134,9 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     const tryAutoAuth = async () => {
       // Só tenta uma vez
       if (hasTriedAutoAuth.current) return
+      
+      // Se usuário cancelou, não tenta mais
+      if (autoAuthCancelled.current) return
       
       // Aguarda um momento para garantir que o estado está carregado
       await new Promise(resolve => setTimeout(resolve, 300))
@@ -150,8 +154,19 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
         
         try {
           await loginWithBiometric()
-        } catch (error) {
-          console.log('⚠️ Auto-auth falhou (usuário pode ter cancelado):', error)
+        } catch (error: any) {
+          console.log('⚠️ Auto-auth falhou:', error)
+          
+          // Se usuário cancelou
+          if (
+            error?.name === 'BiometricCancelError' ||
+            error?.message?.toLowerCase().includes('cancel') ||
+            error?.message?.toLowerCase().includes('authentication failed')
+          ) {
+            console.log('👤 Usuário cancelou o FaceID - mostrando tela de login')
+            autoAuthCancelled.current = true
+          }
+          
           // Não mostra erro - deixa o usuário usar os botões normais
         }
       }
