@@ -1,4 +1,5 @@
 import { table } from '../lib/sqlite/query-builder'
+import { apiService } from './api'
 
 /**
  * Snapshot Service - SQLite Version
@@ -74,49 +75,54 @@ class SnapshotService {
   }
 
   /**
-   * Cria snapshot baseado no balance_history atual
+   * Cria snapshot baseado nos dados ATUALIZADOS da API
    */
   async createSnapshotFromHistory(userId: string): Promise<BalanceSnapshot | null> {
     try {
-      // Buscar todos os balanços mais recentes do usuário
-      const recentBalances = await table<BalanceHistory>('balance_history')
-        .where('user_id', '=', userId)
-        .orderBy('timestamp', 'DESC')
-        .limit(100) // últimos 100 registros para calcular total
-        .get()
-
-      if (recentBalances.length === 0) {
+      console.log('📸 Criando snapshot - buscando dados frescos da API...')
+      
+      // 1️⃣ Buscar dados atualizados da API
+      const balanceData = await apiService.getBalances(userId, true)
+      
+      if (!balanceData.exchanges || balanceData.exchanges.length === 0) {
         console.log('📊 Nenhum balanço encontrado para criar snapshot')
         return null
       }
 
-      // Agrupar por symbol e pegar o mais recente de cada
-      const latestBySymbol = new Map<string, BalanceHistory>()
-      
-      for (const balance of recentBalances) {
-        const key = `${balance.exchange_name}_${balance.symbol}`
-        if (!latestBySymbol.has(key)) {
-          latestBySymbol.set(key, balance)
-        }
-      }
-
-      // Calcular totais
+      // 2️⃣ Salvar no balance_history e calcular totais
+      const now = new Date()
       let totalUsd = 0
       let totalBrl = 0
 
-      for (const balance of latestBySymbol.values()) {
-        totalUsd += balance.usd_value || 0
-        totalBrl += balance.brl_value || 0
+      for (const exchange of balanceData.exchanges) {
+        if (!exchange.success || !exchange.balances) continue
+
+        for (const [symbol, balance] of Object.entries(exchange.balances)) {
+          const balanceInfo: any = balance
+          totalUsd += balanceInfo.usd_value || 0
+          totalBrl += balanceInfo.brl_value || 0
+
+          // Salvar cada token no histórico
+          await table<BalanceHistory>('balance_history').insert({
+            user_id: userId,
+            exchange_name: exchange.exchange,
+            symbol: symbol,
+            amount: balanceInfo.total || 0,
+            usd_value: balanceInfo.usd_value || 0,
+            brl_value: balanceInfo.brl_value || 0,
+            timestamp: now.getTime(),
+          })
+        }
       }
 
-      // Criar snapshot
+      // 3️⃣ Criar snapshot com totais atualizados
       const snapshot = await this.createSnapshot({
         userId,
         totalUsd,
         totalBrl,
       })
 
-      console.log(`✅ Snapshot criado: $${totalUsd.toFixed(2)} USD / R$${totalBrl.toFixed(2)} BRL`)
+      console.log(`✅ Snapshot criado com dados frescos: $${totalUsd.toFixed(2)} USD / R$${totalBrl.toFixed(2)} BRL`)
       return snapshot
     } catch (error) {
       console.error('❌ Erro ao criar snapshot:', error)
