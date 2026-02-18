@@ -72,7 +72,9 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
 
   // Refresh completo: apenas balances
   const handleRefresh = useCallback(async () => {
+    console.log('🔄 [HomeScreen] Atualizando balances...')
     await refreshBalance()
+    console.log('✅ [HomeScreen] Balances atualizados')
   }, [refreshBalance])
   
   // Adicionar snapshots de teste para os últimos 30 dias

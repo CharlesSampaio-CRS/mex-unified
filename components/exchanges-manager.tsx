@@ -503,12 +503,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
 
   // 🔄 Refresh específico por aba - atualiza apenas o conteúdo da aba ativa
   const handleRefresh = useCallback(async () => {
+    console.log('🔄 [ExchangesManager] Atualizando exchanges...')
     setRefreshing(true)
     
     try {
       // Ambas as abas precisam buscar as exchanges (linked e available)
       // pois a aba "available" filtra as já conectadas
       await fetchExchanges(true, false)
+      console.log('✅ [ExchangesManager] Exchanges atualizadas')
     } catch (error) {
       console.error(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
     } finally {
