@@ -765,18 +765,6 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               {data?.timestamp ? `Updated ${new Date((typeof data.timestamp === 'number' ? data.timestamp : Number(data.timestamp)) * 1000).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}` : 'Updated recently'}
             </Text>
           </View>
-          <TouchableOpacity 
-            style={[styles.refreshButton, loading && styles.refreshButtonDisabled]}
-            onPress={refreshBalance}
-            disabled={loading}
-            activeOpacity={loading ? 1 : 0.7}
-          >
-            {loading ? (
-              <AnimatedLogoIcon size={20} />
-            ) : (
-              <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
-            )}
-          </TouchableOpacity>
         </View>
 
         {/* Campo de Busca */}

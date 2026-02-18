@@ -317,16 +317,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     }
   };
 
-  if (loading && localOrdersByExchange.length === 0) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <AnimatedLogoIcon size={48} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          {t('orders.loading')}
-        </Text>
-      </View>
-    );
-  }
+  // Removido loading customizado - usa apenas o RefreshControl do ScrollView
 
   return (
     <ScrollView

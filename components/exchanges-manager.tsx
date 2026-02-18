@@ -1160,16 +1160,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     confirmModalContent: { backgroundColor: colors.surface },
   }), [colors])
 
-  if (loading) {
-    return (
-      <View style={[styles.container, themedStyles.container]}>
-        <View style={styles.loadingContainer}>
-          <AnimatedLogoIcon size={48} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>{t('exchanges.loading')}</Text>
-        </View>
-      </View>
-    )
-  }
+  // Removido loading customizado - usa apenas o RefreshControl do ScrollView
 
   if (error) {
     return (

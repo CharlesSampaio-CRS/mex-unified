@@ -366,14 +366,8 @@ export function StrategyScreen({ navigation }: any) {
           />
         }
       >
-        {loading && !refreshing ? (
-          <View style={styles.loadingContainer}>
-            <AnimatedLogoIcon size={48} />
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-              {t('common.loading')}
-            </Text>
-          </View>
-        ) : activeTab === 'strategies' ? (
+        {/* Removido loading customizado - usa apenas o RefreshControl */}
+        {activeTab === 'strategies' ? (
           // Aba de Estratégias
           strategies.length === 0 ? (
             <View style={styles.emptyState}>
