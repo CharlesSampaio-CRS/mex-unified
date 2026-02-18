@@ -351,18 +351,6 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
           <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
             {formatLastUpdated()}
           </Text>
-          <TouchableOpacity 
-            style={[styles.refreshButton, isUpdating && styles.refreshButtonDisabled]}
-            onPress={handleRefreshAll}
-            disabled={isUpdating}
-            activeOpacity={isUpdating ? 1 : 0.7}
-          >
-            {isUpdating ? (
-              <AnimatedLogoIcon size={20} />
-            ) : (
-              <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
-            )}
-          </TouchableOpacity>
         </View>
 
         <View style={styles.valueSection}>

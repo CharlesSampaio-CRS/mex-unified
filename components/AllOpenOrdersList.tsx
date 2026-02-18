@@ -353,18 +353,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
                 : 'Updated recently'}
             </Text>
           </View>
-          <TouchableOpacity 
-            style={[styles.refreshButton, contextRefreshing &&  styles.refreshButtonDisabled]}
-            onPress={refresh}
-            disabled={contextRefreshing}
-            activeOpacity={contextRefreshing ? 1 : 0.7}
-          >
-            {contextRefreshing ? (
-              <AnimatedLogoIcon size={20} />
-            ) : (
-              <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
-            )}
-          </TouchableOpacity>
         </View>
 
         {/* Campo de Busca */}

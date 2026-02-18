@@ -15,6 +15,7 @@ export const HomeTabsLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { refresh: refreshBalance, refreshing } = useBalance();
   const ordersListRef = useRef<{ refresh: () => Promise<void> } | null>(null);
 
   const tabs = [
@@ -32,6 +33,14 @@ export const HomeTabsLayout: React.FC = () => {
       <ScrollView 
         style={{ flex: 1 }} 
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshBalance}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         {/* Mantém todos os componentes montados mas oculta os inativos */}
         <View style={{ display: activeTab === 0 ? 'flex' : 'none', gap: 16, paddingTop: 16, paddingHorizontal: 16 }}>
