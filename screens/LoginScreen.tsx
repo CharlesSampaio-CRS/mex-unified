@@ -297,7 +297,21 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     try {
       await loginWithBiometric()
     } catch (error: any) {
+      // Se usuário cancelou, não mostra erro (comportamento esperado)
+      if (
+        error?.name === 'BiometricCancelError' ||
+        error?.message?.toLowerCase().includes('cancel')
+      ) {
+        console.log('👤 Usuário cancelou o FaceID manualmente')
+        return // Sai silenciosamente
+      }
+      
+      // Para outros erros, mostra alerta
       console.error('❌ Erro no login biométrico:', error)
+      Alert.alert(
+        'Erro de Autenticação',
+        'Não foi possível autenticar com biometria. Tente novamente ou use outro método de login.'
+      )
     }
   }
 

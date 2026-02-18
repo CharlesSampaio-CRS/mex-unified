@@ -376,8 +376,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         throw new Error('Biometric authentication not available or not enabled')
       }
 
-      // Define isLoadingData ANTES de autenticar para evitar flash
-      setIsLoadingData(true)
+      // ⚠️ NÃO define isLoadingData antes da autenticação
+      // Deixa o usuário ver a tela de login normalmente
       
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: 'Faça login com biometria',
@@ -389,6 +389,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // 🔐 FaceID autenticou com sucesso!
         console.log('✅ Biometria autenticada com sucesso')
         
+        // AGORA sim, define isLoadingData (usuário autenticou)
+        setIsLoadingData(true)
+        
         // Busca dados do usuário salvos
         const userData = await secureStorage.getItemAsync('user_data')
         const userId = await secureStorage.getItemAsync('user_id')
@@ -396,7 +399,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (!userData || !userId || !userEmail) {
           console.error('❌ Dados do usuário não encontrados')
-          setIsLoadingData(false)
           throw new Error('User data not found. Please login again.')
         }
         
