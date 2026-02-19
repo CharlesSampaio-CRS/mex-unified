@@ -433,7 +433,16 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       setError(null)
       // Buscar exchanges conectadas do MongoDB
       const { exchanges: linkedList = [] } = await apiService.listExchanges()
-      setLinkedExchanges(linkedList)
+      // Mapear para o formato esperado pelo componente
+      const mappedExchanges = linkedList.map((ex: any) => ({
+        ...ex,
+        name: ex.exchange_name || ex.name,
+        ccxt_id: ex.exchange_type || ex.ccxt_id,
+        icon: ex.icon || ex.logo,
+        status: ex.is_active ? 'active' : 'inactive',
+        linked_at: ex.created_at
+      }))
+      setLinkedExchanges(mappedExchanges as any)
       // Buscar exchanges disponíveis (catálogo)
       let availableData
       try {
@@ -494,43 +503,11 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     }
   }, [activeTab, fetchExchanges])
 
-  const handleConnect = useCallback(async (exchangeId: string, exchangeName: string) => {
-    setOpenMenuId(null)
-    
-    if (!user?.id) {
-      alert('Erro: usuário não autenticado')
-      return
-    }
-    
-    try {
-      const url = `${config.apiBaseUrl}/exchanges/connect`
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          exchange_id: exchangeId,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {        
-        // Atualizar lista de exchanges e home (onExchangeModified já chama invalidateCacheAndRefresh)
-        await onExchangeModified()
-        
-        // Feedback para o usuário
-        alert(t('exchanges.connectSuccess'))
-      } else {
-        alert(data.error || t('error.connectExchange'))
-      }
-    } catch (err) {
-      alert(t('error.connectExchange'))
-    }
-  }, [onExchangeModified, t, user?.id])
+  // handleConnect não é mais necessário - a conexão é feita via handleLinkExchange
+  // que já usa apiService.addExchange()
+  const handleConnect = useCallback((exchange: AvailableExchange) => {
+    openConnectModal(exchange)
+  }, [])
 
   // Mostra modal de confirmação para toggle
   const toggleExchange = useCallback((exchangeId: string, currentStatus: string, exchangeName: string) => {
@@ -546,7 +523,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const confirmToggle = useCallback(async () => {
     const exchangeId = toggleExchangeId
     const newStatus = toggleExchangeNewStatus
-    const currentStatus = toggleExchangeNewStatus === 'active' ? 'inactive' : 'active'
     
     if (!user?.id) {
       alert('Erro: usuário não autenticado')
@@ -560,61 +536,30 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     const newIsActive = newStatus === 'active'
 
     try {
-      console.log('� [Local DB] Atualizando status da exchange no WatermelonDB...', {
+      console.log('🔄 Atualizando status da exchange no MongoDB...', {
         exchangeId,
         newIsActive
       })
       
-      // 1. Buscar e atualizar no banco local (SQLite)
-      const userExchanges = await exchangeService.getConnectedExchanges(user.id)
+      // Atualiza no MongoDB (fonte da verdade)
+      await apiService.updateExchange(exchangeId, { is_active: newIsActive })
       
-      // Buscar por ID primeiro, depois por nome (case-insensitive)
-      let exchangeToUpdate = userExchanges.find(ex => ex.id === exchangeId)
+      console.log('✅ Status atualizado no MongoDB com sucesso!')
       
-      if (!exchangeToUpdate) {
-        exchangeToUpdate = userExchanges.find(
-          ex => ex.exchangeName.toLowerCase() === toggleExchangeName.toLowerCase()
-        )
-      }
+      // Atualizar lista de exchanges e home
+      await onExchangeModified()
       
-      if (exchangeToUpdate && exchangeToUpdate.id) {
-        await exchangeService.toggleExchange(exchangeToUpdate.id)
-        }
-      
-      // 2. Também tentar atualizar no backend (opcional, pode falhar silenciosamente)
-      try {
-        const response = await fetch(`${config.apiBaseUrl}/exchanges/${exchangeId}/toggle`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: user.id,
-            is_active: newIsActive
-          })
-        })
-
-        if (response.ok) {
-          // Backend atualizado
-        } else {
-          // Atualizado apenas localmente
-        }
-      } catch (backendErr) {
-        // Backend falhou, mas está atualizado localmente
-      }
-
-      // 3. Atualizar lista de exchanges e home
-      await onExchangeModified() // Já chama invalidateCacheAndRefresh que faz fetchExchanges(true, true)
-      
-      // 4. Fecha modal e remove loading
+      // Fecha modal e remove loading
       setToggleLoading(false)
       setConfirmToggleModalVisible(false)
       
     } catch (error) {
-      console.error("❌ [Local DB] Erro ao atualizar status da exchange:", error)
+      console.error("❌ Erro ao atualizar status da exchange:", error)
       setToggleLoading(false)
       setConfirmToggleModalVisible(false)
       alert(t("error.updateExchangeStatus"))
     }
-  }, [toggleExchangeId, toggleExchangeName, toggleExchangeNewStatus, onExchangeModified, user?.id, t])
+  }, [toggleExchangeId, toggleExchangeNewStatus, onExchangeModified, user?.id, t])
 
   const handleDisconnect = useCallback((exchangeId: string, exchangeName: string) => {
     setOpenMenuId(null)
@@ -634,57 +579,29 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     setConfirmLoading(true)
     
     try {
-      // Buscar e desconectar do banco local (disconnect = delete)
-      const userExchanges = await exchangeService.getConnectedExchanges(user.id)
+      console.log('🔌 Desconectando exchange do MongoDB...', {
+        exchangeId: confirmExchangeId,
+        exchangeName: confirmExchangeName
+      })
       
-      // Buscar por ID primeiro, depois por nome (case-insensitive)
-      let exchangeToDisconnect = userExchanges.find(ex => ex.id === confirmExchangeId)
+      // Desconecta no MongoDB (fonte da verdade)
+      // Disconnect = Delete (remove a exchange completamente)
+      await apiService.deleteExchange(confirmExchangeId)
       
-      if (!exchangeToDisconnect) {
-        exchangeToDisconnect = userExchanges.find(
-          ex => ex.exchangeName.toLowerCase() === confirmExchangeName.toLowerCase()
-        )
-      }
-      
-      if (exchangeToDisconnect) {
-        await exchangeService.removeExchange(exchangeToDisconnect.id)
-      }
-      
-      // Também tentar desconectar do backend (opcional, pode falhar silenciosamente)
-      try {
-        const url = `${config.apiBaseUrl}/exchanges/disconnect`
-        
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            exchange_id: confirmExchangeId,
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          // Backend atualizado
-        }
-      } catch (backendErr) {
-        // Backend falhou, mas está atualizado localmente
-      }
+      console.log('✅ Exchange desconectada no MongoDB com sucesso')
       
       // Atualizar lista de exchanges e home
-      await onExchangeModified() // Já chama invalidateCacheAndRefresh que faz fetchExchanges(true, true)
+      await onExchangeModified()
       
       // Fecha modal e remove loading
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.log('🎉 [Disconnect] Disconnect concluído com sucesso!')
+      console.log('✅ Disconnect concluído com sucesso!')
       
     } catch (err) {
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.error('❌ [Local DB] Erro ao desconectar exchange:', err)
+      console.error('❌ Erro ao desconectar exchange:', err)
       alert(t('error.disconnectExchange'))
     }
   }, [confirmExchangeId, confirmExchangeName, onExchangeModified, t, user?.id])
@@ -703,7 +620,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   }, [])
 
   const confirmDelete = useCallback(async () => {
-    console.log('🚀 [Delete] Iniciando processo de delete...', {
+    console.log('�️ [Delete] Iniciando processo de delete...', {
       exchangeId: confirmExchangeId,
       exchangeName: confirmExchangeName,
       userId: user?.id
@@ -718,115 +635,27 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     setConfirmLoading(true)
     
     try {
-      console.log('🗑️ [Local DB] Deletando exchange do SQLite...', confirmExchangeId)
+      console.log('🗑️ Deletando exchange do MongoDB...')
       
-      // Buscar e deletar do banco local
-      const userExchanges = await exchangeService.getConnectedExchanges(user.id)
-      console.log('📊 [Delete] Total de exchanges no banco:', userExchanges.length)
-      console.log('📊 [Delete] Buscando por:', {
-        searchId: confirmExchangeId,
-        searchIdType: typeof confirmExchangeId,
-        searchName: confirmExchangeName
-      })
+      // Deleta no MongoDB (fonte da verdade)
+      await apiService.deleteExchange(confirmExchangeId)
       
-      // Log DETALHADO de cada exchange
-      console.log('📊 [Delete] === LISTAGEM COMPLETA DE IDs ===')
-      userExchanges.forEach((ex, index) => {
-        console.log(`   ${index + 1}. ID: "${ex.id}" | Nome: "${ex.exchangeName}" | Match: ${ex.id === confirmExchangeId}`)
-      })
-      console.log('📊 [Delete] === FIM DA LISTAGEM ===')
-      
-      // Buscar por ID primeiro, depois por nome (case-insensitive)
-      let exchangeToDelete = userExchanges.find(ex => ex.id === confirmExchangeId)
-      
-      if (!exchangeToDelete) {
-        console.log('⚠️ [Delete] Não encontrado por ID, tentando por nome...')
-        console.log('   Buscando por nome (case-insensitive):', confirmExchangeName)
-        
-        exchangeToDelete = userExchanges.find(
-          ex => {
-            const match = ex.exchangeName.toLowerCase() === confirmExchangeName.toLowerCase()
-            console.log(`   Comparando: "${ex.exchangeName.toLowerCase()}" === "${confirmExchangeName.toLowerCase()}" = ${match}`)
-            return match
-          }
-        )
-        
-        if (exchangeToDelete) {
-          console.log('✅ [Delete] Encontrado por nome!', exchangeToDelete.exchangeName)
-        }
-      }
-      
-      if (exchangeToDelete) {
-        console.log('🎯 [Delete] Exchange encontrada para deletar:', {
-          id: exchangeToDelete.id,
-          name: exchangeToDelete.exchangeName
-        })
-        await exchangeService.removeExchange(exchangeToDelete.id)
-        console.log('✅ [Local DB] Exchange deletada com sucesso:', exchangeToDelete.exchangeName)
-      } else {
-        console.error('❌ [Local DB] ERRO: Exchange NÃO encontrada no SQLite!')
-        console.error('   Isso significa que a UI está DESATUALIZADA!')
-        console.error('   A exchange que você está tentando deletar NÃO EXISTE no banco local.')
-        console.error('   Detalhes:', {
-          searchedId: confirmExchangeId,
-          searchedName: confirmExchangeName,
-          availableExchanges: userExchanges.map(ex => ({ id: ex.id, name: ex.exchangeName }))
-        })
-        
-        // Mesmo assim, continua para atualizar a UI
-        console.warn('⚠️ Continuando para forçar atualização da UI...')
-      }
-      
-      // Também tentar deletar do backend (opcional, pode falhar silenciosamente)
-      try {
-        const url = `${config.apiBaseUrl}/exchanges/delete`
-        console.log('📡 [Backend] Tentando deletar no backend...')
-        
-        const response = await fetch(url, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            exchange_id: confirmExchangeId,
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            console.log('✅ [Backend] Exchange deletada no backend com sucesso')
-          } else {
-            console.warn('⚠️ [Backend] Falha ao deletar no backend (mas deletada localmente):', data.error)
-          }
-        } else {
-          console.warn(`⚠️ [Backend] Endpoint não existe (${response.status}) - mas deletada localmente ✅`)
-        }
-      } catch (backendErr) {
-        console.warn('⚠️ [Backend] Erro ao deletar no backend (mas deletada localmente):', backendErr)
-      }
+      console.log('✅ Exchange deletada no MongoDB com sucesso')
       
       // Atualizar lista de exchanges e home
-      console.log('========================================')
-      console.log('🔄 [Delete] INICIANDO ATUALIZAÇÃO DA LISTA')
-      console.log('========================================')
-      console.log('🔄 [Delete] Chamando onExchangeModified()...')
-      await onExchangeModified() // Já chama invalidateCacheAndRefresh que faz fetchExchanges(true, true)
-      console.log('✅ [Delete] onExchangeModified() concluído!')
-      console.log('========================================')
-      console.log('✅ [Delete] ATUALIZAÇÃO DA LISTA CONCLUÍDA')
-      console.log('========================================')
+      console.log('🔄 Chamando onExchangeModified()...')
+      await onExchangeModified()
+      console.log('✅ onExchangeModified() concluído!')
       
       // Fecha modal e remove loading
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.log('🎉 [Delete] Delete concluído com sucesso!')
-      console.log('')
+      console.log('✅ Delete concluído com sucesso!')
+      
     } catch (err) {
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.error('❌ [Local DB] Erro ao deletar exchange:', err)
+      console.error('❌ Erro ao deletar exchange:', err)
       alert(t('error.deleteExchange'))
     }
   }, [confirmExchangeId, confirmExchangeName, onExchangeModified, t, user?.id])
@@ -1378,7 +1207,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                           if (isActive) {
                             handleDisconnect(exchange.exchange_id, exchange.name)
                           } else {
-                            handleConnect(exchange.exchange_id, exchange.name)
+                            toggleExchange(exchange.exchange_id, 'inactive', exchange.name)
                           }
                         }
                       }}
