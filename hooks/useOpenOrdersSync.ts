@@ -7,7 +7,7 @@
  * - O usuário forçar refresh manual
  * 
  * Performance:
- * - Usa ordersSyncService (novo fluxo com credentials locais)
+ * - Usa apiService.getOrdersSecure() (endpoint seguro que busca do MongoDB)
  * - Debounce leve (500ms no frontend)
  * - Executa em background sem bloquear UI
  * - Busca todas as exchanges em uma única requisição
@@ -19,7 +19,7 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { useBalance } from '@/contexts/BalanceContext'
-import { ordersSyncService } from '@/services/orders-sync'
+import { apiService } from '@/services/api'
 import { getExchangeId, getExchangeName } from '@/lib/exchange-helpers'
 
 interface UseOpenOrdersSyncOptions {
@@ -77,10 +77,10 @@ export function useOpenOrdersSync({
       const exchanges = balanceData.exchanges || []
       const results: SyncResult[] = []
 
-      // ✅ Novo fluxo: busca todas as ordens de uma vez com ordersSyncService
-      const response = await ordersSyncService.fetchOrders(userId)
+      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+      const response = await apiService.getOrdersSecure()
       
-      if (!response) {
+      if (!response || !response.success) {
         // Se falhar, retorna resultados vazios para todas as exchanges
         exchanges.forEach(exchange => {
           results.push({

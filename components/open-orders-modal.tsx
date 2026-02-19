@@ -6,7 +6,6 @@ import { useBalance } from "../contexts/BalanceContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
-import { ordersSyncService } from "../services/orders-sync"
 import { orderOperationsService } from "../services/order-operations"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
@@ -67,10 +66,10 @@ export function OpenOrdersModal({
     setError(null)
     
     try {
-      // ✅ Novo fluxo: usa credentials locais criptografadas
-      const response = await ordersSyncService.fetchOrders(userId)
+      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+      const response = await apiService.getOrdersSecure()
       
-      if (!response) {
+      if (!response || !response.success) {
         setError('Erro ao buscar ordens')
         setOrders([])
         setLastUpdate(new Date())
@@ -78,7 +77,7 @@ export function OpenOrdersModal({
       }
       
       // Filtra ordens da exchange selecionada
-      const exchangeOrders = response.orders.filter(order => 
+      const exchangeOrders = response.orders.filter((order: any) => 
         order.exchange_id === exchangeId || order.exchange === exchangeId
       )
       

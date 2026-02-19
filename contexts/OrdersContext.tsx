@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { apiService } from '../services/api'
-import { ordersSyncService } from '../services/orders-sync'
 import { OpenOrder } from '../types/orders'
 import { useAuth } from './AuthContext'
 import { useNotifications } from './NotificationsContext'
@@ -83,10 +82,11 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     setError(null)
 
     try {
-      // ✅ NOVO: Usa ordersSyncService para buscar com credenciais locais
-      const response = await ordersSyncService.fetchOrders(user.id)
+      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+      console.log('📋 [OrdersContext] Buscando orders via endpoint seguro (MongoDB)...')
+      const response = await apiService.getOrdersSecure()
             
-      if (!response) {
+      if (!response || !response.success) {
         setOrdersByExchange([])
         setTimestamp(Date.now())
         return
@@ -125,8 +125,11 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       
       setOrdersByExchange(results)
       setTimestamp(Date.now())
+      
+      console.log(`✅ [OrdersContext] Orders carregadas: ${response.orders?.length || 0} total`)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch orders'
+      console.error('❌ [OrdersContext] Erro ao buscar orders:', errorMsg)
       setError(errorMsg)
       setOrdersByExchange([])
     } finally {

@@ -3,7 +3,6 @@ import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
-import { ordersSyncService } from "@/services/orders-sync"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBalance } from "@/contexts/BalanceContext"
@@ -214,15 +213,15 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
     if (!user?.id) return
     
     try {
-      // ✅ Novo fluxo: usa credentials locais criptografadas
-      const response = await ordersSyncService.fetchOrders(user.id)
+      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+      const response = await apiService.getOrdersSecure()
       
-      if (!response) {
+      if (!response || !response.success) {
         return { success: false, count: 0 }
       }
       
       // Filtra ordens da exchange solicitada
-      const orders = response.orders.filter(order => 
+      const orders = response.orders.filter((order: any) => 
         order.exchange_id === exchangeId || order.exchange === exchangeId
       )
       const count = orders.length
@@ -266,10 +265,10 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
         const exchangeName = getExchangeName(exchange)
         
         try {
-          // ✅ Novo fluxo: busca todas as ordens e filtra por exchange
-          const response = await ordersSyncService.fetchOrders(user!.id)
+          // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+          const response = await apiService.getOrdersSecure()
           
-          if (!response) {
+          if (!response || !response.success) {
             return { 
               success: false, 
               exchangeId: exchangeId,
@@ -346,16 +345,16 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
     setLoadingOrdersByExchange(prev => ({ ...prev, [exchangeId]: true }))
 
     try {
-      // ✅ Novo fluxo: busca todas as ordens e filtra por exchange
-      const response = await ordersSyncService.fetchOrders(user.id)
+      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+      const response = await apiService.getOrdersSecure()
       
-      if (!response) {
+      if (!response || !response.success) {
         setLoadingOrdersByExchange(prev => ({ ...prev, [exchangeId]: false }))
         return
       }
       
       // Filtra ordens da exchange
-      const orders = response.orders.filter(order => 
+      const orders = response.orders.filter((order: any) => 
         order.exchange_id === exchangeId || order.exchange === exchangeId
       )
       const count = orders.length
