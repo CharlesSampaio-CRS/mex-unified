@@ -425,70 +425,32 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       setLoading(false)
       return
     }
-    
-    // Se já carregou e não está forçando refresh, não busca novamente
     if (hasLoadedOnce && !forceRefresh) {
       return
     }
-    
     try {
-      // Só mostra loading se NÃO for silencioso
-      if (!silent) {
-        setLoading(true)
-      }
+      if (!silent) setLoading(true)
       setError(null)
-    
-      // Buscar exchanges do SQLite
-      const localLinkedExchanges = await exchangeService.getConnectedExchanges(user.id)
-      
+      // Buscar exchanges conectadas do MongoDB
+      const { exchanges: linkedList = [] } = await apiService.listExchanges()
+      setLinkedExchanges(linkedList)
+      // Buscar exchanges disponíveis (catálogo)
       let availableData
       try {
         availableData = await apiService.getAvailableExchanges(user.id, forceRefresh)
       } catch (apiError) {
-        console.error('❌ [ExchangesManager] Erro ao buscar da API (continuando com dados locais):', apiError)
+        console.error('❌ [ExchangesManager] Erro ao buscar catálogo:', apiError)
         availableData = { exchanges: [] }
       }
-
-      const availableList = availableData.exchanges || []
-      setAvailableExchanges(availableList)
-      
-      // Formata exchanges locais para o formato esperado pelo componente LinkedExchange
-      const formattedLinkedExchanges: LinkedExchange[] = localLinkedExchanges.map(ex => {
-        const matchedAvailable = availableList.find(av => {
-          const ccxtMatch = av.ccxt_id?.toLowerCase() === ex.exchangeType?.toLowerCase()
-          const nameMatch = av.nome?.toLowerCase() === ex.exchangeName?.toLowerCase()
-          return ccxtMatch || nameMatch
-        })
-
-        return {
-        exchange_id: ex.id,
-        ccxt_id: ex.exchangeType, // CCXT ID já está em lowercase no banco
-        name: ex.exchangeName,
-        icon: '',
-        country: matchedAvailable?.pais_de_origem || '',
-        url: '', // Não temos no local
-        status: ex.isActive ? 'active' : 'inactive',
-        is_active: ex.isActive,
-        linked_at: ex.createdAt?.toISOString() || new Date().toISOString(),
-        updated_at: ex.lastSyncAt?.toISOString() || new Date().toISOString()
-      }
-      })
-      
-      setLinkedExchanges(formattedLinkedExchanges)
-      setRefreshKey(prev => prev + 1) // Força re-render
-      setHasLoadedOnce(true) // Marca como carregado
-      
-      // Força re-render verificando se o estado realmente mudou
-      setTimeout(() => {
-      }, 100)
+      setAvailableExchanges(availableData.exchanges || [])
+      setRefreshKey(prev => prev + 1)
+      setHasLoadedOnce(true)
+      setTimeout(() => {}, 100)
     } catch (err) {
       console.error('❌ Error fetching exchanges:', err)
       setError(t('exchanges.error'))
     } finally {
-      // Só remove loading se estava mostrando
-      if (!silent) {
-        setLoading(false)
-      }
+      if (!silent) setLoading(false)
     }
   }, [user?.id, hasLoadedOnce, t])
 
@@ -591,13 +553,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       return
     }
     
-    console.log('🔄 [Toggle] Iniciando toggle da exchange:', {
-      exchangeId,
-      exchangeName: toggleExchangeName,
-      currentStatus,
-      newStatus: toggleExchangeNewStatus
-    })
-    
     // Inicia loading NO BOTÃO (não fecha o modal ainda)
     setToggleLoading(true)
     
@@ -638,24 +593,20 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         })
 
         if (response.ok) {
-          console.log('✅ [Backend] Status atualizado no backend com sucesso')
+          // Backend atualizado
         } else {
-          console.warn('⚠️ [Backend] Falha ao atualizar no backend (mas atualizado localmente):', response.status)
+          // Atualizado apenas localmente
         }
       } catch (backendErr) {
-        console.warn('⚠️ [Backend] Erro ao atualizar no backend (mas atualizado localmente):', backendErr)
+        // Backend falhou, mas está atualizado localmente
       }
 
       // 3. Atualizar lista de exchanges e home
-      console.log('🔄 [Toggle] Atualizando lista de exchanges...')
       await onExchangeModified() // Já chama invalidateCacheAndRefresh que faz fetchExchanges(true, true)
-      console.log('✅ [Toggle] Lista de exchanges atualizada!')
       
       // 4. Fecha modal e remove loading
       setToggleLoading(false)
       setConfirmToggleModalVisible(false)
-      
-      console.log('🎉 [Toggle] Toggle concluído com sucesso!')
       
     } catch (error) {
       console.error("❌ [Local DB] Erro ao atualizar status da exchange:", error)
@@ -683,49 +634,25 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     setConfirmLoading(true)
     
     try {
-      console.log('🔌 [Local DB] Desconectando exchange no SQLite...', confirmExchangeId)
-      
       // Buscar e desconectar do banco local (disconnect = delete)
       const userExchanges = await exchangeService.getConnectedExchanges(user.id)
-      console.log('📊 [Disconnect] Total de exchanges no banco:', userExchanges.length)
-      console.log('📊 [Disconnect] Buscando por:', {
-        searchId: confirmExchangeId,
-        searchName: confirmExchangeName
-      })
-      console.log('📊 [Disconnect] Exchanges disponíveis:', userExchanges.map(ex => ({
-        id: ex.id,
-        name: ex.exchangeName
-      })))
       
       // Buscar por ID primeiro, depois por nome (case-insensitive)
       let exchangeToDisconnect = userExchanges.find(ex => ex.id === confirmExchangeId)
       
       if (!exchangeToDisconnect) {
-        console.log('⚠️ [Disconnect] Não encontrado por ID, tentando por nome...')
         exchangeToDisconnect = userExchanges.find(
           ex => ex.exchangeName.toLowerCase() === confirmExchangeName.toLowerCase()
         )
       }
       
       if (exchangeToDisconnect) {
-        console.log('🎯 [Disconnect] Exchange encontrada para desconectar:', {
-          id: exchangeToDisconnect.id,
-          name: exchangeToDisconnect.exchangeName
-        })
         await exchangeService.removeExchange(exchangeToDisconnect.id)
-        console.log('✅ [Local DB] Exchange desconectada com sucesso:', exchangeToDisconnect.exchangeName)
-      } else {
-        console.warn('⚠️ [Local DB] Exchange não encontrada no SQLite:', {
-          searchedId: confirmExchangeId,
-          searchedName: confirmExchangeName,
-          availableExchanges: userExchanges.map(ex => ({ id: ex.id, name: ex.exchangeName }))
-        })
       }
       
       // Também tentar desconectar do backend (opcional, pode falhar silenciosamente)
       try {
         const url = `${config.apiBaseUrl}/exchanges/disconnect`
-        console.log('📡 [Backend] Tentando desconectar no backend...')
         
         const response = await fetch(url, {
           method: 'POST',
@@ -740,22 +667,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
 
         if (response.ok) {
           const data = await response.json()
-          if (data.success) {
-            console.log('✅ [Backend] Exchange desconectada no backend com sucesso')
-          } else {
-            console.warn('⚠️ [Backend] Falha ao desconectar no backend (mas desconectada localmente):', data.error)
-          }
-        } else {
-          console.warn(`⚠️ [Backend] Endpoint não existe (${response.status}) - mas desconectada localmente ✅`)
+          // Backend atualizado
         }
       } catch (backendErr) {
-        console.warn('⚠️ [Backend] Erro ao desconectar no backend (mas desconectada localmente):', backendErr)
+        // Backend falhou, mas está atualizado localmente
       }
       
       // Atualizar lista de exchanges e home
-      console.log('🔄 [Disconnect] Atualizando lista de exchanges...')
       await onExchangeModified() // Já chama invalidateCacheAndRefresh que faz fetchExchanges(true, true)
-      console.log('✅ [Disconnect] Lista de exchanges atualizada!')
       
       // Fecha modal e remove loading
       setConfirmLoading(false)
@@ -1107,30 +1026,21 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   }, [t])
 
   const handleLinkExchange = useCallback(async () => {
-    console.log('🎯 [handleLinkExchange] FUNÇÃO CHAMADA!')
-    console.log('🎯 [handleLinkExchange] selectedExchange:', selectedExchange)
-    console.log('🎯 [handleLinkExchange] user:', user)
-    
     if (!selectedExchange) {
-      console.log('❌ [handleLinkExchange] Abortado: selectedExchange é null')
       return
     }
     
-    
     if (!apiKey.trim() || !apiSecret.trim()) {
-      console.log('❌ [handleLinkExchange] Abortado: apiKey ou apiSecret vazio')
       alert(t('error.fillApiKeys'))
       return
     }
 
     if (selectedExchange.requires_passphrase && !passphrase.trim()) {
-      console.log('❌ [handleLinkExchange] Abortado: passphrase obrigatória mas vazia')
       alert(t('error.passphraseRequired'))
       return
     }
     
     if (!user?.id) {
-      console.log('❌ [handleLinkExchange] Abortado: usuário não autenticado')
       alert('Erro: usuário não autenticado')
       return
     }
@@ -1138,58 +1048,80 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     try {
       setConnecting(true)
       
-      console.log('💾 [SQLite] Iniciando processo de salvamento...')
-      console.log('💾 [SQLite] User ID:', user.id)
-      console.log('💾 [SQLite] Exchange:', {
+      console.log('� [NEW] Salvando exchange no MongoDB via API...')
+      console.log('🔐 [NEW] Exchange:', {
         ccxt_id: selectedExchange.ccxt_id,
         nome: selectedExchange.nome,
         requires_passphrase: selectedExchange.requires_passphrase
       })
       
-      // 🔐 Encrypt credentials before saving
-      console.log('🔐 [Encryption] Criptografando credenciais...')
-      const encryptedCredentials = await encryptExchangeCredentials(
-        apiKey.trim(),
-        apiSecret.trim(),
-        selectedExchange.requires_passphrase ? passphrase.trim() : undefined,
-        user.id
-      )
-      console.log('✅ [Encryption] Credenciais criptografadas')
-      
-      // Salvar no banco local SQLite
-      console.log('💾 [SQLite] Chamando exchangeService.addExchange()...')
-      const newExchange = await exchangeService.addExchange({
-        userId: user.id,
-        exchangeType: selectedExchange.ccxt_id, // CCXT ID (binance, bybit, mexc, etc)
-        exchangeName: selectedExchange.nome, // Nome da exchange (Binance, Bybit, MEXC, etc)
-        apiKeyEncrypted: encryptedCredentials.apiKeyEncrypted,
-        apiSecretEncrypted: encryptedCredentials.apiSecretEncrypted,
-        apiPassphraseEncrypted: encryptedCredentials.apiPassphraseEncrypted,
-        isActive: true
-      })
-      
-      console.log('✅ [SQLite] Exchange salva com sucesso!')
-      console.log('✅ [SQLite] Detalhes:', {
-        id: newExchange.id,
-        type: selectedExchange.ccxt_id,
-        name: selectedExchange.nome,
-        userId: user.id,
-        isActive: newExchange.is_active
-      })
+      // 🔐 NOVO: Salvar no MongoDB via API (backend criptografa)
+      try {
+        const response = await apiService.addExchange({
+          exchange_type: selectedExchange.ccxt_id,
+          api_key: apiKey.trim(),
+          api_secret: apiSecret.trim(),
+          passphrase: selectedExchange.requires_passphrase ? passphrase.trim() : undefined
+        })
+        
+        console.log('✅ [MongoDB] Exchange salva com sucesso!', response.exchange_id)
+        
+        // ✅ OPCIONAL: Manter SQLite como cache local (para offline)
+        // Se quiser sincronizar com SQLite também:
+        try {
+          const encryptedCredentials = await encryptExchangeCredentials(
+            apiKey.trim(),
+            apiSecret.trim(),
+            selectedExchange.requires_passphrase ? passphrase.trim() : undefined,
+            user.id
+          )
+          
+          await exchangeService.addExchange({
+            userId: user.id,
+            exchangeType: selectedExchange.ccxt_id,
+            exchangeName: selectedExchange.nome,
+            apiKeyEncrypted: encryptedCredentials.apiKeyEncrypted,
+            apiSecretEncrypted: encryptedCredentials.apiSecretEncrypted,
+            apiPassphraseEncrypted: encryptedCredentials.apiPassphraseEncrypted,
+            isActive: true
+          })
+        } catch (sqliteError) {
+          // Não bloquear se SQLite falhar - MongoDB é a fonte da verdade
+        }
+        
+      } catch (apiError) {
+        console.error('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
+        
+        // FALLBACK: Se API falhar, salva apenas no SQLite (modo offline)
+        const encryptedCredentials = await encryptExchangeCredentials(
+          apiKey.trim(),
+          apiSecret.trim(),
+          selectedExchange.requires_passphrase ? passphrase.trim() : undefined,
+          user.id
+        )
+        
+        await exchangeService.addExchange({
+          userId: user.id,
+          exchangeType: selectedExchange.ccxt_id,
+          exchangeName: selectedExchange.nome,
+          apiKeyEncrypted: encryptedCredentials.apiKeyEncrypted,
+          apiSecretEncrypted: encryptedCredentials.apiSecretEncrypted,
+          apiPassphraseEncrypted: encryptedCredentials.apiPassphraseEncrypted,
+          isActive: true
+        })
+      }
       
       // Fechar modal
       closeConnectModal()
       
-      // Pequeno delay para garantir que o SQLite processou
+      // Pequeno delay para garantir que processou
       await new Promise(resolve => setTimeout(resolve, 300))
       
-      console.log('🔄 [SQLite] Chamando onExchangeModified()...')
       // Atualizar exchanges e todos os dados da home
       await onExchangeModified()
-      console.log('✅ [SQLite] onExchangeModified() concluído')
       
     } catch (err) {
-      console.error('❌ [SQLite] Erro ao salvar exchange:', err)
+      console.error('❌ [Error] Erro ao salvar exchange:', err)
       alert(t('error.connectExchange'))
     } finally {
       setConnecting(false)
