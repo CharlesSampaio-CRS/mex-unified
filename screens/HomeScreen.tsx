@@ -184,10 +184,11 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
           keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              refreshing={isUpdating || refreshing}
               onRefresh={handleRefresh}
               tintColor={colors.primary}
               colors={[colors.primary]}
+              progressBackgroundColor={colors.surface}
             />
           }
         >

@@ -213,6 +213,11 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
 
   // 4️⃣ HOOKS: useCallback (depois de useMemo, antes de useEffect)
   const formatLastUpdated = useCallback(() => {
+    // Se estiver atualizando, mostra "Updating..."
+    if (isUpdating) {
+      return t('home.updating')
+    }
+    
     const timestamp = data?.timestamp
       ? new Date((typeof data.timestamp === 'number' ? data.timestamp : Number(data.timestamp)) * 1000)
       : lastUpdateTime
@@ -226,7 +231,7 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
     })
 
     return `Updated ${timeStr}`
-  }, [data?.timestamp, lastUpdateTime, language])
+  }, [data?.timestamp, lastUpdateTime, language, isUpdating, t])
 
   const handleRefreshAll = useCallback(async () => {
     if (!user?.id) {

@@ -73,6 +73,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const fetchOrders = useCallback(async (forceRefresh = false) => {
     if (!user?.id) return
 
+    // ✅ ATIVA ESTADOS DE LOADING IMEDIATAMENTE (antes de qualquer await)
     if (forceRefresh) {
       setRefreshing(true)
     } else {
@@ -129,6 +130,10 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       setError(errorMsg)
       setOrdersByExchange([])
     } finally {
+      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
+      // antes de desativar o loading/refreshing
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
       setLoading(false)
       setRefreshing(false)
     }

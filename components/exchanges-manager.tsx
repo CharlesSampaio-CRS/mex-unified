@@ -45,7 +45,8 @@ const LinkedExchangeCard = memo(({
   t, 
   onToggle, 
   onDelete,
-  onPress
+  onPress,
+  isRefreshing
 }: { 
   linkedExchange: any
   index: number
@@ -54,6 +55,7 @@ const LinkedExchangeCard = memo(({
   onToggle: (id: string, status: string, name: string) => void
   onDelete: (id: string, name: string) => void
   onPress: () => void
+  isRefreshing?: boolean
 }) => {
   const [showMenu, setShowMenu] = useState(false)
   const exchangeNameLower = linkedExchange.name.toLowerCase()
@@ -84,6 +86,11 @@ const LinkedExchangeCard = memo(({
   }), [isDark])
   
   const formattedDate = useMemo(() => {
+    // Se estiver atualizando, mostra "Updating..."
+    if (isRefreshing) {
+      return t('home.updating') || 'Updating...'
+    }
+    
     if (!linkedExchange.linked_at) {
       return t('exchanges.noDate') || 'N/A'
     }
@@ -92,7 +99,7 @@ const LinkedExchangeCard = memo(({
     } catch (error) {
       return 'N/A'
     }
-  }, [linkedExchange.linked_at, t])
+  }, [linkedExchange.linked_at, t, isRefreshing])
 
   const themedStyles = useMemo(() => ({
     card: {
@@ -244,7 +251,8 @@ const AvailableExchangeCard = memo(({
   colors, 
   t, 
   onConnect,
-  onPress
+  onPress,
+  isRefreshing
 }: { 
   exchange: any
   isLinked: boolean
@@ -252,6 +260,7 @@ const AvailableExchangeCard = memo(({
   t: any
   onConnect: (exchange: any) => void
   onPress: () => void
+  isRefreshing?: boolean
 }) => {
   const localIcon = exchange?.nome ? exchangeLogos[exchange.nome.toLowerCase()] : null
   const isDark = colors.isDark
@@ -313,7 +322,10 @@ const AvailableExchangeCard = memo(({
         </View>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            {isLinked ? t('exchanges.alreadyConnected') : t('exchanges.readyToConnect')}
+            {isRefreshing 
+              ? t('home.updating') || 'Updating...'
+              : (isLinked ? t('exchanges.alreadyConnected') : t('exchanges.readyToConnect'))
+            }
           </Text>
         </View>
       </View>
@@ -514,6 +526,8 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     } catch (error) {
       console.error(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
     } finally {
+      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
+      await new Promise(resolve => setTimeout(resolve, 300))
       setRefreshing(false)
     }
   }, [activeTab, fetchExchanges])
@@ -950,18 +964,127 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   }, [])
 
   const handleQRScanned = useCallback((data: string) => {
-    // Tenta parsear JSON se for um QR code estruturado
+    console.log('📷 QR Code escaneado:', data.substring(0, 50) + '...') // Log parcial para segurança
+    
     try {
+      // Tenta parsear como JSON (formato mais comum para OKX e outras exchanges)
       const parsed = JSON.parse(data)
-      if (parsed.apiKey) setApiKey(parsed.apiKey)
-      if (parsed.apiSecret) setApiSecret(parsed.apiSecret)
-      if (parsed.passphrase) setPassphrase(parsed.passphrase)
-    } catch {
-      // Se não for JSON, coloca o texto no campo atual
-      if (currentScanField === 'apiKey') setApiKey(data)
-      else if (currentScanField === 'apiSecret') setApiSecret(data)
-      else if (currentScanField === 'passphrase') setPassphrase(data)
+      console.log('✅ QR Code parseado como JSON')
+      
+      // Formato 1: OKX padrão com campos diretos
+      if (parsed.apiKey && parsed.secretKey) {
+        console.log('🔑 Formato detectado: OKX padrão (apiKey + secretKey)')
+        setApiKey(parsed.apiKey.trim())
+        setApiSecret(parsed.secretKey.trim())
+        if (parsed.passphrase) setPassphrase(parsed.passphrase.trim())
+        Alert.alert('✅ Sucesso!', 'API Key e Secret carregados do QR Code!')
+        setQrScannerVisible(false)
+        setCurrentScanField(null)
+        return
+      }
+      
+      // Formato 2: Formato alternativo com "api_key" e "api_secret"
+      if (parsed.api_key && parsed.api_secret) {
+        console.log('🔑 Formato detectado: alternativo (api_key + api_secret)')
+        setApiKey(parsed.api_key.trim())
+        setApiSecret(parsed.api_secret.trim())
+        if (parsed.passphrase) setPassphrase(parsed.passphrase.trim())
+        Alert.alert('✅ Sucesso!', 'API Key e Secret carregados do QR Code!')
+        setQrScannerVisible(false)
+        setCurrentScanField(null)
+        return
+      }
+      
+      // Formato 3: Campos com nomenclatura variada
+      const possibleKeyFields = ['apiKey', 'api_key', 'key', 'publicKey', 'public_key']
+      const possibleSecretFields = ['secretKey', 'secret_key', 'apiSecret', 'api_secret', 'secret', 'privateKey', 'private_key']
+      const possiblePassphraseFields = ['passphrase', 'pass', 'password']
+      
+      const detectedKey = possibleKeyFields.find(field => parsed[field])
+      const detectedSecret = possibleSecretFields.find(field => parsed[field])
+      const detectedPassphrase = possiblePassphraseFields.find(field => parsed[field])
+      
+      if (detectedKey || detectedSecret) {
+        console.log('🔑 Formato detectado: campos variados')
+        if (detectedKey) setApiKey(parsed[detectedKey].trim())
+        if (detectedSecret) setApiSecret(parsed[detectedSecret].trim())
+        if (detectedPassphrase) setPassphrase(parsed[detectedPassphrase].trim())
+        
+        const loadedFields = []
+        if (detectedKey) loadedFields.push('API Key')
+        if (detectedSecret) loadedFields.push('API Secret')
+        if (detectedPassphrase) loadedFields.push('Passphrase')
+        
+        Alert.alert('✅ Sucesso!', `${loadedFields.join(', ')} carregados do QR Code!`)
+        setQrScannerVisible(false)
+        setCurrentScanField(null)
+        return
+      }
+      
+      // Se chegou aqui, o JSON não tem os campos esperados
+      console.warn('⚠️ QR Code é JSON mas não contém campos reconhecidos')
+      console.log('Campos disponíveis:', Object.keys(parsed))
+      Alert.alert(
+        '⚠️ QR Code não reconhecido',
+        `O QR Code contém: ${Object.keys(parsed).join(', ')}\n\nPor favor, cole manualmente.`
+      )
+      
+    } catch (error) {
+      // Não é JSON - trata como texto simples
+      console.log('📝 QR Code não é JSON, usando como texto simples')
+      
+      // Detecta se é um formato de texto estruturado (ex: "key:value")
+      if (data.includes(':') || data.includes('=')) {
+        console.log('🔍 Tentando extrair dados de formato texto estruturado...')
+        
+        // Tenta diferentes delimitadores
+        const lines = data.split(/[\n\r]+/)
+        const keyValuePairs: { [key: string]: string } = {}
+        
+        lines.forEach(line => {
+          const colonMatch = line.match(/^([^:=]+)[:=]\s*(.+)$/)
+          if (colonMatch) {
+            const key = colonMatch[1].trim().toLowerCase()
+            const value = colonMatch[2].trim()
+            keyValuePairs[key] = value
+          }
+        })
+        
+        // Tenta mapear os valores encontrados
+        const keyFound = keyValuePairs['api key'] || keyValuePairs['apikey'] || keyValuePairs['key']
+        const secretFound = keyValuePairs['api secret'] || keyValuePairs['apisecret'] || keyValuePairs['secret'] || keyValuePairs['secretkey']
+        const passphraseFound = keyValuePairs['passphrase'] || keyValuePairs['password']
+        
+        if (keyFound || secretFound) {
+          if (keyFound) setApiKey(keyFound)
+          if (secretFound) setApiSecret(secretFound)
+          if (passphraseFound) setPassphrase(passphraseFound)
+          
+          const loaded = []
+          if (keyFound) loaded.push('API Key')
+          if (secretFound) loaded.push('API Secret')
+          if (passphraseFound) loaded.push('Passphrase')
+          
+          Alert.alert('✅ Sucesso!', `${loaded.join(', ')} extraídos do QR Code!`)
+          setQrScannerVisible(false)
+          setCurrentScanField(null)
+          return
+        }
+      }
+      
+      // Se não conseguiu extrair, coloca no campo selecionado
+      if (currentScanField === 'apiKey') {
+        setApiKey(data.trim())
+        Alert.alert('✅ Colado!', 'Texto do QR Code colado no campo API Key')
+      } else if (currentScanField === 'apiSecret') {
+        setApiSecret(data.trim())
+        Alert.alert('✅ Colado!', 'Texto do QR Code colado no campo API Secret')
+      } else if (currentScanField === 'passphrase') {
+        setPassphrase(data.trim())
+        Alert.alert('✅ Colado!', 'Texto do QR Code colado no campo Passphrase')
+      }
     }
+    
     setQrScannerVisible(false)
     setCurrentScanField(null)
   }, [currentScanField])
@@ -1194,6 +1317,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
             onRefresh={handleRefresh}
             colors={[colors.primary]}
             tintColor={colors.primary}
+            progressBackgroundColor={colors.surface}
           />
         }
       >
@@ -1235,6 +1359,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   onToggle={toggleExchange}
                   onDelete={handleDelete}
                   onPress={() => openDetailsModal(linkedExchange, 'linked')}
+                  isRefreshing={refreshing}
                 />
               ))
           )
@@ -1284,6 +1409,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   t={t}
                   onConnect={openConnectModal}
                   onPress={() => openDetailsModal(exchange, 'available')}
+                  isRefreshing={refreshing}
                 />
               )
             })
@@ -2196,7 +2322,9 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
             ? 'Escanear API Key' 
             : currentScanField === 'apiSecret'
             ? 'Escanear API Secret'
-            : 'Escanear Passphrase'
+            : currentScanField === 'passphrase'
+            ? 'Escanear Passphrase'
+            : 'Escanear Credenciais da Exchange'
         }
       />
     </SafeAreaView>

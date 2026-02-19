@@ -138,6 +138,9 @@ export function StrategyScreen({ navigation }: any) {
     } catch (error) {
       console.error("❌ Error loading strategies:", error)
     } finally {
+      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
       setLoading(false)
       setRefreshing(false)
     }
@@ -323,6 +326,8 @@ export function StrategyScreen({ navigation }: any) {
     } catch (error) {
       console.error(`❌ [StrategyScreen] Erro ao atualizar aba ${activeTab}:`, error)
     } finally {
+      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
+      await new Promise(resolve => setTimeout(resolve, 300))
       setRefreshing(false)
     }
   }, [activeTab, loadStrategies, loadExecutions])
@@ -363,6 +368,7 @@ export function StrategyScreen({ navigation }: any) {
             onRefresh={handleRefresh}
             tintColor={colors.primary}
             colors={[colors.primary]}
+            progressBackgroundColor={colors.surface}
           />
         }
       >

@@ -344,10 +344,11 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
-          refreshing={contextRefreshing}
+          refreshing={isUpdating || contextRefreshing}
           onRefresh={handleRefresh}
           tintColor={colors.primary}
           colors={[colors.primary]}
+          progressBackgroundColor={colors.surface}
         />
       }
     >
@@ -371,13 +372,16 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
         <View style={styles.headerRow}>
           <View style={styles.valueContainer}>
             <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
-              {timestamp 
-                ? `Updated ${new Date(timestamp).toLocaleTimeString(language, { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    timeZone: 'America/Sao_Paulo'
-                  })}` 
-                : 'Updated recently'}
+              {(isUpdating || contextRefreshing)
+                ? t('home.updating')
+                : timestamp 
+                  ? `Updated ${new Date(timestamp).toLocaleTimeString(language, { 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      timeZone: 'America/Sao_Paulo'
+                    })}` 
+                  : 'Updated recently'
+              }
             </Text>
           </View>
         </View>

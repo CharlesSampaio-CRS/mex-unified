@@ -39,6 +39,7 @@ export const HomeTabsLayout: React.FC = () => {
             onRefresh={refreshBalance}
             tintColor={colors.primary}
             colors={[colors.primary]}
+            progressBackgroundColor={colors.surface}
           />
         }
       >

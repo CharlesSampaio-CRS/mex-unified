@@ -39,7 +39,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
-  const { data, loading, error, refresh: refreshBalance } = useBalance()
+  const { data, loading, error, refresh: refreshBalance, refreshing } = useBalance()
   const { refresh: refreshOrders } = useOrders()
   const { hideValue } = usePrivacy()
   const { addToken, removeToken, isWatching } = useWatchlist()
@@ -1013,6 +1013,23 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               )
             },
             renderBadge: (item, colors) => {
+              // Se estiver atualizando, mostra "Updating..."
+              if (refreshing) {
+                return (
+                  <View style={[
+                    styles.variationBadge,
+                    { backgroundColor: colors.primaryLight + '20' }
+                  ]}>
+                    <Text style={[
+                      styles.variationText,
+                      { color: colors.primary }
+                    ]}>
+                      {t('home.updating')}
+                    </Text>
+                  </View>
+                )
+              }
+              
               if (item.isStablecoin || item.variation24h === undefined) return null
               return (
                 <View style={[

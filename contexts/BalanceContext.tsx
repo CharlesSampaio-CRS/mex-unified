@@ -43,6 +43,13 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
     isFetchingRef.current = true
     console.log('🔐 [BalanceContext] Lock adquirido, iniciando fetch...')
     
+    // ✅ ATIVA ESTADOS DE LOADING IMEDIATAMENTE (antes de qualquer await ou verificação)
+    if (!silent && !data) {
+      setLoading(true)
+    } else if (!silent && forceRefresh) {
+      setRefreshing(true)
+    }
+    
     // ⏰ TIMEOUT DE SEGURANÇA: Remove loading após 30s mesmo se a promise não resolver
     const safetyTimeout = setTimeout(() => {
       console.error('⏰ [BalanceContext] TIMEOUT DE SEGURANÇA (30s) - Forçando remoção do loading')
@@ -56,16 +63,12 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       // Se não tem usuário autenticado, não faz nada
       if (!user?.id) {
         setLoading(false)
+        setRefreshing(false)
         isFetchingRef.current = false
+        clearTimeout(safetyTimeout)
         return
       }
       
-      // Controle inteligente de loading states
-      if (!silent && !data) {
-        setLoading(true)
-      } else if (!silent && forceRefresh) {
-        setRefreshing(true)
-      }
       setError(null)
       
       // ✅ IMPLEMENTAÇÃO ORIGINAL: Busca direto da API (como era com WatermelonDB)
@@ -124,6 +127,11 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       setError(errorMsg)
     } finally {
       console.log('🧹 [BalanceContext] Finalizando fetchBalances, removendo loading...')
+      
+      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
+      // antes de desativar o loading/refreshing
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
       setLoading(false)
       setRefreshing(false)
       isFetchingRef.current = false

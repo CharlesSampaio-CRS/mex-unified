@@ -57,6 +57,8 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await refreshAlerts();
+    // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
+    await new Promise(resolve => setTimeout(resolve, 300));
     setRefreshing(false);
   }, [refreshAlerts]);
 
@@ -175,6 +177,7 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
           onRefresh={handleRefresh}
           tintColor={colors.primary}
           colors={[colors.primary]}
+          progressBackgroundColor={colors.surface}
         />
       }
     >

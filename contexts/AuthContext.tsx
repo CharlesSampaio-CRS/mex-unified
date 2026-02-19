@@ -25,7 +25,7 @@ interface AuthContextType {
   
   // Auth methods
   login: (email: string, password: string) => Promise<void>
-  loginWithBiometric: () => Promise<void>
+  loginWithBiometric: (isAutoAuth?: boolean) => Promise<void>
   loginWithGoogle: () => Promise<void>
   loginWithApple: () => Promise<void>
   register: (email: string, password: string, name: string) => Promise<void>
@@ -43,6 +43,11 @@ interface AuthContextType {
   isBiometricEnabled: boolean
   isAutoLoginEnabled: boolean
   setAutoLoginEnabled: (enabled: boolean) => Promise<void>
+  
+  // Auto-auth control
+  hasTriedAutoAuth: boolean
+  autoAuthCancelled: boolean
+  markAutoAuthTried: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -66,8 +71,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [biometricType, setBiometricType] = useState<string | null>(null)
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false)
-  const [isAutoLoginEnabled, setIsAutoLoginEnabledState] = useState(true) // 🆕 Auto-login ativo por padrão
+  const [isAutoLoginEnabled, setIsAutoLoginEnabledState] = useState(false) // 🆕 Auto-login DESABILITADO por padrão para evitar loops
   const [hasValidToken, setHasValidToken] = useState(false)
+  const [hasTriedAutoAuth, setHasTriedAutoAuth] = useState(false) // 🆕 Controle global de auto-auth
+  const [autoAuthCancelled, setAutoAuthCancelled] = useState(false) // 🆕 Indica se usuário cancelou
 
   // Check biometric availability on mount
   useEffect(() => {
@@ -232,9 +239,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const enabled = await secureStorage.getItemAsync('biometric_enabled')
       setIsBiometricEnabled(enabled === 'true')
       
-      // Carrega também a configuração de auto-login (padrão: true)
+      // Carrega também a configuração de auto-login (padrão: DESABILITADO para evitar loops)
       const autoLogin = await secureStorage.getItemAsync('auto_login_enabled')
-      setIsAutoLoginEnabledState(autoLogin === null ? true : autoLogin === 'true')
+      setIsAutoLoginEnabledState(autoLogin === 'true') // Padrão é false se não existir
     } catch (error) {
       console.error('Error checking biometric enabled:', error)
     }
@@ -368,7 +375,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const loginWithBiometric = async () => {
+  const loginWithBiometric = async (isAutoAuth = false) => {
     try {
       setIsLoading(true)
       
@@ -380,7 +387,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Deixa o usuário ver a tela de login normalmente
       
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Faça login com biometria',
+        promptMessage: isAutoAuth ? 'Login automático' : 'Faça login com biometria',
         cancelLabel: 'Cancelar',
         disableDeviceFallback: false,
       })
@@ -454,6 +461,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('👤 Usuário cancelou a autenticação biométrica')
         setIsLoadingData(false)
         
+        // ✅ Marca que usuário cancelou (evita tentativas futuras automáticas)
+        if (isAutoAuth) {
+          setAutoAuthCancelled(true)
+          console.log('🚫 Auto-auth cancelado pelo usuário - não tentará novamente nesta sessão')
+        }
+        
         // Cria erro específico para cancelamento
         const cancelError = new Error('User canceled biometric authentication')
         cancelError.name = 'BiometricCancelError'
@@ -462,6 +475,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error: any) {
       console.error('Biometric login error:', error)
       setIsLoadingData(false)
+      
+      // ✅ Marca cancelamento se foi auto-auth
+      if (isAutoAuth && (
+        error.name === 'BiometricCancelError' ||
+        error?.message?.toLowerCase().includes('cancel')
+      )) {
+        setAutoAuthCancelled(true)
+        console.log('🚫 Auto-auth cancelado pelo usuário - não tentará novamente nesta sessão')
+      }
       
       // Se já é um erro de cancelamento, apenas repropaga
       if (error.name === 'BiometricCancelError') {
@@ -885,6 +907,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoadingData(false)
       setIsLoading(false)
       
+      // Reset auto-auth flags
+      setHasTriedAutoAuth(false)
+      setAutoAuthCancelled(false)
+      
       console.log('✅ Logout completo - todos os dados limpos')
     } catch (error) {
       console.error('❌ Logout error:', error)
@@ -1003,6 +1029,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsLoadingData(false)
   }
 
+  const markAutoAuthTried = () => {
+    setHasTriedAutoAuth(true)
+  }
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -1012,6 +1042,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     biometricType,
     isBiometricEnabled,
     isAutoLoginEnabled,
+    hasTriedAutoAuth,
+    autoAuthCancelled,
     
     login,
     loginWithBiometric,
@@ -1024,6 +1056,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     deleteAccount,
     
     setLoadingDataComplete,
+    markAutoAuthTried,
     
     enableBiometric,
     disableBiometric,

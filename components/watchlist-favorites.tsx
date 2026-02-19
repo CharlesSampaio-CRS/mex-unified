@@ -53,6 +53,8 @@ export function WatchlistFavorites() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
     await refreshBalance()
+    // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
+    await new Promise(resolve => setTimeout(resolve, 300))
     setRefreshing(false)
   }, [refreshBalance])
 
@@ -196,6 +198,7 @@ export function WatchlistFavorites() {
           onRefresh={handleRefresh}
           tintColor={colors.primary}
           colors={[colors.primary]}
+          progressBackgroundColor={colors.surface}
         />
       }
     >

@@ -127,7 +127,10 @@ export function QRScanner({ visible, onClose, onScan, title }: QRScannerProps) {
                 {title || 'Escaneie o QR Code'}
               </Text>
               <Text style={styles.headerSubtitle}>
-                Posicione o QR code dentro da área marcada
+                {title?.includes('API') 
+                  ? 'Aceita QR Codes da OKX e outras exchanges\ncom API Key, Secret e Passphrase'
+                  : 'Posicione o QR code dentro da área marcada'
+                }
               </Text>
             </View>
 
@@ -140,6 +143,15 @@ export function QRScanner({ visible, onClose, onScan, title }: QRScannerProps) {
                 <View style={[styles.corner, styles.cornerBottomLeft]} />
                 <View style={[styles.corner, styles.cornerBottomRight]} />
               </View>
+              
+              {/* Dica sobre formatos aceitos */}
+              {title?.includes('API') && (
+                <View style={styles.hintBox}>
+                  <Text style={styles.hintText}>
+                    💡 Aceita formatos JSON e texto
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Footer com botões */}
@@ -154,7 +166,10 @@ export function QRScanner({ visible, onClose, onScan, title }: QRScannerProps) {
               </TouchableOpacity>
               
               <Text style={styles.footerHint}>
-                💡 Também aceita códigos de barras
+                {title?.includes('Escanear API') 
+                  ? '🔐 Suporta QR Codes da OKX, Binance, etc'
+                  : '💡 Também aceita códigos de barras'
+                }
               </Text>
             </View>
           </View>
@@ -202,6 +217,21 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     position: 'relative',
+  },
+  hintBox: {
+    marginTop: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+  },
+  hintText: {
+    fontSize: 13,
+    color: '#60a5fa',
+    textAlign: 'center',
+    fontWeight: '500',
   },
   corner: {
     position: 'absolute',
