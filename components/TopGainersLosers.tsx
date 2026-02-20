@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,  // Título seção (reduzido de 16px)
     fontWeight: '600',
   },
   tokensList: {
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tokenSymbol: {
-    fontSize: 14,
+    fontSize: 13,  // Símbolo token (reduzido de 14px - padrão compacto)
     fontWeight: '600',
     marginBottom: 2,
   },
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tokenPrice: {
-    fontSize: 14,
+    fontSize: 13,  // Preço token (reduzido de 14px)
     fontWeight: '500',
     marginBottom: 2,
   },
@@ -509,14 +509,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 16,  // Título modal (reduzido de 20px)
     fontWeight: '700',
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
-    fontSize: 24,
+    fontSize: 22,  // X fechar (reduzido de 24px)
     fontWeight: '300',
   },
   modalContent: {

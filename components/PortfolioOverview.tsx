@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   label: {
-    fontSize: typography.caption,
+    fontSize: 11,  // Label header (reduzido de 14px)
     fontWeight: fontWeights.regular,
     letterSpacing: 0.5,
     textTransform: "uppercase",
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   refreshIcon: {
-    fontSize: typography.h4,
+    fontSize: 16,  // Ícone refresh (reduzido de 18px)
     fontWeight: fontWeights.light,
     opacity: 0.6,
   },
@@ -449,12 +449,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   value: {
-    fontSize: typography.bodyLarge,  // 17px
+    fontSize: 16,  // Valor principal do portfolio (reduzido de 17px)
     fontWeight: fontWeights.light,
     letterSpacing: -0.4,
   },
   currencyLabel: {
-    fontSize: typography.tiny,
+    fontSize: 11,  // Label USD/BRL (reduzido de 13px)
     fontWeight: fontWeights.medium,
     opacity: 0.5,
     letterSpacing: 0.4,
@@ -466,12 +466,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   brlValue: {
-    fontSize: typography.tiny,
+    fontSize: 12,  // Valor BRL (reduzido de 13px)
     fontWeight: fontWeights.regular,
     opacity: 0.6,
   },
   lastUpdated: {
-    fontSize: typography.micro,
+    fontSize: 11,  // Timestamp (reduzido de 12px)
     fontWeight: fontWeights.light,
     opacity: 0.4,
   },
@@ -483,21 +483,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,           // Reduzido de 16 para 12 (mais compacto)
   },
   pnlInlineArrow: {
-    fontSize: typography.body,
+    fontSize: 12,  // Seta PnL (reduzido de 16px)
     fontWeight: fontWeights.bold,
     opacity: 0.9,
   },
   pnlInlineValue: {
-    fontSize: typography.caption,
+    fontSize: 12,  // Valor PnL (reduzido de 14px)
     fontWeight: fontWeights.semibold,
   },
   pnlInlinePercent: {
-    fontSize: typography.caption,
+    fontSize: 11,  // Percentual PnL (reduzido de 14px)
     fontWeight: fontWeights.regular,
     opacity: 0.8,
   },
   pnlInlineLabel: {
-    fontSize: typography.micro,
+    fontSize: 10,  // Label 24h (reduzido de 12px)
     fontWeight: fontWeights.regular,
     opacity: 0.4,
     marginLeft: 4,
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   pnlPillLabel: {
-    fontSize: typography.micro,
+    fontSize: 10,  // Label PnL pill (reduzido de 12px)
     fontWeight: fontWeights.semibold,
     opacity: 0.5,
     letterSpacing: 0.5,
@@ -529,11 +529,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   pnlPillArrow: {
-    fontSize: typography.body,
+    fontSize: 12,  // Seta pill (reduzido de 16px)
     fontWeight: fontWeights.bold,
   },
   pnlPillValue: {
-    fontSize: typography.caption,
+    fontSize: 12,  // Valor pill (reduzido de 14px)
     fontWeight: fontWeights.semibold,
   },
   // Seção de PNL em linha única - visual suave (OLD - pode remover)
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pnlLabel: {
-    fontSize: typography.micro,
+    fontSize: 10,  // Label seção (reduzido de 12px)
     fontWeight: fontWeights.regular,
     letterSpacing: 0.5,
     textTransform: "uppercase",
@@ -560,27 +560,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pnlArrow: {
-    fontSize: typography.caption,
+    fontSize: 11,  // Seta seção (reduzido de 14px)
     fontWeight: fontWeights.light,
     opacity: 0.6,
   },
   pnlValue: {
-    fontSize: typography.caption,
+    fontSize: 11,  // Valor seção (reduzido de 14px)
     fontWeight: fontWeights.medium,
     letterSpacing: 0,
     flex: 1,
   },
   pnlPercent: {
-    fontSize: typography.tiny,
+    fontSize: 11,  // Percentual seção (reduzido de 13px)
     fontWeight: fontWeights.regular,
     opacity: 0.6,
   },
   errorText: {
-    fontSize: typography.body,
+    fontSize: 13,  // Texto erro (reduzido de 16px)
     textAlign: "center",
   },
   exchangesCount: {
-    fontSize: typography.caption,
+    fontSize: 12,  // Contador exchanges (reduzido de 14px)
   },
   refreshButtonDisabled: {
     opacity: 0.5,
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   pnlCardLabel: {
-    fontSize: typography.micro,
+    fontSize: 10,  // Label card (reduzido de 12px)
     fontWeight: fontWeights.medium,
     opacity: 0.5,
   },
@@ -637,15 +637,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   pnlCardArrow: {
-    fontSize: typography.caption,
+    fontSize: 12,  // Seta card (reduzido de 14px)
     fontWeight: fontWeights.semibold,
   },
   pnlCardValue: {
-    fontSize: typography.caption,
+    fontSize: 12,  // Valor card (reduzido de 14px)
     fontWeight: fontWeights.semibold,
   },
   pnlCardPercent: {
-    fontSize: typography.tiny,
+    fontSize: 11,  // Percentual card (reduzido de 13px)
     fontWeight: fontWeights.regular,
     opacity: 0.7,
   },

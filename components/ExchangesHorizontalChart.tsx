@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   title: {
-    fontSize: 16,
+    fontSize: 14,  // Título chart (reduzido de 16px)
     fontWeight: '600',
     letterSpacing: 0.3,
   },
@@ -327,19 +327,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconPlaceholderText: {
-    fontSize: 12,
+    fontSize: 11,  // Placeholder icon (reduzido de 12px)
     fontWeight: '600',
   },
   exchangeName: {
-    fontSize: 14,
+    fontSize: 13,  // Nome exchange (reduzido de 14px - padrão compacto)
     fontWeight: '600',
   },
   exchangeValue: {
-    fontSize: 13,
+    fontSize: 13,  // Valor já está no padrão ✓
     fontWeight: '600',
   },
   exchangePercent: {
-    fontSize: 12,
+    fontSize: 11,  // Percentual (reduzido de 12px)
     fontWeight: '700',
   },
   progressBarBackground: {
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 13,  // Texto vazio (reduzido de 14px)
     textAlign: 'center',
   },
   skeletonBar: {

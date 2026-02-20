@@ -355,7 +355,7 @@ export const MarketOverview: React.FC = () => {
                       <View style={styles.chartLoading}>
                         <Text style={[styles.errorText, { color: colors.textSecondary, textAlign: 'center' }]}>
                           ⚠️ Gráfico não disponível{'\n'}
-                          <Text style={{ fontSize: typography.micro }}>
+                          <Text style={{ fontSize: 11 }}>
                             Pode ser um problema temporário da API
                           </Text>
                         </Text>
@@ -441,11 +441,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: typography.caption,  // 14px - Mesmo tamanho das abas
+    fontSize: 13,  // Título (reduzido de 14px - padrão compacto)
     fontWeight: fontWeights.semibold,
   },
   updateTime: {
-    fontSize: typography.micro,  // 12px - Timestamps
+    fontSize: 11,  // Timestamp (reduzido de 12px)
     fontWeight: fontWeights.medium,
     marginTop: 2,
     opacity: 0.7,
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   refreshIcon: {
-    fontSize: typography.h4,
+    fontSize: 16,  // Ícone refresh (reduzido de 18px)
     fontWeight: fontWeights.light,
     opacity: 0.6,
   },
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: {
-    fontSize: typography.caption,  // 14px - Helper text
+    fontSize: 12,  // Texto erro (reduzido de 14px)
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: '#fff',
-    fontSize: typography.caption,  // 14px - Botão secundário
+    fontSize: 12,  // Texto botão (reduzido de 14px)
     fontWeight: fontWeights.semibold,
   },
   scrollContent: {
@@ -503,19 +503,19 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   tokenSymbol: {
-    fontSize: typography.caption,  // 14px - Texto principal
+    fontSize: 13,  // Símbolo token (reduzido de 14px - padrão compacto)
     fontWeight: fontWeights.semibold,
     marginBottom: 1,
   },
   tokenName: {
-    fontSize: typography.tiny,  // 11px - Metadados
+    fontSize: 11,  // Nome token (reduzido de 13px)
     fontWeight: fontWeights.regular,
   },
   tokenBody: {
     marginBottom: 6,
   },
   tokenPrice: {
-    fontSize: typography.body,  // 16px - Valor destacado
+    fontSize: 14,  // Preço token (reduzido de 16px)
     fontWeight: fontWeights.medium,
   },
   tokenFooter: {
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   changeText: {
-    fontSize: typography.micro,  // 12px - Badges/variações
+    fontSize: 11,  // Variação % (reduzido de 12px)
     fontWeight: fontWeights.medium,  // Reduzido de semibold para medium
   },
   // Modal styles
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   modalTitle: {
-    fontSize: typography.h3,  // 20px
+    fontSize: 16,  // Título modal (reduzido de 20px)
     fontWeight: fontWeights.semibold,
     flex: 1,
   },
@@ -564,12 +564,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   detailLabel: {
-    fontSize: typography.caption,  // 14px
+    fontSize: 12,  // Label detail (reduzido de 14px)
     fontWeight: fontWeights.medium,
     marginBottom: 8,
   },
   detailValue: {
-    fontSize: typography.h4,  // 18px
+    fontSize: 15,  // Valor detail (reduzido de 18px)
     fontWeight: fontWeights.semibold,
   },
   detailRow: {
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   infoText: {
-    fontSize: typography.caption,  // 14px
+    fontSize: 12,  // Texto info (reduzido de 14px)
     lineHeight: 20,
   },
   chartSection: {
