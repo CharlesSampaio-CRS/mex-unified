@@ -100,7 +100,7 @@ export function CompactAssetCard({
                 >
                   <Ionicons
                     name={hasAlerts ? "notifications" : "notifications-outline"}
-                    size={14}
+                    size={12}
                     color={hasAlerts ? colors.primary : colors.textSecondary}
                   />
                 </TouchableOpacity>
@@ -118,7 +118,7 @@ export function CompactAssetCard({
                 >
                   <Ionicons
                     name={isFavorite ? "star" : "star-outline"}
-                    size={14}
+                    size={12}
                     color={isFavorite ? colors.warning : colors.textSecondary}
                   />
                 </TouchableOpacity>
@@ -143,7 +143,7 @@ export function CompactAssetCard({
         <View style={styles.rightSection}>
           <Ionicons
             name={expanded ? "chevron-up" : "chevron-down"}
-            size={20}
+            size={16}
             color={colors.textSecondary}
           />
         </View>
@@ -182,7 +182,7 @@ export function CompactAssetCard({
                 style={[styles.button, styles.buttonSecondary, { borderColor: colors.border }]}
                 onPress={onViewDetails}
               >
-                <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+                <Ionicons name="information-circle-outline" size={12} color={colors.primary} />
                 <Text style={[styles.buttonText, { color: colors.primary }]}>Detalhes</Text>
               </TouchableOpacity>
             )}
@@ -192,7 +192,7 @@ export function CompactAssetCard({
                 style={[styles.button, styles.buttonPrimary, { backgroundColor: colors.success + '20', borderColor: colors.success }]}
                 onPress={onTrade}
               >
-                <Ionicons name="trending-up" size={16} color={colors.success} />
+                <Ionicons name="trending-up" size={12} color={colors.success} />
                 <Text style={[styles.buttonText, { color: colors.success }]}>Negociar</Text>
               </TouchableOpacity>
             )}
@@ -205,8 +205,8 @@ export function CompactAssetCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    marginBottom: 8,
+    borderRadius: 8,
+    marginBottom: 6,
     padding: 0,
     overflow: 'hidden',
   },
@@ -214,7 +214,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    padding: 10,
+    minHeight: 48,
   },
   leftSection: {
     flex: 1,
@@ -222,69 +223,73 @@ const styles = StyleSheet.create({
   symbolRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   symbol: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    marginRight: 8,
+    marginRight: 6,
+    letterSpacing: 0.3,
   },
   actions: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 2,
   },
   iconButton: {
     padding: 2,
   },
   value: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '500',
+    opacity: 0.85,
   },
   centerSection: {
-    marginRight: 12,
+    marginRight: 8,
   },
   variation: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
   rightSection: {
-    paddingLeft: 8,
+    paddingLeft: 4,
   },
   expandedSection: {
     borderTopWidth: 1,
-    paddingTop: 12,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
   detailsGrid: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   detailLabel: {
-    fontSize: 13,
+    fontSize: 11,
+    opacity: 0.7,
   },
   detailValue: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   button: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    gap: 4,
   },
   buttonSecondary: {
     backgroundColor: 'transparent',
@@ -294,7 +299,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   buttonText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });
