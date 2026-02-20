@@ -3,7 +3,6 @@ import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
-import { ordersSyncService } from "@/services/orders-sync"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBalance } from "@/contexts/BalanceContext"
@@ -39,7 +38,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
-  const { data, loading, error, refresh: refreshBalance } = useBalance()
+  const { data, loading, error, refresh: refreshBalance, refreshing } = useBalance()
   const { refresh: refreshOrders } = useOrders()
   const { hideValue } = usePrivacy()
   const { addToken, removeToken, isWatching } = useWatchlist()
@@ -214,15 +213,15 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
     if (!user?.id) return
     
     try {
-      // ✅ Novo fluxo: usa credentials locais criptografadas
-      const response = await ordersSyncService.fetchOrders(user.id)
+      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+      const response = await apiService.getOrdersSecure()
       
-      if (!response) {
+      if (!response || !response.success) {
         return { success: false, count: 0 }
       }
       
       // Filtra ordens da exchange solicitada
-      const orders = response.orders.filter(order => 
+      const orders = response.orders.filter((order: any) => 
         order.exchange_id === exchangeId || order.exchange === exchangeId
       )
       const count = orders.length
@@ -266,10 +265,10 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
         const exchangeName = getExchangeName(exchange)
         
         try {
-          // ✅ Novo fluxo: busca todas as ordens e filtra por exchange
-          const response = await ordersSyncService.fetchOrders(user!.id)
+          // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+          const response = await apiService.getOrdersSecure()
           
-          if (!response) {
+          if (!response || !response.success) {
             return { 
               success: false, 
               exchangeId: exchangeId,
@@ -346,16 +345,16 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
     setLoadingOrdersByExchange(prev => ({ ...prev, [exchangeId]: true }))
 
     try {
-      // ✅ Novo fluxo: busca todas as ordens e filtra por exchange
-      const response = await ordersSyncService.fetchOrders(user.id)
+      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
+      const response = await apiService.getOrdersSecure()
       
-      if (!response) {
+      if (!response || !response.success) {
         setLoadingOrdersByExchange(prev => ({ ...prev, [exchangeId]: false }))
         return
       }
       
       // Filtra ordens da exchange
-      const orders = response.orders.filter(order => 
+      const orders = response.orders.filter((order: any) => 
         order.exchange_id === exchangeId || order.exchange === exchangeId
       )
       const count = orders.length
@@ -765,18 +764,6 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               {data?.timestamp ? `Updated ${new Date((typeof data.timestamp === 'number' ? data.timestamp : Number(data.timestamp)) * 1000).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}` : 'Updated recently'}
             </Text>
           </View>
-          <TouchableOpacity 
-            style={[styles.refreshButton, loading && styles.refreshButtonDisabled]}
-            onPress={refreshBalance}
-            disabled={loading}
-            activeOpacity={loading ? 1 : 0.7}
-          >
-            {loading ? (
-              <AnimatedLogoIcon size={20} />
-            ) : (
-              <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
-            )}
-          </TouchableOpacity>
         </View>
 
         {/* Campo de Busca */}
@@ -1025,6 +1012,23 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               )
             },
             renderBadge: (item, colors) => {
+              // Se estiver atualizando, mostra "Updating..."
+              if (refreshing) {
+                return (
+                  <View style={[
+                    styles.variationBadge,
+                    { backgroundColor: colors.primaryLight + '20' }
+                  ]}>
+                    <Text style={[
+                      styles.variationText,
+                      { color: colors.primary }
+                    ]}>
+                      {t('home.updating')}
+                    </Text>
+                  </View>
+                )
+              }
+              
               if (item.isStablecoin || item.variation24h === undefined) return null
               return (
                 <View style={[

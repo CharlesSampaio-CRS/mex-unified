@@ -28,6 +28,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   const { hideValue } = usePrivacy();
   const { refresh: refreshBalance, data: balanceData } = useBalance();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // 🆕 Estado local para ordens (permite remoção otimista)
   const [localOrdersByExchange, setLocalOrdersByExchange] = useState(ordersByExchange);
@@ -94,8 +95,25 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
 
   // Expõe método refresh via ref
   useImperativeHandle(ref, () => ({
-    refresh,
+    refresh: async () => {
+      setIsUpdating(true);
+      try {
+        await refresh();
+      } finally {
+        setTimeout(() => setIsUpdating(false), 300);
+      }
+    },
   }), [refresh]);
+
+  // Handler para pull-to-refresh
+  const handleRefresh = async () => {
+    setIsUpdating(true);
+    try {
+      await refresh();
+    } finally {
+      setTimeout(() => setIsUpdating(false), 300);
+    }
+  };
 
   // Limpa ordens "cancelando" quando a lista atualiza (elas já foram removidas)
   useEffect(() => {
@@ -317,23 +335,33 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     }
   };
 
-  if (loading && localOrdersByExchange.length === 0) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <AnimatedLogoIcon size={48} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          {t('orders.loading')}
-        </Text>
-      </View>
-    );
-  }
+  // Removido loading customizado - usa apenas o RefreshControl do ScrollView
 
   return (
     <ScrollView
       style={[styles.scrollContainer, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={isUpdating || contextRefreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+          progressBackgroundColor={colors.surface}
+        />
+      }
     >
+      {/* Indicador de atualização */}
+      {isUpdating && totalOrders > 0 && (
+        <View style={[styles.updatingBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="refresh" size={16} color={colors.primary} />
+          <Text style={[styles.updatingText, { color: colors.primary }]}>
+            Atualizando ordens...
+          </Text>
+        </View>
+      )}
+      
       {/* Card Principal com LinearGradient - SEMPRE VISÍVEL */}
       <LinearGradient
         colors={gradientColors}
@@ -344,27 +372,18 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
         <View style={styles.headerRow}>
           <View style={styles.valueContainer}>
             <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
-              {timestamp 
-                ? `Updated ${new Date(timestamp).toLocaleTimeString(language, { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    timeZone: 'America/Sao_Paulo'
-                  })}` 
-                : 'Updated recently'}
+              {(isUpdating || contextRefreshing)
+                ? t('home.updating')
+                : timestamp 
+                  ? `Updated ${new Date(timestamp).toLocaleTimeString(language, { 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      timeZone: 'America/Sao_Paulo'
+                    })}` 
+                  : 'Updated recently'
+              }
             </Text>
           </View>
-          <TouchableOpacity 
-            style={[styles.refreshButton, contextRefreshing &&  styles.refreshButtonDisabled]}
-            onPress={refresh}
-            disabled={contextRefreshing}
-            activeOpacity={contextRefreshing ? 1 : 0.7}
-          >
-            {contextRefreshing ? (
-              <AnimatedLogoIcon size={20} />
-            ) : (
-              <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
-            )}
-          </TouchableOpacity>
         </View>
 
         {/* Campo de Busca */}
@@ -1237,5 +1256,22 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimary: {
     // Usa o backgroundColor e borderColor dinâmico no componente
+  },
+  // Banner de atualização
+  updatingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    gap: 8,
+  },
+  updatingText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

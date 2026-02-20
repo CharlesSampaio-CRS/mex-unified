@@ -5,7 +5,6 @@ import * as AuthSession from 'expo-auth-session'
 import { Platform } from 'react-native'
 import { secureStorage } from '@/lib/secure-storage'
 import { config } from '@/lib/config'
-import { dailySnapshotScheduler } from '@/services/daily-snapshot-scheduler'
 
 interface User {
   id: string
@@ -25,7 +24,7 @@ interface AuthContextType {
   
   // Auth methods
   login: (email: string, password: string) => Promise<void>
-  loginWithBiometric: () => Promise<void>
+  loginWithBiometric: (isAutoAuth?: boolean) => Promise<void>
   loginWithGoogle: () => Promise<void>
   loginWithApple: () => Promise<void>
   register: (email: string, password: string, name: string) => Promise<void>
@@ -41,6 +40,13 @@ interface AuthContextType {
   enableBiometric: () => Promise<boolean>
   disableBiometric: () => Promise<void>
   isBiometricEnabled: boolean
+  isAutoLoginEnabled: boolean
+  setAutoLoginEnabled: (enabled: boolean) => Promise<void>
+  
+  // Auto-auth control
+  hasTriedAutoAuth: boolean
+  autoAuthCancelled: boolean
+  markAutoAuthTried: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -64,7 +70,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [biometricType, setBiometricType] = useState<string | null>(null)
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false)
+  const [isAutoLoginEnabled, setIsAutoLoginEnabledState] = useState(false) // 🆕 Auto-login DESABILITADO por padrão para evitar loops
   const [hasValidToken, setHasValidToken] = useState(false)
+  const [hasTriedAutoAuth, setHasTriedAutoAuth] = useState(false) // 🆕 Controle global de auto-auth
+  const [autoAuthCancelled, setAutoAuthCancelled] = useState(false) // 🆕 Indica se usuário cancelou
 
   // Check biometric availability on mount
   useEffect(() => {
@@ -73,20 +82,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await checkBiometricAvailability()
         await checkBiometricEnabled()
         
-        // 🔄 NOVO COMPORTAMENTO: Limpa tokens ao recarregar página/app
-        // Força o usuário a fazer login novamente a cada sessão
-        console.log('🧹 Limpando tokens salvos (novo fluxo de autenticação)...')
+        // 🔄 Verifica se existe sessão salva e biometria habilitada
+        const hasBiometric = await secureStorage.getItemAsync('biometric_enabled')
+        const hasUserData = await secureStorage.getItemAsync('user_data')
         
+        console.log('🔍 Verificando sessão salva...')
+        console.log('  - Biometria habilitada:', hasBiometric === 'true')
+        console.log('  - Dados de usuário:', hasUserData ? 'SIM' : 'NÃO')
+        
+        // ⚠️ Limpa apenas os tokens de sessão (não os dados do usuário)
+        // Mantém: user_data, user_id, user_email, user_name, biometric_enabled
+        // Remove: access_token, refresh_token (serão renovados no próximo login)
+        console.log('🧹 Limpando apenas tokens de sessão...')
         await secureStorage.deleteItemAsync('access_token')
         await secureStorage.deleteItemAsync('refresh_token')
-        await secureStorage.deleteItemAsync('user_data')
-        await secureStorage.deleteItemAsync('user_id')
-        await secureStorage.deleteItemAsync('user_email')
-        await secureStorage.deleteItemAsync('user_name')
         
-        console.log('✅ Tokens limpos - usuário precisa fazer login')
+        console.log('✅ Tokens de sessão limpos - usuário pode usar biometria para relogar')
         
         // Não carrega usuário automaticamente - sempre mostra tela de login
+        // Mas mantém os dados salvos para que o FaceID funcione
         setUser(null)
       } catch (error) {
         console.error('❌ Erro ao inicializar autenticação:', error)
@@ -100,20 +114,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     initAuth()
   }, [])
 
-  // ⏰ Inicia agendador de snapshots diários quando usuário faz login
-  useEffect(() => {
-    if (user && user.id) {
-      dailySnapshotScheduler.start(user.id)
-    } else {
-      // Para o agendador quando usuário faz logout
-      dailySnapshotScheduler.stop()
-    }
-
-    // Cleanup: para o agendador quando componente desmonta
-    return () => {
-      dailySnapshotScheduler.stop()
-    }
-  }, [user?.id])
+  // 📝 NOTA: Snapshots diários agora são gerenciados pelo backend (Rust scheduler)
+  // O backend cria snapshots automaticamente às 00:00 UTC todos os dias
+  // Não é mais necessário scheduler no frontend
 
   // Listen for OAuth callback events
   useEffect(() => {
@@ -223,6 +226,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const enabled = await secureStorage.getItemAsync('biometric_enabled')
       setIsBiometricEnabled(enabled === 'true')
+      
+      // Carrega também a configuração de auto-login (padrão: DESABILITADO para evitar loops)
+      const autoLogin = await secureStorage.getItemAsync('auto_login_enabled')
+      setIsAutoLoginEnabledState(autoLogin === 'true') // Padrão é false se não existir
     } catch (error) {
       console.error('Error checking biometric enabled:', error)
     }
@@ -356,7 +363,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const loginWithBiometric = async () => {
+  const loginWithBiometric = async (isAutoAuth = false) => {
     try {
       setIsLoading(true)
       
@@ -364,28 +371,117 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         throw new Error('Biometric authentication not available or not enabled')
       }
 
-      // Define isLoadingData ANTES de autenticar para evitar flash
-      setIsLoadingData(true)
+      // ⚠️ NÃO define isLoadingData antes da autenticação
+      // Deixa o usuário ver a tela de login normalmente
       
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Faça login com biometria',
+        promptMessage: isAutoAuth ? 'Login automático' : 'Faça login com biometria',
         cancelLabel: 'Cancelar',
         disableDeviceFallback: false,
       })
 
       if (result.success) {
-        // Retrieve saved credentials and auto-login
-        await loadUser()
+        // 🔐 FaceID autenticou com sucesso!
+        console.log('✅ Biometria autenticada com sucesso')
+        
+        // AGORA sim, define isLoadingData (usuário autenticou)
+        setIsLoadingData(true)
+        
+        // Busca dados do usuário salvos
+        const userData = await secureStorage.getItemAsync('user_data')
+        const userId = await secureStorage.getItemAsync('user_id')
+        const userEmail = await secureStorage.getItemAsync('user_email')
+        
+        if (!userData || !userId || !userEmail) {
+          console.error('❌ Dados do usuário não encontrados')
+          throw new Error('User data not found. Please login again.')
+        }
+        
+        const parsedUser = JSON.parse(userData)
+        console.log('📧 Fazendo login para:', userEmail)
+        
+        // 🔄 Busca novos tokens do backend
+        // Se for usuário Google/Apple, usa refresh token ou reautentica
+        // Se for email/senha, precisa fazer login normal
+        
+        if (parsedUser.authProvider === 'google' || parsedUser.authProvider === 'apple') {
+          // Tenta usar refresh token se existir
+          const refreshToken = await secureStorage.getItemAsync('refresh_token')
+          
+          if (refreshToken) {
+            console.log('🔄 Renovando token com refresh token...')
+            const response = await fetch(`${config.kongBaseUrl}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refresh_token: refreshToken })
+            })
+            
+            if (response.ok) {
+              const data = await response.json()
+              await secureStorage.setItemAsync('access_token', data.access_token)
+              if (data.refresh_token) {
+                await secureStorage.setItemAsync('refresh_token', data.refresh_token)
+              }
+              
+              console.log('✅ Token renovado com sucesso')
+              setUser(parsedUser)
+              return
+            }
+          }
+          
+          // Se refresh falhou, reautentica com OAuth
+          console.log('⚠️ Refresh token inválido, redirecionando para OAuth...')
+          if (parsedUser.authProvider === 'google') {
+            await loginWithGoogle()
+          } else {
+            await loginWithApple()
+          }
+        } else {
+          // Para email/senha, não podemos fazer login automático (não temos a senha)
+          console.error('❌ Login com biometria não suportado para email/senha sem refresh token')
+          setIsLoadingData(false)
+          throw new Error('Para usar biometria, faça login com Google ou Apple')
+        }
         
         // O loading será desativado pelo App.tsx quando os dados estiverem prontos
       } else {
+        // ❌ Usuário cancelou ou falhou a autenticação
+        console.log('👤 Usuário cancelou a autenticação biométrica')
         setIsLoadingData(false)
-        throw new Error('Biometric authentication failed')
+        
+        // ✅ Marca que usuário cancelou (evita tentativas futuras automáticas)
+        if (isAutoAuth) {
+          setAutoAuthCancelled(true)
+          console.log('🚫 Auto-auth cancelado pelo usuário - não tentará novamente nesta sessão')
+        }
+        
+        // Cria erro específico para cancelamento
+        const cancelError = new Error('User canceled biometric authentication')
+        cancelError.name = 'BiometricCancelError'
+        throw cancelError
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Biometric login error:', error)
       setIsLoadingData(false)
-      throw error
+      
+      // ✅ Marca cancelamento se foi auto-auth
+      if (isAutoAuth && (
+        error.name === 'BiometricCancelError' ||
+        error?.message?.toLowerCase().includes('cancel')
+      )) {
+        setAutoAuthCancelled(true)
+        console.log('🚫 Auto-auth cancelado pelo usuário - não tentará novamente nesta sessão')
+      }
+      
+      // Se já é um erro de cancelamento, apenas repropaga
+      if (error.name === 'BiometricCancelError') {
+        throw error
+      }
+      
+      // Para outros erros, cria um erro genérico
+      const wrappedError = new Error(error.message || 'Biometric authentication failed')
+      wrappedError.name = 'BiometricError'
+      throw wrappedError
     } finally {
       setIsLoading(false)
     }
@@ -799,6 +895,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoadingData(false)
       setIsLoading(false)
       
+      // Reset auto-auth flags
+      setHasTriedAutoAuth(false)
+      setAutoAuthCancelled(false)
+      
       console.log('✅ Logout completo - todos os dados limpos')
     } catch (error) {
       console.error('❌ Logout error:', error)
@@ -904,8 +1004,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  const setAutoLoginEnabled = async (enabled: boolean) => {
+    try {
+      await secureStorage.setItemAsync('auto_login_enabled', enabled ? 'true' : 'false')
+      setIsAutoLoginEnabledState(enabled)
+    } catch (error) {
+      console.error('Error setting auto login:', error)
+    }
+  }
+
   const setLoadingDataComplete = () => {
     setIsLoadingData(false)
+  }
+
+  const markAutoAuthTried = () => {
+    setHasTriedAutoAuth(true)
   }
 
   const value: AuthContextType = {
@@ -916,6 +1029,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     biometricAvailable,
     biometricType,
     isBiometricEnabled,
+    isAutoLoginEnabled,
+    hasTriedAutoAuth,
+    autoAuthCancelled,
     
     login,
     loginWithBiometric,
@@ -928,9 +1044,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     deleteAccount,
     
     setLoadingDataComplete,
+    markAutoAuthTried,
     
     enableBiometric,
     disableBiometric,
+    setAutoLoginEnabled,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -172,36 +172,34 @@ async function buildExchangesPayload(userId: string) {
 export const apiService = {
   /**
    * Busca os balances de todas as exchanges para um usuário
+   * 🔐 NOVA VERSÃO: Prioriza endpoint seguro /balances/secure (sem credenciais)
+   * Fallback: Tenta método antigo se o seguro falhar (compatibilidade)
+   * 
    * @param userId ID do usuário
    * @param forceRefresh Se true, força atualização sem cache (cache: false no backend)
    * @returns Promise com os dados de balance
    */
   async getBalances(userId: string, forceRefresh: boolean = false): Promise<BalanceResponse> {
+    // Consulta apenas o endpoint SEGURO (MongoDB)
+    return await this.getBalancesSecure();
+  },
+
+  // ==================== 🔐 NOVA ARQUITETURA SEGURA ====================
+
+  /**
+   * 🔐 SECURE: Busca balances usando JWT (sem credenciais no body)
+   * Endpoint: POST /balances/secure
+   * Backend busca exchanges do MongoDB automaticamente
+   */
+  async getBalancesSecure(): Promise<BalanceResponse> {
     try {
-      // 1) Tenta enviar exchanges locais (POST /balances)
-      const exchanges = await buildExchangesPayload(userId);
-      if (exchanges.length > 0) {
-        try {
-          console.log(`📡 [API] Enviando ${exchanges.length} exchanges para /balances (POST)`);
-          const postResponse = await apiService.post<BalanceResponse>('/balances', { exchanges });
-          return postResponse.data;
-        } catch (postError) {
-          console.warn('⚠️ [API] Falha no POST /balances, tentando GET fallback:', postError);
-        }
-      }
-
-      // 2) Fallback: GET /balances com user_id
-      const timestamp = Date.now();
-      const url = `${API_BASE_URL}/balances?user_id=${userId}&include_changes=true&_t=${timestamp}`;
-
-      console.log('📡 [API] Buscando balances (GET):', url);
-
       const response = await fetchWithTimeout(
-        url,
+        `${API_BASE_URL}/balances/secure`,
         {
+          method: 'POST',
           cache: 'no-store'
         },
-        TIMEOUTS.CRITICAL
+        TIMEOUTS.BALANCE_SYNC
       );
 
       if (!response.ok) {
@@ -209,71 +207,191 @@ export const apiService = {
       }
 
       const data: BalanceResponse = await response.json();
-
-      console.log('✅ [API] Balance recebido:', {
-        total_usd: data.total_usd || data.summary?.total_usd,
-        timestamp: data.timestamp,
-        exchanges: data.exchanges?.length || 0
-      });
-
       return data;
     } catch (error) {
+      console.error('❌ [API] Erro ao buscar balances (seguro):', error);
       throw error;
     }
   },
 
   /**
-   * 🚀 FAST: Busca apenas os totais (summary) sem detalhes de tokens
-   * Usado para carregamento inicial rápido (~1-2s)
-   * @param userId ID do usuário
-   * @param forceRefresh Se true, força atualização sem cache
-   * @returns Promise com summary das exchanges (sem tokens)
+   * 🔐 SECURE: Busca orders usando JWT (sem credenciais no body)
+   * Endpoint: POST /orders/fetch/secure
+   * Backend busca exchanges do MongoDB automaticamente
    */
-  async getBalancesSummary(userId: string, forceRefresh: boolean = false): Promise<BalanceResponse> {
+  async getOrdersSecure(): Promise<any> {
     try {
-      // 1) Tenta enviar exchanges locais (POST /balances) para obter summary
-      const exchanges = await buildExchangesPayload(userId);
-      if (exchanges.length > 0) {
-        try {
-          console.log(`📡 [API] Enviando ${exchanges.length} exchanges para /balances (POST) [summary]`);
-          const postResponse = await apiService.post<BalanceResponse>('/balances', { exchanges });
-          return postResponse.data;
-        } catch (postError) {
-          console.warn('⚠️ [API] Falha no POST /balances (summary), tentando GET fallback:', postError);
-        }
-      }
-
-      // 2) Fallback: GET /balances/summary
-      const timestamp = Date.now();
-      const url = `${API_BASE_URL}/balances/summary?user_id=${userId}&_t=${timestamp}`;
-
-      console.log('📡 [API] Buscando balances summary (GET):', url);
-
       const response = await fetchWithTimeout(
-        url,
+        `${API_BASE_URL}/orders/fetch/secure`,
         {
+          method: 'POST',
           cache: 'no-store'
         },
-        TIMEOUTS.VERY_SLOW
+        TIMEOUTS.SLOW
       );
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
-      const data: BalanceResponse = await response.json();
-
-      console.log('✅ [API] Balance summary recebido:', {
-        total_usd: data.total_usd || data.summary?.total_usd,
-        timestamp: data.timestamp,
-        exchanges: data.exchanges?.length || 0
-      });
-
+      const data = await response.json();
       return data;
     } catch (error) {
+      console.error('❌ [API] Erro ao buscar orders (seguro):', error);
       throw error;
     }
   },
+
+  // ==================== 📝 GERENCIAMENTO DE EXCHANGES (MongoDB) ====================
+
+  /**
+   * 📝 Adiciona nova exchange no MongoDB
+   * Endpoint: POST /user/exchanges
+   * Credenciais são criptografadas no backend
+   */
+  async addExchange(exchangeData: {
+    exchange_type: string;
+    api_key: string;
+    api_secret: string;
+    passphrase?: string;
+  }): Promise<{ success: boolean; exchange_id: string; error?: string }> {
+    try {
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/user/exchanges`,
+        {
+          method: 'POST',
+          body: JSON.stringify(exchangeData)
+        },
+        TIMEOUTS.STANDARD
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add exchange');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ [API] Erro ao adicionar exchange:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 📋 Lista exchanges cadastradas (sem credenciais)
+   * Endpoint: GET /user/exchanges
+   */
+  async listExchanges(): Promise<{
+    success: boolean;
+    exchanges: Array<{
+      exchange_id: string;
+      exchange_type: string;
+      exchange_name: string;
+      is_active: boolean;
+      logo?: string;
+      icon?: string;
+      requires_passphrase?: boolean;
+      created_at: string;
+    }>;
+    count: number;
+  }> {
+    try {
+      console.log('📋 [API] Listando exchanges do usuário');
+      
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/user/exchanges`,
+        {
+          method: 'GET',
+          cache: 'no-store'
+        },
+        TIMEOUTS.STANDARD
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      console.log('✅ [API] Exchanges listadas:', data.count);
+
+      return data;
+    } catch (error) {
+      console.error('❌ [API] Erro ao listar exchanges:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 🔧 Atualiza exchange existente
+   * Endpoint: PATCH /user/exchanges/{exchange_id}
+   */
+  async updateExchange(
+    exchangeId: string,
+    updateData: {
+      is_active?: boolean;
+      api_key?: string;
+      api_secret?: string;
+      passphrase?: string;
+    }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('🔧 [API] Atualizando exchange:', exchangeId);
+      
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/user/exchanges/${exchangeId}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(updateData)
+        },
+        TIMEOUTS.STANDARD
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update exchange');
+      }
+
+      const data = await response.json();
+
+      console.log('✅ [API] Exchange atualizada');
+
+      return data;
+    } catch (error) {
+      console.error('❌ [API] Erro ao atualizar exchange:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 🗑️ Remove exchange
+   * Endpoint: DELETE /user/exchanges/{exchange_id}
+   */
+  async deleteExchange(exchangeId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/user/exchanges/${exchangeId}`,
+        {
+          method: 'DELETE'
+        },
+        TIMEOUTS.STANDARD
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete exchange');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ [API] Erro ao remover exchange:', error);
+      throw error;
+    }
+  },
+
+  // ==================== 📊 MARKET MOVERS ====================
 
   /**
    * 🎯 FAST: Busca top gainers e losers do portfólio do usuário
@@ -1269,6 +1387,88 @@ export const apiService = {
       console.error('❌ Error deleting account:', error);
       throw error;
     }
+  },
+
+  /**
+   * Generic GET request helper with timeout
+   */
+  async get<T = any>(endpoint: string, timeout: number = TIMEOUTS.FAST): Promise<{ data: T }> {
+    const token = await secureStorage.getItemAsync('access_token');
+    
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      },
+      timeout
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { data };
+  },
+
+  /**
+   * Generic PUT request helper with timeout
+   */
+  async put<T = any>(endpoint: string, body: any, timeout: number = TIMEOUTS.FAST): Promise<{ data: T }> {
+    const token = await secureStorage.getItemAsync('access_token');
+    
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      },
+      timeout
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { data };
+  },
+
+  /**
+   * Generic DELETE request helper with timeout
+   */
+  async delete<T = any>(endpoint: string, timeout: number = TIMEOUTS.FAST): Promise<{ data: T }> {
+    const token = await secureStorage.getItemAsync('access_token');
+    
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      },
+      timeout
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { data };
   },
 
   /**

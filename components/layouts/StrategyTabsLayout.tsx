@@ -41,6 +41,7 @@ export const StrategyTabsLayout: React.FC<StrategyTabsLayoutProps> = ({
               onRefresh={onRefresh}
               tintColor={colors.primary}
               colors={[colors.primary]}
+              progressBackgroundColor={colors.surface}
             />
           ) : undefined
         }

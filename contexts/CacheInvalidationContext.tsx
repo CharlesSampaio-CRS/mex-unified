@@ -112,12 +112,50 @@ export function CacheInvalidationProvider({ children }: CacheInvalidationProvide
   }, [invalidateHomeData])
 
   /**
-   * Invalida absolutamente tudo
-   * Usado quando usuário faz pull-to-refresh ou logout/login
+   * Invalida absolutamente tudo - usado no pull-to-refresh
+   * Atualiza TODOS os contextos em paralelo e só retorna quando TUDO terminar
+   * 
+   * Atualiza:
+   * - Balances (BalanceContext)
+   * - Exchanges list (via callbacks registrados)
+   * - Orders (via OrdersContext que escuta onBalanceLoaded)
+   * - Portfolio (via PortfolioContext que escuta balance changes)
    */
   const invalidateAll = useCallback(async () => {
-    await invalidateHomeData()
-  }, [invalidateHomeData])
+    console.log('🔄 [CacheInvalidation] invalidateAll() iniciado - atualizando TUDO')
+    
+    try {
+      // Executa TODAS as atualizações em paralelo
+      await Promise.all([
+        // 1. Atualizar balances (inclui daily PnL)
+        (async () => {
+          console.log('  ↳ Atualizando balances...')
+          await refreshOnExchangeChange()
+          console.log('  ✅ Balances atualizados')
+        })(),
+        
+        // 2. Atualizar exchanges lists (todos os callbacks registrados)
+        (async () => {
+          if (exchangesRefreshCallbacksRef.current.size > 0) {
+            console.log(`  ↳ Atualizando exchanges (${exchangesRefreshCallbacksRef.current.size} callbacks)...`)
+            const callbacks = Array.from(exchangesRefreshCallbacksRef.current)
+            await Promise.all(callbacks.map(cb => cb()))
+            console.log('  ✅ Exchanges atualizadas')
+          }
+        })()
+        
+        // NOTA: Orders e Portfolio são atualizados automaticamente via:
+        // - OrdersContext escuta onBalanceLoaded
+        // - PortfolioContext escuta mudanças em balanceData
+        // Portanto não precisamos chamá-los explicitamente
+      ])
+      
+      console.log('🎉 [CacheInvalidation] invalidateAll() concluído - TUDO atualizado!')
+    } catch (error) {
+      console.error('❌ [CacheInvalidation] Erro em invalidateAll():', error)
+      throw error
+    }
+  }, [refreshOnExchangeChange])
 
   return (
     <CacheInvalidationContext.Provider

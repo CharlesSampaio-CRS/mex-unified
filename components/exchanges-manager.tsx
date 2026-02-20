@@ -45,7 +45,8 @@ const LinkedExchangeCard = memo(({
   t, 
   onToggle, 
   onDelete,
-  onPress
+  onPress,
+  isRefreshing
 }: { 
   linkedExchange: any
   index: number
@@ -54,6 +55,7 @@ const LinkedExchangeCard = memo(({
   onToggle: (id: string, status: string, name: string) => void
   onDelete: (id: string, name: string) => void
   onPress: () => void
+  isRefreshing?: boolean
 }) => {
   const [showMenu, setShowMenu] = useState(false)
   const exchangeNameLower = linkedExchange.name.toLowerCase()
@@ -84,6 +86,11 @@ const LinkedExchangeCard = memo(({
   }), [isDark])
   
   const formattedDate = useMemo(() => {
+    // Se estiver atualizando, mostra "Updating..."
+    if (isRefreshing) {
+      return t('home.updating') || 'Updating...'
+    }
+    
     if (!linkedExchange.linked_at) {
       return t('exchanges.noDate') || 'N/A'
     }
@@ -92,7 +99,7 @@ const LinkedExchangeCard = memo(({
     } catch (error) {
       return 'N/A'
     }
-  }, [linkedExchange.linked_at, t])
+  }, [linkedExchange.linked_at, t, isRefreshing])
 
   const themedStyles = useMemo(() => ({
     card: {
@@ -244,7 +251,8 @@ const AvailableExchangeCard = memo(({
   colors, 
   t, 
   onConnect,
-  onPress
+  onPress,
+  isRefreshing
 }: { 
   exchange: any
   isLinked: boolean
@@ -252,6 +260,7 @@ const AvailableExchangeCard = memo(({
   t: any
   onConnect: (exchange: any) => void
   onPress: () => void
+  isRefreshing?: boolean
 }) => {
   const localIcon = exchange?.nome ? exchangeLogos[exchange.nome.toLowerCase()] : null
   const isDark = colors.isDark
@@ -313,7 +322,10 @@ const AvailableExchangeCard = memo(({
         </View>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            {isLinked ? t('exchanges.alreadyConnected') : t('exchanges.readyToConnect')}
+            {isRefreshing 
+              ? t('home.updating') || 'Updating...'
+              : (isLinked ? t('exchanges.alreadyConnected') : t('exchanges.readyToConnect'))
+            }
           </Text>
         </View>
       </View>
@@ -386,6 +398,11 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [qrScannerVisible, setQrScannerVisible] = useState(false)
   const [currentScanField, setCurrentScanField] = useState<'apiKey' | 'apiSecret' | 'passphrase' | null>(null)
   
+  // 👁️ Estados para mostrar/ocultar credenciais
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [showApiSecret, setShowApiSecret] = useState(false)
+  const [showPassphrase, setShowPassphrase] = useState(false)
+  
   // Modal de confirmação (delete/disconnect)
   const [confirmModalVisible, setConfirmModalVisible] = useState(false)
   const [confirmAction, setConfirmAction] = useState<'delete' | 'disconnect' | null>(null)
@@ -413,70 +430,41 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       setLoading(false)
       return
     }
-    
-    // Se já carregou e não está forçando refresh, não busca novamente
     if (hasLoadedOnce && !forceRefresh) {
       return
     }
-    
     try {
-      // Só mostra loading se NÃO for silencioso
-      if (!silent) {
-        setLoading(true)
-      }
+      if (!silent) setLoading(true)
       setError(null)
-    
-      // Buscar exchanges do SQLite
-      const localLinkedExchanges = await exchangeService.getConnectedExchanges(user.id)
-      
+      // Buscar exchanges conectadas do MongoDB
+      const { exchanges: linkedList = [] } = await apiService.listExchanges()
+      // Mapear para o formato esperado pelo componente
+      const mappedExchanges = linkedList.map((ex: any) => ({
+        ...ex,
+        name: ex.exchange_name || ex.name,
+        ccxt_id: ex.exchange_type || ex.ccxt_id,
+        icon: ex.icon || ex.logo,
+        status: ex.is_active ? 'active' : 'inactive',
+        linked_at: ex.created_at
+      }))
+      setLinkedExchanges(mappedExchanges as any)
+      // Buscar exchanges disponíveis (catálogo)
       let availableData
       try {
         availableData = await apiService.getAvailableExchanges(user.id, forceRefresh)
       } catch (apiError) {
-        console.error('❌ [ExchangesManager] Erro ao buscar da API (continuando com dados locais):', apiError)
+        console.error('❌ [ExchangesManager] Erro ao buscar catálogo:', apiError)
         availableData = { exchanges: [] }
       }
-
-      const availableList = availableData.exchanges || []
-      setAvailableExchanges(availableList)
-      
-      // Formata exchanges locais para o formato esperado pelo componente LinkedExchange
-      const formattedLinkedExchanges: LinkedExchange[] = localLinkedExchanges.map(ex => {
-        const matchedAvailable = availableList.find(av => {
-          const ccxtMatch = av.ccxt_id?.toLowerCase() === ex.exchangeType?.toLowerCase()
-          const nameMatch = av.nome?.toLowerCase() === ex.exchangeName?.toLowerCase()
-          return ccxtMatch || nameMatch
-        })
-
-        return {
-        exchange_id: ex.id,
-        ccxt_id: ex.exchangeType, // CCXT ID já está em lowercase no banco
-        name: ex.exchangeName,
-        icon: '',
-        country: matchedAvailable?.pais_de_origem || '',
-        url: '', // Não temos no local
-        status: ex.isActive ? 'active' : 'inactive',
-        is_active: ex.isActive,
-        linked_at: ex.createdAt?.toISOString() || new Date().toISOString(),
-        updated_at: ex.lastSyncAt?.toISOString() || new Date().toISOString()
-      }
-      })
-      
-      setLinkedExchanges(formattedLinkedExchanges)
-      setRefreshKey(prev => prev + 1) // Força re-render
-      setHasLoadedOnce(true) // Marca como carregado
-      
-      // Força re-render verificando se o estado realmente mudou
-      setTimeout(() => {
-      }, 100)
+      setAvailableExchanges(availableData.exchanges || [])
+      setRefreshKey(prev => prev + 1)
+      setHasLoadedOnce(true)
+      setTimeout(() => {}, 100)
     } catch (err) {
       console.error('❌ Error fetching exchanges:', err)
       setError(t('exchanges.error'))
     } finally {
-      // Só remove loading se estava mostrando
-      if (!silent) {
-        setLoading(false)
-      }
+      if (!silent) setLoading(false)
     }
   }, [user?.id, hasLoadedOnce, t])
 
@@ -503,56 +491,28 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
 
   // 🔄 Refresh específico por aba - atualiza apenas o conteúdo da aba ativa
   const handleRefresh = useCallback(async () => {
+    console.log('🔄 [ExchangesManager] Atualizando exchanges...')
     setRefreshing(true)
     
     try {
       // Ambas as abas precisam buscar as exchanges (linked e available)
       // pois a aba "available" filtra as já conectadas
       await fetchExchanges(true, false)
+      console.log('✅ [ExchangesManager] Exchanges atualizadas')
     } catch (error) {
       console.error(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
     } finally {
+      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
+      await new Promise(resolve => setTimeout(resolve, 300))
       setRefreshing(false)
     }
   }, [activeTab, fetchExchanges])
 
-  const handleConnect = useCallback(async (exchangeId: string, exchangeName: string) => {
-    setOpenMenuId(null)
-    
-    if (!user?.id) {
-      alert('Erro: usuário não autenticado')
-      return
-    }
-    
-    try {
-      const url = `${config.apiBaseUrl}/exchanges/connect`
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          exchange_id: exchangeId,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {        
-        // Atualizar lista de exchanges e home (onExchangeModified já chama invalidateCacheAndRefresh)
-        await onExchangeModified()
-        
-        // Feedback para o usuário
-        alert(t('exchanges.connectSuccess'))
-      } else {
-        alert(data.error || t('error.connectExchange'))
-      }
-    } catch (err) {
-      alert(t('error.connectExchange'))
-    }
-  }, [onExchangeModified, t, user?.id])
+  // handleConnect não é mais necessário - a conexão é feita via handleLinkExchange
+  // que já usa apiService.addExchange()
+  const handleConnect = useCallback((exchange: AvailableExchange) => {
+    openConnectModal(exchange)
+  }, [])
 
   // Mostra modal de confirmação para toggle
   const toggleExchange = useCallback((exchangeId: string, currentStatus: string, exchangeName: string) => {
@@ -568,19 +528,11 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const confirmToggle = useCallback(async () => {
     const exchangeId = toggleExchangeId
     const newStatus = toggleExchangeNewStatus
-    const currentStatus = toggleExchangeNewStatus === 'active' ? 'inactive' : 'active'
     
     if (!user?.id) {
       alert('Erro: usuário não autenticado')
       return
     }
-    
-    console.log('🔄 [Toggle] Iniciando toggle da exchange:', {
-      exchangeId,
-      exchangeName: toggleExchangeName,
-      currentStatus,
-      newStatus: toggleExchangeNewStatus
-    })
     
     // Inicia loading NO BOTÃO (não fecha o modal ainda)
     setToggleLoading(true)
@@ -589,65 +541,30 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     const newIsActive = newStatus === 'active'
 
     try {
-      console.log('� [Local DB] Atualizando status da exchange no WatermelonDB...', {
+      console.log('🔄 Atualizando status da exchange no MongoDB...', {
         exchangeId,
         newIsActive
       })
       
-      // 1. Buscar e atualizar no banco local (SQLite)
-      const userExchanges = await exchangeService.getConnectedExchanges(user.id)
+      // Atualiza no MongoDB (fonte da verdade)
+      await apiService.updateExchange(exchangeId, { is_active: newIsActive })
       
-      // Buscar por ID primeiro, depois por nome (case-insensitive)
-      let exchangeToUpdate = userExchanges.find(ex => ex.id === exchangeId)
+      console.log('✅ Status atualizado no MongoDB com sucesso!')
       
-      if (!exchangeToUpdate) {
-        exchangeToUpdate = userExchanges.find(
-          ex => ex.exchangeName.toLowerCase() === toggleExchangeName.toLowerCase()
-        )
-      }
+      // Atualizar lista de exchanges e home
+      await onExchangeModified()
       
-      if (exchangeToUpdate && exchangeToUpdate.id) {
-        await exchangeService.toggleExchange(exchangeToUpdate.id)
-        }
-      
-      // 2. Também tentar atualizar no backend (opcional, pode falhar silenciosamente)
-      try {
-        const response = await fetch(`${config.apiBaseUrl}/exchanges/${exchangeId}/toggle`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: user.id,
-            is_active: newIsActive
-          })
-        })
-
-        if (response.ok) {
-          console.log('✅ [Backend] Status atualizado no backend com sucesso')
-        } else {
-          console.warn('⚠️ [Backend] Falha ao atualizar no backend (mas atualizado localmente):', response.status)
-        }
-      } catch (backendErr) {
-        console.warn('⚠️ [Backend] Erro ao atualizar no backend (mas atualizado localmente):', backendErr)
-      }
-
-      // 3. Atualizar lista de exchanges e home
-      console.log('🔄 [Toggle] Atualizando lista de exchanges...')
-      await onExchangeModified() // Já chama invalidateCacheAndRefresh que faz fetchExchanges(true, true)
-      console.log('✅ [Toggle] Lista de exchanges atualizada!')
-      
-      // 4. Fecha modal e remove loading
+      // Fecha modal e remove loading
       setToggleLoading(false)
       setConfirmToggleModalVisible(false)
       
-      console.log('🎉 [Toggle] Toggle concluído com sucesso!')
-      
     } catch (error) {
-      console.error("❌ [Local DB] Erro ao atualizar status da exchange:", error)
+      console.error("❌ Erro ao atualizar status da exchange:", error)
       setToggleLoading(false)
       setConfirmToggleModalVisible(false)
       alert(t("error.updateExchangeStatus"))
     }
-  }, [toggleExchangeId, toggleExchangeName, toggleExchangeNewStatus, onExchangeModified, user?.id, t])
+  }, [toggleExchangeId, toggleExchangeNewStatus, onExchangeModified, user?.id, t])
 
   const handleDisconnect = useCallback((exchangeId: string, exchangeName: string) => {
     setOpenMenuId(null)
@@ -667,89 +584,29 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     setConfirmLoading(true)
     
     try {
-      console.log('🔌 [Local DB] Desconectando exchange no SQLite...', confirmExchangeId)
-      
-      // Buscar e desconectar do banco local (disconnect = delete)
-      const userExchanges = await exchangeService.getConnectedExchanges(user.id)
-      console.log('📊 [Disconnect] Total de exchanges no banco:', userExchanges.length)
-      console.log('📊 [Disconnect] Buscando por:', {
-        searchId: confirmExchangeId,
-        searchName: confirmExchangeName
+      console.log('🔌 Desconectando exchange do MongoDB...', {
+        exchangeId: confirmExchangeId,
+        exchangeName: confirmExchangeName
       })
-      console.log('📊 [Disconnect] Exchanges disponíveis:', userExchanges.map(ex => ({
-        id: ex.id,
-        name: ex.exchangeName
-      })))
       
-      // Buscar por ID primeiro, depois por nome (case-insensitive)
-      let exchangeToDisconnect = userExchanges.find(ex => ex.id === confirmExchangeId)
+      // Desconecta no MongoDB (fonte da verdade)
+      // Disconnect = Delete (remove a exchange completamente)
+      await apiService.deleteExchange(confirmExchangeId)
       
-      if (!exchangeToDisconnect) {
-        console.log('⚠️ [Disconnect] Não encontrado por ID, tentando por nome...')
-        exchangeToDisconnect = userExchanges.find(
-          ex => ex.exchangeName.toLowerCase() === confirmExchangeName.toLowerCase()
-        )
-      }
-      
-      if (exchangeToDisconnect) {
-        console.log('🎯 [Disconnect] Exchange encontrada para desconectar:', {
-          id: exchangeToDisconnect.id,
-          name: exchangeToDisconnect.exchangeName
-        })
-        await exchangeService.removeExchange(exchangeToDisconnect.id)
-        console.log('✅ [Local DB] Exchange desconectada com sucesso:', exchangeToDisconnect.exchangeName)
-      } else {
-        console.warn('⚠️ [Local DB] Exchange não encontrada no SQLite:', {
-          searchedId: confirmExchangeId,
-          searchedName: confirmExchangeName,
-          availableExchanges: userExchanges.map(ex => ({ id: ex.id, name: ex.exchangeName }))
-        })
-      }
-      
-      // Também tentar desconectar do backend (opcional, pode falhar silenciosamente)
-      try {
-        const url = `${config.apiBaseUrl}/exchanges/disconnect`
-        console.log('📡 [Backend] Tentando desconectar no backend...')
-        
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            exchange_id: confirmExchangeId,
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            console.log('✅ [Backend] Exchange desconectada no backend com sucesso')
-          } else {
-            console.warn('⚠️ [Backend] Falha ao desconectar no backend (mas desconectada localmente):', data.error)
-          }
-        } else {
-          console.warn(`⚠️ [Backend] Endpoint não existe (${response.status}) - mas desconectada localmente ✅`)
-        }
-      } catch (backendErr) {
-        console.warn('⚠️ [Backend] Erro ao desconectar no backend (mas desconectada localmente):', backendErr)
-      }
+      console.log('✅ Exchange desconectada no MongoDB com sucesso')
       
       // Atualizar lista de exchanges e home
-      console.log('🔄 [Disconnect] Atualizando lista de exchanges...')
-      await onExchangeModified() // Já chama invalidateCacheAndRefresh que faz fetchExchanges(true, true)
-      console.log('✅ [Disconnect] Lista de exchanges atualizada!')
+      await onExchangeModified()
       
       // Fecha modal e remove loading
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.log('🎉 [Disconnect] Disconnect concluído com sucesso!')
+      console.log('✅ Disconnect concluído com sucesso!')
       
     } catch (err) {
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.error('❌ [Local DB] Erro ao desconectar exchange:', err)
+      console.error('❌ Erro ao desconectar exchange:', err)
       alert(t('error.disconnectExchange'))
     }
   }, [confirmExchangeId, confirmExchangeName, onExchangeModified, t, user?.id])
@@ -768,7 +625,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   }, [])
 
   const confirmDelete = useCallback(async () => {
-    console.log('🚀 [Delete] Iniciando processo de delete...', {
+    console.log('�️ [Delete] Iniciando processo de delete...', {
       exchangeId: confirmExchangeId,
       exchangeName: confirmExchangeName,
       userId: user?.id
@@ -783,115 +640,27 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     setConfirmLoading(true)
     
     try {
-      console.log('🗑️ [Local DB] Deletando exchange do SQLite...', confirmExchangeId)
+      console.log('🗑️ Deletando exchange do MongoDB...')
       
-      // Buscar e deletar do banco local
-      const userExchanges = await exchangeService.getConnectedExchanges(user.id)
-      console.log('📊 [Delete] Total de exchanges no banco:', userExchanges.length)
-      console.log('📊 [Delete] Buscando por:', {
-        searchId: confirmExchangeId,
-        searchIdType: typeof confirmExchangeId,
-        searchName: confirmExchangeName
-      })
+      // Deleta no MongoDB (fonte da verdade)
+      await apiService.deleteExchange(confirmExchangeId)
       
-      // Log DETALHADO de cada exchange
-      console.log('📊 [Delete] === LISTAGEM COMPLETA DE IDs ===')
-      userExchanges.forEach((ex, index) => {
-        console.log(`   ${index + 1}. ID: "${ex.id}" | Nome: "${ex.exchangeName}" | Match: ${ex.id === confirmExchangeId}`)
-      })
-      console.log('📊 [Delete] === FIM DA LISTAGEM ===')
-      
-      // Buscar por ID primeiro, depois por nome (case-insensitive)
-      let exchangeToDelete = userExchanges.find(ex => ex.id === confirmExchangeId)
-      
-      if (!exchangeToDelete) {
-        console.log('⚠️ [Delete] Não encontrado por ID, tentando por nome...')
-        console.log('   Buscando por nome (case-insensitive):', confirmExchangeName)
-        
-        exchangeToDelete = userExchanges.find(
-          ex => {
-            const match = ex.exchangeName.toLowerCase() === confirmExchangeName.toLowerCase()
-            console.log(`   Comparando: "${ex.exchangeName.toLowerCase()}" === "${confirmExchangeName.toLowerCase()}" = ${match}`)
-            return match
-          }
-        )
-        
-        if (exchangeToDelete) {
-          console.log('✅ [Delete] Encontrado por nome!', exchangeToDelete.exchangeName)
-        }
-      }
-      
-      if (exchangeToDelete) {
-        console.log('🎯 [Delete] Exchange encontrada para deletar:', {
-          id: exchangeToDelete.id,
-          name: exchangeToDelete.exchangeName
-        })
-        await exchangeService.removeExchange(exchangeToDelete.id)
-        console.log('✅ [Local DB] Exchange deletada com sucesso:', exchangeToDelete.exchangeName)
-      } else {
-        console.error('❌ [Local DB] ERRO: Exchange NÃO encontrada no SQLite!')
-        console.error('   Isso significa que a UI está DESATUALIZADA!')
-        console.error('   A exchange que você está tentando deletar NÃO EXISTE no banco local.')
-        console.error('   Detalhes:', {
-          searchedId: confirmExchangeId,
-          searchedName: confirmExchangeName,
-          availableExchanges: userExchanges.map(ex => ({ id: ex.id, name: ex.exchangeName }))
-        })
-        
-        // Mesmo assim, continua para atualizar a UI
-        console.warn('⚠️ Continuando para forçar atualização da UI...')
-      }
-      
-      // Também tentar deletar do backend (opcional, pode falhar silenciosamente)
-      try {
-        const url = `${config.apiBaseUrl}/exchanges/delete`
-        console.log('📡 [Backend] Tentando deletar no backend...')
-        
-        const response = await fetch(url, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            exchange_id: confirmExchangeId,
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            console.log('✅ [Backend] Exchange deletada no backend com sucesso')
-          } else {
-            console.warn('⚠️ [Backend] Falha ao deletar no backend (mas deletada localmente):', data.error)
-          }
-        } else {
-          console.warn(`⚠️ [Backend] Endpoint não existe (${response.status}) - mas deletada localmente ✅`)
-        }
-      } catch (backendErr) {
-        console.warn('⚠️ [Backend] Erro ao deletar no backend (mas deletada localmente):', backendErr)
-      }
+      console.log('✅ Exchange deletada no MongoDB com sucesso')
       
       // Atualizar lista de exchanges e home
-      console.log('========================================')
-      console.log('🔄 [Delete] INICIANDO ATUALIZAÇÃO DA LISTA')
-      console.log('========================================')
-      console.log('🔄 [Delete] Chamando onExchangeModified()...')
-      await onExchangeModified() // Já chama invalidateCacheAndRefresh que faz fetchExchanges(true, true)
-      console.log('✅ [Delete] onExchangeModified() concluído!')
-      console.log('========================================')
-      console.log('✅ [Delete] ATUALIZAÇÃO DA LISTA CONCLUÍDA')
-      console.log('========================================')
+      console.log('🔄 Chamando onExchangeModified()...')
+      await onExchangeModified()
+      console.log('✅ onExchangeModified() concluído!')
       
       // Fecha modal e remove loading
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.log('🎉 [Delete] Delete concluído com sucesso!')
-      console.log('')
+      console.log('✅ Delete concluído com sucesso!')
+      
     } catch (err) {
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.error('❌ [Local DB] Erro ao deletar exchange:', err)
+      console.error('❌ Erro ao deletar exchange:', err)
       alert(t('error.deleteExchange'))
     }
   }, [confirmExchangeId, confirmExchangeName, onExchangeModified, t, user?.id])
@@ -948,18 +717,127 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   }, [])
 
   const handleQRScanned = useCallback((data: string) => {
-    // Tenta parsear JSON se for um QR code estruturado
+    console.log('📷 QR Code escaneado:', data.substring(0, 50) + '...') // Log parcial para segurança
+    
     try {
+      // Tenta parsear como JSON (formato mais comum para OKX e outras exchanges)
       const parsed = JSON.parse(data)
-      if (parsed.apiKey) setApiKey(parsed.apiKey)
-      if (parsed.apiSecret) setApiSecret(parsed.apiSecret)
-      if (parsed.passphrase) setPassphrase(parsed.passphrase)
-    } catch {
-      // Se não for JSON, coloca o texto no campo atual
-      if (currentScanField === 'apiKey') setApiKey(data)
-      else if (currentScanField === 'apiSecret') setApiSecret(data)
-      else if (currentScanField === 'passphrase') setPassphrase(data)
+      console.log('✅ QR Code parseado como JSON')
+      
+      // Formato 1: OKX padrão com campos diretos
+      if (parsed.apiKey && parsed.secretKey) {
+        console.log('🔑 Formato detectado: OKX padrão (apiKey + secretKey)')
+        setApiKey(parsed.apiKey.trim())
+        setApiSecret(parsed.secretKey.trim())
+        if (parsed.passphrase) setPassphrase(parsed.passphrase.trim())
+        Alert.alert('✅ Sucesso!', 'API Key e Secret carregados do QR Code!')
+        setQrScannerVisible(false)
+        setCurrentScanField(null)
+        return
+      }
+      
+      // Formato 2: Formato alternativo com "api_key" e "api_secret"
+      if (parsed.api_key && parsed.api_secret) {
+        console.log('🔑 Formato detectado: alternativo (api_key + api_secret)')
+        setApiKey(parsed.api_key.trim())
+        setApiSecret(parsed.api_secret.trim())
+        if (parsed.passphrase) setPassphrase(parsed.passphrase.trim())
+        Alert.alert('✅ Sucesso!', 'API Key e Secret carregados do QR Code!')
+        setQrScannerVisible(false)
+        setCurrentScanField(null)
+        return
+      }
+      
+      // Formato 3: Campos com nomenclatura variada
+      const possibleKeyFields = ['apiKey', 'api_key', 'key', 'publicKey', 'public_key']
+      const possibleSecretFields = ['secretKey', 'secret_key', 'apiSecret', 'api_secret', 'secret', 'privateKey', 'private_key']
+      const possiblePassphraseFields = ['passphrase', 'pass', 'password']
+      
+      const detectedKey = possibleKeyFields.find(field => parsed[field])
+      const detectedSecret = possibleSecretFields.find(field => parsed[field])
+      const detectedPassphrase = possiblePassphraseFields.find(field => parsed[field])
+      
+      if (detectedKey || detectedSecret) {
+        console.log('🔑 Formato detectado: campos variados')
+        if (detectedKey) setApiKey(parsed[detectedKey].trim())
+        if (detectedSecret) setApiSecret(parsed[detectedSecret].trim())
+        if (detectedPassphrase) setPassphrase(parsed[detectedPassphrase].trim())
+        
+        const loadedFields = []
+        if (detectedKey) loadedFields.push('API Key')
+        if (detectedSecret) loadedFields.push('API Secret')
+        if (detectedPassphrase) loadedFields.push('Passphrase')
+        
+        Alert.alert('✅ Sucesso!', `${loadedFields.join(', ')} carregados do QR Code!`)
+        setQrScannerVisible(false)
+        setCurrentScanField(null)
+        return
+      }
+      
+      // Se chegou aqui, o JSON não tem os campos esperados
+      console.warn('⚠️ QR Code é JSON mas não contém campos reconhecidos')
+      console.log('Campos disponíveis:', Object.keys(parsed))
+      Alert.alert(
+        '⚠️ QR Code não reconhecido',
+        `O QR Code contém: ${Object.keys(parsed).join(', ')}\n\nPor favor, cole manualmente.`
+      )
+      
+    } catch (error) {
+      // Não é JSON - trata como texto simples
+      console.log('📝 QR Code não é JSON, usando como texto simples')
+      
+      // Detecta se é um formato de texto estruturado (ex: "key:value")
+      if (data.includes(':') || data.includes('=')) {
+        console.log('🔍 Tentando extrair dados de formato texto estruturado...')
+        
+        // Tenta diferentes delimitadores
+        const lines = data.split(/[\n\r]+/)
+        const keyValuePairs: { [key: string]: string } = {}
+        
+        lines.forEach(line => {
+          const colonMatch = line.match(/^([^:=]+)[:=]\s*(.+)$/)
+          if (colonMatch) {
+            const key = colonMatch[1].trim().toLowerCase()
+            const value = colonMatch[2].trim()
+            keyValuePairs[key] = value
+          }
+        })
+        
+        // Tenta mapear os valores encontrados
+        const keyFound = keyValuePairs['api key'] || keyValuePairs['apikey'] || keyValuePairs['key']
+        const secretFound = keyValuePairs['api secret'] || keyValuePairs['apisecret'] || keyValuePairs['secret'] || keyValuePairs['secretkey']
+        const passphraseFound = keyValuePairs['passphrase'] || keyValuePairs['password']
+        
+        if (keyFound || secretFound) {
+          if (keyFound) setApiKey(keyFound)
+          if (secretFound) setApiSecret(secretFound)
+          if (passphraseFound) setPassphrase(passphraseFound)
+          
+          const loaded = []
+          if (keyFound) loaded.push('API Key')
+          if (secretFound) loaded.push('API Secret')
+          if (passphraseFound) loaded.push('Passphrase')
+          
+          Alert.alert('✅ Sucesso!', `${loaded.join(', ')} extraídos do QR Code!`)
+          setQrScannerVisible(false)
+          setCurrentScanField(null)
+          return
+        }
+      }
+      
+      // Se não conseguiu extrair, coloca no campo selecionado
+      if (currentScanField === 'apiKey') {
+        setApiKey(data.trim())
+        Alert.alert('✅ Colado!', 'Texto do QR Code colado no campo API Key')
+      } else if (currentScanField === 'apiSecret') {
+        setApiSecret(data.trim())
+        Alert.alert('✅ Colado!', 'Texto do QR Code colado no campo API Secret')
+      } else if (currentScanField === 'passphrase') {
+        setPassphrase(data.trim())
+        Alert.alert('✅ Colado!', 'Texto do QR Code colado no campo Passphrase')
+      }
     }
+    
     setQrScannerVisible(false)
     setCurrentScanField(null)
   }, [currentScanField])
@@ -982,30 +860,21 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   }, [t])
 
   const handleLinkExchange = useCallback(async () => {
-    console.log('🎯 [handleLinkExchange] FUNÇÃO CHAMADA!')
-    console.log('🎯 [handleLinkExchange] selectedExchange:', selectedExchange)
-    console.log('🎯 [handleLinkExchange] user:', user)
-    
     if (!selectedExchange) {
-      console.log('❌ [handleLinkExchange] Abortado: selectedExchange é null')
       return
     }
     
-    
     if (!apiKey.trim() || !apiSecret.trim()) {
-      console.log('❌ [handleLinkExchange] Abortado: apiKey ou apiSecret vazio')
       alert(t('error.fillApiKeys'))
       return
     }
 
     if (selectedExchange.requires_passphrase && !passphrase.trim()) {
-      console.log('❌ [handleLinkExchange] Abortado: passphrase obrigatória mas vazia')
       alert(t('error.passphraseRequired'))
       return
     }
     
     if (!user?.id) {
-      console.log('❌ [handleLinkExchange] Abortado: usuário não autenticado')
       alert('Erro: usuário não autenticado')
       return
     }
@@ -1013,58 +882,80 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     try {
       setConnecting(true)
       
-      console.log('💾 [SQLite] Iniciando processo de salvamento...')
-      console.log('💾 [SQLite] User ID:', user.id)
-      console.log('💾 [SQLite] Exchange:', {
+      console.log('� [NEW] Salvando exchange no MongoDB via API...')
+      console.log('🔐 [NEW] Exchange:', {
         ccxt_id: selectedExchange.ccxt_id,
         nome: selectedExchange.nome,
         requires_passphrase: selectedExchange.requires_passphrase
       })
       
-      // 🔐 Encrypt credentials before saving
-      console.log('🔐 [Encryption] Criptografando credenciais...')
-      const encryptedCredentials = await encryptExchangeCredentials(
-        apiKey.trim(),
-        apiSecret.trim(),
-        selectedExchange.requires_passphrase ? passphrase.trim() : undefined,
-        user.id
-      )
-      console.log('✅ [Encryption] Credenciais criptografadas')
-      
-      // Salvar no banco local SQLite
-      console.log('💾 [SQLite] Chamando exchangeService.addExchange()...')
-      const newExchange = await exchangeService.addExchange({
-        userId: user.id,
-        exchangeType: selectedExchange.ccxt_id, // CCXT ID (binance, bybit, mexc, etc)
-        exchangeName: selectedExchange.nome, // Nome da exchange (Binance, Bybit, MEXC, etc)
-        apiKeyEncrypted: encryptedCredentials.apiKeyEncrypted,
-        apiSecretEncrypted: encryptedCredentials.apiSecretEncrypted,
-        apiPassphraseEncrypted: encryptedCredentials.apiPassphraseEncrypted,
-        isActive: true
-      })
-      
-      console.log('✅ [SQLite] Exchange salva com sucesso!')
-      console.log('✅ [SQLite] Detalhes:', {
-        id: newExchange.id,
-        type: selectedExchange.ccxt_id,
-        name: selectedExchange.nome,
-        userId: user.id,
-        isActive: newExchange.is_active
-      })
+      // 🔐 NOVO: Salvar no MongoDB via API (backend criptografa)
+      try {
+        const response = await apiService.addExchange({
+          exchange_type: selectedExchange.ccxt_id,
+          api_key: apiKey.trim(),
+          api_secret: apiSecret.trim(),
+          passphrase: selectedExchange.requires_passphrase ? passphrase.trim() : undefined
+        })
+        
+        console.log('✅ [MongoDB] Exchange salva com sucesso!', response.exchange_id)
+        
+        // ✅ OPCIONAL: Manter SQLite como cache local (para offline)
+        // Se quiser sincronizar com SQLite também:
+        try {
+          const encryptedCredentials = await encryptExchangeCredentials(
+            apiKey.trim(),
+            apiSecret.trim(),
+            selectedExchange.requires_passphrase ? passphrase.trim() : undefined,
+            user.id
+          )
+          
+          await exchangeService.addExchange({
+            userId: user.id,
+            exchangeType: selectedExchange.ccxt_id,
+            exchangeName: selectedExchange.nome,
+            apiKeyEncrypted: encryptedCredentials.apiKeyEncrypted,
+            apiSecretEncrypted: encryptedCredentials.apiSecretEncrypted,
+            apiPassphraseEncrypted: encryptedCredentials.apiPassphraseEncrypted,
+            isActive: true
+          })
+        } catch (sqliteError) {
+          // Não bloquear se SQLite falhar - MongoDB é a fonte da verdade
+        }
+        
+      } catch (apiError) {
+        console.error('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
+        
+        // FALLBACK: Se API falhar, salva apenas no SQLite (modo offline)
+        const encryptedCredentials = await encryptExchangeCredentials(
+          apiKey.trim(),
+          apiSecret.trim(),
+          selectedExchange.requires_passphrase ? passphrase.trim() : undefined,
+          user.id
+        )
+        
+        await exchangeService.addExchange({
+          userId: user.id,
+          exchangeType: selectedExchange.ccxt_id,
+          exchangeName: selectedExchange.nome,
+          apiKeyEncrypted: encryptedCredentials.apiKeyEncrypted,
+          apiSecretEncrypted: encryptedCredentials.apiSecretEncrypted,
+          apiPassphraseEncrypted: encryptedCredentials.apiPassphraseEncrypted,
+          isActive: true
+        })
+      }
       
       // Fechar modal
       closeConnectModal()
       
-      // Pequeno delay para garantir que o SQLite processou
+      // Pequeno delay para garantir que processou
       await new Promise(resolve => setTimeout(resolve, 300))
       
-      console.log('🔄 [SQLite] Chamando onExchangeModified()...')
       // Atualizar exchanges e todos os dados da home
       await onExchangeModified()
-      console.log('✅ [SQLite] onExchangeModified() concluído')
       
     } catch (err) {
-      console.error('❌ [SQLite] Erro ao salvar exchange:', err)
+      console.error('❌ [Error] Erro ao salvar exchange:', err)
       alert(t('error.connectExchange'))
     } finally {
       setConnecting(false)
@@ -1158,16 +1049,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     confirmModalContent: { backgroundColor: colors.surface },
   }), [colors])
 
-  if (loading) {
-    return (
-      <View style={[styles.container, themedStyles.container]}>
-        <View style={styles.loadingContainer}>
-          <AnimatedLogoIcon size={48} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>{t('exchanges.loading')}</Text>
-        </View>
-      </View>
-    )
-  }
+  // Removido loading customizado - usa apenas o RefreshControl do ScrollView
 
   if (error) {
     return (
@@ -1201,6 +1083,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
             onRefresh={handleRefresh}
             colors={[colors.primary]}
             tintColor={colors.primary}
+            progressBackgroundColor={colors.surface}
           />
         }
       >
@@ -1242,6 +1125,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   onToggle={toggleExchange}
                   onDelete={handleDelete}
                   onPress={() => openDetailsModal(linkedExchange, 'linked')}
+                  isRefreshing={refreshing}
                 />
               ))
           )
@@ -1291,6 +1175,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   t={t}
                   onConnect={openConnectModal}
                   onPress={() => openDetailsModal(exchange, 'available')}
+                  isRefreshing={refreshing}
                 />
               )
             })
@@ -1327,7 +1212,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                           if (isActive) {
                             handleDisconnect(exchange.exchange_id, exchange.name)
                           } else {
-                            handleConnect(exchange.exchange_id, exchange.name)
+                            toggleExchange(exchange.exchange_id, 'inactive', exchange.name)
                           }
                         }
                       }}
@@ -1432,8 +1317,29 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                         placeholder="Digite sua API Key"
                         autoCapitalize="none"
                         autoCorrect={false}
+                        secureTextEntry={!showApiKey}
                       />
                       <View style={styles.inputActions}>
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
+                          onPress={() => setShowApiKey(!showApiKey)}
+                        >
+                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            {showApiKey ? (
+                              // Ícone de olho aberto
+                              <>
+                                <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </>
+                            ) : (
+                              // Ícone de olho fechado
+                              <>
+                                <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </>
+                            )}
+                          </Svg>
+                        </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
                           onPress={() => handlePasteFromClipboard('apiKey')}
@@ -1464,11 +1370,31 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                         onChangeText={setApiSecret}
                         placeholder="Digite seu API Secret"
                         placeholderTextColor={colors.textSecondary}
-                        secureTextEntry
+                        secureTextEntry={!showApiSecret}
                         autoCapitalize="none"
                         autoCorrect={false}
                       />
                       <View style={styles.inputActions}>
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
+                          onPress={() => setShowApiSecret(!showApiSecret)}
+                        >
+                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            {showApiSecret ? (
+                              // Ícone de olho aberto
+                              <>
+                                <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </>
+                            ) : (
+                              // Ícone de olho fechado
+                              <>
+                                <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </>
+                            )}
+                          </Svg>
+                        </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
                           onPress={() => handlePasteFromClipboard('apiSecret')}
@@ -1493,16 +1419,57 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   {selectedExchange.requires_passphrase && (
                     <View style={styles.inputGroup}>
                       <Text style={[styles.inputLabel, { color: colors.text }]}>Passphrase *</Text>
-                      <TextInput
-                        style={[styles.input, themedStyles.input]}
-                        value={passphrase}
-                        onChangeText={setPassphrase}
-                        placeholder="Digite sua Passphrase"
-                        placeholderTextColor={colors.textSecondary}
-                        secureTextEntry
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
+                      <View style={styles.inputWithButtons}>
+                        <TextInput
+                          style={[styles.inputWithIcons, themedStyles.input]}
+                          value={passphrase}
+                          onChangeText={setPassphrase}
+                          placeholder="Digite sua Passphrase"
+                          placeholderTextColor={colors.textSecondary}
+                          secureTextEntry={!showPassphrase}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                        <View style={styles.inputActions}>
+                          <TouchableOpacity
+                            style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
+                            onPress={() => setShowPassphrase(!showPassphrase)}
+                          >
+                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              {showPassphrase ? (
+                                // Ícone de olho aberto
+                                <>
+                                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </>
+                              ) : (
+                                // Ícone de olho fechado
+                                <>
+                                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </>
+                              )}
+                            </Svg>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
+                            onPress={() => handlePasteFromClipboard('passphrase')}
+                          >
+                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <Path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </Svg>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.iconButton, { backgroundColor: colors.primary }]}
+                            onPress={() => handleOpenQRScanner('passphrase')}
+                          >
+                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
+                            </Svg>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
                       <Text style={[styles.inputHint, { color: colors.textSecondary }]}>
                         ℹ️ Esta exchange requer uma passphrase
                       </Text>
@@ -2203,7 +2170,9 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
             ? 'Escanear API Key' 
             : currentScanField === 'apiSecret'
             ? 'Escanear API Secret'
-            : 'Escanear Passphrase'
+            : currentScanField === 'passphrase'
+            ? 'Escanear Passphrase'
+            : 'Escanear Credenciais da Exchange'
         }
       />
     </SafeAreaView>

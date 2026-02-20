@@ -114,8 +114,12 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     biometricAvailable,
     biometricType,
     isBiometricEnabled,
+    isAutoLoginEnabled,
     isLoading,
     isLoadingData,
+    hasTriedAutoAuth,
+    autoAuthCancelled,
+    markAutoAuthTried,
   } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -125,6 +129,58 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const [isProcessingOAuth, setIsProcessingOAuth] = useState(false) // 🆕 Estado para processar OAuth
 
   const isFullLoading = isLoading || isLoadingData
+
+  // 🔐 AUTO-AUTH: Tenta FaceID automaticamente quando tela carrega
+  useEffect(() => {
+    const tryAutoAuth = async () => {
+      // ✅ Marca como tentado IMEDIATAMENTE para evitar loops
+      if (hasTriedAutoAuth) {
+        console.log('⏭️ Auto-auth já foi tentado, pulando...')
+        return
+      }
+      
+      // Se usuário cancelou anteriormente, não tenta mais
+      if (autoAuthCancelled) {
+        console.log('🚫 Auto-auth foi cancelado anteriormente, pulando...')
+        return
+      }
+      
+      // Marca ANTES de qualquer operação assíncrona
+      markAutoAuthTried()
+      
+      // Aguarda um momento para garantir que o estado está carregado
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Verifica se pode fazer auto-auth E se está habilitado
+      if (
+        biometricAvailable && 
+        isBiometricEnabled && 
+        isAutoLoginEnabled &&  // ← Verifica configuração
+        !isLoading && 
+        !isLoadingData
+      ) {
+        console.log('🔐 Tentando autenticação automática com biometria...')
+        
+        try {
+          await loginWithBiometric(true) // true = isAutoAuth
+        } catch (error: any) {
+          console.log('⚠️ Auto-auth falhou:', error)
+          // Erro já tratado no AuthContext
+        }
+      } else {
+        console.log('ℹ️ Auto-auth não disponível:', {
+          biometricAvailable,
+          isBiometricEnabled,
+          isAutoLoginEnabled,
+          isLoading,
+          isLoadingData
+        })
+      }
+    }
+    
+    tryAutoAuth()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 🔐 Detecta parâmetros OAuth na URL quando LoginScreen carrega
   useEffect(() => {
@@ -246,9 +302,23 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
 
   const handleBiometricLogin = async () => {
     try {
-      await loginWithBiometric()
+      await loginWithBiometric(false) // false = manual, não é auto-auth
     } catch (error: any) {
+      // Se usuário cancelou, não mostra erro (comportamento esperado)
+      if (
+        error?.name === 'BiometricCancelError' ||
+        error?.message?.toLowerCase().includes('cancel')
+      ) {
+        console.log('👤 Usuário cancelou o FaceID manualmente')
+        return // Sai silenciosamente
+      }
+      
+      // Para outros erros, mostra alerta
       console.error('❌ Erro no login biométrico:', error)
+      Alert.alert(
+        'Erro de Autenticação',
+        'Não foi possível autenticar com biometria. Tente novamente ou use outro método de login.'
+      )
     }
   }
 

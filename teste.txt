@@ -1,0 +1,28 @@
+{
+    "success": true,
+    "exchanges": [
+        {
+            "exchange": "OKX",
+            "exchange_id": "693481148b0a41e8b6acb077",
+            "success": false,
+            "error": "Failed to fetch balance: AuthenticationError: okx requires \"password\" credential",
+            "balances": {},
+            "total_usd": 0.0
+        },
+        {
+            "exchange": "MEXC",
+            "exchange_id": "693481148b0a41e8b6acb07b",
+            "success": false,
+            "error": "Failed to fetch balance: BadRequest: mexc {\"code\":10072,\"msg\":\"Api key info invalid\"}",
+            "balances": {},
+            "total_usd": 0.0
+        }
+    ],
+    "total_usd": 0.0,
+    "timestamp": 1771539747
+} 
+
+curl 'http://54.94.231.254:3002/api/v1/orders/fetch/secure' \
+  -X 'POST' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwibmFtZSI6InVzZXIiLCJyb2xlcyI6WyJ1c2VyIl0sImlzX2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzcxNTM5NzM0LCJleHAiOjE3NzE2MjYxMzQsImp0aSI6IjQ4MmJlZjY4LTg4NWMtNGUyMC04NzEzLWUwYWE0ZWZlMDU3ZSIsImF1ZCI6InRyYWRpbmctYXBpIiwiaXNzIjoidHJhZGluZy1zZXJ2aWNlIn0.zDIAMe2spsKgljz6KH6vaN5HyTG_G9Hh4gcWwFvuGL4'

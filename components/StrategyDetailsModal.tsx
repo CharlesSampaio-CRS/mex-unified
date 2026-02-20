@@ -14,7 +14,8 @@ import {
 import Svg, { Path, Circle } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { strategyService, type Strategy } from '@/services/strategy-service'
+import { useBackendStrategies } from '@/hooks/useBackendStrategies'
+import { type Strategy } from '@/services/backend-strategy-service'
 
 interface StrategyDetailsModalProps {
   visible: boolean
@@ -35,6 +36,7 @@ export function StrategyDetailsModal({
 }: StrategyDetailsModalProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
+  const { strategies } = useBackendStrategies(false) // Não auto-load, usa estratégias passadas
   
   const [strategy, setStrategy] = useState<Strategy | null>(null)
   const [loading, setLoading] = useState(false)
@@ -42,36 +44,19 @@ export function StrategyDetailsModal({
 
   useEffect(() => {
     if (visible && strategyId) {
-      loadStrategyDetails()
+      // Busca a estratégia da lista local (já carregada)
+      const found = strategies.find(s => s.id === strategyId)
+      if (found) {
+        setStrategy(found)
+      } else {
+        setError(t('strategy.notFound') || 'Estratégia não encontrada')
+      }
     } else if (!visible) {
       // Reset when modal closes
       setStrategy(null)
       setError(null)
     }
-  }, [visible, strategyId])
-
-  const loadStrategyDetails = async () => {
-    if (!strategyId) return
-
-    try {
-      setLoading(true)
-      setError(null)
-      
-      console.log('🔍 Loading strategy from SQLite:', strategyId)
-      const data = await strategyService.findById(strategyId)
-      
-      if (!data) {
-        throw new Error(t('strategy.notFound') || 'Estratégia não encontrada')
-      }
-      
-      setStrategy(data)
-    } catch (err) {
-      console.error('❌ Error loading strategy:', err)
-      setError(err instanceof Error ? err.message : t('strategy.errorLoading'))
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [visible, strategyId, strategies, t])
 
   const renderContent = () => {
     if (loading) {
@@ -94,9 +79,9 @@ export function StrategyDetailsModal({
           </Text>
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: colors.primary }]}
-            onPress={loadStrategyDetails}
+            onPress={onClose}
           >
-            <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
+            <Text style={styles.retryButtonText}>{t('common.close') || 'Fechar'}</Text>
           </TouchableOpacity>
         </View>
       )
@@ -114,15 +99,15 @@ export function StrategyDetailsModal({
 
     const strategyId = strategy.id || ''
     const strategyName = `${strategy.symbol} - ${strategy.exchange_name || strategy.exchange_id || 'Exchange'}`
-    const template = (JSON.parse(strategy.config || "{}").template) || 'simple'
+    const template = (strategy.config?.template) || 'simple'
     const templateNames: Record<string, string> = {
       simple: t('strategy.simple'),
       conservative: t('strategy.conservative'),
       aggressive: t('strategy.aggressive')
     }
     
-    // Converter is_active (0/1) para boolean
-    const isActive = strategy.is_active === 1
+    // is_active já é boolean no MongoDB
+    const isActive = strategy.is_active
 
     return (
       <ScrollView 
@@ -239,13 +224,13 @@ export function StrategyDetailsModal({
         </View>
 
         {/* Regras - Take Profit */}
-        {(JSON.parse(strategy.config || "{}").rules)?.take_profit_levels && (JSON.parse(strategy.config || "{}").rules).take_profit_levels.length > 0 && (
+        {strategy.config?.rules?.take_profit_levels && strategy.config.rules.take_profit_levels.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
               {t('strategy.takeProfit')}
             </Text>
             <View style={[styles.conditionsCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-              {(JSON.parse(strategy.config || "{}").rules).take_profit_levels.map((level, index) => (
+              {strategy.config.rules.take_profit_levels.map((level: any, index: number) => (
                 <View key={index}>
                   {index > 0 && (
                     <View style={[styles.conditionDivider, { backgroundColor: colors.border }]} />
@@ -268,7 +253,7 @@ export function StrategyDetailsModal({
         )}
 
         {/* Stop Loss */}
-        {(JSON.parse(strategy.config || "{}").rules)?.stop_loss?.enabled && (
+        {strategy.config?.rules?.stop_loss?.enabled && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
               {t('strategy.stopLoss')}
@@ -283,7 +268,7 @@ export function StrategyDetailsModal({
                     Proteção ativada
                   </Text>
                   <Text style={[styles.actionValue, { color: colors.text }]}>
-                    -{(JSON.parse(strategy.config || "{}").rules).stop_loss.percent}%
+                    -{strategy.config.rules.stop_loss.percent}%
                   </Text>
                 </View>
               </View>
@@ -365,14 +350,14 @@ export function StrategyDetailsModal({
                 style={[styles.footerButton, { backgroundColor: colors.primary }]}
                 onPress={() => {
                   if (strategyId) {
-                    onToggleActive?.(strategyId, strategy.is_active === 1)
+                    onToggleActive?.(strategyId, strategy.is_active)
                     onClose()
                   }
                 }}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.footerButtonText, { color: '#ffffff' }]}>
-                  {strategy.is_active === 1 ? 'Desativar' : 'Ativar'}
+                  {strategy.is_active ? 'Desativar' : 'Ativar'}
                 </Text>
               </TouchableOpacity>
 
