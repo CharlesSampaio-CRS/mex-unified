@@ -5,7 +5,6 @@ import * as AuthSession from 'expo-auth-session'
 import { Platform } from 'react-native'
 import { secureStorage } from '@/lib/secure-storage'
 import { config } from '@/lib/config'
-import { dailySnapshotScheduler } from '@/services/daily-snapshot-scheduler'
 
 interface User {
   id: string
@@ -107,21 +106,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     initAuth()
   }, [])
-
-  // ⏰ Inicia agendador de snapshots diários quando usuário faz login
-  useEffect(() => {
-    if (user && user.id) {
-      dailySnapshotScheduler.start(user.id)
-    } else {
-      // Para o agendador quando usuário faz logout
-      dailySnapshotScheduler.stop()
-    }
-
-    // Cleanup: para o agendador quando componente desmonta
-    return () => {
-      dailySnapshotScheduler.stop()
-    }
-  }, [user?.id])
 
   // Listen for OAuth callback events
   useEffect(() => {
