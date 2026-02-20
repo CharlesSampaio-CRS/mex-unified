@@ -212,7 +212,7 @@ export function CompactAssetCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 8,
-    marginBottom: 4,
+    marginBottom: 3,
     padding: 0,
     overflow: 'hidden',
   },
@@ -220,8 +220,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 8,
-    minHeight: 44,
+    padding: 6,
+    minHeight: 40,
   },
   leftSection: {
     flexDirection: 'row',

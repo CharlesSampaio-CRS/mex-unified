@@ -158,15 +158,15 @@ export function CompactAssetsList({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 8,
+    marginBottom: 12,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 6,
+    padding: 4,
     borderRadius: 6,
-    marginBottom: 4,
+    marginBottom: 3,
     borderWidth: 1,
   },
   headerLeft: {
