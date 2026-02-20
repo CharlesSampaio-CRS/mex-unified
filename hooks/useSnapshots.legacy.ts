@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
+// import { snapshotService, SnapshotStats } from '../services/snapshot-service' // ⚠️ DESABILITADO: snapshot-service foi removido
+
+/**
+ * ⚠️ LEGACY HOOK - Não mais utilizado
+ * 
+ * useSnapshots Hookt { useState, useEffect, useCallback } from 'react'
 import { snapshotService, SnapshotStats } from '../services/snapshot-service'
 
 /**

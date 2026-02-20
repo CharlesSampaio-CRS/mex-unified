@@ -1,12 +1,17 @@
 import { table } from '../lib/sqlite/query-builder'
-import { snapshotService } from './snapshot-service'
+// import { snapshotService } from './snapshot-service' // ⚠️ DESABILITADO: snapshot-service foi removido (agora usa MongoDB)
 
 /**
+ * ⚠️ LEGACY SERVICE - Não mais utilizado
+ * 
  * Migration Service - SQLite Version
  * 
  * Importa dados do MongoDB para o SQLite local
  * - Snapshots de balanço
  * - Histórico detalhado de balances
+ * 
+ * 📝 NOTA: Este serviço foi substituído pelo backend-snapshot-service.ts
+ * Os snapshots agora são gerenciados diretamente no MongoDB via backend Rust
  */
 
 interface MongoSnapshot {
