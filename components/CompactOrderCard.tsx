@@ -53,12 +53,19 @@ export function CompactOrderCard({
         activeOpacity={0.7}
         disabled={isCancelling}
       >
-        {/* Esquerda: Símbolo + Badge */}
+        {/* Esquerda: Símbolo (Token) */}
         <View style={styles.leftSection}>
           <Text style={[styles.symbol, { color: colors.text }]}>
-            {order.symbol.charAt(0).toUpperCase() + order.symbol.slice(1).toLowerCase()}
+            {(() => {
+              // Extrair token base do símbolo (ex: BTC/USDT -> Btc)
+              const baseToken = order.symbol.split('/')[0] || order.symbol;
+              return baseToken.charAt(0).toUpperCase() + baseToken.slice(1).toLowerCase();
+            })()}
           </Text>
-          
+        </View>
+
+        {/* Direita: Side + Quote Currency + Chevron */}
+        <View style={styles.rightSection}>
           <View style={[
             styles.sideBadge,
             { backgroundColor: order.side === 'buy' ? colors.successLight : colors.dangerLight }
@@ -70,10 +77,15 @@ export function CompactOrderCard({
               {order.side === 'buy' ? 'Buy' : 'Sell'}
             </Text>
           </View>
-        </View>
-
-        {/* Direita: Chevron */}
-        <View style={styles.rightSection}>
+          
+          <Text style={[styles.quoteCurrency, { color: colors.textSecondary }]}>
+            {(() => {
+              // Extrair moeda de cotação (ex: BTC/USDT -> USD)
+              const quoteCurrency = order.symbol.split('/')[1] || 'USD';
+              return quoteCurrency.replace('USDT', 'USD').replace('BUSD', 'USD');
+            })()}
+          </Text>
+          
           <Ionicons 
             name={expanded ? "chevron-up" : "chevron-down"} 
             size={16} 
@@ -228,6 +240,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
+  },
+  quoteCurrency: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginLeft: 6,
+    marginRight: 6,
   },
   rightSection: {
     flexDirection: 'row',
