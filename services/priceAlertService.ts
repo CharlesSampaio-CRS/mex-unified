@@ -1,10 +1,9 @@
 /**
- * Serviço de Monitoramento de Alertas de Preço
+ * Serviço de Monitoramento de Alertas de Preço - Mobile Only
  * Verifica periodicamente os preços e dispara notificações quando condições são atingidas
  */
 
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   TokenAlert, 
@@ -17,9 +16,6 @@ import {
 const ALERTS_STORAGE_KEY = '@cryptohub:price_alerts';
 const PRICE_CACHE_KEY = '@cryptohub:price_cache';
 const CHECK_INTERVAL_MS = 60000; // 1 minuto
-
-// Verifica se notificações estão disponíveis (não funciona na web)
-const isNotificationSupported = Platform.OS !== 'web';
 
 interface PriceCache {
   [symbol: string]: {
@@ -34,19 +30,14 @@ class PriceAlertService {
   private priceCache: PriceCache = {};
 
   /**
-   * Inicializa o serviço de alertas
+   * Inicializa o serviço de alertas - Mobile only
    */
   async initialize() {
-    if (!isNotificationSupported) {
-      console.log('[PriceAlerts] ⚠️ Notificações não disponíveis na web');
-      return;
-    }
-
     try {
       // Carrega cache de preços
       await this.loadPriceCache();
       
-      console.log('[PriceAlerts] ✅ Serviço inicializado');
+      console.log('[PriceAlerts] ✅ Serviço mobile inicializado');
     } catch (error) {
       console.error('[PriceAlerts] ❌ Erro ao inicializar:', error);
     }
@@ -61,13 +52,8 @@ class PriceAlertService {
       return;
     }
 
-    if (!isNotificationSupported) {
-      console.log('[PriceAlerts] ⚠️ Notificações não disponíveis');
-      return;
-    }
-
     this.isRunning = true;
-    console.log('[PriceAlerts] 🚀 Iniciando monitoramento de alertas...');
+    console.log('[PriceAlerts] 🚀 Iniciando monitoramento mobile de alertas...');
 
     // Verifica imediatamente
     await this.checkAlerts();
@@ -343,13 +329,9 @@ class PriceAlertService {
   }
 
   /**
-   * Envia notificação push
+   * Envia notificação push - Mobile only
    */
   private async sendNotification(alert: TokenAlert, message: string, currentPrice: number) {
-    if (!isNotificationSupported) {
-      return;
-    }
-
     try {
       await Notifications.scheduleNotificationAsync({
         content: {

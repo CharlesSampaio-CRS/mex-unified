@@ -1078,22 +1078,13 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderRadius: 12,
     overflow: "hidden",
-    paddingHorizontal: Platform.OS === "web" ? 8 : 4,
-    paddingVertical: Platform.OS === "web" ? 0 : 0,
-    ...(Platform.OS === "web" && {
-      minHeight: 48,
-      justifyContent: "center",
-    }),
+    paddingHorizontal: 4,
+    paddingVertical: 0,
   },
   picker: {
-    height: Platform.OS === "ios" ? 180 : Platform.OS === "web" ? 48 : 50,
+    height: Platform.OS === "ios" ? 180 : 50,
     width: "100%",
     fontSize: 16,
-    ...(Platform.OS === "web" && {
-      backgroundColor: "transparent",
-      borderWidth: 0,
-      outline: "none",
-    }),
   },
   customInputContainer: {
     gap: 12,

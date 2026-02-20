@@ -1,19 +1,15 @@
 /**
- * Expo SQLite Database Manager
+ * Expo SQLite Database Manager - Mobile Only
  * 
- * Banco de dados otimizado que funciona em:
+ * Banco de dados otimizado para:
  * - ✅ Expo Go (Android + iOS)
  * - ✅ Expo Dev Client (Android + iOS)
- * - 🔄 Expo Web (modo simulado - dados não persistem)
  * 
  * Performance: 50-100x mais rápido que AsyncStorage
  * Features: SQL completo, transações, índices, triggers
- * 
- * ⚠️ IMPORTANTE: Web usa banco em memória (não persiste dados)
  */
 
 import * as SQLite from 'expo-sqlite'
-import { Platform } from 'react-native'
 
 // Types
 export interface QueryResult {
@@ -29,31 +25,7 @@ export interface QueryResult {
 // Database configuration
 const DB_NAME = 'cryptohub.db'
 const DB_VERSION = 1
-const IS_WEB = Platform.OS === 'web'
 
-// Mock database para Web (temporário até corrigir WASM)
-class MockDatabase {
-  private data: Map<string, any[]> = new Map()
-
-  async execAsync(sql: string): Promise<void> {
-    console.log('🌐 [MockDB] execAsync:', sql.substring(0, 100))
-  }
-
-  async getAllAsync<T>(sql: string, params: any[] = []): Promise<T[]> {
-    console.log('🌐 [MockDB] getAllAsync - Retornando array vazio')
-    return []
-  }
-
-  async getFirstAsync<T>(sql: string, params: any[] = []): Promise<T | null> {
-    console.log('🌐 [MockDB] getFirstAsync - Retornando null')
-    return null
-  }
-
-  async runAsync(sql: string, params: any[] = []): Promise<{ changes: number; lastInsertRowId: number }> {
-    console.log('🌐 [MockDB] runAsync')
-    return { changes: 0, lastInsertRowId: 0 }
-  }
-}
 class SQLiteDatabase {
   private db: SQLite.SQLiteDatabase | null = null
   private isInitialized = false
@@ -76,17 +48,7 @@ class SQLiteDatabase {
 
   private async _initialize(): Promise<void> {
     try {
-      console.log('🗄️  [SQLite] Inicializando banco de dados...')
-      console.log('📱 Platform:', Platform.OS)
-
-      // 🌐 WEB: Usar Mock Database (temporário)
-      if (IS_WEB) {
-        console.warn('⚠️ [SQLite] Rodando em WEB - usando MockDatabase (dados não persistem)')
-        this.db = new MockDatabase() as any
-        this.isInitialized = true
-        console.log('✅ [SQLite] MockDatabase inicializado (Web)')
-        return
-      }
+      console.log('🗄️  [SQLite] Inicializando banco de dados mobile...')
 
       // 📱 MOBILE: Usar SQLite real
       this.db = await SQLite.openDatabaseAsync(DB_NAME)
@@ -111,8 +73,7 @@ class SQLiteDatabase {
       await this.createTables()
 
       this.isInitialized = true
-      console.log('✅ [SQLite] Banco de dados inicializado com sucesso!')
-      console.log(`   📊 Platform: ${Platform.OS}`)
+      console.log('✅ [SQLite] Banco de dados mobile inicializado com sucesso!')
       console.log(`   📦 Database: ${DB_NAME}`)
       console.log(`   🔢 Version: ${DB_VERSION}`)
 
