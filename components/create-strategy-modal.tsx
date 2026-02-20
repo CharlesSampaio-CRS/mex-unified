@@ -135,12 +135,12 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
   const loadExchanges = async () => {
     try {
       setLoadingExchanges(true)
-      console.log('📊 Loading connected exchanges from local database...')
+      console.log('📊 Loading connected exchanges from MongoDB via API...')
       
-      // 🔄 Busca exchanges do banco local (WatermelonDB)
+      // � Busca exchanges do MongoDB (via API backend)
       const connectedExchanges = await exchangeService.getActiveExchanges(userId)
       
-      console.log(`✅ Loaded ${connectedExchanges.length} active exchanges`)
+      console.log(`✅ Loaded ${connectedExchanges.length} active exchanges from MongoDB`)
       
       // Converter para o formato esperado pelo componente
       const formattedExchanges = connectedExchanges.map(ex => ({

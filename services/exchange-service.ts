@@ -1,12 +1,20 @@
 /**
- * Exchange Service - SQLite
+ * Exchange Service - Hybrid (MongoDB + SQLite Cache)
  * 
- * Gerencia exchanges conectadas do usuário
- * Funciona em Expo Go, Dev Client e Web!
+ * Estratégia:
+ * 1. 📡 getConnectedExchanges() / getActiveExchanges() - Busca do MongoDB via API
+ * 2. 📦 Outros métodos (CRUD) - Ainda usam SQLite local como cache
+ * 3. ⚡ Fallback automático para SQLite se API falhar
+ * 
+ * Por que híbrido?
+ * - Listagem precisa ser do MongoDB (fonte da verdade)
+ * - Operações CRUD ainda podem usar cache local para performance
+ * - Sync bidirecional: Local ↔️ MongoDB
  */
 
 import { table } from '@/lib/sqlite/query-builder'
 import { sqliteDatabase } from '@/lib/sqlite/database'
+import { apiService } from './api'
 
 export interface UserExchange {
   id: string
@@ -92,38 +100,71 @@ class SQLiteExchangeService {
   }
 
   /**
-   * Lista todas as exchanges conectadas do usuário
+   * Lista todas as exchanges conectadas do usuário (MongoDB via API)
    */
   async getConnectedExchanges(userId: string): Promise<ConnectedExchange[]> {
     try {
-      console.log('🔍 [ExchangeService] getConnectedExchanges() iniciado para userId:', userId)
+      console.log('🔍 [ExchangeService] getConnectedExchanges() - Buscando do MongoDB via API para userId:', userId)
       
-      const exchanges = await table<UserExchange>(this.tableName)
-        .where('user_id', userId)
-        .orderBy('created_at', 'DESC')
-        .get()
+      // Busca do backend (MongoDB)
+      const response = await apiService.listExchanges()
+      
+      if (!response.success || !response.exchanges) {
+        console.warn('⚠️ [ExchangeService] Resposta vazia ou inválida do backend')
+        return []
+      }
 
-      console.log('✅ [ExchangeService] getConnectedExchanges() concluído, count:', exchanges.length)
-      return exchanges.map(e => this.toConnectedExchange(e))
+      console.log(`✅ [ExchangeService] ${response.count} exchanges encontradas no MongoDB`)
+      
+      // Converte para formato ConnectedExchange
+      const exchanges = response.exchanges.map(ex => ({
+        id: ex.exchange_id,
+        exchangeType: ex.exchange_type,
+        exchangeName: ex.exchange_name,
+        isActive: ex.is_active,
+        createdAt: new Date(ex.created_at),
+        lastSyncAt: undefined // API não retorna last_sync_at neste endpoint
+      }))
+
+      return exchanges
     } catch (error) {
       console.error('❌ [ExchangeService] Erro em getConnectedExchanges():', error)
       console.error('❌ [ExchangeService] Stack:', error instanceof Error ? error.stack : error)
-      // Retorna array vazio em caso de erro (tabela pode não existir ainda)
-      return []
+      
+      // Fallback: tenta buscar do SQLite local (cache)
+      console.warn('⚠️ [ExchangeService] Tentando fallback para SQLite local...')
+      try {
+        const exchanges = await table<UserExchange>(this.tableName)
+          .where('user_id', userId)
+          .orderBy('created_at', 'DESC')
+          .get()
+        
+        console.log(`📦 [ExchangeService] ${exchanges.length} exchanges encontradas no cache local`)
+        return exchanges.map(e => this.toConnectedExchange(e))
+      } catch (localError) {
+        console.error('❌ [ExchangeService] Fallback SQLite também falhou:', localError)
+        return []
+      }
     }
   }
 
   /**
-   * Lista apenas exchanges ativas
+   * Lista apenas exchanges ativas (MongoDB via API)
    */
   async getActiveExchanges(userId: string): Promise<ConnectedExchange[]> {
-    const exchanges = await table<UserExchange>(this.tableName)
-      .where('user_id', userId)
-      .where('is_active', 1)
-      .orderBy('created_at', 'DESC')
-      .get()
-
-    return exchanges.map(e => this.toConnectedExchange(e))
+    try {
+      console.log('🔍 [ExchangeService] getActiveExchanges() - Buscando do MongoDB via API')
+      
+      const allExchanges = await this.getConnectedExchanges(userId)
+      const activeExchanges = allExchanges.filter(ex => ex.isActive)
+      
+      console.log(`✅ [ExchangeService] ${activeExchanges.length}/${allExchanges.length} exchanges ativas`)
+      
+      return activeExchanges
+    } catch (error) {
+      console.error('❌ [ExchangeService] Erro em getActiveExchanges():', error)
+      return []
+    }
   }
 
   /**
