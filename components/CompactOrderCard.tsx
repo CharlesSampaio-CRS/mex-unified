@@ -56,7 +56,7 @@ export function CompactOrderCard({
         {/* Esquerda: Símbolo + Badge */}
         <View style={styles.leftSection}>
           <Text style={[styles.symbol, { color: colors.text }]}>
-            {order.symbol}
+            {order.symbol.charAt(0).toUpperCase() + order.symbol.slice(1).toLowerCase()}
           </Text>
           
           <View style={[
@@ -72,21 +72,8 @@ export function CompactOrderCard({
           </View>
         </View>
 
-        {/* Centro: Amount e Price */}
-        <View style={styles.centerSection}>
-          <Text style={[styles.amount, { color: colors.text }]} numberOfLines={1}>
-            {formatValue(formatAmount(order.amount))}
-          </Text>
-          <Text style={[styles.price, { color: colors.textSecondary }]} numberOfLines={1}>
-            @ {formatValue(`$${formatPrice(order.price)}`)}
-          </Text>
-        </View>
-
-        {/* Direita: Timestamp + Chevron */}
+        {/* Direita: Chevron */}
         <View style={styles.rightSection}>
-          <Text style={[styles.time, { color: colors.textTertiary }]} numberOfLines={1}>
-            {formatDate(order.timestamp)}
-          </Text>
           <Ionicons 
             name={expanded ? "chevron-up" : "chevron-down"} 
             size={16} 
@@ -98,6 +85,29 @@ export function CompactOrderCard({
       {/* Detalhes Expandidos */}
       {expanded && (
         <View style={[styles.expandedSection, { borderTopColor: colors.border }]}>
+          {/* Informações de Preço e Quantidade */}
+          <View style={styles.priceInfoRow}>
+            <View style={styles.priceInfoItem}>
+              <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Amount:</Text>
+              <Text style={[styles.priceInfoValue, { color: colors.text }]}>
+                {formatValue(formatAmount(order.amount))}
+              </Text>
+            </View>
+            <View style={styles.priceInfoItem}>
+              <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Price:</Text>
+              <Text style={[styles.priceInfoValue, { color: colors.text }]}>
+                {formatValue(`$${formatPrice(order.price)}`)}
+              </Text>
+            </View>
+            <View style={styles.priceInfoItem}>
+              <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Time:</Text>
+              <Text style={[styles.priceInfoValue, { color: colors.text }]}>
+                {formatDate(order.timestamp)}
+              </Text>
+            </View>
+          </View>
+          
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
           {/* Detalhes da Ordem */}
           <View style={styles.detailsGrid}>
             <View style={styles.detailItem}>
@@ -200,8 +210,8 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 0,
-    flexShrink: 0,
+    flex: 1,
+    flexShrink: 1,
     gap: 6,
   },
   symbol: {
@@ -219,37 +229,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
   },
-  centerSection: {
-    flex: 1,
-    flexShrink: 1,
-    paddingHorizontal: 8,
-    justifyContent: 'center',
-  },
-  amount: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  price: {
-    fontSize: 10,
-    opacity: 0.7,
-  },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 0,
     flexShrink: 0,
-    gap: 4,
-  },
-  time: {
-    fontSize: 10,
-    opacity: 0.6,
   },
   expandedSection: {
     paddingTop: 8,
     paddingHorizontal: 6,
     paddingBottom: 6,
     borderTopWidth: 1,
+  },
+  priceInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    gap: 8,
+  },
+  priceInfoItem: {
+    flex: 1,
+  },
+  priceInfoLabel: {
+    fontSize: 10,
+    opacity: 0.7,
+    marginBottom: 2,
+  },
+  priceInfoValue: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    marginVertical: 8,
   },
   detailsGrid: {
     flexDirection: 'row',
