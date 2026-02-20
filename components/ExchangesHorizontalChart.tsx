@@ -40,6 +40,7 @@ const EXCHANGE_ICONS: Record<string, any> = {
 
 interface ExchangeData {
   name: string
+  originalName: string // Nome original para buscar ícone
   value: number
   percentage: number
   color: string
@@ -90,7 +91,7 @@ const ExchangeBar = memo(({
     return fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed
   }
 
-  const icon = EXCHANGE_ICONS[exchange.name]
+  const icon = EXCHANGE_ICONS[exchange.originalName]
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -218,8 +219,13 @@ export const ExchangesHorizontalChart = memo(function ExchangesHorizontalChart()
         errorMsg = exchange.error || 'Failed to load'
       }
 
+      const exchangeName = exchange.exchange_name || exchange.name || `Exchange ${index + 1}`
+      // Capitalizar apenas a primeira letra
+      const formattedName = exchangeName.charAt(0).toUpperCase() + exchangeName.slice(1).toLowerCase()
+
       return {
-        name: exchange.exchange_name || exchange.name || `Exchange ${index + 1}`,
+        name: formattedName,
+        originalName: exchangeName, // Manter nome original para buscar ícone
         value: totalUSD,
         percentage: 0,
         color: EXCHANGE_COLORS[index % EXCHANGE_COLORS.length],
