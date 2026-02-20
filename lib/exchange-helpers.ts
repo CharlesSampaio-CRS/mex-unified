@@ -46,7 +46,7 @@ export function getExchangeBalances(exchange: Exchange): Record<string, any> {
           : '0',
         value_usd: balance.usd_value?.toString() || '0',
         usd_value: balance.usd_value || 0,   // 🆕 Adiciona também como número
-        change_24h: balance.change_24h?.toString() || null,
+        change_24h: balance.change_24h ?? null,  // ✅ Mantém como número (não converte para string)
         // Mantém dados originais também
         _original: balance
       }

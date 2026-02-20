@@ -134,7 +134,7 @@ export function CompactAssetCard({
         {!isStablecoin && variation24h !== undefined && variation24h !== null && (
           <View style={styles.centerSection}>
             <Text style={[styles.variation, { color: variationColor }]}>
-              {variation24h > 0 ? '+' : ''}{variation24h.toFixed(2)}%
+              {variation24h > 0 ? '+' : ''}{Number(variation24h).toFixed(2)}%
             </Text>
           </View>
         )}
