@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from "react-native"
-import { useEffect, useRef, memo } from "react"
+import { useEffect, useRef, memo, useState } from "react"
 import Svg, { Path, Circle } from "react-native-svg"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
@@ -7,6 +7,7 @@ import { useLanguage } from "../contexts/LanguageContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
 import { LogoIcon } from "./LogoIcon"
+import { IconSelectorModal } from "./IconSelectorModal"
 
 // Eye Icon (valores visíveis)
 const EyeIcon = ({ color }: { color: string }) => (
@@ -77,6 +78,19 @@ const SearchIcon = ({ color }: { color: string }) => (
   </Svg>
 )
 
+// Grid Icon (quadradinho para seleção de ícones)
+const GridIcon = ({ color }: { color: string }) => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+)
+
 interface HeaderProps {
   hideIcons?: boolean
   onNotificationsPress?: () => void
@@ -116,6 +130,8 @@ export const Header = memo(function Header({
   const { user } = useAuth()
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
+  const [iconSelectorVisible, setIconSelectorVisible] = useState(false)
+  const [selectedIcon, setSelectedIcon] = useState<string>('')
   
   // Gera as iniciais do usuário para o avatar
   const getUserInitials = () => {
@@ -178,6 +194,14 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
         
+        {/* Botão Grid - Seletor de Ícones */}
+        <TouchableOpacity 
+          style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => setIconSelectorVisible(true)}
+        >
+          <GridIcon color={colors.text} />
+        </TouchableOpacity>
+        
         {/* Botão de busca removido - agora está dentro da lista de tokens */}
         
         <TouchableOpacity 
@@ -207,6 +231,14 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Modal de Seleção de Ícones */}
+      <IconSelectorModal
+        visible={iconSelectorVisible}
+        onClose={() => setIconSelectorVisible(false)}
+        onSelectIcon={setSelectedIcon}
+        selectedIconId={selectedIcon}
+      />
     </View>
   )
 })
