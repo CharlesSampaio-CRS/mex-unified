@@ -655,7 +655,14 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
       }).filter((exchange): exchange is NonNullable<typeof exchange> => exchange !== null)
     }
     
-    return filtered
+    // Ordenar exchanges por valor total USD (maior para menor)
+    const sorted = filtered.sort((a, b) => {
+      const totalA = getTotalUsd(a)
+      const totalB = getTotalUsd(b)
+      return totalB - totalA
+    })
+    
+    return sorted
   }, [data, data?.timestamp, hideZeroBalanceExchanges, searchQuery])
 
   // Calcular totais agregados por token (soma de todas as exchanges)
@@ -953,11 +960,15 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
             }
           })
 
+          // Calcular valor total USD da exchange
+          const exchangeTotalUSD = getTotalUsd(exchange)
+
           return (
             <CompactAssetsList
               key={getExchangeId(exchange)}
               exchangeId={getExchangeId(exchange)}
               exchangeName={getExchangeName(exchange)}
+              exchangeTotalUSD={exchangeTotalUSD}
               assets={formattedAssets}
               loading={refreshing}
               hideValue={valuesHidden}

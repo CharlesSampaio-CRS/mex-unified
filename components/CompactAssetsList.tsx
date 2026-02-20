@@ -24,6 +24,7 @@ interface Asset {
 interface CompactAssetsListProps {
   exchangeId: string;
   exchangeName: string;
+  exchangeTotalUSD: number;
   assets: Asset[];
   loading?: boolean;
   
@@ -42,6 +43,7 @@ interface CompactAssetsListProps {
 export function CompactAssetsList({
   exchangeId,
   exchangeName,
+  exchangeTotalUSD,
   assets,
   loading = false,
   onToggleFavorite,
@@ -54,6 +56,17 @@ export function CompactAssetsList({
 }: CompactAssetsListProps) {
   const { colors } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
+
+  // Formatar valor USD
+  const formatCurrency = (value: number): string => {
+    if (hideValue) return '••••••';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
 
   return (
     <View style={styles.container}>
@@ -72,6 +85,9 @@ export function CompactAssetsList({
           />
           <Text style={[styles.exchangeName, { color: colors.text }]}>
             {exchangeName}
+          </Text>
+          <Text style={[styles.exchangeTotal, { color: colors.success }]}>
+            {formatCurrency(exchangeTotalUSD)}
           </Text>
         </View>
         
@@ -162,6 +178,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
+  },
+  exchangeTotal: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 8,
   },
   loadingRow: {
     flexDirection: 'row',
