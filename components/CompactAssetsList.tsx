@@ -55,7 +55,7 @@ export function CompactAssetsList({
   hideValue = false,
 }: CompactAssetsListProps) {
   const { colors } = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   // Formatar valor USD
   const formatCurrency = (value: number): string => {
