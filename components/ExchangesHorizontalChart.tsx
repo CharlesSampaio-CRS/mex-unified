@@ -178,7 +178,7 @@ const ExchangeBar = memo(({
             <Text style={[styles.exchangeValue, { color: colors.text }]}>
               {formatValue(exchange.value)}
             </Text>
-            <Text style={[styles.exchangePercent, { color: exchange.color }]}>
+            <Text style={[styles.exchangePercent, { color: '#FFFFFF' }]}>
               {formatPercent(exchange.percentage)}%
             </Text>
           </View>
