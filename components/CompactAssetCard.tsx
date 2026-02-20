@@ -85,64 +85,62 @@ export function CompactAssetCard({
       >
         {/* Esquerda: Ícone + Símbolo + Ações */}
         <View style={styles.leftSection}>
-          <View style={styles.symbolRow}>
-            {/* Ícone do Token (padrão BTC para testes futuros) */}
-            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
-              <Ionicons name="logo-bitcoin" size={14} color={colors.primary} />
-            </View>
-            
-            <Text style={[styles.symbol, { color: colors.text }]}>{symbol.toLowerCase()}</Text>
-            
-            <View style={styles.actions}>
-              {/* Alerta */}
-              {onCreateAlert && (
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    onCreateAlert();
-                  }}
-                  style={styles.iconButton}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons
-                    name={hasAlerts ? "notifications" : "notifications-outline"}
-                    size={12}
-                    color={hasAlerts ? colors.primary : colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              )}
-              
-              {/* Favorito */}
-              {onToggleFavorite && (
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    onToggleFavorite();
-                  }}
-                  style={styles.iconButton}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons
-                    name={isFavorite ? "star" : "star-outline"}
-                    size={12}
-                    color={isFavorite ? colors.warning : colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
+          {/* Ícone do Token (padrão BTC para testes futuros) */}
+          <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
+            <Ionicons name="logo-bitcoin" size={14} color={colors.primary} />
           </View>
           
-          {/* Valor USD e Variação 24h */}
-          <View style={styles.valueContainer}>
-            <Text style={[styles.value, { color: colors.text }]}>
-              {formatCurrency(valueUSD)}
-            </Text>
-            {!isStablecoin && variation24h !== undefined && variation24h !== null && (
-              <Text style={[styles.variationInline, { color: variationColor }]}>
-                {variation24h > 0 ? '+' : ''}{Number(variation24h).toFixed(2)}%
-              </Text>
+          <Text style={[styles.symbol, { color: colors.text }]}>{symbol.toLowerCase()}</Text>
+          
+          <View style={styles.actions}>
+            {/* Alerta */}
+            {onCreateAlert && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onCreateAlert();
+                }}
+                style={styles.iconButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name={hasAlerts ? "notifications" : "notifications-outline"}
+                  size={12}
+                  color={hasAlerts ? colors.primary : colors.textSecondary}
+                />
+              </TouchableOpacity>
+            )}
+            
+            {/* Favorito */}
+            {onToggleFavorite && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onToggleFavorite();
+                }}
+                style={styles.iconButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name={isFavorite ? "star" : "star-outline"}
+                  size={12}
+                  color={isFavorite ? colors.warning : colors.textSecondary}
+                />
+              </TouchableOpacity>
             )}
           </View>
+        </View>
+        
+        {/* Centro: Valor USD + Variação */}
+        <View style={styles.centerSection}>
+          <Text style={[styles.value, { color: colors.text }]}>
+            {formatCurrency(valueUSD)}
+          </Text>
+          {!isStablecoin && variation24h !== undefined && variation24h !== null && (
+            <Text style={[styles.variationInline, { color: variationColor, marginLeft: 6 }]}>
+              {variation24h > 0 ? '+' : ''}{Number(variation24h).toFixed(2)}%
+            </Text>
+          )}
         </View>
 
         {/* Direita: Ícone expandir */}
@@ -224,7 +222,10 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   leftSection: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 0,
+    flexShrink: 0,
   },
   symbolRow: {
     flexDirection: 'row',
@@ -248,14 +249,17 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: 2,
+    marginLeft: 4,
   },
   iconButton: {
     padding: 2,
   },
-  valueContainer: {
+  centerSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    flex: 1,
+    justifyContent: 'flex-end',
+    marginRight: 8,
   },
   value: {
     fontSize: 12,
@@ -264,14 +268,6 @@ const styles = StyleSheet.create({
   },
   variationInline: {
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  centerSection: {
-    marginRight: 8,
-  },
-  variation: {
-    fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
