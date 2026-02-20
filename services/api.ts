@@ -1,6 +1,5 @@
 import { BalanceResponse, AvailableExchangesResponse, LinkedExchangesResponse, PortfolioEvolutionResponse, DailyPnlResponse } from '@/types/api';
 import { config } from '@/lib/config';
-import { table } from '@/lib/sqlite/query-builder';
 import { decryptData } from '@/lib/encryption';
 // ❌ CACHE DESABILITADO - Mocks que não fazem nada, sempre busca dados frescos
 const cacheService = { 
@@ -132,15 +131,14 @@ async function fetchWithTimeout(
 
 async function buildExchangesPayload(userId: string) {
   try {
-    const exchanges = await table<LocalUserExchangeRow>('user_exchanges')
-      .where('user_id', '=', userId)
-      .where('is_active', '=', 1)
-      .get();
+    // MongoDB-only: busca exchanges via API
+    const response = await apiService.listExchanges();
+    const exchanges = response.exchanges.filter((ex: any) => ex.is_active);
 
     if (!exchanges.length) return [];
 
     const exchangesData = await Promise.all(
-      exchanges.map(async (ex) => {
+      exchanges.map(async (ex: any) => {
         try {
           const apiKey = await decryptData(ex.api_key_encrypted, userId);
           const apiSecret = await decryptData(ex.api_secret_encrypted, userId);
@@ -873,9 +871,8 @@ export const apiService = {
    * @param exchangeId MongoDB _id da exchange
   /**
    * 📊 Cria ordem de compra (market ou limit)
-   * ATUALIZADO: Agora usa credenciais do WatermelonDB local
    * @param userId ID do usuário
-   * @param exchangeId WatermelonDB ID da exchange
+   * @param exchangeId ID da exchange
    * @param token Símbolo do token (ex: BTC/USDT)
    * @param amount Quantidade a comprar
    * @param orderType Tipo de ordem: 'market' ou 'limit'
@@ -891,17 +888,8 @@ export const apiService = {
     price?: number
   ): Promise<any> {
     try {
-      // Importa o serviço dinamicamente para evitar circular dependency
-      const { orderOperationsService } = await import('./order-operations')
-      
-      return await orderOperationsService.createBuyOrder(
-        userId,
-        exchangeId,
-        token,
-        amount,
-        orderType,
-        price
-      )
+      // TODO: Implementar chamada direta à API do trading-service
+      throw new Error('Funcionalidade de criar ordem de compra não implementada. Usar trading-service diretamente.');
     } catch (error: any) {
       // Melhora mensagens de erro comuns
       let errorMessage = error.message || 'Erro ao criar ordem de compra'
@@ -922,9 +910,8 @@ export const apiService = {
 
   /**
    * 📉 Cria ordem de venda (market ou limit)
-   * ATUALIZADO: Agora usa credenciais do WatermelonDB local
    * @param userId ID do usuário
-   * @param exchangeId WatermelonDB ID da exchange
+   * @param exchangeId ID da exchange
    * @param token Símbolo do token (ex: BTC/USDT)
    * @param amount Quantidade a vender
    * @param orderType Tipo de ordem: 'market' ou 'limit'
@@ -940,17 +927,10 @@ export const apiService = {
     price?: number
   ): Promise<any> {
     try {
-      // Importa o serviço dinamicamente para evitar circular dependency
-      const { orderOperationsService } = await import('./order-operations')
-      
-      return await orderOperationsService.createSellOrder(
-        userId,
-        exchangeId,
-        token,
-        amount,
-        orderType,
-        price
-      )
+      // TODO: Implementar endpoint direto do trading-service: POST /orders/sell
+      throw new Error(
+        "Funcionalidade não implementada. Usar trading-service diretamente."
+      );
     } catch (error: any) {
       // Melhora mensagens de erro comuns
       let errorMessage = error.message || 'Erro ao criar ordem de venda'
@@ -1095,7 +1075,6 @@ export const apiService = {
 
   /**
    * ❌ Cancela uma ordem aberta
-   * ATUALIZADO: Agora usa credenciais do WatermelonDB local
    * @param userId ID do usuário
    * @param orderId ID da ordem a cancelar
    * @param exchangeId ID da exchange (obrigatório)
@@ -1113,15 +1092,32 @@ export const apiService = {
         throw new Error('exchangeId é obrigatório para cancelar ordem')
       }
 
-      // Importa o serviço dinamicamente para evitar circular dependency
-      const { orderOperationsService } = await import('./order-operations')
+      const body = {
+        user_id: userId,
+        exchange_id: exchangeId,
+        order_id: orderId,
+        ...(symbol && { symbol })
+      }
       
-      return await orderOperationsService.cancelOrder({
-        userId,
-        exchangeId,
-        orderId,
-        symbol
-      })
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/orders/cancel`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        },
+        TIMEOUTS.NORMAL
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
     } catch (error: any) {
       throw new Error(error.message || 'Erro ao cancelar ordem')
     }
@@ -1499,9 +1495,47 @@ export const apiService = {
     const data = await response.json();
     return { data };
   },
+
+  // ==========================================
+  // 🤖 STRATEGIES - MongoDB Backend
+  // ==========================================
+
+  /**
+   * Lista todas as estratégias do usuário
+   */
+  async listStrategies() {
+    return this.get('/strategies', TIMEOUTS.FAST);
+  },
+
+  /**
+   * Cria nova estratégia
+   */
+  async createStrategy(data: any) {
+    return this.post('/strategies', data, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Atualiza estratégia existente
+   */
+  async updateStrategy(id: string, data: any) {
+    return this.put(`/strategies/${id}`, data, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Deleta estratégia
+   */
+  async deleteStrategy(id: string) {
+    return this.delete(`/strategies/${id}`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Alterna status ativo/inativo da estratégia
+   */
+  async toggleStrategy(id: string, is_active: boolean) {
+    return this.put(`/strategies/${id}`, { is_active }, TIMEOUTS.FAST);
+  },
 };
 
 // Export default para facilitar imports
 export default apiService;
-
 

@@ -24,7 +24,7 @@ import { apiService } from "@/services/api"
 import { LinkedExchange } from "@/types/api"
 import { config } from "@/lib/config"
 
-// Tipo para exchange no modal (dados locais do WatermelonDB)
+// Tipo para exchange no modal
 interface LocalExchange {
   _id: string
   exchange_id: string
@@ -135,21 +135,22 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
   const loadExchanges = async () => {
     try {
       setLoadingExchanges(true)
-      console.log('📊 Loading connected exchanges from local database...')
+      console.log('📊 Loading connected exchanges from MongoDB via API...')
       
-      // 🔄 Busca exchanges do banco local (WatermelonDB)
-      const connectedExchanges = await exchangeService.getActiveExchanges(userId)
+      // � Busca exchanges do MongoDB (via API backend)
+      const response = await apiService.listExchanges()
+      const connectedExchanges = response.exchanges.filter((ex: any) => ex.is_active)
       
-      console.log(`✅ Loaded ${connectedExchanges.length} active exchanges`)
+      console.log(`✅ Loaded ${connectedExchanges.length} active exchanges from MongoDB`)
       
       // Converter para o formato esperado pelo componente
       const formattedExchanges = connectedExchanges.map(ex => ({
-        _id: ex.id,
-        exchange_id: ex.id,
-        exchange_type: ex.exchangeType,  // CCXT ID: binance, bybit, etc
-        name: ex.exchangeName,
-        ccxt_id: ex.exchangeType,
-        is_active: ex.isActive,
+        _id: ex.exchange_id,
+        exchange_id: ex.exchange_id,
+        exchange_type: ex.exchange_type,  // CCXT ID: binance, bybit, etc
+        name: ex.exchange_name,
+        ccxt_id: ex.exchange_type,
+        is_active: ex.is_active,
       }))
       
       setExchanges(formattedExchanges)
@@ -246,8 +247,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
     try {
       setLoading(true)
       
-      // Busca exchange do WatermelonDB para pegar o nome
-      const exchange = await exchangeService.getExchangeById(selectedExchange)
+      // Busca exchange do array local
+      const exchange = exchanges.find(ex => ex.exchange_id === selectedExchange)
       if (!exchange) {
         throw new Error("Exchange não encontrada")
       }
@@ -261,10 +262,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       
       const strategyData = {
         name: `${token} - ${selectedTemplate}`,
-        description: `Estratégia ${selectedTemplate} para ${token} na ${exchange.exchange_name}`,
+        description: `Estratégia ${selectedTemplate} para ${token} na ${exchange.name}`,
         symbol: token,
         exchange_id: selectedExchange,
-        exchange_name: exchange.exchange_name,
+        exchange_name: exchange.name,
         strategy_type: strategyTypeMap[selectedTemplate] || 'grid',
         config: {
           template: selectedTemplate,
@@ -467,7 +468,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                 ) : (
                   <View style={styles.exchangesList}>
                     {exchanges.map((exchange) => {
-                      // Use exchange_id (WatermelonDB ID) and exchangeType (CCXT ID)
+                      // Use exchange_id and exchangeType (CCXT ID)
                       const exchangeId = exchange.exchange_id || exchange._id || ""
                       const exchangeType = exchange.exchange_type || exchange.ccxt_id || ""
                       return (
@@ -1078,22 +1079,13 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderRadius: 12,
     overflow: "hidden",
-    paddingHorizontal: Platform.OS === "web" ? 8 : 4,
-    paddingVertical: Platform.OS === "web" ? 0 : 0,
-    ...(Platform.OS === "web" && {
-      minHeight: 48,
-      justifyContent: "center",
-    }),
+    paddingHorizontal: 4,
+    paddingVertical: 0,
   },
   picker: {
-    height: Platform.OS === "ios" ? 180 : Platform.OS === "web" ? 48 : 50,
+    height: Platform.OS === "ios" ? 180 : 50,
     width: "100%",
     fontSize: 16,
-    ...(Platform.OS === "web" && {
-      backgroundColor: "transparent",
-      borderWidth: 0,
-      outline: "none",
-    }),
   },
   customInputContainer: {
     gap: 12,

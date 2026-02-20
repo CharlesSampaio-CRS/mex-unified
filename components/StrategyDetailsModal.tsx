@@ -14,8 +14,7 @@ import {
 import Svg, { Path, Circle } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { useBackendStrategies } from '@/hooks/useBackendStrategies'
-import { type Strategy } from '@/services/backend-strategy-service'
+import { useBackendStrategies, Strategy } from '@/hooks/useBackendStrategies'
 
 interface StrategyDetailsModalProps {
   visible: boolean

@@ -1,20 +1,21 @@
 /**
- * Notification Service - SQLite
+ * Notification Service - AsyncStorage
  * 
  * Gerencia notificações locais do app
- * Todas as notificações armazenadas localmente no SQLite
+ * Todas as notificações armazenadas localmente no AsyncStorage
  */
 
-import { table } from '@/lib/sqlite/query-builder'
-import { sqliteDatabase } from '@/lib/sqlite/database'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const NOTIFICATIONS_STORAGE_KEY = '@cryptohub:notifications';
 
 export interface Notification {
   id: string
   type: string
   title: string
   message: string
-  data: string | null // JSON stringificado
-  is_read: number // SQLite usa INTEGER para boolean
+  data: string | null
+  is_read: number
   created_at: number
 }
 
@@ -25,12 +26,15 @@ export interface NotificationData {
   data?: any
 }
 
-class SQLiteNotificationService {
-  private tableName = 'notifications'
+class AsyncStorageNotificationService {
+  private async saveNotifications(notifications: Notification[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+    } catch (error) {
+      console.error('[NotificationService] Error saving:', error);
+    }
+  }
 
-  /**
-   * Criar notificação
-   */
   async createNotification(data: NotificationData): Promise<Notification> {
     const now = Date.now()
     const id = `notif_${now}_${Math.random().toString(36).substr(2, 9)}`
@@ -45,144 +49,118 @@ class SQLiteNotificationService {
       created_at: now
     }
 
-    await table(this.tableName).insert(notification)
+    const notifications = await this.getAllNotifications();
+    notifications.push(notification);
+    await this.saveNotifications(notifications);
+    
     return notification
   }
 
-  /**
-   * Buscar todas as notificações
-   */
   async getAllNotifications(): Promise<Notification[]> {
-    return await table<Notification>(this.tableName)
-      .orderBy('created_at', 'DESC')
-      .get()
+    try {
+      const stored = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      const notifications = stored ? JSON.parse(stored) : [];
+      return notifications.sort((a: Notification, b: Notification) => b.created_at - a.created_at);
+    } catch (error) {
+      console.error('[NotificationService] Error loading:', error);
+      return [];
+    }
   }
 
-  /**
-   * Buscar notificações não lidas
-   */
   async getUnreadNotifications(): Promise<Notification[]> {
-    return await table<Notification>(this.tableName)
-      .where('is_read', 0)
-      .orderBy('created_at', 'DESC')
-      .get()
+    const all = await this.getAllNotifications();
+    return all.filter(n => n.is_read === 0);
   }
 
-  /**
-   * Buscar notificações por tipo
-   */
   async getNotificationsByType(type: string): Promise<Notification[]> {
-    return await table<Notification>(this.tableName)
-      .where('type', type)
-      .orderBy('created_at', 'DESC')
-      .get()
+    const all = await this.getAllNotifications();
+    return all.filter(n => n.type === type);
   }
 
-  /**
-   * Buscar notificação por ID
-   */
   async getNotificationById(id: string): Promise<Notification | null> {
-    return await table<Notification>(this.tableName)
-      .where('id', id)
-      .first()
+    const all = await this.getAllNotifications();
+    return all.find(n => n.id === id) || null;
   }
 
-  /**
-   * Marcar como lida
-   */
   async markAsRead(id: string): Promise<boolean> {
-    const rowsAffected = await table(this.tableName)
-      .where('id', id)
-      .update({ is_read: 1 })
-
-    return rowsAffected > 0
+    const notifications = await this.getAllNotifications();
+    const index = notifications.findIndex(n => n.id === id);
+    
+    if (index === -1) return false;
+    
+    notifications[index].is_read = 1;
+    await this.saveNotifications(notifications);
+    return true;
   }
 
-  /**
-   * Marcar como não lida
-   */
   async markAsUnread(id: string): Promise<boolean> {
-    const rowsAffected = await table(this.tableName)
-      .where('id', id)
-      .update({ is_read: 0 })
-
-    return rowsAffected > 0
+    const notifications = await this.getAllNotifications();
+    const index = notifications.findIndex(n => n.id === id);
+    
+    if (index === -1) return false;
+    
+    notifications[index].is_read = 0;
+    await this.saveNotifications(notifications);
+    return true;
   }
 
-  /**
-   * Marcar todas como lidas
-   */
   async markAllAsRead(): Promise<number> {
-    return await table(this.tableName)
-      .where('is_read', 0)
-      .update({ is_read: 1 })
+    const notifications = await this.getAllNotifications();
+    let count = 0;
+    
+    notifications.forEach(n => {
+      if (n.is_read === 0) {
+        n.is_read = 1;
+        count++;
+      }
+    });
+    
+    await this.saveNotifications(notifications);
+    return count;
   }
 
-  /**
-   * Deletar notificação
-   */
   async deleteNotification(id: string): Promise<boolean> {
-    const rowsAffected = await table(this.tableName)
-      .where('id', id)
-      .delete()
-
-    return rowsAffected > 0
+    const notifications = await this.getAllNotifications();
+    const filtered = notifications.filter(n => n.id !== id);
+    
+    if (filtered.length === notifications.length) return false;
+    
+    await this.saveNotifications(filtered);
+    return true;
   }
 
-  /**
-   * Deletar todas as notificações
-   */
   async deleteAllNotifications(): Promise<number> {
-    return await table(this.tableName).delete()
+    const notifications = await this.getAllNotifications();
+    const count = notifications.length;
+    await this.saveNotifications([]);
+    return count;
   }
 
-  /**
-   * Deletar notificações antigas (mais de X dias)
-   */
   async deleteOldNotifications(daysOld: number = 30): Promise<number> {
-    const cutoffDate = Date.now() - (daysOld * 24 * 60 * 60 * 1000)
+    const cutoffDate = Date.now() - (daysOld * 24 * 60 * 60 * 1000);
+    const notifications = await this.getAllNotifications();
+    const filtered = notifications.filter(n => n.created_at >= cutoffDate);
+    const deletedCount = notifications.length - filtered.length;
     
-    return await table(this.tableName)
-      .where('created_at', '<', cutoffDate)
-      .delete()
+    await this.saveNotifications(filtered);
+    return deletedCount;
   }
 
-  /**
-   * Contar notificações não lidas
-   */
   async countUnread(): Promise<number> {
-    return await table(this.tableName)
-      .where('is_read', 0)
-      .count()
+    const notifications = await this.getAllNotifications();
+    return notifications.filter(n => n.is_read === 0).length;
   }
 
-  /**
-   * Contar todas as notificações
-   */
   async countAll(): Promise<number> {
-    return await table(this.tableName).count()
+    const notifications = await this.getAllNotifications();
+    return notifications.length;
   }
 
-  /**
-   * Buscar notificações com paginação
-   */
-  async paginate(page: number = 1, perPage: number = 20): Promise<{
-    data: Notification[]
-    total: number
-    page: number
-    perPage: number
-    totalPages: number
-  }> {
-    const offset = (page - 1) * perPage
-    
-    const [data, total] = await Promise.all([
-      table<Notification>(this.tableName)
-        .orderBy('created_at', 'DESC')
-        .limit(perPage)
-        .offset(offset)
-        .get(),
-      this.countAll()
-    ])
+  async paginate(page: number = 1, perPage: number = 20) {
+    const all = await this.getAllNotifications();
+    const total = all.length;
+    const offset = (page - 1) * perPage;
+    const data = all.slice(offset, offset + perPage);
 
     return {
       data,
@@ -193,9 +171,6 @@ class SQLiteNotificationService {
     }
   }
 
-  /**
-   * Parse data JSON
-   */
   parseData(notification: Notification): any {
     try {
       return notification.data ? JSON.parse(notification.data) : null
@@ -204,34 +179,22 @@ class SQLiteNotificationService {
     }
   }
 
-  /**
-   * Obter estatísticas
-   */
-  async getStats(): Promise<{
-    total: number
-    unread: number
-    byType: Record<string, number>
-  }> {
-    const [total, unread, allNotifications] = await Promise.all([
-      this.countAll(),
-      this.countUnread(),
-      this.getAllNotifications()
-    ])
+  async getStats() {
+    const all = await this.getAllNotifications();
+    const unread = all.filter(n => n.is_read === 0).length;
 
-    const byType: Record<string, number> = {}
-    allNotifications.forEach(notif => {
-      byType[notif.type] = (byType[notif.type] || 0) + 1
-    })
+    const byType: Record<string, number> = {};
+    all.forEach(notif => {
+      byType[notif.type] = (byType[notif.type] || 0) + 1;
+    });
 
     return {
-      total,
+      total: all.length,
       unread,
       byType
     }
   }
 }
 
-// Singleton instance
-export const notificationService = new SQLiteNotificationService()
-export const sqliteNotificationService = notificationService // Alias
+export const notificationService = new AsyncStorageNotificationService()
 export default notificationService

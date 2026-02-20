@@ -68,17 +68,21 @@ export interface LinkedExchange {
   ccxt_id: string;
   name: string;
   icon: string;
-  country: string;
-  url: string;
-  status: 'active' | 'inactive';
+  country?: string;  // país de origem
+  pais_de_origem?: string;  // fallback (backend pode retornar country)
+  url?: string;
+  status?: 'active' | 'inactive';
   is_active?: boolean;
-  linked_at: string;
-  updated_at: string;
+  linked_at: string;  // Data de conexão (ISO string)
+  created_at?: string;  // Alias (backend retorna ambos)
+  updated_at?: string;
   disconnected_at?: string;
   reconnected_at?: string;
   api_key?: string;
   api_secret?: string;
   passphrase?: string;
+  logo?: string;
+  requires_passphrase?: boolean;
 }
 
 export interface LinkedExchangesResponse {

@@ -1,12 +1,11 @@
 /**
- * Encryption Service
+ * Encryption Service - Mobile Only
  * 
  * Provides secure encryption/decryption for sensitive data like API keys
- * Uses Web Crypto API for native encryption
+ * Uses Expo Crypto for native encryption
  */
 
 import * as Crypto from 'expo-crypto';
-import { Platform } from 'react-native';
 import { Buffer } from 'buffer';
 
 if (typeof global !== 'undefined' && !(global as any).Buffer) {
@@ -24,22 +23,12 @@ async function deriveKey(userId: string): Promise<string> {
   // Combine userId with app salt for unique key per user
   const keyMaterial = `${userId}_${SALT}`;
   
-  if (Platform.OS === 'web') {
-    // Use Web Crypto API for browser
-    const encoder = new TextEncoder();
-    const data = encoder.encode(keyMaterial);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-  } else {
-    // Use Expo Crypto for native
-    const hash = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      keyMaterial
-    );
-    return hash;
-  }
+  // Use Expo Crypto for native
+  const hash = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    keyMaterial
+  );
+  return hash;
 }
 
 /**
@@ -53,13 +42,8 @@ function xorEncrypt(text: string, key: string): string {
     const charCode = text.charCodeAt(i) ^ key.charCodeAt(i % key.length);
     result += String.fromCharCode(charCode);
   }
-  // Convert to base64 for safe storage
-  if (Platform.OS === 'web') {
-    return btoa(result);
-  } else {
-    // For native, use base64 encoding
-    return Buffer.from(result, 'binary').toString('base64');
-  }
+  // Convert to base64 for safe storage (native only)
+  return Buffer.from(result, 'binary').toString('base64');
 }
 
 /**
@@ -67,13 +51,8 @@ function xorEncrypt(text: string, key: string): string {
  */
 function xorDecrypt(encrypted: string, key: string): string {
   try {
-    // Decode from base64
-    let text: string;
-    if (Platform.OS === 'web') {
-      text = atob(encrypted);
-    } else {
-      text = Buffer.from(encrypted, 'base64').toString('binary');
-    }
+    // Decode from base64 (native only)
+    const text = Buffer.from(encrypted, 'base64').toString('binary');
     
     // XOR decrypt
     let result = '';
@@ -129,16 +108,10 @@ export function isEncrypted(text: string): boolean {
   if (!text) return false;
   
   try {
-    // Check if it's valid base64
-    if (Platform.OS === 'web') {
-      const decoded = atob(text);
-      const encoded = btoa(decoded);
-      return encoded === text;
-    } else {
-      const decoded = Buffer.from(text, 'base64').toString('binary');
-      const encoded = Buffer.from(decoded, 'binary').toString('base64');
-      return encoded === text;
-    }
+    // Check if it's valid base64 (native only)
+    const decoded = Buffer.from(text, 'base64').toString('binary');
+    const encoded = Buffer.from(decoded, 'binary').toString('base64');
+    return encoded === text;
   } catch {
     return false;
   }

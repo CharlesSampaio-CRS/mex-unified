@@ -5,7 +5,7 @@ import { PortfolioOverview } from '../PortfolioOverview';
 import { MarketOverview } from '../MarketOverview';
 import { AssetsList } from '../AssetsList';
 import { AllOpenOrdersList } from '../AllOpenOrdersList';
-import { ExchangesPieChart } from '../ExchangesPieChart';
+import { ExchangesHorizontalChart } from '../ExchangesHorizontalChart';
 import { TopGainersLosers } from '../TopGainersLosers';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -54,7 +54,7 @@ export const HomeTabsLayout: React.FC<HomeTabsLayoutProps> = ({ pnl, pnlLoading 
           <PortfolioOverview pnl={pnl} pnlLoading={pnlLoading} />
           <MarketOverview />
           <TopGainersLosers />
-          <ExchangesPieChart />
+          <ExchangesHorizontalChart />
         </View>
         
         <View style={{ display: activeTab === 1 ? 'flex' : 'none', paddingTop: 16, paddingHorizontal: 16 }}>

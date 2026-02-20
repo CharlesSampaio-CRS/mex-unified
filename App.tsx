@@ -5,7 +5,6 @@ import { StatusBar } from "expo-status-bar"
 import { ActivityIndicator, View, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
 import Svg, { Path, Rect, Circle } from "react-native-svg"
-import { sqliteDatabase } from "./lib/sqlite/database"
 
 // 🔥 ERROR HANDLER GLOBAL - Captura TODOS os erros não tratados
 if (__DEV__) {
@@ -246,27 +245,8 @@ function MainTabs() {
 function AppNavigator() {
   const { isAuthenticated, isLoading, isLoadingData, setLoadingDataComplete, user } = useAuth()
   const { colors, isDark } = useTheme()
-  const [dbInitialized, setDbInitialized] = useState(false)
 
-  // 🗄️ Inicializa o SQLite na montagem do app
-  useEffect(() => {
-    const initDatabase = async () => {
-      try {
-        console.log('🗄️ [App] Iniciando SQLite...')
-        await sqliteDatabase.initialize()
-        console.log('✅ [App] SQLite inicializado com sucesso!')
-        setDbInitialized(true)
-      } catch (error) {
-        console.error('❌ [App] Erro ao inicializar SQLite:', error)
-        // Marca como inicializado mesmo com erro para não bloquear o app
-        setDbInitialized(true)
-      }
-    }
-    
-    initDatabase()
-  }, [])
-
-  if (isLoading || !dbInitialized) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color="#3b82f6" />

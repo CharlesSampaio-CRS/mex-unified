@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyText: {
-    fontSize: typography.caption,
+    fontSize: 12,  // Texto vazio (reduzido de 14px)
     fontWeight: fontWeights.regular,
     opacity: 0.7,
   },
@@ -465,13 +465,13 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   tooltipValue: {
-    fontSize: typography.caption,
+    fontSize: 12,  // Valor tooltip (reduzido de 14px)
     fontWeight: fontWeights.semibold,
     letterSpacing: -0.3,
     textAlign: 'center',
   },
   tooltipDate: {
-    fontSize: typography.micro,
+    fontSize: 11,  // Data tooltip (reduzido de 12px)
     fontWeight: fontWeights.regular,
     opacity: 0.7,
   },
