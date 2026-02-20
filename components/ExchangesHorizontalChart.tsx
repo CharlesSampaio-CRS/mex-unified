@@ -195,31 +195,15 @@ export const ExchangesHorizontalChart = memo(function ExchangesHorizontalChart()
     if (!data || !data.exchanges) return []
     
     const exchangesWithValues = data.exchanges.map((exchange: any, index: number) => {
-      let totalUSD = 0
-      let hasError = false
-      let errorMsg = ''
-
-      // Extrair saldo total em USD
-      const balances = exchange.balances || exchange.tokens || {}
+      // Usar total_usd diretamente (como no PieChart)
+      const totalUSD = parseFloat(exchange.total_usd || 0)
       
-      if (typeof balances === 'object' && balances !== null) {
-        Object.values(balances).forEach((balance: any) => {
-          if (balance && typeof balance === 'object') {
-            const usdValue = parseFloat((balance.usd_value || balance.value_usd || 0).toString())
-            if (!isNaN(usdValue)) {
-              totalUSD += usdValue
-            }
-          }
-        })
-      }
-
       // Verificar erros
-      if (exchange.error || exchange.status === 'error') {
-        hasError = true
-        errorMsg = exchange.error || 'Failed to load'
-      }
+      const hasError = exchange.success === false
+      const errorMsg = exchange.error || 'Failed to load'
 
-      const exchangeName = exchange.exchange_name || exchange.name || `Exchange ${index + 1}`
+      // Pegar nome da exchange (igual ao PieChart)
+      const exchangeName = exchange.name || exchange.exchange || `Exchange ${index + 1}`
       // Capitalizar apenas a primeira letra
       const formattedName = exchangeName.charAt(0).toUpperCase() + exchangeName.slice(1).toLowerCase()
 
