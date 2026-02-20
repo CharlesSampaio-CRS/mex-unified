@@ -86,7 +86,7 @@ export function CompactAssetsList({
           <Text style={[styles.exchangeName, { color: colors.text }]}>
             {exchangeName}
           </Text>
-          <Text style={[styles.exchangeTotal, { color: colors.success }]}>
+          <Text style={[styles.exchangeTotal, { color: colors.textSecondary }]}>
             {formatCurrency(exchangeTotalUSD)}
           </Text>
         </View>
@@ -177,12 +177,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.3,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   exchangeTotal: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '400',
     marginLeft: 8,
+    opacity: 0.7,
   },
   loadingRow: {
     flexDirection: 'row',
