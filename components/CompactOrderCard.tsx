@@ -69,8 +69,13 @@ export function CompactOrderCard({
         activeOpacity={0.7}
         disabled={isCancelling}
       >
-        {/* Esquerda: Símbolo (Token) */}
+        {/* Esquerda: Ícone + Símbolo (Token) */}
         <View style={styles.leftSection}>
+          {/* Ícone do Token (padrão BTC para testes futuros) */}
+          <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
+            <Ionicons name="logo-bitcoin" size={14} color={colors.primary} />
+          </View>
+          
           <Text style={[styles.symbol, { color: colors.text }]}>
             {(() => {
               // Extrair token base do símbolo (ex: BTC/USDT -> Btc)
@@ -240,12 +245,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 0,
     flexShrink: 0,
+    gap: 6,
+  },
+  iconContainer: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   symbol: {
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.2,
-    marginRight: 8,
   },
   sideBadge: {
     paddingHorizontal: 6,
