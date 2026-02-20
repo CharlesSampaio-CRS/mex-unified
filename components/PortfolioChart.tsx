@@ -209,8 +209,34 @@ export const PortfolioChart = memo(function PortfolioChart({
 
   // Formata a data do timestamp
   const formatDate = (timestamp: string) => {
+    console.log('📅 [PortfolioChart] formatDate:', {
+      timestamp,
+      timestampType: typeof timestamp,
+      isValidDate: !isNaN(new Date(timestamp).getTime())
+    })
+    
     const date = new Date(timestamp)
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+    
+    // Verifica se a data é válida
+    if (isNaN(date.getTime())) {
+      console.error('❌ [PortfolioChart] Data inválida:', timestamp)
+      return 'Data inválida'
+    }
+    
+    const formatted = date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      timeZone: 'America/Sao_Paulo' // Força timezone do Brasil
+    })
+    
+    console.log('✅ [PortfolioChart] Data formatada:', {
+      original: timestamp,
+      dateObject: date.toISOString(),
+      formatted
+    })
+    
+    return formatted
   }
 
   // Dados do ponto selecionado

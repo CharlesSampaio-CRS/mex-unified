@@ -113,16 +113,16 @@ function DataLoader({ children, onDataReady }: { children: React.ReactNode, onDa
     }
   }, [balanceLoading, balanceData, balanceError, onDataReady, isCriticalError, showMaintenance])
 
-  // Timeout de segurança: se demorar mais de 10 segundos, finaliza o loading
+  // Timeout de segurança: se demorar mais de 8 segundos, finaliza o loading
   useEffect(() => {
-    console.log('⏰ [DataLoadingManager] Timeout de 10s iniciado')
+    console.log('⏰ [DataLoadingManager] Timeout de 8s iniciado')
     const timeout = setTimeout(() => {
       if (!hasCalledRef.current) {
-        console.warn('⏰ [DataLoadingManager] TIMEOUT! Forçando onDataReady() após 10s')
+        console.warn('⏰ [DataLoadingManager] TIMEOUT! Forçando onDataReady() após 8s')
         hasCalledRef.current = true
         onDataReady()
       }
-    }, 10000) // 10 segundos
+    }, 8000) // 8 segundos (otimizado)
 
     return () => clearTimeout(timeout)
   }, [onDataReady])

@@ -50,14 +50,14 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       setRefreshing(true)
     }
     
-    // ⏰ TIMEOUT DE SEGURANÇA: Remove loading após 30s mesmo se a promise não resolver
+    // ⏰ TIMEOUT DE SEGURANÇA: Remove loading após 25s (alinhado com BALANCE_SYNC timeout)
     const safetyTimeout = setTimeout(() => {
-      console.error('⏰ [BalanceContext] TIMEOUT DE SEGURANÇA (30s) - Forçando remoção do loading')
+      console.error('⏰ [BalanceContext] TIMEOUT DE SEGURANÇA (25s) - Forçando remoção do loading')
       setLoading(false)
       setRefreshing(false)
       isFetchingRef.current = false
       setError('Timeout ao carregar dados. Tente novamente.')
-    }, 30000)
+    }, 25000)
     
     try {     
       // Se não tem usuário autenticado, não faz nada
