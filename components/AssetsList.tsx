@@ -614,12 +614,9 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
       return []
     }
     
-    // Filtra corretoras com saldo $0 se toggle ativado
-    let filtered = hideZeroBalanceExchanges
-      ? data.exchanges.filter(ex => getTotalUsd(ex) > 0)
-      : data.exchanges
+    // Aplica filtro de busca primeiro
+    let filtered = data.exchanges
     
-    // Aplica filtro de busca
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       filtered = filtered.map(exchange => {
@@ -653,6 +650,30 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
         // Não corresponde a nada, retorna null para remover depois
         return null
       }).filter((exchange): exchange is NonNullable<typeof exchange> => exchange !== null)
+    }
+    
+    // Filtra tokens com saldo $0 se toggle ativado (não remove a exchange)
+    if (hideZeroBalanceExchanges) {
+      filtered = filtered.map(exchange => {
+        const balances = getExchangeBalances(exchange)
+        if (balances && typeof balances === 'object') {
+          const filteredBalances: Record<string, any> = {}
+          Object.entries(balances).forEach(([symbol, balance]) => {
+            const valueUSD = parseFloat((balance.usd_value || balance.value_usd || 0).toString())
+            // Mantém apenas tokens com valor > 0
+            if (valueUSD > 0) {
+              filteredBalances[symbol] = balance
+            }
+          })
+          
+          return {
+            ...exchange,
+            balances: filteredBalances,
+            tokens: filteredBalances
+          }
+        }
+        return exchange
+      })
     }
     
     // Ordenar exchanges por valor total USD (maior para menor)
@@ -862,13 +883,8 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
         >
           <View style={styles.filterContent}>
             <Text style={[styles.filterLabel, { color: colors.text }]}>
-              Hide zero balance
+              Hide $0.00 tokens
             </Text>
-            {hideZeroBalanceExchanges && data && data.exchanges.length > filteredExchanges.length && (
-              <Text style={[styles.filterCount, { color: colors.textTertiary }]}>
-                • {data.exchanges.length - filteredExchanges.length} {t('exchanges.hidden')}
-              </Text>
-            )}
           </View>
           <View style={[styles.toggle, themedStyles.toggle, hideZeroBalanceExchanges && [styles.toggleActive, themedStyles.toggleActive]]}>
             <View style={[
