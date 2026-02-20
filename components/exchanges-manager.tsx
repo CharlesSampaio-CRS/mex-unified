@@ -1132,15 +1132,24 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         ) : (
           // Filtrar exchanges disponíveis para não mostrar as já conectadas
           (() => {
+            // 🔍 Criar Set de IDs conectados para busca rápida O(1)
+            const linkedExchangeIds = new Set(
+              linkedExchanges.map(linked => linked.exchange_id)
+            )
 
             const filteredAvailable = availableExchanges.filter(
               exchange => {
-                const isLinked = linkedExchanges.some(linked => 
-                  linked.name.toLowerCase() === exchange.nome.toLowerCase() ||
+                // Verificar se a exchange já está conectada usando o ID
+                const isLinkedById = linkedExchangeIds.has(exchange._id)
+                
+                // Fallback: verificar por nome e ccxt_id (caso o ID não bata)
+                const isLinkedByName = linkedExchanges.some(linked => 
+                  linked.name?.toLowerCase() === exchange.nome?.toLowerCase() ||
                   linked.ccxt_id === exchange.ccxt_id
                 )
 
-                return !isLinked
+                // Retorna true se NÃO estiver conectada (ou seja, disponível)
+                return !isLinkedById && !isLinkedByName
               }
             )
             
