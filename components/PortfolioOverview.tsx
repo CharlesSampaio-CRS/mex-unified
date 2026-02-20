@@ -8,7 +8,6 @@ import { usePrivacy } from "@/contexts/PrivacyContext"
 import { usePortfolio } from "@/contexts/PortfolioContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/services/api"
-import { pnlService } from "@/services/pnl-service"
 import { currencyService } from "@/services/currencyService"
 import { SkeletonPortfolioOverview } from "./SkeletonLoaders"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
@@ -16,26 +15,25 @@ import { PortfolioChart } from "./PortfolioChart"
 import { GradientCard } from "./GradientCard"
 import { typography, fontWeights } from "@/lib/typography"
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion"
-import { snapshotService } from "@/services/snapshot-service"
+import { PnLSummary } from "@/services/backend-snapshot-service"
 
-export const PortfolioOverview = memo(function PortfolioOverview() {
+interface PortfolioOverviewProps {
+  pnl?: PnLSummary | null
+  pnlLoading?: boolean
+}
+
+export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoading = false }: PortfolioOverviewProps) {
   // 1️⃣ HOOKS: useContext (sempre primeiro)
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const { data, loading, error, refreshing, refresh } = useBalance()
   const { hideValue } = usePrivacy()
-  
-  // 💾 Refs para manter valores anteriores durante loading
-  const previousPnl24h = useRef<any>(null)
-  const previousPnl7d = useRef<any>(null)
   const { evolutionData, currentPeriod, refreshEvolution, loading: portfolioLoading } = usePortfolio()
   
   // 2️⃣ HOOKS: useState (sempre na mesma ordem)
   const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date())
   const [isRefreshingAll, setIsRefreshingAll] = useState(false)
-  const [snapshot7dAgo, setSnapshot7dAgo] = useState<number | null>(null)
-  const [localEvolutionData, setLocalEvolutionData] = useState<{ values_usd: number[], timestamps: string[] } | null>(null)
   const [evolutionPeriod, setEvolutionPeriod] = useState<number>(7)
 
   // 3️⃣ HOOKS: useMemo (antes de useCallback e useEffect)
@@ -69,117 +67,61 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
     return formattedBrlValue.replace(/[R$]/g, '').trim()
   }, [formattedBrlValue])
   
-  // Cálculo direto do PNL de 24h baseado no change_24h de cada token
+  // PNL do MongoDB (hoje = 24h)
   const pnl24h = useMemo(() => {
-    // Se está carregando mas já tem dados anteriores, mantém os anteriores
-    if (loading && previousPnl24h.current) {
-      return previousPnl24h.current
-    }
-    
-    // Se não tem dados, retorna valores iniciais
-    if (!data) {
+    if (!pnl || pnlLoading) {
       return {
-        current: 0,
-        previous: 0,
+        current: totalValue,
+        previous: totalValue,
         change: 0,
         changePercent: 0,
         isProfit: false
       }
     }
-
-    const currentTotal = typeof data.total_usd === 'string' 
-      ? parseFloat(data.total_usd) 
-      : (data.total_usd || 0)
-    let previousTotal = 0
-
-    // Itera sobre as exchanges e calcula o valor anterior de cada token
-    for (const exchange of data.exchanges || []) {
-      const balancesArray = Object.values(exchange.balances || {})
-      
-      for (const balance of balancesArray) {
-        const currentValue = typeof balance.usd_value === 'string'
-          ? parseFloat(balance.usd_value)
-          : (balance.usd_value || 0)
-        const change24hPercent = balance.change_24h || 0
-        
-        // Calcula o valor anterior usando a fórmula: previous = current / (1 + change%)
-        const previousValue = change24hPercent !== 0
-          ? currentValue / (1 + (change24hPercent / 100))
-          : currentValue
-        
-        previousTotal += previousValue
-      }
-    }
-
-    const change = currentTotal - previousTotal
-    const changePercent = previousTotal !== 0 ? (change / previousTotal) * 100 : 0
-
-    const result = {
-      current: currentTotal,
-      previous: previousTotal,
-      change,
-      changePercent,
-      isProfit: change >= 0
-    }
     
-    // Salva o resultado para uso futuro
-    if (!loading) {
-      previousPnl24h.current = result
+    return {
+      current: pnl.currentBalance,
+      previous: pnl.today.previous,
+      change: pnl.today.change,
+      changePercent: pnl.today.changePercent,
+      isProfit: pnl.today.change >= 0
     }
-    
-    return result
-  }, [data, loading])
+  }, [pnl, pnlLoading, totalValue])
   
-  // Cálculo do PNL DINÂMICO: compara valor atual com o PRIMEIRO ponto do gráfico de evolução
+  // PNL de período (7d, 15d ou 30d) do MongoDB
   const pnl7d = useMemo(() => {
-    // Se está carregando mas já tem dados anteriores, mantém os anteriores
-    if (loading && previousPnl7d.current) {
-      return previousPnl7d.current
-    }
-    
-    // Se não tem dados, retorna valores iniciais
-    if (!data || !localEvolutionData || localEvolutionData.values_usd.length === 0) {
+    if (!pnl || pnlLoading) {
       return {
         requestedPeriod: evolutionPeriod,
         actualDays: null,
-        current: 0,
-        previous: 0,
+        current: totalValue,
+        previous: totalValue,
         change: 0,
         changePercent: 0,
         isProfit: false,
         hasSnapshot: false
       }
     }
-
-    const currentTotal = typeof data.total_usd === 'string' 
-      ? parseFloat(data.total_usd) 
-      : (data.total_usd || 0)
     
-    // USA O PRIMEIRO PONTO DO GRÁFICO como valor anterior
-    const previousValue = localEvolutionData.values_usd[0]
-    const hasSnapshot = true
+    // Escolhe qual período do PNL usar baseado no evolutionPeriod
+    let periodData = pnl.week // default 7 dias
+    if (evolutionPeriod === 15) {
+      periodData = pnl.twoWeeks
+    } else if (evolutionPeriod === 30) {
+      periodData = pnl.month
+    }
     
-    const change = currentTotal - previousValue
-    const changePercent = previousValue !== 0 ? (change / previousValue) * 100 : 0
-
-    const result = {
+    return {
       requestedPeriod: evolutionPeriod,
-      actualDays: evolutionPeriod, // Usa o período solicitado
-      current: currentTotal,
-      previous: previousValue,
-      hasSnapshot,
-      change,
-      changePercent,
-      isProfit: change >= 0
+      actualDays: evolutionPeriod,
+      current: pnl.currentBalance,
+      previous: periodData.previous,
+      change: periodData.change,
+      changePercent: periodData.changePercent,
+      isProfit: periodData.change >= 0,
+      hasSnapshot: true
     }
-    
-    // Salva o resultado para uso futuro
-    if (!loading) {
-      previousPnl7d.current = result
-    }
-    
-    return result
-  }, [data, loading, localEvolutionData, evolutionPeriod])
+  }, [pnl, pnlLoading, evolutionPeriod, totalValue])
   
   const change24h = pnl24h.changePercent
   const isPositive = pnl24h.isProfit
@@ -264,66 +206,6 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
       setLastUpdateTime(new Date())
     }
   }, [data?.timestamp])
-  
-  // Carregar dados de evolução do banco local (apenas para o gráfico)
-  useEffect(() => {
-    const loadEvolutionData = async () => {
-      if (!user?.id) return
-      
-      try {
-        const evolutionData = await pnlService.getEvolutionData(user.id!, evolutionPeriod)
-        setLocalEvolutionData(evolutionData)
-      } catch (error) {
-        console.error('❌ [PortfolioOverview] Erro ao carregar dados de evolução:', error)
-      }
-    }
-    
-    loadEvolutionData()
-  }, [user?.id, data?.timestamp, evolutionPeriod]) // Recarrega quando o balance ou período atualiza
-
-  // Buscar snapshot de 7 dias atrás do banco local
-  useEffect(() => {
-    const load7dSnapshot = async () => {
-      if (!user?.id) return
-      
-      try {
-        // Data de 7 dias atrás
-        const sevenDaysAgo = new Date()
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-        
-        // Busca snapshots dos últimos 7 dias, ordenado por timestamp DESC
-        const snapshots = await snapshotService.getSnapshots(user.id!, {
-          startDate: sevenDaysAgo.getTime(),
-          limit: 1000 // pegar todos os últimos 7 dias
-        })
-        
-        if (snapshots.length > 0) {
-          // Pega o snapshot mais antigo dos últimos 7 dias (último item do array DESC)
-          const snap = snapshots[snapshots.length - 1]
-          setSnapshot7dAgo(snap.total_usd)
-        } else {
-          // Se não tem snapshot de 7 dias, pega o mais antigo disponível
-          const allSnapshots = await snapshotService.getSnapshots(user.id!, { limit: 1 })
-          
-          if (allSnapshots.length > 0) {
-            const oldestSnap = allSnapshots[0]
-            setSnapshot7dAgo(oldestSnap.total_usd)
-          } else {
-            setSnapshot7dAgo(null)
-          }
-        }
-      } catch (error) {
-        console.error('❌ [PortfolioOverview] Erro ao carregar snapshot de 7 dias:', error)
-        setSnapshot7dAgo(null)
-      }
-    }
-    
-    load7dSnapshot()
-  }, [user?.id, data?.timestamp])
-
-  // ❌ REMOVIDO: useEffect que buscava snapshot separadamente
-  // O PNL agora usa o primeiro ponto do gráfico de evolução (mesma fonte de dados)
-  // Isso garante que o card de PNL e o gráfico sempre mostrem valores consistentes
 
   // 6️⃣ RENDER LOGIC (early returns devem vir depois de todos os hooks)
   if (loading && !data && !error) {
@@ -456,7 +338,6 @@ export const PortfolioOverview = memo(function PortfolioOverview() {
 
         {/* Portfolio Chart - Gráfico de 7 dias */}
         <PortfolioChart 
-          localEvolutionData={localEvolutionData}
           onPeriodChange={setEvolutionPeriod}
           currentPeriod={evolutionPeriod}
         />

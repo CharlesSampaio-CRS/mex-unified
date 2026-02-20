@@ -6,13 +6,19 @@ import { PortfolioOverview } from '../PortfolioOverview';
 import { MarketOverview } from '../MarketOverview';
 import { TopGainersLosers } from '../TopGainersLosers';
 import { AssetsList } from '../AssetsList';
+import { PnLSummary } from '@/services/backend-snapshot-service';
 
 interface HomeVerticalLayoutProps {
-  pnlRefreshTrigger?: number
+  pnl?: PnLSummary | null
+  pnlLoading?: boolean
   isUpdating?: boolean
 }
 
-export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({ pnlRefreshTrigger, isUpdating = false }) => {
+export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({ 
+  pnl, 
+  pnlLoading = false,
+  isUpdating = false 
+}) => {
   const { colors } = useTheme();
   
   return (
@@ -27,7 +33,7 @@ export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({ pnlRefre
         </View>
       )}
       
-      <PortfolioOverview />
+      <PortfolioOverview pnl={pnl} pnlLoading={pnlLoading} />
       <MarketOverview />
       <TopGainersLosers />
       <AssetsList />

@@ -10,8 +10,14 @@ import { TopGainersLosers } from '../TopGainersLosers';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBalance } from '../../contexts/BalanceContext';
+import { PnLSummary } from '@/services/backend-snapshot-service';
 
-export const HomeTabsLayout: React.FC = () => {
+interface HomeTabsLayoutProps {
+  pnl?: PnLSummary | null
+  pnlLoading?: boolean
+}
+
+export const HomeTabsLayout: React.FC<HomeTabsLayoutProps> = ({ pnl, pnlLoading = false }) => {
   const [activeTab, setActiveTab] = useState(0);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -45,7 +51,7 @@ export const HomeTabsLayout: React.FC = () => {
       >
         {/* Mantém todos os componentes montados mas oculta os inativos */}
         <View style={{ display: activeTab === 0 ? 'flex' : 'none', gap: 16, paddingTop: 16, paddingHorizontal: 16 }}>
-          <PortfolioOverview />
+          <PortfolioOverview pnl={pnl} pnlLoading={pnlLoading} />
           <MarketOverview />
           <TopGainersLosers />
           <ExchangesPieChart />

@@ -13,7 +13,7 @@ import { useLayout } from "../contexts/LayoutContext"
 import { useNotifications } from "../contexts/NotificationsContext"
 import { useAuth } from "../contexts/AuthContext"
 import { commonStyles } from "@/lib/layout"
-import { snapshotService } from "../services/snapshot-service"
+import { useBackendSnapshots } from "../hooks/useBackendSnapshots"
 
 export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   
@@ -21,8 +21,17 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   const { layout } = useLayout()
   
   const { user } = useAuth()
-  const { refresh: refreshBalance, refreshing } = useBalance()
+  const { refresh: refreshBalance, refreshing, data: balanceData } = useBalance()
   const { unreadCount } = useNotifications()
+  
+  // Calcula total USD do balance atual
+  const totalUSD = typeof balanceData?.total_usd === 'string' 
+    ? parseFloat(balanceData.total_usd) 
+    : (balanceData?.total_usd || 0)
+  
+  // Hook para snapshots e PNL do MongoDB
+  const { pnl, loading: pnlLoading, refresh: refreshPnl, saveSnapshot } = useBackendSnapshots(totalUSD)
+  
   const [isUpdating, setIsUpdating] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   // const [searchModalVisible, setSearchModalVisible] = useState(false) // Busca removida - agora está dentro da lista
@@ -31,7 +40,6 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   const [selectedExchangeId, setSelectedExchangeId] = useState<string>("")
   const [selectedExchangeName, setSelectedExchangeName] = useState<string>("")
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
-  const [pnlRefreshTrigger, setPnlRefreshTrigger] = useState<number>(Date.now())
   const refreshOrdersRef = useRef<(() => void) | null>(null)
 
   const onNotificationsPress = useCallback(() => {
@@ -47,9 +55,10 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     navigation?.navigate('Settings', { initialTab: 'profile' })
   }, [navigation])
   
-  const onSnapshotSaved = useCallback(() => {
-    setPnlRefreshTrigger(Date.now())
-  }, [])
+  const onSnapshotSaved = useCallback(async () => {
+    // Atualiza os snapshots do backend
+    await refreshPnl()
+  }, [refreshPnl])
 
 
   const onAddExchange = useCallback(() => {
@@ -84,75 +93,13 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     }
   }, [refreshBalance])
   
-  // Adicionar snapshots de teste para os últimos 30 dias
-  const handleAddTestSnapshots = useCallback(async () => {
-    if (!user?.id) {
-      Alert.alert('Erro', 'Usuário não encontrado')
-      return
-    }
-
-    try {
-      Alert.alert(
-        'Adicionar Snapshots de Teste',
-        'Isso irá criar snapshots fictícios para os últimos 30 dias. Continuar?',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Adicionar',
-            onPress: async () => {
-              try {
-                console.log('🧪 Criando snapshots de teste para últimos 30 dias...')
-                
-                // Criar snapshots para os últimos 30 dias
-                const promises = []
-                for (let i = 0; i < 30; i++) {
-                  const date = new Date()
-                  date.setDate(date.getDate() - i)
-                  date.setHours(0, 0, 0, 0) // Meia-noite
-                  
-                  // Gera valor aleatório para simular variação de portfólio
-                  const baseValue = 10000 + (Math.random() * 5000)
-                  const variation = (Math.random() - 0.5) * 1000
-                  const totalUsd = baseValue + variation
-                  const totalBrl = totalUsd * 5.0 // Conversão fictícia
-                  
-                  promises.push(
-                    snapshotService.createSnapshot({
-                      userId: user.id,
-                      totalUsd,
-                      totalBrl,
-                      timestamp: date.getTime()
-                    })
-                  )
-                }
-                
-                await Promise.all(promises)
-                console.log('✅ Snapshots de teste criados com sucesso!')
-                
-                // Atualizar PNL
-                setPnlRefreshTrigger(Date.now())
-                
-                Alert.alert('Sucesso', '30 snapshots de teste foram criados!')
-              } catch (error) {
-                console.error('❌ Erro ao criar snapshots:', error)
-                Alert.alert('Erro', 'Falha ao criar snapshots de teste')
-              }
-            }
-          }
-        ]
-      )
-    } catch (error) {
-      console.error('❌ Erro:', error)
-    }
-  }, [user?.id])
-  
   // Renderizar layout baseado na escolha do usuário
   const renderLayout = () => {
     switch (layout) {
       case 'tabs':
-        return <HomeTabsLayout />
+        return <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
       default:
-        return <HomeVerticalLayout />
+        return <HomeVerticalLayout pnl={pnl} pnlLoading={pnlLoading} isUpdating={isUpdating} />
     }
   }
   
@@ -174,7 +121,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
       
       {/* Layout tabs não precisa de ScrollView - ele já tem scroll interno */}
       {layout === 'tabs' ? (
-        <HomeTabsLayout />
+        <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
       ) : (
         <ScrollView
           style={styles.scrollView}
@@ -193,7 +140,8 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
           }
         >
           <HomeVerticalLayout 
-            pnlRefreshTrigger={pnlRefreshTrigger}
+            pnl={pnl}
+            pnlLoading={pnlLoading}
             isUpdating={isUpdating}
           />
         </ScrollView>
