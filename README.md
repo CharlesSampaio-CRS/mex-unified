@@ -181,7 +181,7 @@ EXPO_PUBLIC_API_URL=http://54.94.231.254:3002/api/v1
 ### "Unable to resolve module"
 ```bash
 rm -rf node_modules package-lock.json
-npm install
+npm install --legacy-peer-deps
 npx expo start --clear
 ```
 

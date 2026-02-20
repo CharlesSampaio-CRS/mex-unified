@@ -30,20 +30,10 @@ export function ExchangesScreen({ route, navigation }: any) {
     if (!user?.id) return
     
     try {
-      console.log('🔍 [ExchangesScreen] Carregando contadores de exchanges...')
+      const counts = await exchangeService.getExchangesCounts(user.id)
       
-      const [availableData, linkedCount] = await Promise.all([
-        apiService.getAvailableExchanges(user.id),
-        exchangeService.countExchanges(user.id)
-      ])
-      
-      if (availableData.success && availableData.exchanges) {
-        setAvailableCount(availableData.exchanges.length)
-        console.log(`✅ [ExchangesScreen] ${availableData.exchanges.length} exchanges disponíveis`)
-      }
-      
-      setLinkedCount(linkedCount)
-      console.log(`✅ [ExchangesScreen] ${linkedCount} exchanges conectadas do MongoDB`)
+      setLinkedCount(counts.connected)
+      setAvailableCount(counts.available)
     } catch (error) {
       console.error('❌ [ExchangesScreen] Error loading exchanges counts:', error)
     }
@@ -51,19 +41,14 @@ export function ExchangesScreen({ route, navigation }: any) {
   
   // Carrega contadores inicialmente
   useEffect(() => {
-    console.log('🔄 [ExchangesScreen] useEffect executado, user?.id:', user?.id)
     if (user?.id) {
-      console.log('✅ [ExchangesScreen] Chamando loadExchangesCounts()...')
       loadExchangesCounts()
-    } else {
-      console.warn('⚠️ [ExchangesScreen] Usuário não autenticado, não carregando exchanges')
     }
   }, [user?.id, loadExchangesCounts])
 
   // 🔄 Registra callback para atualizar contadores quando exchanges mudarem
   useEffect(() => {
     const refreshCallback = async () => {
-      console.log('🔄 [ExchangesScreen] Exchange modificada - atualizando contadores...')
       await loadExchangesCounts()
     }
     

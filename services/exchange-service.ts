@@ -193,19 +193,54 @@ class SQLiteExchangeService {
     })
   }
 
-  async countExchanges(userId: string): Promise<number> {
+  /**
+   * 🧮 Calcula contadores de exchanges (conectadas e disponíveis)
+   * Lógica: Total catálogo - Conectadas = Disponíveis
+   * Retorna: { connected, available, total }
+   */
+  async getExchangesCounts(userId: string): Promise<{
+    connected: number
+    available: number
+    total: number
+  }> {
     try {
-      const response = await apiService.listExchanges()
+      // Busca exchanges conectadas (MongoDB)
+      const linkedResponse = await apiService.listExchanges()
+      const connectedCount = linkedResponse?.success && linkedResponse?.exchanges 
+        ? linkedResponse.exchanges.length 
+        : 0
       
-      if (!response.success || !response.exchanges) {
-        return 0
+      // Busca catálogo de exchanges disponíveis
+      const availableResponse = await apiService.getAvailableExchanges(userId)
+      const totalCatalog = availableResponse?.success && availableResponse?.exchanges
+        ? availableResponse.exchanges.length
+        : 0
+      
+      // Calcula disponíveis: Total do catálogo - Conectadas
+      const availableCount = Math.max(0, totalCatalog - connectedCount)
+      
+      return {
+        connected: connectedCount,
+        available: availableCount,
+        total: totalCatalog
       }
-      
-      return response.count || response.exchanges.length
     } catch (error) {
-      console.error('❌ [ExchangeService] Erro ao contar exchanges:', error)
-      return 0
+      console.error('❌ [ExchangeService] Erro ao calcular contadores:', error)
+      return {
+        connected: 0,
+        available: 0,
+        total: 0
+      }
     }
+  }
+
+  /**
+   * @deprecated Use getExchangesCounts() instead
+   * Conta exchanges conectadas
+   */
+  async countExchanges(userId: string): Promise<number> {
+    const counts = await this.getExchangesCounts(userId)
+    return counts.connected
   }
 
   async countActiveExchanges(userId: string): Promise<number> {
