@@ -1,9 +1,9 @@
 /**
- * Exchange Service - MongoDB APENAS (via API Backend)
+ * Exchange Service - MongoDB via API Backend
  * 
- * ✅ TUDO vem do MongoDB via API Backend
- * ❌ SEM cache SQLite
- * ❌ SEM fallback offline
+ * ✅ Dados vêm do MongoDB via API Backend
+ * ❌ Sem cache local
+ * ❌ Sem fallback offline
  */
 
 import { apiService } from './api'
@@ -16,7 +16,7 @@ export interface UserExchange {
   api_key_encrypted: string
   api_secret_encrypted: string
   api_passphrase_encrypted: string | null
-  is_active: number // SQLite usa INTEGER para boolean
+  is_active: number // INTEGER para boolean
   last_sync_at: number | null
   created_at: number
   updated_at: number
@@ -41,7 +41,7 @@ export interface ConnectedExchange {
   createdAt: Date
 }
 
-class SQLiteExchangeService {
+class ExchangeService {
   /**
    * 🧮 Calcula contadores de exchanges (conectadas e disponíveis)
    * Lógica: Total catálogo - Conectadas = Disponíveis
@@ -113,6 +113,5 @@ class SQLiteExchangeService {
 }
 
 // Singleton instance
-export const exchangeService = new SQLiteExchangeService()
-export const sqliteExchangeService = exchangeService // Alias
+export const exchangeService = new ExchangeService()
 export default exchangeService

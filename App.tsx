@@ -5,7 +5,6 @@ import { StatusBar } from "expo-status-bar"
 import { ActivityIndicator, View, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
 import Svg, { Path, Rect, Circle } from "react-native-svg"
-// ⚠️ REMOVIDO: sqliteDatabase (SQLite foi completamente removido do projeto)
 
 // 🔥 ERROR HANDLER GLOBAL - Captura TODOS os erros não tratados
 if (__DEV__) {
@@ -246,9 +245,6 @@ function MainTabs() {
 function AppNavigator() {
   const { isAuthenticated, isLoading, isLoadingData, setLoadingDataComplete, user } = useAuth()
   const { colors, isDark } = useTheme()
-
-  // ⚠️ REMOVIDO: Inicialização do SQLite (banco foi completamente removido)
-  // Dados agora são gerenciados via AsyncStorage (local) e MongoDB (remoto via API)
 
   if (isLoading) {
     return (

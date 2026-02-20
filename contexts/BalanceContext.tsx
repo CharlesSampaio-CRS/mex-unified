@@ -71,7 +71,7 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       
       setError(null)
       
-      // ✅ IMPLEMENTAÇÃO ORIGINAL: Busca direto da API (como era com WatermelonDB)
+      // Busca direto da API
       console.log('📡 [BalanceContext] Chamando apiService.getBalances()...')
       const response = await apiService.getBalances(user.id, forceRefresh)
       console.log('✅ [BalanceContext] Resposta recebida:', response ? 'COM DADOS' : 'SEM DADOS')

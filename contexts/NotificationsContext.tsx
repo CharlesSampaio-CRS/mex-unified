@@ -54,7 +54,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     try {
       setIsLoading(true)
 
-      // Get all notifications from SQLite (no user filtering needed since it's local)
+      // Get all notifications from AsyncStorage
       const localNotifications = await notificationService.getAllNotifications()
       const converted = localNotifications.map(convertLocalNotification)
       
@@ -71,10 +71,6 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     loadNotifications()
   }, [loadNotifications])
-
-  // ❌ REMOVIDO: Observer WatermelonDB não existe mais no SQLite
-  // O SQLite não fornece observables em tempo real como o WatermelonDB
-  // As notificações são recarregadas manualmente quando necessárias
 
   const unreadCount = useMemo(() => 
     notifications.filter(n => !n.read).length, 

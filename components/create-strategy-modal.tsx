@@ -24,7 +24,7 @@ import { apiService } from "@/services/api"
 import { LinkedExchange } from "@/types/api"
 import { config } from "@/lib/config"
 
-// Tipo para exchange no modal (dados locais do WatermelonDB)
+// Tipo para exchange no modal
 interface LocalExchange {
   _id: string
   exchange_id: string
@@ -468,7 +468,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                 ) : (
                   <View style={styles.exchangesList}>
                     {exchanges.map((exchange) => {
-                      // Use exchange_id (WatermelonDB ID) and exchangeType (CCXT ID)
+                      // Use exchange_id and exchangeType (CCXT ID)
                       const exchangeId = exchange.exchange_id || exchange._id || ""
                       const exchangeType = exchange.exchange_type || exchange.ccxt_id || ""
                       return (

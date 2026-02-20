@@ -920,7 +920,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       console.log('✅ Conta deletada do MongoDB')
       
-      // 2. Limpar banco local (WatermelonDB/IndexedDB)
+      // 2. Limpar banco local (IndexedDB)
       if (Platform.OS === 'web') {
         console.log('🗑️ Deletando banco local (IndexedDB)...')
         
@@ -930,7 +930,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             console.log('📦 Bancos encontrados:', databases.map(db => db.name))
             
             for (const db of databases) {
-              if (db.name && (db.name.includes('cryptohub') || db.name.includes('watermelon') || db.name.includes('loki'))) {
+              if (db.name && (db.name.includes('cryptohub') || db.name.includes('loki'))) {
                 console.log(`🗑️ Deletando banco: ${db.name}`)
                 window.indexedDB.deleteDatabase(db.name)
               }

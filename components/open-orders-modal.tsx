@@ -6,10 +6,7 @@ import { useBalance } from "../contexts/BalanceContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
-// ⚠️ REMOVIDO: orderOperationsService (usava SQLite)
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
-
-// ❌ Cache removido - sempre busca dados atualizados
 
 interface OpenOrdersModalProps {
   visible: boolean
@@ -297,7 +294,6 @@ export function OpenOrdersModal({
     setCancellingOrderId(orderToCancel.id)
     
     try {
-      // ⚠️ TODO: Criar notificação manualmente (orderOperationsService foi removido)
       const result = await apiService.cancelOrder(
         userId,
         orderToCancel.id,

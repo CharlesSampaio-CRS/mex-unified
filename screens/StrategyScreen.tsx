@@ -19,8 +19,7 @@ import { commonStyles, spacing, borderRadius, shadows } from "@/lib/layout"
 /**
  * 🤖 Strategy Screen - MongoDB Backend
  * 
- * Migrado de SQLite para MongoDB:
- * - Todas as estratégias são armazenadas no MongoDB
+ * Estratégias armazenadas no MongoDB:
  * - Sincronização em tempo real via API
  * - Multi-device: mesmos dados em todos os dispositivos
  */

@@ -871,9 +871,8 @@ export const apiService = {
    * @param exchangeId MongoDB _id da exchange
   /**
    * 📊 Cria ordem de compra (market ou limit)
-   * ATUALIZADO: Agora usa credenciais do WatermelonDB local
    * @param userId ID do usuário
-   * @param exchangeId WatermelonDB ID da exchange
+   * @param exchangeId ID da exchange
    * @param token Símbolo do token (ex: BTC/USDT)
    * @param amount Quantidade a comprar
    * @param orderType Tipo de ordem: 'market' ou 'limit'
@@ -889,7 +888,6 @@ export const apiService = {
     price?: number
   ): Promise<any> {
     try {
-      // ⚠️ FUNÇÃO REMOVIDA: order-operations.ts foi deletado (usava SQLite)
       // TODO: Implementar chamada direta à API do trading-service
       throw new Error('Funcionalidade de criar ordem de compra não implementada. Usar trading-service diretamente.');
     } catch (error: any) {
@@ -912,9 +910,8 @@ export const apiService = {
 
   /**
    * 📉 Cria ordem de venda (market ou limit)
-   * ATUALIZADO: Agora usa credenciais do WatermelonDB local
    * @param userId ID do usuário
-   * @param exchangeId WatermelonDB ID da exchange
+   * @param exchangeId ID da exchange
    * @param token Símbolo do token (ex: BTC/USDT)
    * @param amount Quantidade a vender
    * @param orderType Tipo de ordem: 'market' ou 'limit'
@@ -930,8 +927,7 @@ export const apiService = {
     price?: number
   ): Promise<any> {
     try {
-      // ⚠️ TODO: Implementar sem SQLite (order-operations foi removido)
-      // Usar endpoint direto do trading-service: POST /orders/sell
+      // TODO: Implementar endpoint direto do trading-service: POST /orders/sell
       throw new Error(
         "Funcionalidade não implementada. Usar trading-service diretamente."
       );

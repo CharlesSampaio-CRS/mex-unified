@@ -9,7 +9,6 @@ import { useOrders } from '../contexts/OrdersContext';
 import { usePrivacy } from '../contexts/PrivacyContext';
 import { useBalance } from '../contexts/BalanceContext';
 import { apiService } from '../services/api';
-// ⚠️ REMOVIDO: orderOperationsService (usava SQLite)
 import { OpenOrder, getOrderId } from '../types/orders';
 import { OrderDetailsModal } from './order-details-modal';
 import { AnimatedLogoIcon } from './AnimatedLogoIcon';
@@ -293,12 +292,10 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     setCloneError(null);
 
     try {
-      // ⚠️ TODO: Implementar criação de ordem sem SQLite
-      // Order operations foi removido (usava SQLite)
-      // Opções: usar apiService.createBuyOrder/createSellOrder direto
-      throw new Error('Funcionalidade de clonar ordem precisa ser reimplementada sem SQLite');
+      // TODO: Implementar usando apiService.createBuyOrder/createSellOrder
+      throw new Error('Funcionalidade de clonar ordem precisa ser reimplementada');
       
-      /* CÓDIGO ANTIGO (usava SQLite):
+      /* CÓDIGO ANTIGO:
       let result;
       if (order.side === 'buy') {
         result = await orderOperationsService.createBuyOrder(...);

@@ -8,8 +8,6 @@ import { View, Text, StyleSheet } from 'react-native'
  * 
  * Este componente foi desabilitado porque o sistema agora usa MongoDB diretamente.
  * Snapshots são gerenciados automaticamente pelo backend (Rust scheduler).
- * 
- * Motivo: Migração de SQLite → MongoDB completa
  */
 
 export default function ImportSnapshot() {

@@ -1,14 +1,14 @@
 /**
- * Balance Service - MongoDB APENAS (via API Backend)
+ * Balance Service - MongoDB via API Backend
  * 
- * ✅ TUDO vem do MongoDB via API Backend
- * ❌ SEM cache SQLite local
- * ❌ SEM fallback offline
+ * ✅ Dados vêm do MongoDB via API Backend
+ * ❌ Sem cache local
+ * ❌ Sem fallback offline
  * 
  * Motivo:
  * - MongoDB é a única fonte da verdade
  * - Dados sempre sincronizados e corretos
- * - Se API falhar, app trata erro (não mostra dados desatualizados)
+ * - Se API falhar, app trata erro
  */
 
 import { apiService } from './api'

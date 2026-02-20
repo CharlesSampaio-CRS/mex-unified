@@ -52,7 +52,7 @@ export function CacheInvalidationProvider({ children }: CacheInvalidationProvide
    * 
    * NOTA: refreshOnExchangeChange() chama fetchBalances() que busca:
    *   1. apiService.getBalances() - balances + exchange status
-   *   2. PNL agora é calculado localmente via pnlService (WatermelonDB)
+   *   2. PNL calculado localmente via pnlService
    * Portanto, uma única chamada atualiza os balances!
    */
   const invalidateHomeData = useCallback(async () => {
