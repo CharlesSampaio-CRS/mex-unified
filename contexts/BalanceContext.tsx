@@ -57,7 +57,7 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       setRefreshing(false)
       isFetchingRef.current = false
       setError('Timeout ao carregar dados. Tente novamente.')
-    }, 25000)
+    }, 60000)
     
     try {     
       // Se não tem usuário autenticado, não faz nada
