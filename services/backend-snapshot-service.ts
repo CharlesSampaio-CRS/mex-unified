@@ -22,7 +22,7 @@ export interface BackendSnapshot {
   date: string // YYYY-MM-DD
   total_usd: number
   total_brl: number
-  timestamp: number
+  timestamp: number // ⚠️ MongoDB retorna em MILISSEGUNDOS (não segundos!)
   exchanges: ExchangeSnapshotDetail[]
 }
 
@@ -73,7 +73,7 @@ class BackendSnapshotService {
       const data = await response.json()
       
       if (data.success && data.snapshots) {
-        // Ordena por timestamp decrescente (mais recente primeiro)
+      // Ordena por timestamp decrescente (mais recente primeiro)
         return data.snapshots.sort((a: BackendSnapshot, b: BackendSnapshot) => b.timestamp - a.timestamp)
       }
       
@@ -291,7 +291,7 @@ class BackendSnapshotService {
       cutoffDate.setDate(cutoffDate.getDate() - days)
       cutoffDate.setHours(0, 0, 0, 0)
       
-      const cutoffTimestamp = Math.floor(cutoffDate.getTime() / 1000)
+      const cutoffTimestamp = cutoffDate.getTime() // Agora em milissegundos
       
       const filteredSnapshots = snapshots
         .filter(s => s.timestamp >= cutoffTimestamp)
@@ -308,8 +308,10 @@ class BackendSnapshotService {
       // Extrai valores e timestamps
       const values_usd = filteredSnapshots.map(s => s.total_usd)
       const timestamps = filteredSnapshots.map(s => {
-        const date = new Date(s.timestamp * 1000)
-        return date.toISOString()
+        const date = new Date(s.timestamp) // timestamp JÁ em milissegundos
+        const isoString = date.toISOString()
+        
+        return isoString
       })
 
       return {
