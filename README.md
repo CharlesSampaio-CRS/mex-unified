@@ -1,214 +1,203 @@
 # 📱 Multi-Exchange Unified (MEX-Unified)
 
-Sistema unificado de gerenciamento de criptomoedas em múltiplas exchanges com interface React Native/Expo.
+App mobile para gerenciar criptomoedas em múltiplas exchanges de forma unificada.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React Native](https://img.shields.io/badge/React%20Native-0.74-blue.svg)
 ![Expo](https://img.shields.io/badge/Expo-54-black.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)
 
 ---
 
-## ⚡ Quick Start (3 passos)
+## ⚡ Quick Start
 
 ```bash
-# 1. Instalar dependências
 npm install
-
-# 2. Rodar no celular (Expo)
 npx expo start
-
-# 3. Rodar no navegador (Next.js)
-npm run dev
 ```
 
-📱 **Mobile**: Abra o **Expo Go** no celular e escaneie o QR code  
-🌐 **Web**: Acesse **http://localhost:3000**
+Abra o **Expo Go** no celular e escaneie o QR code.
 
 ---
 
-## 🚀 Início Rápido
+## � O que é?
+
+Um aplicativo **mobile-only** (iOS/Android) que permite:
+
+- 📊 Visualizar saldos de múltiplas exchanges em um único lugar
+- 💰 Acompanhar evolução do portfolio com gráficos
+- 📈 Gerenciar ordens abertas de todas as exchanges
+- 🎯 Criar e monitorar estratégias de trading
+- 🔔 Receber alertas de preço personalizados
+- 🔐 Login seguro com Face ID / Touch ID
+
+---
+
+## 🚀 Instalação
 
 ### Pré-requisitos
 
 - **Node.js** 18+ ([Download](https://nodejs.org/))
-- **npm** ou **yarn**
-- **Expo Go** app no celular (iOS/Android)
+- **Expo Go** app no celular ([iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
 
-### Instalação
+### Passos
 
 ```bash
-# Clone o repositório
+# 1. Clone o repositório
 git clone https://github.com/CharlesSampaio-CRS/mex-unified.git
 cd mex-unified
 
-# Instale as dependências
-npm install --legacy-peer-deps
-# ou
-yarn install
+# 2. Instale as dependências
+npm install
+
+# 3. Inicie o servidor
+npx expo start
 ```
 
-### Rodando o Projeto
+**No celular:**
+- Abra o app **Expo Go**
+- Escaneie o QR code que apareceu no terminal
+- Aguarde o app carregar
 
-#### 🌐 Web (Next.js)
+---
+
+## 🎮 Comandos Úteis
+
 ```bash
-npm run dev
-# ou
-yarn dev
-
-# Acesse: http://localhost:3000
-```
-
-#### 📱 Mobile (Expo)
-```bash
-# Inicia o servidor Expo
+# Iniciar servidor
 npx expo start
 
-# Depois:
-# - Pressione 'w' para abrir no navegador (localhost:8081)
-# - Pressione 'i' para iOS Simulator (somente macOS)
-# - Pressione 'a' para Android Emulator
-# - Escaneie o QR code com Expo Go app no celular
-```
-
-#### 🧪 Desenvolvimento
-```bash
-# Limpar cache e reiniciar
+# Limpar cache
 npx expo start --clear
 
-# Limpar cache completo (node_modules + metro)
+# Limpar cache completo
 npx expo start -c
 
-# Modo túnel (acessar de qualquer rede)
+# Modo túnel (rede externa)
 npx expo start --tunnel
+
+# Abrir no Android
+npx expo start --android
+
+# Abrir no iOS (apenas macOS)
+npx expo start --ios
 ```
 
 ---
 
-## 📁 Estrutura do Projeto
+## 📁 Estrutura Simplificada
 
 ```
 mex-unified/
-├── app/                    # Next.js app directory (web)
-│   ├── auth/              # Páginas de autenticação
-│   ├── import/            # Importação de snapshots
-│   └── layout.tsx         # Layout raiz
-├── assets/                # Imagens, ícones, logos
-├── components/            # Componentes React reutilizáveis
-│   ├── AnimatedLogoIcon.tsx
-│   ├── PortfolioChart.tsx
-│   ├── ExchangesList.tsx
-│   └── ...
-├── contexts/              # React Context (estado global)
-│   ├── AuthContext.tsx           # Autenticação e usuário
-│   ├── BalanceContext.tsx        # Saldos e balances
-│   ├── OrdersContext.tsx         # Ordens abertas
-│   └── ExchangesContext.tsx      # Exchanges linkadas
-├── hooks/                 # Custom React Hooks
-│   ├── useBackendStrategies.ts
-│   ├── useBackendSnapshots.ts
-│   └── ...
-├── lib/                   # Utilitários e configurações
-│   ├── config.ts                 # Configuração da API
-│   ├── secure-storage.ts         # Storage seguro
-│   └── encryption.ts             # Criptografia local
-├── screens/               # Telas principais do app
-│   ├── HomeScreen.tsx
-│   ├── PortfolioScreen.tsx
-│   ├── OrdersScreen.tsx
-│   ├── StrategyScreen.tsx
-│   └── ...
-├── services/              # Serviços de API
-│   ├── api.ts                    # Cliente HTTP principal
-│   ├── backend-snapshot-service.ts
-│   ├── backend-strategy-service.ts
-│   └── ...
-├── styles/                # Estilos globais
-├── types/                 # TypeScript types/interfaces
-├── App.tsx                # Componente raiz (mobile)
-├── package.json           # Dependências
-└── tsconfig.json          # Config TypeScript
+├── components/          # Componentes reutilizáveis
+├── contexts/           # Estado global (Auth, Balance, Orders)
+├── screens/            # Telas do app
+├── services/           # Conexão com API Backend
+├── lib/                # Utilitários (config, storage, crypto)
+├── hooks/              # Custom hooks
+├── types/              # TypeScript types
+└── App.tsx             # Componente raiz
 ```
 
 ---
 
-## 🔧 Tecnologias Principais
+## 🔧 Tecnologias
 
-### Frontend
-- **React Native** - Framework mobile multiplataforma
-- **Expo** - Toolchain e SDK para React Native
-- **Next.js** - Framework React para web
+- **React Native** - Framework mobile
+- **Expo** - Toolchain para React Native
 - **TypeScript** - Tipagem estática
-- **TailwindCSS** - Estilização (web)
-
-### State Management
-- **React Context API** - Gerenciamento de estado global
-- **React Hooks** - Estado local e efeitos
-
-### UI Components
-- **React Native Paper** - Componentes Material Design
-- **Expo Vector Icons** - Ícones
-- **React Native Chart Kit** - Gráficos
-- **React Native Reanimated** - Animações
-
-### Autenticação & Segurança
-- **Expo Local Authentication** - Biometria (Face ID/Touch ID)
+- **React Navigation** - Navegação entre telas
 - **Expo Secure Store** - Storage criptografado
-- **JWT** - Autenticação via tokens
-
-### Navegação
-- **Expo Router** - Navegação file-based
-- **React Navigation** - Navegação nativa
+- **Expo Local Authentication** - Face ID / Touch ID
 
 ---
 
-## 🏗️ Arquitetura
+## 🔌 Backend
 
-### Backend Integration
-O app consome APIs do **Trading Service** (Rust/Actix-web) hospedado na AWS:
+O app consome dados do backend em **Rust** (trading-service):
 
 ```
 Frontend (React Native/Expo)
-    ↓ HTTP/REST
-Backend (Rust/Actix-web) → AWS EC2
     ↓
-MongoDB Atlas (Dados criptografados)
+Backend (Rust/Actix-web) - AWS EC2
     ↓
-CCXT Python Service (Exchanges)
+MongoDB Atlas
+    ↓
+CCXT (Python) - Exchanges APIs
 ```
 
-### Fluxo de Dados
+**Endpoint:** `http://54.94.231.254:3002/api/v1`
 
+---
+
+## ⚙️ Configuração
+
+### API Backend
+
+Edite `lib/config.ts`:
+
+```typescript
+export const config = {
+  apiBaseUrl: 'http://54.94.231.254:3002/api/v1',
+  apiTimeout: 25000,
+}
 ```
-1. Usuário autentica (JWT)
-2. Frontend busca dados do MongoDB via API
-3. Dados são descriptografados localmente
-4. UI renderiza portfolio, ordens, estratégias
-5. Pull-to-refresh atualiza dados do backend
+
+### Variáveis de Ambiente (opcional)
+
+Crie `.env`:
+
+```env
+EXPO_PUBLIC_API_URL=http://54.94.231.254:3002/api/v1
 ```
 
 ---
 
-## 🔑 Configuração
+## 🎯 Funcionalidades
 
-### Variáveis de Ambiente
+### ✅ Implementadas
 
-Crie um arquivo `lib/config.ts` com suas configurações:
+- ✅ Login com email/senha
+- ✅ Login com Google/Apple OAuth
+- ✅ Face ID / Touch ID
+- ✅ Portfolio unificado (múltiplas exchanges)
+- ✅ Gráfico de evolução (7d, 15d, 30d, 90d, 1ano, máx)
+- ✅ Lista de ordens abertas
+- ✅ Gerenciamento de estratégias
+- ✅ Alertas de preço
+- ✅ Pull-to-refresh
+- ✅ Modo escuro
+- ✅ Sincronização automática
 
-```typescript
-export const config = {
-  // API Backend (Rust)
-  apiBaseUrl: 'http://54.94.231.254:3002/api/v1',
-  kongBaseUrl: 'http://54.94.231.254:3002',
-  
-  // Timeouts
-  apiTimeout: 30000,
-  
-  // Features
-  enableBiometric: true,
-  enableAutoRefresh: true,
-}
+### 🚧 Em Desenvolvimento
+
+- � Notificações push
+- 🚧 Execução automática de estratégias
+- � Relatórios avançados
+
+---
+
+## 🐛 Problemas Comuns
+
+### "Unable to resolve module"
+```bash
+rm -rf node_modules package-lock.json
+npm install
+npx expo start --clear
 ```
+
+### Metro Bundler travado
+```bash
+npx kill-port 8081
+npx expo start
+```
+
+### Timeout ao buscar dados
+- Verifique se o backend está online: `http://54.94.231.254:3002/api/v1/health`
+- Verifique sua conexão de internet
+- Tente aumentar o timeout em `services/api.ts`
+
+### Erro de autenticação
+- No app: **Configurações → Sair → Limpar Cache**
 
 ---
 
@@ -219,166 +208,33 @@ export const config = {
   "expo": "~51.0.0",
   "react": "18.2.0",
   "react-native": "0.74.5",
-  "next": "14.2.15",
   "@react-navigation/native": "^6.1.18",
+  "@react-navigation/bottom-tabs": "^6.6.1",
   "expo-secure-store": "~13.0.2",
   "expo-local-authentication": "~14.0.1",
-  "react-native-chart-kit": "^6.12.0"
+  "react-native-chart-kit": "^6.12.0",
+  "react-native-paper": "^5.12.5"
 }
-```
-
-### Comandos Úteis
-
-```bash
-# Instalar nova dependência
-npm install <package>
-# ou
-npx expo install <package>  # Recomendado para pacotes Expo
-
-# Atualizar Expo SDK
-npx expo upgrade
-
-# Verificar dependências desatualizadas
-npm outdated
-
-# Build para produção (web)
-npm run build
-
-# Servir build de produção (web)
-npm run start
-
-# Limpar cache do Expo
-npx expo start --clear
-
-# Resetar completamente o projeto
-rm -rf node_modules package-lock.json
-npm install
-npx expo start -c
-```
-
----
-
-## 🎯 Funcionalidades Principais
-
-### ✅ Implementadas
-
-- 🔐 **Autenticação**
-  - Login com email/senha
-  - Login com Google/Apple (OAuth)
-  - Face ID / Touch ID
-  - Auto-login com biometria
-
-- 💰 **Portfolio**
-  - Visualização de saldos em múltiplas exchanges
-  - Gráfico de evolução (7d, 15d, 30d)
-  - Cálculo de PNL (Profit & Loss)
-  - Conversão USD/BRL em tempo real
-
-- 📊 **Snapshots**
-  - Histórico de saldos diários
-  - Importação de snapshots via JSON
-  - Gráficos de evolução patrimonial
-
-- 🎯 **Estratégias**
-  - Criação de estratégias de trading
-  - Filtros por exchange/símbolo/tipo
-  - Ativação/desativação
-  - Persistência no MongoDB
-
-- 📈 **Ordens**
-  - Visualização de ordens abertas
-  - Filtros por exchange/mercado/tipo
-  - Sincronização automática
-
-- 🔄 **Pull-to-Refresh**
-  - Atualização manual de dados
-  - Sincronização com backend
-  - Indicadores de loading
-
-### 🚧 Em Desenvolvimento
-
-- 📱 Notificações push
-- 🤖 Execução automática de estratégias
-- 📊 Relatórios avançados
-- 🔔 Alertas de preço
-
----
-
-## 🐛 Debug & Troubleshooting
-
-### Problemas Comuns
-
-#### 1. **Erro: "Unable to resolve module"**
-```bash
-# Limpe o cache e reinstale
-rm -rf node_modules package-lock.json
-npm install
-npx expo start --clear
-```
-
-#### 2. **Timeout ao buscar dados**
-- Verifique se o backend está rodando: `http://54.94.231.254:3002/api/v1/health`
-- Verifique sua conexão de rede
-- Aumente os timeouts em `services/api.ts`
-
-#### 3. **Erro de autenticação**
-```bash
-# Limpe o storage local
-# No app: Settings → Logout → Clear Cache
-```
-
-#### 4. **Metro Bundler não inicia**
-```bash
-# Mate processos na porta 8081
-npx kill-port 8081
-npm start
-```
-
-### Logs & Console
-
-```typescript
-// Habilitar logs detalhados
-console.log('🔍 Debug:', data)
-console.error('❌ Erro:', error)
-console.warn('⚠️ Aviso:', warning)
-```
-
----
-
-## 🧪 Testes
-
-```bash
-# Rodar testes (quando implementados)
-npm test
-
-# Testes com coverage
-npm run test:coverage
 ```
 
 ---
 
 ## 📱 Build para Produção
 
-### iOS
+### Instalar EAS CLI
 ```bash
-# Requer macOS e Xcode
-eas build --platform ios
+npm install -g eas-cli
+eas login
 ```
 
-### Android
+### Android (APK)
 ```bash
-# Gera APK
 eas build --platform android --profile preview
-
-# Gera AAB para Google Play
-eas build --platform android --profile production
 ```
 
-### Web
+### iOS (Requer macOS + Xcode)
 ```bash
-# Build estático Next.js
-npm run build
-npm run start # Serve produção
+eas build --platform ios
 ```
 
 ---
@@ -386,38 +242,31 @@ npm run start # Serve produção
 ## 🤝 Contribuindo
 
 1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
+2. Crie uma branch: `git checkout -b feature/nova-feature`
+3. Commit: `git commit -m 'Adiciona nova feature'`
+4. Push: `git push origin feature/nova-feature`
 5. Abra um Pull Request
 
 ---
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+MIT License - veja [LICENSE](LICENSE)
 
 ---
 
 ## 👨‍💻 Autor
 
 **Charles Roberto Sampaio**
-
 - GitHub: [@CharlesSampaio-CRS](https://github.com/CharlesSampaio-CRS)
 
 ---
 
-## 🔗 Links Relacionados
+## 🔗 Links Úteis
 
-- **Backend (Rust)**: [trading-service](../trading-service)
-- **Documentação da API**: [SWAGGER_DOCUMENTATION.md](../trading-service/docs/SWAGGER_DOCUMENTATION.md)
-- **Fluxos de Auth**: [AUTH_FLOWS.md](../trading-service/docs/AUTH_FLOWS.md)
-
----
-
-## 📞 Suporte
-
-Para bugs e sugestões, abra uma [issue](https://github.com/CharlesSampaio-CRS/mex-unified/issues) no GitHub.
+- [Backend (Rust)](../trading-service)
+- [Documentação da API](../trading-service/docs/SWAGGER_DOCUMENTATION.md)
+- [Fluxos de Autenticação](../trading-service/docs/AUTH_FLOWS.md)
 
 ---
 

@@ -30,9 +30,8 @@ export function ExchangesScreen({ route, navigation }: any) {
     if (!user?.id) return
     
     try {
-      console.log('� [ExchangesScreen] Carregando contadores de exchanges...')
+      console.log('🔍 [ExchangesScreen] Carregando contadores de exchanges...')
       
-      // Disponíveis: da API | Conectadas: do banco local
       const [availableData, linkedCount] = await Promise.all([
         apiService.getAvailableExchanges(user.id),
         exchangeService.countExchanges(user.id)
@@ -44,7 +43,7 @@ export function ExchangesScreen({ route, navigation }: any) {
       }
       
       setLinkedCount(linkedCount)
-      console.log(`✅ [ExchangesScreen] ${linkedCount} exchanges conectadas`)
+      console.log(`✅ [ExchangesScreen] ${linkedCount} exchanges conectadas do MongoDB`)
     } catch (error) {
       console.error('❌ [ExchangesScreen] Error loading exchanges counts:', error)
     }

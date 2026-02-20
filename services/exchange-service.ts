@@ -195,24 +195,33 @@ class SQLiteExchangeService {
 
   async countExchanges(userId: string): Promise<number> {
     try {
-      const count = await table(this.tableName)
-        .where('user_id', userId)
-        .count()
+      const response = await apiService.listExchanges()
       
-      return count
+      if (!response.success || !response.exchanges) {
+        return 0
+      }
+      
+      return response.count || response.exchanges.length
     } catch (error) {
+      console.error('❌ [ExchangeService] Erro ao contar exchanges:', error)
       return 0
     }
   }
 
-  /**
-   * Conta exchanges ativas
-   */
   async countActiveExchanges(userId: string): Promise<number> {
-    return await table(this.tableName)
-      .where('user_id', userId)
-      .where('is_active', 1)
-      .count()
+    try {
+      const response = await apiService.listExchanges()
+      
+      if (!response.success || !response.exchanges) {
+        return 0
+      }
+      
+      const activeCount = response.exchanges.filter(ex => ex.is_active).length
+      return activeCount
+    } catch (error) {
+      console.error('❌ [ExchangeService] Erro ao contar exchanges ativas:', error)
+      return 0
+    }
   }
 
   /**
