@@ -222,14 +222,14 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    flexShrink: 1,
-    gap: 6,
+    flex: 0,
+    flexShrink: 0,
   },
   symbol: {
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.2,
+    marginRight: 8,
   },
   sideBadge: {
     paddingHorizontal: 6,
@@ -244,14 +244,15 @@ const styles = StyleSheet.create({
   quoteCurrency: {
     fontSize: 11,
     fontWeight: '500',
-    marginLeft: 6,
-    marginRight: 6,
+    marginLeft: 4,
+    marginRight: 4,
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 0,
     flexShrink: 0,
+    gap: 4,
   },
   expandedSection: {
     paddingTop: 8,
