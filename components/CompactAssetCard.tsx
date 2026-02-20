@@ -212,7 +212,7 @@ export function CompactAssetCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 8,
-    marginBottom: 3,
+    marginBottom: 2,
     padding: 0,
     overflow: 'hidden',
   },
