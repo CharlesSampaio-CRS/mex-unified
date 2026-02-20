@@ -345,9 +345,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       await saveUser(user)
       
-      // Pequeno delay para garantir que o estado foi atualizado
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
+      // ✅ Removido delay desnecessário - React atualiza estado imediatamente
       console.log('✅ Setando usuário autenticado no estado...')
       setHasValidToken(true)
       setUser(user)
@@ -570,8 +568,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 // IMPORTANTE: Define isLoadingData ANTES de setUser para evitar flash da tela de login
                 setIsLoadingData(true)
                 
-                // Pequeno delay para garantir que o estado foi atualizado
-                await new Promise(resolve => setTimeout(resolve, 50))
+                // ✅ Removido delay - React atualiza estado imediatamente
                 setHasValidToken(true)
                 setUser(user)
                 resolve()
@@ -749,9 +746,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Ativa o loading de dados após login bem-sucedido
       setIsLoadingData(true)
       
-      // Aguarda um tick para garantir que isLoadingData seja propagado
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
+      // ✅ Removido delay - React atualiza estado imediatamente
       // O loading será desativado pelo App.tsx quando os dados estiverem prontos
     } catch (error) {
       console.error('Apple login error:', error)
@@ -822,9 +817,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await saveUser(user)
       console.log('[REGISTER] Depois de saveUser')
 
-      // Pequeno delay para garantir que o estado foi atualizado
-      await new Promise(resolve => setTimeout(resolve, 50))
-
+      // ✅ Removido delay - React atualiza estado imediatamente
       console.log('[REGISTER] Antes de setUser')
       setHasValidToken(true)
       setUser(user)

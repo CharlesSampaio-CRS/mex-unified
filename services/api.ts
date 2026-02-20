@@ -37,7 +37,8 @@ interface LocalUserExchangeRow {
 
 /**
  * Request timeout constants (in milliseconds)
- * Timeouts are configured based on operation complexity and cold start requirements
+ * Timeouts são configurados baseados na complexidade da operação
+ * ⚡ OTIMIZADO: Timeouts mais agressivos para melhor UX
  */
 const TIMEOUTS = {
   /** 5 seconds - Fast operations (single item fetch, token search) */
@@ -46,20 +47,20 @@ const TIMEOUTS = {
   /** 10 seconds - Standard operations (list exchanges, check availability) */
   STANDARD: 10000,
   
-  /** 15 seconds - Normal operations (list with filters, token details, markets) */
-  NORMAL: 15000,
+  /** 12 seconds - Normal operations (list with filters, token details, markets) */
+  NORMAL: 12000,
   
-  /** 30 seconds - Slow operations (create/update orders, complex calculations) */
-  SLOW: 30000,
+  /** 20 seconds - Slow operations (create/update orders, complex calculations) */
+  SLOW: 20000,
   
-  /** 40 seconds - Balance sync with multiple exchanges (can have network issues) */
-  BALANCE_SYNC: 40000,
+  /** 25 seconds - Balance sync with multiple exchanges (otimizado para MongoDB cache) */
+  BALANCE_SYNC: 25000,
   
-  /** 60 seconds - Very slow (cold start on Render, first request after idle) */
-  VERY_SLOW: 60000,
+  /** 45 seconds - Very slow (cold start on Render, first request after idle) */
+  VERY_SLOW: 45000,
   
-  /** 120 seconds - Critical operations (full balance fetch with all exchanges/tokens) */
-  CRITICAL: 120000,
+  /** 90 seconds - Critical operations (full balance fetch with all exchanges/tokens) */
+  CRITICAL: 90000,
 } as const;
 
 const MAX_RETRIES = 2;
