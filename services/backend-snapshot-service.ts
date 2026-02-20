@@ -267,6 +267,60 @@ class BackendSnapshotService {
       throw error
     }
   }
+
+  /**
+   * Busca dados de evolução do portfólio para o gráfico
+   * Retorna valores históricos para um período específico
+   */
+  async getEvolutionData(days: number = 7): Promise<{
+    values_usd: number[]
+    timestamps: string[]
+  }> {
+    try {
+      const snapshots = await this.getSnapshots()
+      
+      if (snapshots.length === 0) {
+        return {
+          values_usd: [],
+          timestamps: [],
+        }
+      }
+
+      // Filtra snapshots pelo período solicitado
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - days)
+      cutoffDate.setHours(0, 0, 0, 0)
+      
+      const cutoffTimestamp = Math.floor(cutoffDate.getTime() / 1000)
+      
+      const filteredSnapshots = snapshots
+        .filter(s => s.timestamp >= cutoffTimestamp)
+        .sort((a, b) => a.timestamp - b.timestamp) // Ordena do mais antigo para o mais recente
+
+      // Se não há snapshots no período, retorna vazio
+      if (filteredSnapshots.length === 0) {
+        return {
+          values_usd: [],
+          timestamps: [],
+        }
+      }
+
+      // Extrai valores e timestamps
+      const values_usd = filteredSnapshots.map(s => s.total_usd)
+      const timestamps = filteredSnapshots.map(s => {
+        const date = new Date(s.timestamp * 1000)
+        return date.toISOString()
+      })
+
+      return {
+        values_usd,
+        timestamps,
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar dados de evolução:', error)
+      throw error
+    }
+  }
 }
 
 export const backendSnapshotService = new BackendSnapshotService()

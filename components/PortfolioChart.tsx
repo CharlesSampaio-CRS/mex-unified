@@ -3,7 +3,6 @@ import { memo, useMemo, useState, useRef } from 'react'
 import Svg, { Line, Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { usePortfolio } from '@/contexts/PortfolioContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
 import { apiService } from '@/services/api'
 import { typography, fontWeights } from '@/lib/typography'
@@ -28,17 +27,13 @@ interface PortfolioChartProps {
 export const PortfolioChart = memo(function PortfolioChart({
   localEvolutionData,
   onPeriodChange,
-  currentPeriod: propCurrentPeriod
+  currentPeriod = 7
 }: PortfolioChartProps) {
   const { colors, isDark } = useTheme()
   const { t } = useLanguage()
-  const { evolutionData, currentPeriod: contextCurrentPeriod, refreshEvolution } = usePortfolio()
   const { hideValue } = usePrivacy()
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null)
   const chartRef = useRef<View>(null)
-
-  // Usa o período da prop ou do contexto
-  const currentPeriod = propCurrentPeriod !== undefined ? propCurrentPeriod : contextCurrentPeriod
 
   // Períodos disponíveis
   const periods = [7, 15, 30]
@@ -47,22 +42,17 @@ export const PortfolioChart = memo(function PortfolioChart({
   const handlePeriodChange = (days: number) => {
     if (onPeriodChange) {
       onPeriodChange(days)
-    } else {
-      refreshEvolution(days)
     }
   }
 
-  // Processa os dados do gráfico - usa dados locais se disponíveis
+  // Processa os dados do gráfico - usa dados locais
   const chartData = useMemo((): ChartPoint[] => {
-    // Usa dados locais se fornecidos
-    const dataSource = localEvolutionData || evolutionData?.evolution
-    
-    if (!dataSource?.values_usd || dataSource.values_usd.length === 0) {
+    if (!localEvolutionData?.values_usd || localEvolutionData.values_usd.length === 0) {
       return []
     }
 
-    const values = dataSource.values_usd
-    const timestamps = dataSource.timestamps
+    const values = localEvolutionData.values_usd
+    const timestamps = localEvolutionData.timestamps
 
     // Filtra valores inválidos (NaN, null, undefined)
     const validValues = values.filter((v: number) => v != null && !isNaN(v) && isFinite(v))
@@ -106,7 +96,7 @@ export const PortfolioChart = memo(function PortfolioChart({
         timestamp: timestamps[index] || new Date().toISOString()
       }
     })
-  }, [localEvolutionData, evolutionData])
+  }, [localEvolutionData])
 
   // Gera o path SVG para a linha
   const linePath = useMemo(() => {

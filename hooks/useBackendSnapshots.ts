@@ -81,6 +81,18 @@ export function useBackendSnapshots(currentBalance?: number) {
   }, [])
 
   /**
+   * Busca dados de evolução para o gráfico
+   */
+  const getEvolutionData = useCallback(async (days: number = 7) => {
+    try {
+      return await backendSnapshotService.getEvolutionData(days)
+    } catch (err: any) {
+      console.error('❌ Erro ao buscar dados de evolução:', err)
+      return { values_usd: [], timestamps: [] }
+    }
+  }, [])
+
+  /**
    * Recarrega dados
    */
   const refresh = useCallback(async () => {
@@ -100,5 +112,6 @@ export function useBackendSnapshots(currentBalance?: number) {
     refresh,
     saveSnapshot,
     getStats,
+    getEvolutionData,
   }
 }

@@ -42,7 +42,6 @@ import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
 import { BalanceProvider, useBalance } from "./contexts/BalanceContext"
 import { CacheInvalidationProvider } from "./contexts/CacheInvalidationContext"
 import { OrdersProvider, useOrders } from "./contexts/OrdersContext"
-import { PortfolioProvider } from "./contexts/PortfolioContext"
 import { LayoutProvider } from "./contexts/LayoutContext"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { PrivacyProvider } from "./contexts/PrivacyContext"
@@ -322,11 +321,9 @@ export default function App() {
                   <BalanceProvider>
                     <CacheInvalidationProvider>
                       <OrdersProvider>
-                        <PortfolioProvider>
-                          <LayoutProvider>
-                            <AppNavigator />
-                          </LayoutProvider>
-                        </PortfolioProvider>
+                        <LayoutProvider>
+                          <AppNavigator />
+                        </LayoutProvider>
                       </OrdersProvider>
                     </CacheInvalidationProvider>
                   </BalanceProvider>

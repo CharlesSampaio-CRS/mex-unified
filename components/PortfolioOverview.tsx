@@ -5,7 +5,6 @@ import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBalance } from "@/contexts/BalanceContext"
 import { usePrivacy } from "@/contexts/PrivacyContext"
-import { usePortfolio } from "@/contexts/PortfolioContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/services/api"
 import { currencyService } from "@/services/currencyService"
@@ -15,7 +14,7 @@ import { PortfolioChart } from "./PortfolioChart"
 import { GradientCard } from "./GradientCard"
 import { typography, fontWeights } from "@/lib/typography"
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion"
-import { PnLSummary } from "@/services/backend-snapshot-service"
+import { PnLSummary, backendSnapshotService } from "@/services/backend-snapshot-service"
 
 interface PortfolioOverviewProps {
   pnl?: PnLSummary | null
@@ -29,12 +28,13 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
   const { user } = useAuth()
   const { data, loading, error, refreshing, refresh } = useBalance()
   const { hideValue } = usePrivacy()
-  const { evolutionData, currentPeriod, refreshEvolution, loading: portfolioLoading } = usePortfolio()
   
   // 2️⃣ HOOKS: useState (sempre na mesma ordem)
   const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date())
   const [isRefreshingAll, setIsRefreshingAll] = useState(false)
   const [evolutionPeriod, setEvolutionPeriod] = useState<number>(7)
+  const [evolutionData, setEvolutionData] = useState<{ values_usd: number[], timestamps: string[] } | null>(null)
+  const [evolutionLoading, setEvolutionLoading] = useState(false)
 
   // 3️⃣ HOOKS: useMemo (antes de useCallback e useEffect)
   const totalValue = useMemo(() => {
@@ -150,8 +150,8 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
   }, [t])
   
   const isUpdating = useMemo(() => {
-    return refreshing || portfolioLoading || isRefreshingAll
-  }, [refreshing, portfolioLoading, isRefreshingAll])
+    return refreshing || evolutionLoading || isRefreshingAll
+  }, [refreshing, evolutionLoading, isRefreshingAll])
 
   // 4️⃣ HOOKS: useCallback (depois de useMemo, antes de useEffect)
   const formatLastUpdated = useCallback(() => {
@@ -187,7 +187,7 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
       // Não precisa chamar backgroundSyncService.syncNow() + refresh()
       await Promise.all([
         refresh(), // Atualiza balances no context (já chama syncNow internamente)
-        refreshEvolution() // Atualiza gráfico mantendo o período atual
+        loadEvolutionData(evolutionPeriod) // Atualiza gráfico mantendo o período atual
       ])
       
     } catch (error) {
@@ -198,7 +198,24 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
     } finally {
       setIsRefreshingAll(false)
     }
-  }, [user?.id, refresh, refreshEvolution])
+  }, [user?.id, refresh, evolutionPeriod])
+
+  /**
+   * Carrega dados de evolução do MongoDB
+   */
+  const loadEvolutionData = useCallback(async (days: number) => {
+    if (!user?.id) return
+    
+    try {
+      setEvolutionLoading(true)
+      const data = await backendSnapshotService.getEvolutionData(days)
+      setEvolutionData(data)
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados de evolução:', error)
+    } finally {
+      setEvolutionLoading(false)
+    }
+  }, [user?.id])
 
   // 5️⃣ HOOKS: useEffect (sempre por último)
   useEffect(() => {
@@ -206,6 +223,16 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
       setLastUpdateTime(new Date())
     }
   }, [data?.timestamp])
+
+  // Carrega dados de evolução do MongoDB quando o período muda
+  useEffect(() => {
+    loadEvolutionData(evolutionPeriod)
+  }, [evolutionPeriod, loadEvolutionData])
+
+  // Handler para mudar período do gráfico
+  const handlePeriodChange = useCallback((days: number) => {
+    setEvolutionPeriod(days)
+  }, [])
 
   // 6️⃣ RENDER LOGIC (early returns devem vir depois de todos os hooks)
   if (loading && !data && !error) {
@@ -336,9 +363,10 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
           </GradientCard>
         </View>
 
-        {/* Portfolio Chart - Gráfico de 7 dias */}
+        {/* Portfolio Chart - Gráfico com dados do MongoDB */}
         <PortfolioChart 
-          onPeriodChange={setEvolutionPeriod}
+          localEvolutionData={evolutionData}
+          onPeriodChange={handlePeriodChange}
           currentPeriod={evolutionPeriod}
         />
       </LinearGradient>
