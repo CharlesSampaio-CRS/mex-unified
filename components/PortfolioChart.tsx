@@ -40,8 +40,15 @@ export const PortfolioChart = memo(function PortfolioChart({
 
   // Handler para mudar período
   const handlePeriodChange = (days: number) => {
+    console.log(`🔘 [PortfolioChart] handlePeriodChange chamado com ${days} dias`)
+    console.log(`🔘 [PortfolioChart] currentPeriod atual: ${currentPeriod}`)
+    console.log(`🔘 [PortfolioChart] onPeriodChange existe?`, !!onPeriodChange)
+    
     if (onPeriodChange) {
+      console.log(`✅ [PortfolioChart] Chamando onPeriodChange(${days})`)
       onPeriodChange(days)
+    } else {
+      console.warn('⚠️ [PortfolioChart] onPeriodChange não está definido!')
     }
   }
 
@@ -50,10 +57,14 @@ export const PortfolioChart = memo(function PortfolioChart({
     console.log('🔄 [PortfolioChart] getChartData chamado', {
       hasData: !!localEvolutionData,
       valuesLength: localEvolutionData?.values_usd?.length || 0,
-      currentPeriod
+      currentPeriod,
+      firstValue: localEvolutionData?.values_usd?.[0],
+      lastValue: localEvolutionData?.values_usd?.[localEvolutionData.values_usd.length - 1],
+      timestamps: localEvolutionData?.timestamps?.slice(0, 3) // Mostra primeiros 3 timestamps
     })
     
     if (!localEvolutionData?.values_usd || localEvolutionData.values_usd.length === 0) {
+      console.warn('⚠️ [PortfolioChart] Sem dados para renderizar')
       return []
     }
 

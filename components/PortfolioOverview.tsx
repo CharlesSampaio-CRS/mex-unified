@@ -234,14 +234,19 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
   // Carrega dados de evolução do MongoDB quando o período muda
   useEffect(() => {
     console.log(`🔄 [PortfolioOverview useEffect] Período mudou para ${evolutionPeriod} dias`)
+    console.log(`🔄 [PortfolioOverview useEffect] user?.id:`, user?.id)
+    console.log(`🔄 [PortfolioOverview useEffect] Chamando loadEvolutionData...`)
     loadEvolutionData(evolutionPeriod)
   }, [evolutionPeriod, loadEvolutionData])
 
   // Handler para mudar período do gráfico
   const handlePeriodChange = useCallback((days: number) => {
     console.log(`🔘 [PortfolioOverview] handlePeriodChange chamado: ${days} dias`)
+    console.log(`🔘 [PortfolioOverview] evolutionPeriod atual: ${evolutionPeriod}`)
+    console.log(`🔘 [PortfolioOverview] Setando novo período...`)
     setEvolutionPeriod(days)
-  }, [])
+    console.log(`✅ [PortfolioOverview] setEvolutionPeriod(${days}) executado`)
+  }, [evolutionPeriod])
 
   // 6️⃣ RENDER LOGIC (early returns devem vir depois de todos os hooks)
   if (loading && !data && !error) {

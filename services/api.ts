@@ -1390,6 +1390,88 @@ export const apiService = {
   },
 
   /**
+   * Generic GET request helper with timeout
+   */
+  async get<T = any>(endpoint: string, timeout: number = TIMEOUTS.FAST): Promise<{ data: T }> {
+    const token = await secureStorage.getItemAsync('access_token');
+    
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      },
+      timeout
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { data };
+  },
+
+  /**
+   * Generic PUT request helper with timeout
+   */
+  async put<T = any>(endpoint: string, body: any, timeout: number = TIMEOUTS.FAST): Promise<{ data: T }> {
+    const token = await secureStorage.getItemAsync('access_token');
+    
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      },
+      timeout
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { data };
+  },
+
+  /**
+   * Generic DELETE request helper with timeout
+   */
+  async delete<T = any>(endpoint: string, timeout: number = TIMEOUTS.FAST): Promise<{ data: T }> {
+    const token = await secureStorage.getItemAsync('access_token');
+    
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      },
+      timeout
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { data };
+  },
+
+  /**
    * Generic POST request helper with timeout
    */
   async post<T = any>(endpoint: string, body: any, timeout: number = TIMEOUTS.BALANCE_SYNC): Promise<{ data: T }> {

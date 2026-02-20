@@ -16,7 +16,7 @@ import { Picker } from "@react-native-picker/picker"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBalance } from "@/contexts/BalanceContext"
-import { strategyService } from "@/services/strategy-service"
+import { useBackendStrategies } from "@/hooks/useBackendStrategies"
 import { exchangeService } from "@/services/exchange-service"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
@@ -66,6 +66,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { data: balanceData, loading: balanceLoading } = useBalance()
+  const { createStrategy } = useBackendStrategies(false) // Não auto-load
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
   const [exchanges, setExchanges] = useState<LocalExchange[]>([])
@@ -263,7 +264,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
         description: `Estratégia ${selectedTemplate} para ${token} na ${exchange.exchange_name}`,
         symbol: token,
         exchange_id: selectedExchange,
-        type: strategyTypeMap[selectedTemplate] || 'grid',
+        exchange_name: exchange.exchange_name,
+        strategy_type: strategyTypeMap[selectedTemplate] || 'grid',
         config: {
           template: selectedTemplate,
           exchange_id: selectedExchange,
@@ -271,8 +273,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
         },
       }
       
-      console.log('💾 Saving strategy to WatermelonDB:', strategyData)
-      const createdStrategy = await strategyService.create(strategyData)
+      console.log('💾 Saving strategy to MongoDB:', strategyData)
+      const createdStrategy = await createStrategy(strategyData)
 
       // Fecha o modal e limpa o loading antes de chamar onSuccess
       setLoading(false)

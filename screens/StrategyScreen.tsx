@@ -5,7 +5,8 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useAuth } from "../contexts/AuthContext"
 import { useNotifications } from "../contexts/NotificationsContext"
-import { strategyService, Strategy as SQLiteStrategy } from "../services/strategy-service"
+import { useBackendStrategies } from "../hooks/useBackendStrategies"
+import { Strategy } from "../services/backend-strategy-service"
 import { CreateStrategyModal } from "../components/create-strategy-modal"
 import { StrategyDetailsModal } from "@/components/StrategyDetailsModal"
 import { Header } from "../components/Header"
@@ -17,39 +18,30 @@ import { typography, fontWeights } from "../lib/typography"
 import { commonStyles, spacing, borderRadius, shadows } from "@/lib/layout"
 
 /**
- * 🤖 Strategy Screen - 100% LOCAL com SQLite
+ * 🤖 Strategy Screen - MongoDB Backend
  * 
- * Zero Database Pattern:
- * - Todas as estratégias são armazenadas localmente
- * - Sem chamadas de API para CRUD de estratégias
- * - Performance: ~5-20ms vs 200-500ms da API antiga
- * - Funciona 100% offline
+ * Migrado de SQLite para MongoDB:
+ * - Todas as estratégias são armazenadas no MongoDB
+ * - Sincronização em tempo real via API
+ * - Multi-device: mesmos dados em todos os dispositivos
  */
-
-interface Strategy {
-  id: string
-  name: string
-  type: string
-  exchange: string
-  token: string
-  isActive: boolean
-  description?: string
-  config: any
-  profitLoss: number
-  tradesCount: number
-  createdAt: Date
-  updatedAt: Date
-}
 
 export function StrategyScreen({ navigation }: any) {
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const { unreadCount } = useNotifications()
+  const { 
+    strategies,
+    loading,
+    refreshing,
+    loadStrategies,
+    toggleActive,
+    deleteStrategy: deleteStrategyFromBackend,
+    activeStrategies,
+    inactiveStrategies 
+  } = useBackendStrategies(true) // Auto-load
   const [activeTab, setActiveTab] = useState<"strategies" | "executions">("strategies")
-  const [strategies, setStrategies] = useState<Strategy[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
 
@@ -87,67 +79,7 @@ export function StrategyScreen({ navigation }: any) {
   }), [isDark])
 
   /**
-   * 🔄 Carrega estratégias do banco local (SQLite)
-   * Performance: ~5-20ms (vs ~200-500ms da API antiga)
-   */
-  const loadStrategies = useCallback(async () => {
-    console.log('🔄 [StrategyScreen] loadStrategies chamado, user?.id:', user?.id)
-    
-    if (!user?.id) {
-      console.log('⚠️ [StrategyScreen] No user ID, skipping strategies load')
-      setLoading(false)
-      return
-    }
-    
-    try {
-      setLoading(true)
-      console.log('📊 [StrategyScreen] Loading strategies from local database...')
-      
-      // Busca do banco local (SQLite)
-      console.log('📡 [StrategyScreen] Chamando strategyService.findAll()...')
-      const localStrategies = await strategyService.findAll()
-      
-      console.log(`✅ [StrategyScreen] Loaded ${localStrategies.length} strategies from local DB`)
-      
-      // Transform SQLite models to UI format
-      const transformedStrategies: Strategy[] = localStrategies.map((strategy: SQLiteStrategy) => {
-        let config = {}
-        try {
-          config = JSON.parse(strategy.config)
-        } catch {
-          config = {}
-        }
-        
-        return {
-          id: strategy.id,
-          name: strategy.name,
-          type: strategy.type,
-          exchange: strategy.exchange_name || strategy.exchange_id, // Usa exchange_name se disponível, senão exchange_id
-          token: strategy.symbol,
-          isActive: strategy.is_active === 1, // SQLite usa INTEGER para boolean
-          description: strategy.description || undefined,
-          config,
-          profitLoss: 0, // TODO: calcular do histórico
-          tradesCount: 0, // TODO: calcular do histórico
-          createdAt: new Date(strategy.created_at),
-          updatedAt: new Date(strategy.updated_at),
-        }
-      })
-      
-      setStrategies(transformedStrategies)
-    } catch (error) {
-      console.error("❌ Error loading strategies:", error)
-    } finally {
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [user?.id])
-
-  /**
-   * 📋 Execuções ficam vazias por enquanto
+   *  Execuções ficam vazias por enquanto
    * TODO: Implementar sistema de execuções local
    */
   const loadExecutions = useCallback(async () => {
@@ -155,18 +87,16 @@ export function StrategyScreen({ navigation }: any) {
     // Por enquanto, mantém vazio
   }, [])
 
-  // Load strategies and executions from API on mount
+  // Load executions on mount
   useEffect(() => {
-    console.log('🔄 [StrategyScreen] useEffect executado')
-    loadStrategies()
     loadExecutions()
-  }, [loadStrategies, loadExecutions])
+  }, [loadExecutions])
 
-  const toggleStrategy = useCallback((id: string) => {
+  const toggleStrategyHandler = useCallback((id: string) => {
     const strategyToToggle = strategies.find(s => s.id === id)
     if (!strategyToToggle) return
 
-    const newIsActive = !strategyToToggle.isActive
+    const newIsActive = !strategyToToggle.is_active
     
     // Show confirmation modal
     setToggleStrategyId(id)
@@ -184,37 +114,20 @@ export function StrategyScreen({ navigation }: any) {
     setToggleStrategyName("")
     setToggleStrategyNewStatus(false)
 
-    // Optimistic update
-    const previousStrategies = [...strategies]
-
-    setStrategies(prev =>
-      prev.map(strategy =>
-        strategy.id === id
-          ? { ...strategy, isActive: newIsActive }
-          : strategy
-      )
-    )
-
-    // Atualiza no banco local
+    // Atualiza no backend via hook
     try {
       console.log(`🔄 ${newIsActive ? 'Activating' : 'Deactivating'} strategy ${id}`)
       
-      if (newIsActive) {
-        await strategyService.activate(id)
-      } else {
-        await strategyService.deactivate(id)
-      }
+      await toggleActive(id, newIsActive)
       
-      console.log('✅ Strategy updated in local database')
+      console.log('✅ Strategy updated in MongoDB')
     } catch (error) {
       console.error("❌ Error toggling strategy:", error)
-      // Rollback on error
-      setStrategies(previousStrategies)
       alert(`Erro ao alterar estratégia: ${error instanceof Error ? error.message : error}`)
     }
-  }, [toggleStrategyId, toggleStrategyNewStatus, strategies])
+  }, [toggleStrategyId, toggleStrategyNewStatus, toggleActive])
 
-  const deleteStrategy = useCallback(async (id: string, name: string) => {
+  const deleteStrategyHandler = useCallback(async (id: string, name: string) => {
     setConfirmStrategyId(id)
     setConfirmStrategyName(name)
     setConfirmDeleteModalVisible(true)
@@ -228,30 +141,18 @@ export function StrategyScreen({ navigation }: any) {
     setConfirmStrategyId("")
     setConfirmStrategyName("")
 
-    if (!user?.id) {
-      alert('Erro: usuário não autenticado')
-      return
-    }
-
     try {
       console.log(`🗑️ Deleting strategy ${id} (${name})`)
       
-      // Optimistic update - remove from UI immediately
-      setStrategies(prev => prev.filter(s => s.id !== id))
+      // Deleta via hook (atualiza estado automaticamente)
+      await deleteStrategyFromBackend(id)
       
-      // Deleta do banco local
-      await strategyService.delete(id)
-      
-      console.log('✅ Strategy deleted from local database')
+      console.log('✅ Strategy deleted from MongoDB')
     } catch (error: any) {
       console.error("❌ Error deleting strategy:", error)
-      
-      // Rollback - reload strategies on error
-      loadStrategies()
-      
       alert(`Erro ao deletar estratégia: ${error.message || error}`)
     }
-  }, [confirmStrategyId, confirmStrategyName, loadStrategies, user?.id])
+  }, [confirmStrategyId, confirmStrategyName, deleteStrategyFromBackend])
 
   const handleNewStrategy = useCallback(() => {
     setCreateModalVisible(true)
@@ -312,23 +213,16 @@ export function StrategyScreen({ navigation }: any) {
 
   // 🔄 Refresh específico por aba - atualiza apenas o conteúdo da aba ativa
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true)
-    
     try {
       if (activeTab === "strategies") {
-        // Aba Estratégias: atualiza apenas estratégias
+        // Aba Estratégias: recarrega estratégias do MongoDB
         await loadStrategies()
       } else {
         // Aba Execuções: atualiza apenas execuções
         await loadExecutions()
       }
-      
     } catch (error) {
       console.error(`❌ [StrategyScreen] Erro ao atualizar aba ${activeTab}:`, error)
-    } finally {
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      await new Promise(resolve => setTimeout(resolve, 300))
-      setRefreshing(false)
     }
   }, [activeTab, loadStrategies, loadExecutions])
 
@@ -416,7 +310,7 @@ export function StrategyScreen({ navigation }: any) {
                     </Text>
                     <View style={[styles.typeBadge, { backgroundColor: colors.surfaceSecondary }]}>
                       <Text style={[styles.typeText, { color: colors.primary }]}>
-                        {strategy.type}
+                        {strategy.strategy_type}
                       </Text>
                     </View>
                   </View>
@@ -425,16 +319,16 @@ export function StrategyScreen({ navigation }: any) {
                   <TouchableOpacity
                     style={[
                       styles.statusBadge,
-                      { backgroundColor: strategy.isActive ? colors.successLight : colors.dangerLight }
+                      { backgroundColor: strategy.is_active ? colors.successLight : colors.dangerLight }
                     ]}
-                    onPress={() => toggleStrategy(strategy.id)}
+                    onPress={() => toggleStrategyHandler(strategy.id)}
                     activeOpacity={0.7}
                   >
                     <Text style={[
                       styles.statusText,
-                      { color: strategy.isActive ? colors.success : colors.danger }
+                      { color: strategy.is_active ? colors.success : colors.danger }
                     ]}>
-                      {strategy.isActive ? t('strategy.active') : t('strategy.inactive')}
+                      {strategy.is_active ? t('strategy.active') : t('strategy.inactive')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -446,7 +340,7 @@ export function StrategyScreen({ navigation }: any) {
                       {t('strategy.exchange')}:
                     </Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {strategy.exchange}
+                      {strategy.exchange_name}
                     </Text>
                   </View>
                   
@@ -455,7 +349,7 @@ export function StrategyScreen({ navigation }: any) {
                       {t('strategy.token')}:
                     </Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {strategy.token}
+                      {strategy.symbol}
                     </Text>
                   </View>
                   
@@ -464,7 +358,7 @@ export function StrategyScreen({ navigation }: any) {
                       {t('strategy.totalTrades') || 'Total Trades'}:
                     </Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {strategy.tradesCount || 0}
+                      0
                     </Text>
                   </View>
                   
@@ -474,9 +368,9 @@ export function StrategyScreen({ navigation }: any) {
                     </Text>
                     <Text style={[
                       styles.detailValue, 
-                      { color: strategy.profitLoss >= 0 ? colors.success : colors.danger }
+                      { color: colors.success }
                     ]}>
-                      ${strategy.profitLoss.toFixed(2)}
+                      $0.00
                     </Text>
                   </View>
                 </View>
@@ -509,7 +403,7 @@ export function StrategyScreen({ navigation }: any) {
                         borderColor: colors.danger 
                       }
                     ]}
-                    onPress={() => deleteStrategy(strategy.id, strategy.name)}
+                    onPress={() => deleteStrategyHandler(strategy.id, strategy.name)}
                     activeOpacity={0.7}
                   >
                     <Text style={[
@@ -645,11 +539,11 @@ export function StrategyScreen({ navigation }: any) {
           // Find strategy name for confirmation
           const strategy = strategies.find(s => s.id === strategyId)
           if (strategy) {
-            deleteStrategy(strategyId, strategy.name)
+            deleteStrategyHandler(strategyId, strategy.name)
           }
         }}
         onToggleActive={(strategyId: string, currentStatus: boolean) => {
-          toggleStrategy(strategyId)
+          toggleStrategyHandler(strategyId)
         }}
       />
 
