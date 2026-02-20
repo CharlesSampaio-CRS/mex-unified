@@ -1,585 +1,255 @@
 /**
- * Expo SQLite Database Manager - Mobile Only
+ * 📦 SQLite Local Database
  * 
- * Banco de dados otimizado para:
- * - ✅ Expo Go (Android + iOS)
- * - ✅ Expo Dev Client (Android + iOS)
+ * ✅ APENAS para dados LOCAIS (não sincronizados):
+ * - price_alerts (alertas de preço)
+ * - app_settings (configurações do app)
+ * - user_preferences (preferências do usuário)
+ * - notifications (histórico de notificações)
+ * - watchlist (lista de favoritos - apenas símbolos)
  * 
- * Performance: 50-100x mais rápido que AsyncStorage
- * Features: SQL completo, transações, índices, triggers
+ * ❌ TUDO que é operacional vai para MongoDB:
+ * - user_exchanges
+ * - balances/balance_history
+ * - orders/positions
+ * - strategies
  */
 
 import * as SQLite from 'expo-sqlite'
-
-// Types
-export interface QueryResult {
-  rows: {
-    _array: any[]
-    length: number
-    item: (index: number) => any
-  }
-  rowsAffected: number
-  insertId?: number
-}
-
-// Database configuration
-const DB_NAME = 'cryptohub.db'
-const DB_VERSION = 1
+import { Platform } from 'react-native'
 
 class SQLiteDatabase {
   private db: SQLite.SQLiteDatabase | null = null
   private isInitialized = false
-  private initPromise: Promise<void> | null = null
+  private readonly DATABASE_NAME = 'mex_unified_local.db'
 
   /**
-   * Inicializa o banco de dados
+   * Inicializa o banco de dados SQLite
    */
   async initialize(): Promise<void> {
-    // Se já está inicializado, retorna
-    if (this.isInitialized) return
+    if (this.isInitialized) {
+      console.log('✅ [SQLite] Já inicializado')
+      return
+    }
 
-    // Se está inicializando, aguarda
-    if (this.initPromise) return this.initPromise
-
-    // Inicia inicialização
-    this.initPromise = this._initialize()
-    return this.initPromise
-  }
-
-  private async _initialize(): Promise<void> {
     try {
-      console.log('🗄️  [SQLite] Inicializando banco de dados mobile...')
-
-      // 📱 MOBILE: Usar SQLite real
-      this.db = await SQLite.openDatabaseAsync(DB_NAME)
-
-      // Habilitar foreign keys
-      await this.db.execAsync('PRAGMA foreign_keys = ON')
-
-      // Habilitar WAL mode (Write-Ahead Logging) para melhor performance
-      await this.db.execAsync('PRAGMA journal_mode = WAL')
-
-      // 🔄 MIGRAÇÃO: Verificar se precisa atualizar schema
-      const needsMigration = await this.checkIfNeedsMigration()
-      if (needsMigration) {
-        console.log('🔄 [SQLite] Schema antigo detectado - executando migração...')
-        await this.migrateSchema()
-      }
-
-      // ✅ Ajuste específico de schema para tabelas de balance (não destrutivo)
-      await this.ensureBalanceTablesSchema()
-
-      // Criar tabelas
-      await this.createTables()
-
+      console.log('🔄 [SQLite] Inicializando banco local...')
+      
+      // Abre/cria o banco
+      this.db = await SQLite.openDatabaseAsync(this.DATABASE_NAME)
+      
+      // Cria as tabelas LOCAIS (apenas)
+      await this.createLocalTables()
+      
+      // Remove tabelas antigas (se existirem)
+      await this.dropOldTables()
+      
       this.isInitialized = true
-      console.log('✅ [SQLite] Banco de dados mobile inicializado com sucesso!')
-      console.log(`   📦 Database: ${DB_NAME}`)
-      console.log(`   🔢 Version: ${DB_VERSION}`)
-
+      console.log('✅ [SQLite] Banco local inicializado')
     } catch (error) {
-      console.error('❌ [SQLite] Erro ao inicializar banco:', error)
+      console.error('❌ [SQLite] Erro ao inicializar:', error)
       throw error
     }
   }
 
   /**
-   * Cria todas as tabelas necessárias
+   * Retorna a instância do banco
    */
-  private async createTables(): Promise<void> {
-    if (!this.db) throw new Error('Database não inicializado')
-
-    console.log('📋 [SQLite] Criando tabelas...')
-
-    await this.db.execAsync(`
-      -- Tabela de Exchanges do Usuário
-      CREATE TABLE IF NOT EXISTS user_exchanges (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        exchange_type TEXT NOT NULL,
-        exchange_name TEXT NOT NULL,
-        api_key_encrypted TEXT NOT NULL,
-        api_secret_encrypted TEXT NOT NULL,
-        api_passphrase_encrypted TEXT,
-        is_active INTEGER DEFAULT 1,
-        last_sync_at INTEGER,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-
-      -- Tabela de Snapshots de Balance
-      CREATE TABLE IF NOT EXISTS balance_snapshots (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        total_usd REAL NOT NULL,
-        total_brl REAL NOT NULL,
-        timestamp INTEGER NOT NULL,
-        created_at INTEGER
-      );
-
-      -- Tabela de Histórico de Balance
-      CREATE TABLE IF NOT EXISTS balance_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        exchange_name TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        free REAL NOT NULL,
-        used REAL NOT NULL,
-        total REAL NOT NULL,
-        usd_value REAL NOT NULL,
-        brl_value REAL NOT NULL,
-        timestamp INTEGER NOT NULL,
-        created_at INTEGER
-      );
-
-      -- Tabela de Orders
-      CREATE TABLE IF NOT EXISTS orders (
-        id TEXT PRIMARY KEY,
-        exchange_id TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        type TEXT NOT NULL,
-        side TEXT NOT NULL,
-        price REAL,
-        amount REAL NOT NULL,
-        filled REAL DEFAULT 0,
-        status TEXT NOT NULL,
-        timestamp INTEGER NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (exchange_id) REFERENCES user_exchanges(id) ON DELETE CASCADE
-      );
-
-      -- Tabela de Positions
-      CREATE TABLE IF NOT EXISTS positions (
-        id TEXT PRIMARY KEY,
-        exchange_id TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        side TEXT NOT NULL,
-        amount REAL NOT NULL,
-        entry_price REAL NOT NULL,
-        current_price REAL NOT NULL,
-        pnl REAL NOT NULL,
-        pnl_percent REAL NOT NULL,
-        timestamp INTEGER NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (exchange_id) REFERENCES user_exchanges(id) ON DELETE CASCADE
-      );
-
-      -- Tabela de Strategies
-      CREATE TABLE IF NOT EXISTS strategies (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        type TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        exchange_id TEXT NOT NULL,
-        is_active INTEGER DEFAULT 0,
-        config TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (exchange_id) REFERENCES user_exchanges(id) ON DELETE CASCADE
-      );
-
-      -- Tabela de Notifications
-      CREATE TABLE IF NOT EXISTS notifications (
-        id TEXT PRIMARY KEY,
-        type TEXT NOT NULL,
-        title TEXT NOT NULL,
-        message TEXT NOT NULL,
-        data TEXT,
-        is_read INTEGER DEFAULT 0,
-        created_at INTEGER NOT NULL
-      );
-
-      -- Tabela de Watchlist
-      CREATE TABLE IF NOT EXISTS watchlist (
-        id TEXT PRIMARY KEY,
-        symbol TEXT NOT NULL UNIQUE,
-        name TEXT,
-        is_favorite INTEGER DEFAULT 0,
-        order_index INTEGER DEFAULT 0,
-        created_at INTEGER NOT NULL
-      );
-
-      -- Tabela de Price Alerts
-      CREATE TABLE IF NOT EXISTS price_alerts (
-        id TEXT PRIMARY KEY,
-        symbol TEXT NOT NULL,
-        target_price REAL NOT NULL,
-        condition TEXT NOT NULL,
-        is_active INTEGER DEFAULT 1,
-        is_triggered INTEGER DEFAULT 0,
-        created_at INTEGER NOT NULL,
-        triggered_at INTEGER
-      );
-
-      -- Índices para otimização de queries
-      CREATE INDEX IF NOT EXISTS idx_balance_snapshots_user ON balance_snapshots(user_id);
-      CREATE INDEX IF NOT EXISTS idx_balance_snapshots_timestamp ON balance_snapshots(timestamp DESC);
-      CREATE INDEX IF NOT EXISTS idx_balance_history_user ON balance_history(user_id);
-      CREATE INDEX IF NOT EXISTS idx_balance_history_exchange_name ON balance_history(exchange_name);
-      CREATE INDEX IF NOT EXISTS idx_balance_history_timestamp ON balance_history(timestamp DESC);
-      CREATE INDEX IF NOT EXISTS idx_orders_exchange ON orders(exchange_id);
-      CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-      CREATE INDEX IF NOT EXISTS idx_orders_timestamp ON orders(timestamp DESC);
-      CREATE INDEX IF NOT EXISTS idx_positions_exchange ON positions(exchange_id);
-      CREATE INDEX IF NOT EXISTS idx_strategies_exchange ON strategies(exchange_id);
-      CREATE INDEX IF NOT EXISTS idx_strategies_active ON strategies(is_active);
-      CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
-      CREATE INDEX IF NOT EXISTS idx_watchlist_favorite ON watchlist(is_favorite);
-      CREATE INDEX IF NOT EXISTS idx_price_alerts_active ON price_alerts(is_active);
-    `)
-
-    console.log('✅ [SQLite] Tabelas criadas com sucesso!')
+  getDatabase(): SQLite.SQLiteDatabase {
+    if (!this.db) {
+      throw new Error('❌ [SQLite] Database não inicializado. Chame initialize() primeiro.')
+    }
+    return this.db
   }
 
   /**
-   * Verifica se precisa migrar o schema
+   * Cria as 5 tabelas LOCAIS
    */
-  private async checkIfNeedsMigration(): Promise<boolean> {
-    if (!this.db) return false
+  private async createLocalTables(): Promise<void> {
+    if (!this.db) return
+
+    console.log('📋 [SQLite] Criando tabelas locais...')
 
     try {
-      const tableInfo = async (table: string) =>
-        this.db!.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`)
+      // 1️⃣ ALERTAS DE PREÇO
+      await this.db.execAsync(`
+        CREATE TABLE IF NOT EXISTS price_alerts (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          symbol TEXT NOT NULL,
+          exchange TEXT NOT NULL,
+          condition TEXT NOT NULL,
+          target_price REAL NOT NULL,
+          current_price REAL,
+          is_active INTEGER DEFAULT 1,
+          triggered INTEGER DEFAULT 0,
+          triggered_at INTEGER,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_price_alerts_user ON price_alerts(user_id);
+        CREATE INDEX IF NOT EXISTS idx_price_alerts_active ON price_alerts(is_active, triggered);
+      `)
 
-      // Se tabela base não existe, não precisa migrar
-      const baseColumns = await tableInfo('user_exchanges')
-      if (!baseColumns || baseColumns.length === 0) {
-        return false
-      }
+      // 2️⃣ CONFIGURAÇÕES DO APP
+      await this.db.execAsync(`
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+      `)
 
-      const hasUserId = baseColumns.some(col => col.name === 'user_id')
-      const hasExchangeType = baseColumns.some(col => col.name === 'exchange_type')
+      // 3️⃣ PREFERÊNCIAS DO USUÁRIO
+      await this.db.execAsync(`
+        CREATE TABLE IF NOT EXISTS user_preferences (
+          user_id TEXT PRIMARY KEY,
+          theme TEXT DEFAULT 'dark',
+          currency TEXT DEFAULT 'USD',
+          language TEXT DEFAULT 'pt-BR',
+          notifications_enabled INTEGER DEFAULT 1,
+          sound_enabled INTEGER DEFAULT 1,
+          biometric_enabled INTEGER DEFAULT 0,
+          auto_sync_enabled INTEGER DEFAULT 1,
+          sync_interval INTEGER DEFAULT 300,
+          updated_at INTEGER NOT NULL
+        );
+      `)
 
-      // Verifica se tabelas principais (exceto balance_*) possuem exchange_id
-      const tablesNeedingExchangeId = [
+      // 4️⃣ HISTÓRICO DE NOTIFICAÇÕES
+      await this.db.execAsync(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          type TEXT NOT NULL,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          data TEXT,
+          is_read INTEGER DEFAULT 0,
+          created_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
+        CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+      `)
+
+      // 5️⃣ WATCHLIST (FAVORITOS)
+      await this.db.execAsync(`
+        CREATE TABLE IF NOT EXISTS watchlist (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          symbol TEXT NOT NULL,
+          exchange TEXT,
+          is_favorite INTEGER DEFAULT 1,
+          sort_order INTEGER DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          UNIQUE(user_id, symbol, exchange)
+        );
+        CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist(user_id, is_favorite);
+      `)
+
+      console.log('✅ [SQLite] Tabelas locais criadas')
+    } catch (error) {
+      console.error('❌ [SQLite] Erro ao criar tabelas:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Remove tabelas antigas (migradas para MongoDB)
+   */
+  private async dropOldTables(): Promise<void> {
+    if (!this.db) return
+
+    console.log('🧹 [SQLite] Removendo tabelas antigas (migradas para MongoDB)...')
+
+    try {
+      // Lista de tabelas antigas para remover
+      const oldTables = [
+        'user_exchanges',
+        'balance_snapshots',
+        'balance_history',
         'orders',
         'positions',
         'strategies'
       ]
 
-      let missingExchangeId = false
-      for (const table of tablesNeedingExchangeId) {
-        const columns = await tableInfo(table)
-        if (columns && columns.length > 0) {
-          const hasExchangeId = columns.some(col => col.name === 'exchange_id')
-          if (!hasExchangeId) {
-            missingExchangeId = true
-            break
-          }
+      // Remove cada tabela individualmente
+      for (const table of oldTables) {
+        try {
+          await this.db.execAsync(`DROP TABLE IF EXISTS ${table}`)
+        } catch (error) {
+          // Ignora erros (tabela pode não existir)
         }
       }
 
-      // Se não tem user_id/exchange_type ou falta exchange_id em alguma tabela crítica, migrar
-      return !hasUserId || !hasExchangeType || missingExchangeId
-    } catch (error) {
-      console.error('❌ [SQLite] Erro ao verificar migração:', error)
-      return false
-    }
-  }
+      // Remove índices antigos
+      const oldIndexes = [
+        'idx_balance_snapshots_user',
+        'idx_balance_snapshots_timestamp',
+        'idx_balance_history_user',
+        'idx_balance_history_timestamp',
+        'idx_balance_history_exchange_name',
+        'idx_orders_exchange',
+        'idx_orders_status',
+        'idx_orders_timestamp',
+        'idx_positions_exchange',
+        'idx_strategies_exchange',
+        'idx_strategies_active',
+        'idx_watchlist_favorite'
+      ]
 
-  /**
-   * Ajusta schema das tabelas de balance (não destrutivo para outras tabelas)
-   * Se colunas esperadas estiverem ausentes, recria somente a tabela afetada.
-   */
-  private async ensureBalanceTablesSchema(): Promise<void> {
-    if (!this.db) return
-
-    try {
-      const tableInfo = async (table: string) =>
-        this.db!.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`)
-
-      const hasMissingColumns = (columns: { name: string }[], required: string[]) =>
-        required.some(col => !columns.some(c => c.name === col))
-
-      const balanceSnapshotsColumns = await tableInfo('balance_snapshots')
-      if (balanceSnapshotsColumns && balanceSnapshotsColumns.length > 0) {
-        const required = ['user_id', 'total_usd', 'total_brl', 'timestamp']
-        if (hasMissingColumns(balanceSnapshotsColumns, required)) {
-          console.warn('⚠️ [SQLite] balance_snapshots schema desatualizado - recriando tabela')
-          await this.db.execAsync('DROP TABLE IF EXISTS balance_snapshots;')
+      for (const index of oldIndexes) {
+        try {
+          await this.db.execAsync(`DROP INDEX IF EXISTS ${index}`)
+        } catch (error) {
+          // Ignora erros (índice pode não existir)
         }
       }
-
-      const balanceHistoryColumns = await tableInfo('balance_history')
-      if (balanceHistoryColumns && balanceHistoryColumns.length > 0) {
-        const required = [
-          'user_id',
-          'exchange_name',
-          'symbol',
-          'free',
-          'used',
-          'total',
-          'usd_value',
-          'brl_value',
-          'timestamp'
-        ]
-        if (hasMissingColumns(balanceHistoryColumns, required)) {
-          console.warn('⚠️ [SQLite] balance_history schema desatualizado - recriando tabela')
-          await this.db.execAsync('DROP TABLE IF EXISTS balance_history;')
-        }
-      }
-    } catch (error) {
-      console.error('❌ [SQLite] Erro ao validar schema de balance:', error)
-    }
-  }
-
-  /**
-   * Migra o schema antigo para o novo
-   */
-  private async migrateSchema(): Promise<void> {
-    if (!this.db) return
-
-    try {
-      console.log('🔄 [SQLite] Migrando schema...')
-
-      // Dropar todas as tabelas para evitar colunas antigas
-      await this.db.execAsync(`
-        DROP TABLE IF EXISTS user_exchanges;
-        DROP TABLE IF EXISTS balance_snapshots;
-        DROP TABLE IF EXISTS balance_history;
-        DROP TABLE IF EXISTS orders;
-        DROP TABLE IF EXISTS positions;
-        DROP TABLE IF EXISTS strategies;
-        DROP TABLE IF EXISTS notifications;
-        DROP TABLE IF EXISTS watchlist;
-        DROP TABLE IF EXISTS price_alerts;
-      `)
-
-      console.log('✅ [SQLite] Schema antigo removido')
-    } catch (error) {
-      console.error('❌ [SQLite] Erro na migração:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Reseta o banco de dados (útil após mudanças de schema)
-   */
-  async resetDatabase(): Promise<void> {
-    await this.initialize()
-    if (!this.db) throw new Error('Database não inicializado')
-
-    console.log('🔄 [SQLite] Resetando banco de dados...')
-
-    try {
-      // Dropar todas as tabelas
-      await this.db.execAsync(`
-        DROP TABLE IF EXISTS user_exchanges;
-        DROP TABLE IF EXISTS balance_snapshots;
-        DROP TABLE IF EXISTS balance_history;
-        DROP TABLE IF EXISTS strategies;
-        DROP TABLE IF EXISTS positions;
-        DROP TABLE IF EXISTS orders;
-        DROP TABLE IF EXISTS notifications;
-        DROP TABLE IF EXISTS watchlist;
-        DROP TABLE IF EXISTS price_alerts;
-      `)
 
       console.log('✅ [SQLite] Tabelas antigas removidas')
-
-      // Recriar todas as tabelas
-      await this.createTables()
-
-      console.log('✅ [SQLite] Banco de dados resetado com sucesso!')
     } catch (error) {
-      console.error('❌ [SQLite] Erro ao resetar banco:', error)
-      throw error
+      console.warn('⚠️ [SQLite] Erro ao remover tabelas antigas:', error)
     }
   }
 
   /**
-   * Executa uma query SQL
+   * Limpa todo o banco de dados (CUIDADO!)
    */
-  async query(sql: string, params: any[] = []): Promise<QueryResult> {
-    console.log('🔍 [SQLite] query() iniciado')
-    console.log('🔍 [SQLite] SQL:', sql)
-    console.log('🔍 [SQLite] Params:', params)
-    
-    await this.initialize()
-    if (!this.db) throw new Error('Database não inicializado')
+  async clearDatabase(): Promise<void> {
+    if (!this.db) return
+
+    console.log('🧹 [SQLite] Limpando banco de dados...')
 
     try {
-      console.log('🔄 [SQLite] Executando runAsync...')
-      const result = await this.db.runAsync(sql, params)
-      console.log('✅ [SQLite] runAsync concluído!')
-      console.log('✅ [SQLite] changes:', result.changes)
-      console.log('✅ [SQLite] lastInsertRowId:', result.lastInsertRowId)
-      
-      return {
-        rows: {
-          _array: [],
-          length: 0,
-          item: (index: number) => null
-        },
-        rowsAffected: result.changes,
-        insertId: result.lastInsertRowId
-      }
+      await this.db.execAsync(`
+        DELETE FROM price_alerts;
+        DELETE FROM app_settings;
+        DELETE FROM user_preferences;
+        DELETE FROM notifications;
+        DELETE FROM watchlist;
+      `)
+      console.log('✅ [SQLite] Banco limpo')
     } catch (error) {
-      console.error('❌ [SQLite] Erro na query:', { sql, params, error })
-      console.error('❌ [SQLite] Stack:', error instanceof Error ? error.stack : error)
+      console.error('❌ [SQLite] Erro ao limpar banco:', error)
       throw error
     }
   }
 
   /**
-   * Executa uma query SQL e retorna os resultados
-   */
-  async queryAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
-    console.log('📋 [SQLite] queryAll() chamado')
-    console.log('📝 [SQLite] SQL:', sql)
-    console.log('📝 [SQLite] Params:', params)
-    
-    await this.initialize()
-    if (!this.db) throw new Error('Database não inicializado')
-
-    try {
-      console.log('🔄 [SQLite] Executando getAllAsync...')
-      const result = await this.db.getAllAsync<T>(sql, params)
-      console.log('📊 [SQLite] Resultado getAllAsync:', result?.length, 'registros')
-      
-      return result
-    } catch (error) {
-      console.error('❌ [SQLite] Erro na queryAll:', { sql, params, error })
-      console.error('❌ [SQLite] Stack completa:', error instanceof Error ? error.stack : error)
-      throw error
-    }
-  }
-
-  /**
-   * Executa uma query SQL e retorna o primeiro resultado
-   */
-  async queryFirst<T = any>(sql: string, params: any[] = []): Promise<T | null> {
-    console.log('🔍 [SQLite] queryFirst() chamado')
-    console.log('📝 [SQLite] SQL:', sql)
-    console.log('📝 [SQLite] Params:', params)
-    
-    await this.initialize()
-    if (!this.db) throw new Error('Database não inicializado')
-
-    try {
-      console.log('🔄 [SQLite] Executando getFirstAsync...')
-      const result = await this.db.getFirstAsync<T>(sql, params)
-      console.log('📊 [SQLite] Resultado getFirstAsync:', result)
-      
-      const finalResult = result || null
-      console.log('✅ [SQLite] queryFirst() retornando:', finalResult)
-      return finalResult
-    } catch (error) {
-      console.error('❌ [SQLite] Erro na query:', { sql, params, error })
-      console.error('❌ [SQLite] Stack completa:', error instanceof Error ? error.stack : error)
-      throw error
-    }
-  }
-
-  /**
-   * Executa uma transação
-   */
-  async transaction<T>(callback: () => Promise<T>): Promise<T> {
-    await this.initialize()
-    if (!this.db) throw new Error('Database não inicializado')
-
-    try {
-      await this.db.execAsync('BEGIN TRANSACTION')
-      const result = await callback()
-      await this.db.execAsync('COMMIT')
-      return result
-    } catch (error) {
-      await this.db.execAsync('ROLLBACK')
-      console.error('❌ [SQLite] Erro na transação:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Limpa uma tabela
-   */
-  async clearTable(tableName: string): Promise<void> {
-    await this.query(`DELETE FROM ${tableName}`)
-  }
-
-  /**
-   * Limpa todo o banco de dados
-   */
-  async clearAll(): Promise<void> {
-    await this.initialize()
-    if (!this.db) throw new Error('Database não inicializado')
-
-    const tables = [
-      'price_alerts',
-      'watchlist',
-      'notifications',
-      'strategies',
-      'positions',
-      'orders',
-      'balance_history',
-      'balance_snapshots',
-      'user_exchanges'
-    ]
-
-    await this.transaction(async () => {
-      for (const table of tables) {
-        await this.clearTable(table)
-      }
-    })
-
-    console.log('🗑️  [SQLite] Banco de dados limpo!')
-  }
-
-  /**
-   * Fecha a conexão com o banco
+   * Fecha a conexão (raramente usado em mobile)
    */
   async close(): Promise<void> {
     if (this.db) {
       await this.db.closeAsync()
       this.db = null
       this.isInitialized = false
-      this.initPromise = null
-      console.log('👋 [SQLite] Conexão fechada')
-    }
-  }
-
-  /**
-   * Retorna estatísticas do banco
-   */
-  async getStats(): Promise<{
-    tables: Array<{ name: string; count: number }>
-    size: string
-    version: number
-  }> {
-    await this.initialize()
-    
-    const tables = [
-      'user_exchanges',
-      'balance_snapshots',
-      'balance_history',
-      'orders',
-      'positions',
-      'strategies',
-      'notifications',
-      'watchlist',
-      'price_alerts'
-    ]
-
-    const tableCounts = await Promise.all(
-      tables.map(async (table) => {
-        const result = await this.queryFirst<{ count: number }>(
-          `SELECT COUNT(*) as count FROM ${table}`
-        )
-        return { name: table, count: result?.count || 0 }
-      })
-    )
-
-    return {
-      tables: tableCounts,
-      size: 'N/A', // SQLite não expõe tamanho facilmente
-      version: DB_VERSION
+      console.log('✅ [SQLite] Conexão fechada')
     }
   }
 }
 
-// Singleton instance
+// Singleton
 export const sqliteDatabase = new SQLiteDatabase()
-export default sqliteDatabase
+
+// Exporta a instância do banco (para usar com query-builder)
+export const getDatabase = () => sqliteDatabase.getDatabase()

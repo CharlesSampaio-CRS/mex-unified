@@ -206,7 +206,6 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Atualiza uma exchange específica no cache local
   const updateExchangeInCache = useCallback((exchangeId: string, exchangeData: any) => {
     if (!data) return
     
