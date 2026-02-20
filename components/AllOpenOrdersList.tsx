@@ -14,6 +14,7 @@ import { OrderDetailsModal } from './order-details-modal';
 import { AnimatedLogoIcon } from './AnimatedLogoIcon';
 import { GradientCard } from './GradientCard';
 import { typography, fontWeights } from '../lib/typography';
+import { CompactOrdersList } from './CompactOrdersList';
 
 export interface AllOpenOrdersListRef {
   refresh: () => Promise<void>;
@@ -24,7 +25,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const { ordersByExchange, loading, refreshing: contextRefreshing, timestamp, refresh } = useOrders();
-  const { hideValue } = usePrivacy();
+  const { hideValue: hideValueFn, valuesHidden } = usePrivacy();
   const { refresh: refreshBalance, data: balanceData } = useBalance();
   const [searchQuery, setSearchQuery] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -403,139 +404,28 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
           </Text>
         </View>
       ) : (
-        // Lista de orders por exchange
+        // Lista de orders compacta por exchange
         <>
       {filteredOrdersByExchange.map((exchangeData) => {
         if (exchangeData.orders.length === 0) return null;
 
         return (
-          <View key={exchangeData.exchangeId} style={styles.exchangeSection}>
-            <View style={[styles.exchangeHeader, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.exchangeName, { color: colors.text }]}>
-                {exchangeData.exchangeName}
-              </Text>
-              <Text style={[styles.orderCount, { color: colors.textSecondary }]}>
-                {exchangeData.orders.length} {exchangeData.orders.length === 1 ? t('orders.order') : t('orders.ordersPlural')}
-              </Text>
-            </View>
-
-            {exchangeData.orders.map((order, index) => {
-              const orderId = getOrderId(order);
-              const isCancelling = cancellingOrderIds.has(orderId);
-              
-              return (
-              <GradientCard
-                key={orderId || index}
-                style={[
-                  styles.orderCard,
-                  isCancelling && { opacity: 0.5 }
-                ]}
-              >
-                {isCancelling && (
-                  <View style={styles.cancellingOverlay}>
-                    <AnimatedLogoIcon size={24} />
-                    <Text style={[styles.cancellingText, { color: colors.textSecondary }]}>
-                      {t('orders.cancelingOrder')}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.orderHeader}>
-                  <View style={styles.orderTitleRow}>
-                    <View style={styles.symbolWithClone}>
-                      <Text style={[styles.orderSymbol, { color: colors.text }]}>{order.symbol}</Text>
-                      <View style={{ position: 'relative' }}>
-                        <TouchableOpacity
-                          style={[styles.cloneIconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                          onPress={() => handleCloneOrder(order, exchangeData.exchangeId, exchangeData.exchangeName)}
-                          onLongPress={() => {
-                            const key = `${order.id}-clone`;
-                            setTooltipVisible({ ...tooltipVisible, [key]: true });
-                            setTimeout(() => {
-                              setTooltipVisible({ ...tooltipVisible, [key]: false });
-                            }, 2000);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                        </TouchableOpacity>
-                        {tooltipVisible[`${order.id}-clone`] && (
-                          <View style={[styles.tooltip, { backgroundColor: colors.text }]}>
-                            <Text style={[styles.tooltipText, { color: colors.background }]}>
-                              {t('orders.cloneTooltip')}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                    <Text style={[styles.orderTime, { color: colors.textTertiary }]}>
-                      {formatDate(order.timestamp)}
-                    </Text>
-                  </View>
-                  <View style={[
-                    styles.sideBadge,
-                    { backgroundColor: order.side === 'buy' ? colors.successLight : colors.dangerLight }
-                  ]}>
-                    <Text style={[
-                      styles.sideText,
-                      { color: order.side === 'buy' ? colors.success : colors.danger }
-                    ]}>
-                      {order.side === 'buy' ? t('orders.side.buy') : t('orders.side.sell')}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.orderDetails}>
-                  <View style={styles.detailRow}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('orders.amount')}:</Text>
-                    <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {hideValue(formatAmount(order.amount))}
-                    </Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('orders.price')}:</Text>
-                    <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {hideValue(`$${formatPrice(order.price)}`)}
-                    </Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('orders.total')}:</Text>
-                    <Text style={[styles.detailValue, { color: colors.text, fontWeight: '600' }]}>
-                      {hideValue(`$${formatPrice(order.price * order.amount)}`)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Botões de ação */}
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.detailsButton,
-                      { backgroundColor: colors.surface, borderColor: colors.border }
-                    ]}
-                    onPress={() => handleOpenDetails(order)}
-                  >
-                    <Text style={[styles.detailsButtonText, { color: colors.primary }]}>
-                      {t('orders.viewDetails')}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.cancelButton,
-                      { backgroundColor: 'transparent', borderColor: colors.danger },
-                      isCancelling && { opacity: 0.5 }
-                    ]}
-                    onPress={() => handleCancelOrder(order, exchangeData.exchangeId, exchangeData.exchangeName)}
-                    disabled={isCancelling}
-                  >
-                    <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
-                      {t('orders.cancel')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </GradientCard>
-            )})}
-          </View>
+          <CompactOrdersList
+            key={exchangeData.exchangeId}
+            exchangeId={exchangeData.exchangeId}
+            exchangeName={exchangeData.exchangeName}
+            orders={exchangeData.orders}
+            loading={loading}
+            hideValue={valuesHidden}
+            cancellingOrderIds={cancellingOrderIds}
+            onCancelOrder={(order) => handleCancelOrder(order, exchangeData.exchangeId, exchangeData.exchangeName)}
+            onCloneOrder={(order) => handleCloneOrder(order, exchangeData.exchangeId, exchangeData.exchangeName)}
+            onViewDetails={handleOpenDetails}
+            formatAmount={formatAmount}
+            formatPrice={formatPrice}
+            formatDate={formatDate}
+            getOrderId={getOrderId}
+          />
         );
       })}
         </>
@@ -604,13 +494,13 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
                   <View style={styles.orderInfoRow}>
                     <Text style={[styles.orderInfoLabel, { color: colors.textSecondary }]}>{t('orders.price')}:</Text>
                     <Text style={[styles.orderInfoValue, { color: colors.text }]}>
-                      {hideValue(`$${formatPrice(orderToCancel.order.price)}`)}
+                      {hideValueFn(`$${formatPrice(orderToCancel.order.price)}`)}
                     </Text>
                   </View>
                   <View style={styles.orderInfoRow}>
                     <Text style={[styles.orderInfoLabel, { color: colors.textSecondary }]}>{t('orders.quantity')}:</Text>
                     <Text style={[styles.orderInfoValue, { color: colors.text }]}>
-                      {hideValue(formatAmount(orderToCancel.order.amount))}
+                      {hideValueFn(formatAmount(orderToCancel.order.amount))}
                     </Text>
                   </View>
                   <View style={styles.orderInfoRow}>
