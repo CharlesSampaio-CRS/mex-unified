@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { CompactAssetCard } from './CompactAssetCard';
 import { AnimatedLogoIcon } from './AnimatedLogoIcon';
@@ -52,14 +53,28 @@ export function CompactAssetsList({
   hideValue = false,
 }: CompactAssetsListProps) {
   const { colors } = useTheme();
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <View style={styles.container}>
-      {/* Header da Exchange */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.exchangeName, { color: colors.text }]}>
-          {exchangeName}
-        </Text>
+      {/* Header da Exchange - Clicável para expandir/colapsar */}
+      <TouchableOpacity 
+        style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        onPress={() => setCollapsed(!collapsed)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.headerLeft}>
+          <Ionicons 
+            name={collapsed ? "chevron-forward" : "chevron-down"} 
+            size={14} 
+            color={colors.textSecondary}
+            style={{ marginRight: 6 }}
+          />
+          <Text style={[styles.exchangeName, { color: colors.text }]}>
+            {exchangeName}
+          </Text>
+        </View>
+        
         {loading ? (
           <View style={styles.loadingRow}>
             <AnimatedLogoIcon size={16} />
@@ -72,9 +87,12 @@ export function CompactAssetsList({
             {assets.length} {assets.length === 1 ? 'token' : 'tokens'}
           </Text>
         )}
-      </View>
+      </TouchableOpacity>
 
-      {/* Loading State */}
+      {/* Conteúdo - Mostra apenas se não estiver colapsado */}
+      {!collapsed && (
+        <>
+          {/* Loading State */}
       {loading ? (
         <View style={[styles.loadingContainer, { backgroundColor: colors.surface }]}>
           <AnimatedLogoIcon size={24} />
@@ -116,6 +134,8 @@ export function CompactAssetsList({
           />
         ))
       )}
+        </>
+      )}
     </View>
   );
 }
@@ -132,6 +152,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 6,
     borderWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   exchangeName: {
     fontSize: 12,

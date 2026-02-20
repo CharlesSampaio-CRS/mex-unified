@@ -90,7 +90,9 @@ export function CompactAssetCard({
             <Ionicons name="logo-bitcoin" size={14} color={colors.primary} />
           </View>
           
-          <Text style={[styles.symbol, { color: colors.text }]}>{symbol.toLowerCase()}</Text>
+          <Text style={[styles.symbol, { color: colors.text }]}>
+            {symbol.charAt(0).toUpperCase() + symbol.slice(1).toLowerCase()}
+          </Text>
           
           <View style={styles.actions}>
             {/* Alerta */}
