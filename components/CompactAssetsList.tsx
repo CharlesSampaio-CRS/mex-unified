@@ -158,7 +158,7 @@ export function CompactAssetsList({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
+    marginBottom: 6,
   },
   header: {
     flexDirection: 'row',
