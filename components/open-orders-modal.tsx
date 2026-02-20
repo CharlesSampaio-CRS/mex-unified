@@ -6,7 +6,7 @@ import { useBalance } from "../contexts/BalanceContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
-import { orderOperationsService } from "../services/order-operations"
+// ⚠️ REMOVIDO: orderOperationsService (usava SQLite)
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
 // ❌ Cache removido - sempre busca dados atualizados
@@ -297,13 +297,13 @@ export function OpenOrdersModal({
     setCancellingOrderId(orderToCancel.id)
     
     try {
-      // ✅ Usa orderOperationsService que já cria a notificação automaticamente
-      const result = await orderOperationsService.cancelOrder({
+      // ⚠️ TODO: Criar notificação manualmente (orderOperationsService foi removido)
+      const result = await apiService.cancelOrder(
         userId,
+        orderToCancel.id,
         exchangeId,
-        orderId: orderToCancel.id,
-        symbol: orderToCancel.symbol
-      })
+        orderToCancel.symbol
+      )
       
       const isSuccess = result.success === true || (!result.error && !result.success)
       

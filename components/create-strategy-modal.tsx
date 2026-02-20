@@ -138,18 +138,19 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       console.log('📊 Loading connected exchanges from MongoDB via API...')
       
       // � Busca exchanges do MongoDB (via API backend)
-      const connectedExchanges = await exchangeService.getActiveExchanges(userId)
+      const response = await apiService.listExchanges()
+      const connectedExchanges = response.exchanges.filter((ex: any) => ex.is_active)
       
       console.log(`✅ Loaded ${connectedExchanges.length} active exchanges from MongoDB`)
       
       // Converter para o formato esperado pelo componente
       const formattedExchanges = connectedExchanges.map(ex => ({
-        _id: ex.id,
-        exchange_id: ex.id,
-        exchange_type: ex.exchangeType,  // CCXT ID: binance, bybit, etc
-        name: ex.exchangeName,
-        ccxt_id: ex.exchangeType,
-        is_active: ex.isActive,
+        _id: ex.exchange_id,
+        exchange_id: ex.exchange_id,
+        exchange_type: ex.exchange_type,  // CCXT ID: binance, bybit, etc
+        name: ex.exchange_name,
+        ccxt_id: ex.exchange_type,
+        is_active: ex.is_active,
       }))
       
       setExchanges(formattedExchanges)
@@ -246,8 +247,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
     try {
       setLoading(true)
       
-      // Busca exchange do WatermelonDB para pegar o nome
-      const exchange = await exchangeService.getExchangeById(selectedExchange)
+      // Busca exchange do array local
+      const exchange = exchanges.find(ex => ex.exchange_id === selectedExchange)
       if (!exchange) {
         throw new Error("Exchange não encontrada")
       }
@@ -261,10 +262,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       
       const strategyData = {
         name: `${token} - ${selectedTemplate}`,
-        description: `Estratégia ${selectedTemplate} para ${token} na ${exchange.exchange_name}`,
+        description: `Estratégia ${selectedTemplate} para ${token} na ${exchange.name}`,
         symbol: token,
         exchange_id: selectedExchange,
-        exchange_name: exchange.exchange_name,
+        exchange_name: exchange.name,
         strategy_type: strategyTypeMap[selectedTemplate] || 'grid',
         config: {
           template: selectedTemplate,

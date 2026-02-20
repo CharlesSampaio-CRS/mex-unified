@@ -9,7 +9,7 @@ import { useOrders } from '../contexts/OrdersContext';
 import { usePrivacy } from '../contexts/PrivacyContext';
 import { useBalance } from '../contexts/BalanceContext';
 import { apiService } from '../services/api';
-import { orderOperationsService } from '../services/order-operations';
+// ⚠️ REMOVIDO: orderOperationsService (usava SQLite)
 import { OpenOrder, getOrderId } from '../types/orders';
 import { OrderDetailsModal } from './order-details-modal';
 import { AnimatedLogoIcon } from './AnimatedLogoIcon';
@@ -293,34 +293,23 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     setCloneError(null);
 
     try {
+      // ⚠️ TODO: Implementar criação de ordem sem SQLite
+      // Order operations foi removido (usava SQLite)
+      // Opções: usar apiService.createBuyOrder/createSellOrder direto
+      throw new Error('Funcionalidade de clonar ordem precisa ser reimplementada sem SQLite');
+      
+      /* CÓDIGO ANTIGO (usava SQLite):
       let result;
       if (order.side === 'buy') {
-        result = await orderOperationsService.createBuyOrder(
-          user.id,
-          exchangeId,
-          order.symbol,
-          order.amount,
-          'limit',
-          order.price
-        );
+        result = await orderOperationsService.createBuyOrder(...);
       } else {
-        result = await orderOperationsService.createSellOrder(
-          user.id,
-          exchangeId,
-          order.symbol,
-          order.amount,
-          'limit',
-          order.price
-        );
+        result = await orderOperationsService.createSellOrder(...);
       }
 
       if (result.success) {
-        // Fecha o modal imediatamente
         setConfirmCloneVisible(false);
         setOrderToClone(null);
         setCloneLoading(false);
-
-        // Atualiza em background
         refresh().catch(console.error);
         refreshBalance().catch(console.error);
       } else {
@@ -328,6 +317,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
         setCloneError(errorMsg);
         setCloneLoading(false);
       }
+      */
     } catch (error: any) {
       const errorMessage = error.message || 'Erro desconhecido ao clonar ordem';
       setCloneError(errorMessage);

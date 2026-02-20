@@ -900,49 +900,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         
         console.log('✅ [MongoDB] Exchange salva com sucesso!', response.exchange_id)
         
-        // ✅ OPCIONAL: Manter SQLite como cache local (para offline)
-        // Se quiser sincronizar com SQLite também:
-        try {
-          const encryptedCredentials = await encryptExchangeCredentials(
-            apiKey.trim(),
-            apiSecret.trim(),
-            selectedExchange.requires_passphrase ? passphrase.trim() : undefined,
-            user.id
-          )
-          
-          await exchangeService.addExchange({
-            userId: user.id,
-            exchangeType: selectedExchange.ccxt_id,
-            exchangeName: selectedExchange.nome,
-            apiKeyEncrypted: encryptedCredentials.apiKeyEncrypted,
-            apiSecretEncrypted: encryptedCredentials.apiSecretEncrypted,
-            apiPassphraseEncrypted: encryptedCredentials.apiPassphraseEncrypted,
-            isActive: true
-          })
-        } catch (sqliteError) {
-          // Não bloquear se SQLite falhar - MongoDB é a fonte da verdade
-        }
-        
       } catch (apiError) {
         console.error('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
-        
-        // FALLBACK: Se API falhar, salva apenas no SQLite (modo offline)
-        const encryptedCredentials = await encryptExchangeCredentials(
-          apiKey.trim(),
-          apiSecret.trim(),
-          selectedExchange.requires_passphrase ? passphrase.trim() : undefined,
-          user.id
+        Alert.alert(
+          t('common.error'),
+          'Não foi possível conectar a exchange. Tente novamente.'
         )
-        
-        await exchangeService.addExchange({
-          userId: user.id,
-          exchangeType: selectedExchange.ccxt_id,
-          exchangeName: selectedExchange.nome,
-          apiKeyEncrypted: encryptedCredentials.apiKeyEncrypted,
-          apiSecretEncrypted: encryptedCredentials.apiSecretEncrypted,
-          apiPassphraseEncrypted: encryptedCredentials.apiPassphraseEncrypted,
-          isActive: true
-        })
+        setConnecting(false)
+        return
       }
       
       // Fechar modal

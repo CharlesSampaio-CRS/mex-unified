@@ -1,9 +1,49 @@
 import { useState, useEffect, useCallback } from 'react';
-import backendStrategyService, { 
-  Strategy, 
-  CreateStrategyRequest, 
-  UpdateStrategyRequest 
-} from '../services/backend-strategy-service';
+import { apiService } from '../services/api';
+
+// Types from backend API
+export interface Strategy {
+  id: string;
+  user_id: string;
+  exchange_id: string;
+  exchange_name?: string;  // Optional: nome da exchange
+  symbol: string;
+  strategy_type: string;
+  is_active: boolean;
+  buy_price?: number;
+  sell_price?: number;
+  stop_loss?: number;
+  take_profit?: number;
+  amount?: number;
+  name?: string;  // Optional: nome da estratégia
+  description?: string;
+  config?: any;  // Optional: configuração adicional
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateStrategyRequest {
+  exchange_id: string;
+  symbol: string;
+  strategy_type: string;
+  name?: string;
+  description?: string;
+  buy_price?: number;
+  sell_price?: number;
+  stop_loss?: number;
+  take_profit?: number;
+  amount?: number;
+  config?: any;
+}
+
+export interface UpdateStrategyRequest {
+  is_active?: boolean;
+  buy_price?: number;
+  sell_price?: number;
+  stop_loss?: number;
+  take_profit?: number;
+  amount?: number;
+}
 
 interface UseBackendStrategiesReturn {
   strategies: Strategy[];
@@ -65,7 +105,8 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       setError(null);
       
       console.log('🔄 [useBackendStrategies] Carregando estratégias...');
-      const data = await backendStrategyService.getStrategies();
+      const response = await apiService.listStrategies();
+      const data = response.data.strategies || [];
       
       setStrategies(data);
       console.log(`✅ [useBackendStrategies] ${data.length} estratégias carregadas`);
@@ -87,7 +128,8 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       setError(null);
       console.log('🔄 [useBackendStrategies] Criando estratégia:', data);
       
-      const newStrategy = await backendStrategyService.createStrategy(data);
+      const response = await apiService.createStrategy(data);
+      const newStrategy = response.data.strategy;
       
       // Adiciona a nova estratégia ao estado local
       setStrategies(prev => [newStrategy, ...prev]);
@@ -110,7 +152,8 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       setError(null);
       console.log(`🔄 [useBackendStrategies] Atualizando estratégia ${id}:`, data);
       
-      const updatedStrategy = await backendStrategyService.updateStrategy(id, data);
+      const response = await apiService.updateStrategy(id, data);
+      const updatedStrategy = response.data.strategy;
       
       // Atualiza a estratégia no estado local
       setStrategies(prev => 
@@ -135,7 +178,7 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       setError(null);
       console.log(`🔄 [useBackendStrategies] Deletando estratégia ${id}`);
       
-      await backendStrategyService.deleteStrategy(id);
+      await apiService.deleteStrategy(id);
       
       // Remove a estratégia do estado local
       setStrategies(prev => prev.filter(s => s.id !== id));
@@ -157,7 +200,8 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       setError(null);
       console.log(`🔄 [useBackendStrategies] Alternando status da estratégia ${id} para ${isActive ? 'ativa' : 'inativa'}`);
       
-      const updatedStrategy = await backendStrategyService.toggleActive(id, isActive);
+      const response = await apiService.toggleStrategy(id, isActive);
+      const updatedStrategy = response.data.strategy;
       
       // Atualiza no estado local
       setStrategies(prev => 
@@ -188,21 +232,23 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
    * 📊 Filtra por exchange
    */
   const filterByExchange = useCallback((exchangeId: string): Strategy[] => {
-    return backendStrategyService.filterByExchange(strategies, exchangeId);
+    return strategies.filter(s => s.exchange_id === exchangeId);
   }, [strategies]);
 
   /**
    * 🔤 Filtra por símbolo
    */
   const filterBySymbol = useCallback((symbol: string): Strategy[] => {
-    return backendStrategyService.filterBySymbol(strategies, symbol);
+    return strategies.filter(s => 
+      s.symbol.toLowerCase().includes(symbol.toLowerCase())
+    );
   }, [strategies]);
 
   /**
    * 🏷️ Filtra por tipo
    */
   const filterByType = useCallback((type: string): Strategy[] => {
-    return backendStrategyService.filterByType(strategies, type);
+    return strategies.filter(s => s.strategy_type === type);
   }, [strategies]);
 
   /**
