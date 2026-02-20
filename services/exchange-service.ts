@@ -53,20 +53,28 @@ class ExchangeService {
     total: number
   }> {
     try {
-      // Busca exchanges conectadas (MongoDB)
+      // 1. Busca catálogo completo de exchanges (collection "exchanges")
+      const catalogResponse = await apiService.getAvailableExchanges(userId)
+      const totalCatalog = catalogResponse?.success && catalogResponse?.exchanges
+        ? catalogResponse.exchanges.length
+        : 0
+      
+      // 2. Busca exchanges conectadas pelo usuário (collection "user_exchanges")
+      // Usa listExchanges() que chama GET /user/exchanges com JWT auth
       const linkedResponse = await apiService.listExchanges()
       const connectedCount = linkedResponse?.success && linkedResponse?.exchanges 
         ? linkedResponse.exchanges.length 
         : 0
       
-      // Busca catálogo de exchanges disponíveis
-      const availableResponse = await apiService.getAvailableExchanges(userId)
-      const totalCatalog = availableResponse?.success && availableResponse?.exchanges
-        ? availableResponse.exchanges.length
-        : 0
-      
-      // Calcula disponíveis: Total do catálogo - Conectadas
+      // 3. Calcula disponíveis para conectar: Total - Conectadas
       const availableCount = Math.max(0, totalCatalog - connectedCount)
+      
+      console.log('🔍 [ExchangeService] Contadores:', {
+        total: totalCatalog,
+        connected: connectedCount,
+        available: availableCount,
+        formula: `${totalCatalog} - ${connectedCount} = ${availableCount}`
+      })
       
       return {
         connected: connectedCount,
