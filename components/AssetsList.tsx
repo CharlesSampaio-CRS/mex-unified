@@ -20,7 +20,7 @@ import { getExchangeLogo } from "@/lib/exchange-logos"
 import { typography, fontWeights } from "@/lib/typography"
 import { useTokenMonitor } from "@/hooks/use-token-monitor"
 import { useOpenOrdersSync } from "@/hooks/useOpenOrdersSync"
-import { GenericItemList } from "./GenericItemList"
+import { CompactAssetsList } from "./CompactAssetsList"
 import { getExchangeId, getExchangeName, getTotalUsd, getExchangeBalances } from "@/lib/exchange-helpers"
 
 // ❌ CACHE REMOVIDO - Sempre busca dados frescos
@@ -40,7 +40,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
   const { user } = useAuth()
   const { data, loading, error, refresh: refreshBalance, refreshing } = useBalance()
   const { refresh: refreshOrders } = useOrders()
-  const { hideValue } = usePrivacy()
+  const { hideValue, valuesHidden } = usePrivacy()
   const { addToken, removeToken, isWatching } = useWatchlist()
   const { getAlertsForToken } = useAlerts()
   const [hideZeroBalanceExchanges, setHideZeroBalanceExchanges] = useState(true)
@@ -893,217 +893,114 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
       )}
 
       <View style={styles.list} collapsable={false}>
-        <GenericItemList
-          sections={filteredExchanges.map((exchange) => {
-            // ✅ Suporta ambas estruturas: balances (nova) e tokens (antiga)
-            const balances = getExchangeBalances(exchange)
-            const allTokens = Object.entries(balances) as [string, any][]
+        {filteredExchanges.map((exchange) => {
+          // ✅ Suporta ambas estruturas: balances (nova) e tokens (antiga)
+          const balances = getExchangeBalances(exchange)
+          const allTokens = Object.entries(balances) as [string, any][]
+          
+          // Ordenar tokens: stablecoins por último, depois por valor
+          const sortedTokens = allTokens.sort((a, b) => {
+            const [symbolA, tokenA] = a
+            const [symbolB, tokenB] = b
             
-            // Não precisa filtrar aqui, já foi filtrado em filteredExchanges
-            const tokensToShow = allTokens
+            const isStablecoinA = STABLECOINS.includes(symbolA.toUpperCase())
+            const isStablecoinB = STABLECOINS.includes(symbolB.toUpperCase())
             
-            // Ordenar tokens: stablecoins por último, depois por valor
-            const sortedTokens = tokensToShow.sort((a, b) => {
-              const [symbolA, tokenA] = a
-              const [symbolB, tokenB] = b
-              
-              const isStablecoinA = STABLECOINS.includes(symbolA.toUpperCase())
-              const isStablecoinB = STABLECOINS.includes(symbolB.toUpperCase())
-              
-              if (isStablecoinA && !isStablecoinB) return 1
-              if (!isStablecoinA && isStablecoinB) return -1
-              
-              // ✅ Suporta ambas estruturas
-              const valueA = parseFloat((tokenA.usd_value || tokenA.value_usd || 0).toString())
-              const valueB = parseFloat((tokenB.usd_value || tokenB.value_usd || 0).toString())
-              return valueB - valueA
-            })
+            if (isStablecoinA && !isStablecoinB) return 1
+            if (!isStablecoinA && isStablecoinB) return -1
+            
+            // ✅ Suporta ambas estruturas
+            const valueA = parseFloat((tokenA.usd_value || tokenA.value_usd || 0).toString())
+            const valueB = parseFloat((tokenB.usd_value || tokenB.value_usd || 0).toString())
+            return valueB - valueA
+          })
 
-            // Converter tokens para o formato esperado
-            const formattedTokens = sortedTokens.slice(0, 10).map(([symbol, token]) => {
-              // ✅ Suporta ambas estruturas
-              const valueUSD = parseFloat((token.usd_value || token.value_usd || 0).toString())
-              const priceUSD = parseFloat((token.price_usd || 0).toString())
-              const amount = (token.total || token.amount || 0).toString()
-              
-              // 🆕 Adiciona free, used e total do balance
-              const free = parseFloat((token.free || 0).toString())
-              const used = parseFloat((token.used || 0).toString())
-              const total = parseFloat((token.total || 0).toString())
-              
-              const usdtToken = sortedTokens.find(([sym]) => sym === 'USDT' || sym === 'usdt')
-              const usdtBalance = usdtToken ? parseFloat((usdtToken[1].free || usdtToken[1].total || usdtToken[1].amount || 0).toString()) : 0
-              
-              const exchangeId = getExchangeId(exchange)
-              const exchangeName = getExchangeName(exchange)
-              const tokenVariations = exchangeVariations[exchangeId]?.[symbol]
-              const isStablecoin = STABLECOINS.includes(symbol.toUpperCase())
-              const variation24h = isStablecoin ? 0 : (token.change_24h || tokenVariations?.['24h']?.price_change_percent)
-
-              return {
-                id: `${exchangeId}-${symbol}`,
-                symbol: symbol.toUpperCase(),
-                amount,
-                free,      // 🆕 Saldo disponível para trading
-                used,      // 🆕 Saldo em ordens abertas
-                total,     // 🆕 Saldo total (free + used)
-                priceUSD,
-                valueUSD,
-                usdtBalance,
-                isStablecoin,
-                variation24h,
-                exchangeId,
-                exchangeName,
-                totalTokens: sortedTokens.length,
-              }
-            })
+          // Converter tokens para o formato esperado pelo CompactAssetCard
+          const formattedAssets = sortedTokens.slice(0, 10).map(([symbol, token]) => {
+            // ✅ Suporta ambas estruturas
+            const valueUSD = parseFloat((token.usd_value || token.value_usd || 0).toString())
+            const priceUSD = parseFloat((token.price_usd || 0).toString())
+            const amount = (token.total || token.amount || 0).toString()
+            
+            // 🆕 Adiciona free, used e total do balance
+            const free = parseFloat((token.free || 0).toString())
+            const used = parseFloat((token.used || 0).toString())
+            const total = parseFloat((token.total || 0).toString())
+            
+            const usdtToken = sortedTokens.find(([sym]) => sym === 'USDT' || sym === 'usdt')
+            const usdtBalance = usdtToken ? parseFloat((usdtToken[1].free || usdtToken[1].total || usdtToken[1].amount || 0).toString()) : 0
+            
+            const exchangeId = getExchangeId(exchange)
+            const exchangeName = getExchangeName(exchange)
+            const tokenVariations = exchangeVariations[exchangeId]?.[symbol]
+            const isStablecoin = STABLECOINS.includes(symbol.toUpperCase())
+            const variation24h = isStablecoin ? 0 : (token.change_24h || tokenVariations?.['24h']?.price_change_percent)
 
             return {
-              exchangeId: getExchangeId(exchange),
-              exchangeName: getExchangeName(exchange),
-              items: formattedTokens,
-              loading: false,
+              id: `${exchangeId}-${symbol}`,
+              symbol: symbol.toUpperCase(),
+              amount,           // string: quantidade formatada
+              free,             // number: disponível para trading
+              used,             // number: em ordens abertas
+              total,            // number: total (free + used)
+              priceUSD,         // number: preço em USD
+              valueUSD,         // number: valor total em USD
+              usdtBalance,      // number: saldo USDT da exchange
+              isStablecoin,     // boolean
+              variation24h,     // number | undefined: variação 24h
+              exchangeId,       // string
+              exchangeName,     // string
             }
-          })}
-          config={{
-            renderFavoriteButton: (item, colors) => {
-              const isFavorite = isWatching(item.symbol)
-              const tokenAlerts = getAlertsForToken(item.symbol, item.exchangeId)
-              const hasAlerts = tokenAlerts.length > 0
-              
-              return (
-                <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
-                  {/* Botão de Alerta */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedTokenForAlert({
-                        symbol: item.symbol,
-                        price: item.priceUSD,
-                        exchangeId: item.exchangeId || '',
-                        exchangeName: item.exchangeName || '',
-                      })
-                      setAlertModalVisible(true)
-                    }}
-                    style={{ padding: 2 }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Ionicons
-                      name={hasAlerts ? "notifications" : "notifications-outline"}
-                      size={16}
-                      color={hasAlerts ? colors.primary : colors.textSecondary}
-                      style={{ opacity: hasAlerts ? 1 : 0.6 }}
-                    />
-                  </TouchableOpacity>
-                  
-                  {/* Botão de Favorito */}
-                  <TouchableOpacity
-                    onPress={() => handleToggleFavorite(item.symbol)}
-                    style={{ padding: 2, marginLeft: -2 }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Ionicons
-                      name={isFavorite ? "star" : "star-outline"}
-                      size={16}
-                      color={isFavorite ? "#fbbf24" : colors.textSecondary}
-                      style={{ opacity: isFavorite ? 1 : 0.4 }}
-                    />
-                  </TouchableOpacity>
-                </View>
-              )
-            },
-            renderBadge: (item, colors) => {
-              // Se estiver atualizando, mostra "Updating..."
-              if (refreshing) {
-                return (
-                  <View style={[
-                    styles.variationBadge,
-                    { backgroundColor: colors.primaryLight + '20' }
-                  ]}>
-                    <Text style={[
-                      styles.variationText,
-                      { color: colors.primary }
-                    ]}>
-                      {t('home.updating')}
-                    </Text>
-                  </View>
-                )
-              }
-              
-              if (item.isStablecoin || item.variation24h === undefined) return null
-              return (
-                <View style={[
-                  styles.variationBadge,
-                  { backgroundColor: item.variation24h >= 0 ? colors.successLight : colors.dangerLight }
-                ]}>
-                  <Text style={[
-                    styles.variationText,
-                    { color: item.variation24h >= 0 ? colors.success : colors.danger }
-                  ]}>
-                    {`${item.variation24h >= 0 ? '▲' : '▼'} ${Math.abs(item.variation24h).toFixed(2)}% 24H`}
-                  </Text>
-                </View>
-              )
-            },
-            renderDetails: (item, colors) => [
-              {
-                label: t('token.amount'),
-                value: hideValue(apiService.formatTokenAmount(item.amount))
-              },
-              {
-                label: 'Free (Disponível)',
-                value: hideValue(apiService.formatTokenAmount(item.free.toString())),
-                bold: false
-              },
-              {
-                label: 'Used (Em ordens)',
-                value: hideValue(apiService.formatTokenAmount(item.used.toString())),
-                bold: false
-              },
-              {
-                label: t('token.price'),
-                value: hideValue(`$${apiService.formatUSD(item.priceUSD)}`)
-              },
-              {
-                label: t('token.value'),
-                value: hideValue(`$${apiService.formatUSD(item.valueUSD)}`),
-                bold: true
-              }
-            ],
-            buttons: {
-              primary: {
-                label: t('token.viewDetails'),
-                onPress: (item) => {
-                  setSelectedToken({
-                    exchangeId: item.exchangeId,
-                    symbol: item.symbol // ✅ Mantém o símbolo em maiúsculas (já vem do .toUpperCase())
-                  })
-                  setTokenModalVisible(true)
-                }
-              },
-              secondary: {
-                label: t('token.trade'),
-                onPress: (item) => {
-                  if (item.isStablecoin) return
-                  
-                  // ✅ Usa o 'free' que já está carregado no balance (simples e rápido!)
-                  setSelectedTrade({
-                    exchangeId: item.exchangeId,
-                    exchangeName: item.exchangeName,
-                    symbol: item.symbol, // ✅ Mantém o símbolo em maiúsculas
-                    currentPrice: item.priceUSD,
-                    balance: { 
-                      token: item.free,        // 🆕 Usa 'free' (disponível para venda)
-                      usdt: item.usdtBalance   // USDT livre
-                    }
-                  })
-                  setTradeModalVisible(true)
-                }
-              }
-            },
-            getItemId: (item) => item.id,
-            processingItemId: null
-          }}
-        />
+          })
+
+          return (
+            <CompactAssetsList
+              key={getExchangeId(exchange)}
+              exchangeId={getExchangeId(exchange)}
+              exchangeName={getExchangeName(exchange)}
+              assets={formattedAssets}
+              loading={refreshing}
+              hideValue={valuesHidden}
+              onToggleFavorite={(symbol) => handleToggleFavorite(symbol)}
+              onCreateAlert={(asset) => {
+                setSelectedTokenForAlert({
+                  symbol: asset.symbol,
+                  price: asset.priceUSD,
+                  exchangeId: asset.exchangeId,
+                  exchangeName: asset.exchangeName,
+                })
+                setAlertModalVisible(true)
+              }}
+              onTrade={(asset) => {
+                if (asset.isStablecoin) return
+                
+                setSelectedTrade({
+                  exchangeId: asset.exchangeId,
+                  exchangeName: asset.exchangeName,
+                  symbol: asset.symbol,
+                  currentPrice: asset.priceUSD,
+                  balance: { 
+                    token: asset.free,
+                    usdt: asset.usdtBalance
+                  }
+                })
+                setTradeModalVisible(true)
+              }}
+              onViewDetails={(asset) => {
+                setSelectedToken({
+                  exchangeId: asset.exchangeId,
+                  symbol: asset.symbol
+                })
+                setTokenModalVisible(true)
+              }}
+              getFavoriteState={(symbol) => isWatching(symbol)}
+              getAlertState={(symbol, exchangeId) => {
+                const tokenAlerts = getAlertsForToken(symbol, exchangeId)
+                return tokenAlerts.length > 0
+              }}
+            />
+          )
+        })}
       </View>
 
       {/* Modal de Detalhes do Token */}
