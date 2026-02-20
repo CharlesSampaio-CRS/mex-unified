@@ -83,10 +83,16 @@ export function CompactAssetCard({
         onPress={() => setExpanded(!expanded)}
         activeOpacity={0.7}
       >
-        {/* Esquerda: Símbolo + Valor */}
+        {/* Esquerda: Ícone + Símbolo + Ações */}
         <View style={styles.leftSection}>
           <View style={styles.symbolRow}>
-            <Text style={[styles.symbol, { color: colors.text }]}>{symbol}</Text>
+            {/* Ícone do Token (padrão BTC para testes futuros) */}
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
+              <Ionicons name="logo-bitcoin" size={14} color={colors.primary} />
+            </View>
+            
+            <Text style={[styles.symbol, { color: colors.text }]}>{symbol.toLowerCase()}</Text>
+            
             <View style={styles.actions}>
               {/* Alerta */}
               {onCreateAlert && (
@@ -125,19 +131,19 @@ export function CompactAssetCard({
               )}
             </View>
           </View>
-          <Text style={[styles.value, { color: colors.text }]}>
-            {formatCurrency(valueUSD)}
-          </Text>
-        </View>
-
-        {/* Centro: Variação (se não for stablecoin) */}
-        {!isStablecoin && variation24h !== undefined && variation24h !== null && (
-          <View style={styles.centerSection}>
-            <Text style={[styles.variation, { color: variationColor }]}>
-              {variation24h > 0 ? '+' : ''}{Number(variation24h).toFixed(2)}%
+          
+          {/* Valor USD e Variação 24h */}
+          <View style={styles.valueContainer}>
+            <Text style={[styles.value, { color: colors.text }]}>
+              {formatCurrency(valueUSD)}
             </Text>
+            {!isStablecoin && variation24h !== undefined && variation24h !== null && (
+              <Text style={[styles.variationInline, { color: variationColor }]}>
+                {variation24h > 0 ? '+' : ''}{Number(variation24h).toFixed(2)}%
+              </Text>
+            )}
           </View>
-        )}
+        </View>
 
         {/* Direita: Ícone expandir */}
         <View style={styles.rightSection}>
@@ -225,6 +231,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 2,
   },
+  iconContainer: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
   symbol: {
     fontSize: 13,
     fontWeight: '600',
@@ -238,10 +252,20 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 2,
   },
+  valueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   value: {
     fontSize: 12,
     fontWeight: '500',
     opacity: 0.85,
+  },
+  variationInline: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   centerSection: {
     marginRight: 8,
