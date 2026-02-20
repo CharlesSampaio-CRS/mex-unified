@@ -207,8 +207,15 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
     if (!user?.id) return
     
     try {
+      console.log(`🔄 [PortfolioOverview] Carregando dados de evolução para ${days} dias...`)
       setEvolutionLoading(true)
       const data = await backendSnapshotService.getEvolutionData(days)
+      console.log(`✅ [PortfolioOverview] Dados de evolução carregados:`, {
+        days,
+        dataPoints: data.values_usd.length,
+        firstValue: data.values_usd[0],
+        lastValue: data.values_usd[data.values_usd.length - 1]
+      })
       setEvolutionData(data)
     } catch (error) {
       console.error('❌ Erro ao carregar dados de evolução:', error)
@@ -226,11 +233,13 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
 
   // Carrega dados de evolução do MongoDB quando o período muda
   useEffect(() => {
+    console.log(`🔄 [PortfolioOverview useEffect] Período mudou para ${evolutionPeriod} dias`)
     loadEvolutionData(evolutionPeriod)
   }, [evolutionPeriod, loadEvolutionData])
 
   // Handler para mudar período do gráfico
   const handlePeriodChange = useCallback((days: number) => {
+    console.log(`🔘 [PortfolioOverview] handlePeriodChange chamado: ${days} dias`)
     setEvolutionPeriod(days)
   }, [])
 

@@ -45,8 +45,14 @@ export const PortfolioChart = memo(function PortfolioChart({
     }
   }
 
-  // Processa os dados do gráfico - usa dados locais
-  const chartData = useMemo((): ChartPoint[] => {
+  // Processa os dados do gráfico diretamente (sem memo - dados vêm do MongoDB)
+  const getChartData = (): ChartPoint[] => {
+    console.log('🔄 [PortfolioChart] getChartData chamado', {
+      hasData: !!localEvolutionData,
+      valuesLength: localEvolutionData?.values_usd?.length || 0,
+      currentPeriod
+    })
+    
     if (!localEvolutionData?.values_usd || localEvolutionData.values_usd.length === 0) {
       return []
     }
@@ -96,10 +102,12 @@ export const PortfolioChart = memo(function PortfolioChart({
         timestamp: timestamps[index] || new Date().toISOString()
       }
     })
-  }, [localEvolutionData])
+  }
 
-  // Gera o path SVG para a linha
-  const linePath = useMemo(() => {
+  const chartData = getChartData()
+
+  // Gera o path SVG para a linha (direto, sem memo)
+  const getLinePath = () => {
     if (chartData.length === 0) return ''
     
     let path = `M ${chartData[0].x} ${chartData[0].y}`
@@ -118,10 +126,12 @@ export const PortfolioChart = memo(function PortfolioChart({
     }
     
     return path
-  }, [chartData])
+  }
 
-  // Gera o path para o gradiente de preenchimento
-  const areaPath = useMemo(() => {
+  const linePath = getLinePath()
+
+  // Gera o path para o gradiente de preenchimento (direto, sem memo)
+  const getAreaPath = () => {
     if (chartData.length === 0) return ''
     
     let path = linePath
@@ -135,13 +145,12 @@ export const PortfolioChart = memo(function PortfolioChart({
     path += ' Z'
     
     return path
-  }, [linePath, chartData])
+  }
+
+  const areaPath = getAreaPath()
 
   // Determina se o gráfico está positivo ou negativo
-  const isPositive = useMemo(() => {
-    if (chartData.length < 2) return true
-    return chartData[chartData.length - 1].value >= chartData[0].value
-  }, [chartData])
+  const isPositive = chartData.length < 2 ? true : chartData[chartData.length - 1].value >= chartData[0].value
 
   // Cor do gráfico baseada na tendência
   const lineColor = isPositive ? colors.success : colors.danger
