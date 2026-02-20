@@ -6,22 +6,72 @@ import { useBalance } from '../contexts/BalanceContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { typography, fontWeights } from '../lib/typography'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 
-// Paleta de cores modernas e vibrantes
-const EXCHANGE_COLORS = [
-  '#3B82F6', // Azul forte
-  '#10B981', // Verde esmeralda
-  '#F59E0B', // Laranja âmbar
-  '#8B5CF6', // Roxo violeta
-  '#EF4444', // Vermelho
-  '#14B8A6', // Teal
-  '#F97316', // Laranja escuro
-  '#6366F1', // Índigo
-  '#06B6D4', // Ciano
-  '#EC4899', // Rosa
-  '#84CC16', // Verde lima
-  '#F43F5E', // Rosa forte
-]
+// 🎨 Cores personalizadas por exchange (gradiente claro → escuro)
+const EXCHANGE_BRAND_COLORS: Record<string, { light: string; dark: string; name: string }> = {
+  'MEXC': { 
+    light: '#4A90E2',  // Azul marinho claro
+    dark: '#1A3A5C',   // Azul marinho escuro
+    name: 'MEXC'
+  },
+  'OKX': { 
+    light: '#666666',  // Cinza claro
+    dark: '#000000',   // Preto
+    name: 'OKX'
+  },
+  'Bybit': { 
+    light: '#F7B500',  // Amarelo vibrante
+    dark: '#1A1A1A',   // Preto
+    name: 'Bybit'
+  },
+  'Kraken': { 
+    light: '#9B6FFF',  // Roxo claro
+    dark: '#5D3FD3',   // Roxo escuro
+    name: 'Kraken'
+  },
+  'Binance': { 
+    light: '#F3BA2F',  // Amarelo Binance
+    dark: '#FAFAFA',   // Branco levemente cinza
+    name: 'Binance'
+  },
+  'Coinbase': { 
+    light: '#0052FF',  // Azul Coinbase
+    dark: '#FFFFFF',   // Branco
+    name: 'Coinbase'
+  },
+  'KuCoin': { 
+    light: '#24AE8F',  // Verde claro
+    dark: '#FFFFFF',   // Branco
+    name: 'KuCoin'
+  },
+  'NovaDAX': { 
+    light: '#00D4AA',  // Verde água claro
+    dark: '#1A1A1A',   // Preto
+    name: 'NovaDAX'
+  },
+  'Gate.io': { 
+    light: '#2354E6',  // Azul Gate.io
+    dark: '#17D7A0',   // Verde Gate.io
+    name: 'Gate.io'
+  },
+  'Bitget': { 
+    light: '#00F0FF',  // Azul ciano claro
+    dark: '#0099CC',   // Azul ciano escuro
+    name: 'Bitget'
+  },
+  'Coinex': { 
+    light: '#3DD08A',  // Verde claro
+    dark: '#FFFFFF',   // Branco
+    name: 'Coinex'
+  },
+}
+
+// Cores padrão (fallback) caso exchange não esteja no mapeamento
+const DEFAULT_GRADIENT = {
+  light: '#6366F1',  // Índigo claro
+  dark: '#4F46E5',   // Índigo escuro
+}
 
 // Mapeamento de ícones das exchanges
 const EXCHANGE_ICONS: Record<string, any> = {
@@ -44,6 +94,7 @@ interface ExchangeData {
   value: number
   percentage: number
   color: string
+  gradientColors: [string, string] // [claro, escuro]
   hasError?: boolean
   error?: string
 }
@@ -133,20 +184,26 @@ const ExchangeBar = memo(({
           </View>
         </View>
 
-        {/* Barra de Progresso */}
+        {/* Barra de Progresso com Gradiente */}
         <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
           <Animated.View
-            style={[
-              styles.progressBarFill,
-              {
-                backgroundColor: exchange.color,
-                width: widthAnim.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
-          />
+            style={{
+              width: widthAnim.interpolate({
+                inputRange: [0, 100],
+                outputRange: ['0%', '100%'],
+              }),
+              height: '100%',
+              borderRadius: 3,
+              overflow: 'hidden',
+            }}
+          >
+            <LinearGradient
+              colors={exchange.gradientColors}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.progressBarFill}
+            />
+          </Animated.View>
         </View>
 
         {/* Erro (se houver) */}
@@ -207,12 +264,17 @@ export const ExchangesHorizontalChart = memo(function ExchangesHorizontalChart()
       // Capitalizar apenas a primeira letra
       const formattedName = exchangeName.charAt(0).toUpperCase() + exchangeName.slice(1).toLowerCase()
 
+      // 🎨 Buscar cores personalizadas da exchange
+      const brandColors = EXCHANGE_BRAND_COLORS[exchangeName] || DEFAULT_GRADIENT
+      const gradientColors: [string, string] = [brandColors.light, brandColors.dark]
+
       return {
         name: formattedName,
         originalName: exchangeName, // Manter nome original para buscar ícone
         value: totalUSD,
         percentage: 0,
-        color: EXCHANGE_COLORS[index % EXCHANGE_COLORS.length],
+        color: brandColors.dark, // Cor escura como primária (para texto/borda)
+        gradientColors, // Gradiente [claro, escuro]
         hasError,
         error: errorMsg,
       }
