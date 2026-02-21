@@ -546,6 +546,14 @@ const styles = StyleSheet.create({
     opacity: 0.3,
     marginBottom: 6,
   },
+  exchangesTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 8,
+    marginBottom: 4,
+  },
   exchangeRow: {
     flexDirection: 'row',
     alignItems: 'center',
