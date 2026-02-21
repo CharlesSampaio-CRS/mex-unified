@@ -386,9 +386,6 @@ export const PortfolioChart = memo(function PortfolioChart({
           )}
         </Svg>
       </View>
-
-      {/* Gráfico de Pizza das Exchanges */}
-      <ExchangesPieChart />
     </View>
   )
 })
