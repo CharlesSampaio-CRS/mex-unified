@@ -384,6 +384,9 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
           onPeriodChange={handlePeriodChange}
           currentPeriod={evolutionPeriod}
         />
+
+        {/* Gráfico de Pizza das Exchanges */}
+        <ExchangesPieChart />
       </LinearGradient>
   )
 })
