@@ -7,24 +7,24 @@ import { useBalance } from '../contexts/BalanceContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { typography, fontWeights } from '../lib/typography'
 
-const BASE_CHART_SIZE = 180
-const MIN_CHART_SIZE = 140
+const BASE_CHART_SIZE = 120
+const MIN_CHART_SIZE = 80
 const STROKE_WIDTH = 16 // Reduzido de 20 para 16 (mais fino e suave)
 
 // Paleta de cores suaves e elegantes (tons pastéis e menos saturados)
 const EXCHANGE_COLORS = [
-  '#60A5FA', // Azul suave
-  '#93C5FD', // Azul claro
-  '#7DD3FC', // Azul ciano suave
-  '#A5B4FC', // Azul lavanda
-  '#94A3B8', // Cinza azulado suave
-  '#BAE6FD', // Azul muito claro
-  '#6B7280', // Cinza médio neutro
-  '#9CA3AF', // Cinza claro
-  '#64748B', // Cinza slate suave
-  '#84CC16', // Verde lima suave
-  '#A78BFA', // Roxo suave
-  '#5EEAD4', // Turquesa suave
+  '#2563EB', // Azul forte
+  '#1D4ED8', // Azul escuro
+  '#0284C7', // Ciano forte
+  '#7C3AED', // Roxo forte
+  '#F59E42', // Laranja forte
+  '#F43F5E', // Vermelho forte
+  '#10B981', // Verde forte
+  '#FACC15', // Amarelo forte
+  '#E11D48', // Rosa forte
+  '#6366F1', // Indigo forte
+  '#A21CAF', // Roxo escuro
+  '#0891B2', // Turquesa forte
 ]
 
 // Mapeamento de ícones das exchanges
@@ -128,7 +128,9 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
 
     // Criar dados com porcentagem
     const chartDataItems: ExchangeData[] = exchangesWithBalance.map((ex: any, index: number) => ({
-      name: ex.name || ex.exchange,
+      name: (ex.name || ex.exchange)
+        ? (ex.name || ex.exchange).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
+        : '',
       value: parseFloat(ex.total_usd || 0),
       percentage: total > 0 ? (parseFloat(ex.total_usd || 0) / total) * 100 : 0,
       color: EXCHANGE_COLORS[index % EXCHANGE_COLORS.length],
@@ -337,17 +339,7 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
                 activeOpacity={0.7}
               >
                 {/* Ícone da Exchange */}
-                {EXCHANGE_ICONS[item.name] ? (
-                  <View style={[styles.exchangeIconContainer, { opacity }]}>
-                    <Image 
-                      source={EXCHANGE_ICONS[item.name]} 
-                      style={styles.exchangeIcon}
-                      resizeMode="contain"
-                    />
-                  </View>
-                ) : (
-                  <View style={[styles.legendColor, { backgroundColor: item.color, opacity }]} />
-                )}
+                <View style={[styles.legendColor, { backgroundColor: item.color, opacity }]} />
                 <View style={styles.legendTextContainer}>
                   <View style={styles.legendNameRow}>
                     <Text style={[styles.legendName, { color: colors.text, opacity }]} numberOfLines={1}>
@@ -411,32 +403,32 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   centerLabel: {
-    fontSize: typography.display, // Mantém 32px
+    fontSize: 12, // Reduzido
     fontWeight: fontWeights.regular, // light→regular
     letterSpacing: -1,
     textAlign: 'center',
   },
   centerValue: {
-    fontSize: typography.body, // caption→body (16px)
+    fontSize: 10, // Reduzido
     fontWeight: fontWeights.medium, // regular→medium
     marginTop: 6, // 4→6
     textAlign: 'center',
   },
   centerPercentage: {
-    fontSize: typography.caption, // micro→caption (14px)
+    fontSize: 8, // Reduzido
     fontWeight: fontWeights.medium, // regular→medium
     marginTop: 4, // 2→4
     textAlign: 'center',
   },
   legend: {
-    gap: 6,                     // Reduzido de 8 para 6 (mais compacto)
+    gap: 2,                     // Reduzido para diminuir altura
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,                    // Reduzido de 12 para 10 (mais compacto)
-    minHeight: 40,              // Reduzido de 44 para 40 (mais compacto)
-    paddingVertical: 4,
+    gap: 8,                     // Reduzido para diminuir altura
+    minHeight: 28,              // Reduzido para diminuir altura
+    paddingVertical: 2,
     width: '100%',
   },
   exchangeIconContainer: {
