@@ -11,7 +11,6 @@ import { currencyService } from "@/services/currencyService"
 import { SkeletonPortfolioOverview } from "./SkeletonLoaders"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { PortfolioChart } from "./PortfolioChart"
-import { ExchangesPieChart } from "./ExchangesPieChart"
 import { GradientCard } from "./GradientCard"
 import { typography, fontWeights } from "@/lib/typography"
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion"
@@ -384,9 +383,6 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
           onPeriodChange={handlePeriodChange}
           currentPeriod={evolutionPeriod}
         />
-
-        {/* Gráfico de Pizza das Exchanges */}
-        <ExchangesPieChart />
       </LinearGradient>
   )
 })
