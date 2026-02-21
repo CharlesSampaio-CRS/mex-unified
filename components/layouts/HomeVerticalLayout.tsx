@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PortfolioOverview } from '../PortfolioOverview';
-import { PortfolioChartsCard } from '../PortfolioChartsCard';
+import { ExchangeBarChart } from '../ExchangeBarChart';
 import { MarketOverview } from '../MarketOverview';
 import { TopGainersLosers } from '../TopGainersLosers';
 import { AssetsList } from '../AssetsList';
@@ -35,7 +35,7 @@ export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({
       )}
       
       <PortfolioOverview pnl={pnl} pnlLoading={pnlLoading} />
-      <PortfolioChartsCard />
+      <ExchangeBarChart />
       <MarketOverview />
       <TopGainersLosers />
       <AssetsList />
