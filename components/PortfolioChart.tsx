@@ -1,15 +1,35 @@
-import { View, Text, StyleSheet, TouchableOpacity, PanResponder } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, PanResponder, Image } from 'react-native'
 import { memo, useMemo, useState, useRef } from 'react'
 import Svg, { Line, Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
+import { useBalance } from '@/contexts/BalanceContext'
 import { apiService } from '@/services/api'
 import { typography, fontWeights } from '@/lib/typography'
 
 const CHART_WIDTH = 320 // Largura fixa para não ajustar ao redimensionar
 const CHART_HEIGHT = 140  // Reduzido de 160 para 140 (mais compacto)
 const PADDING = 20 // Aumentado para 20 para garantir que a linha fique dentro dos limites
+
+// Paleta de cores
+const EXCHANGE_COLORS = [
+  '#60A5FA', '#93C5FD', '#7DD3FC', '#A5B4FC', '#94A3B8', '#BAE6FD',
+  '#6B7280', '#9CA3AF', '#64748B', '#84CC16', '#A78BFA', '#5EEAD4',
+]
+
+// Ícones das exchanges
+const EXCHANGE_ICONS: Record<string, any> = {
+  'Binance': require('../assets/binance.png'),
+  'Bybit': require('../assets/bybit.png'),
+  'Coinbase': require('../assets/coinbase.png'),
+  'Gate.io': require('../assets/gateio.png'),
+  'Kraken': require('../assets/kraken.png'),
+  'KuCoin': require('../assets/kucoin.png'),
+  'MEXC': require('../assets/mexc.png'),
+  'NovaDAX': require('../assets/novadax.png'),
+  'OKX': require('../assets/okx.png'),
+}
 
 interface ChartPoint {
   x: number
@@ -32,6 +52,7 @@ export const PortfolioChart = memo(function PortfolioChart({
   const { colors, isDark } = useTheme()
   const { t } = useLanguage()
   const { hideValue } = usePrivacy()
+  const { data: balanceData } = useBalance()
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null)
   const chartRef = useRef<View>(null)
 
@@ -385,6 +406,41 @@ export const PortfolioChart = memo(function PortfolioChart({
           )}
         </Svg>
       </View>
+
+      {/* Lista simples de exchanges */}
+      {balanceData?.exchanges && balanceData.exchanges.length > 0 && (
+        <View style={styles.exchangesList}>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          {balanceData.exchanges
+            .sort((a: any, b: any) => parseFloat(b.total_usd || 0) - parseFloat(a.total_usd || 0))
+            .map((exchange: any, index: number) => {
+              const icon = EXCHANGE_ICONS[exchange.name || exchange.exchange]
+              const totalUsdStr = typeof balanceData.total_usd === 'number' 
+                ? String(balanceData.total_usd) 
+                : balanceData.total_usd
+              const percentage = totalUsdStr 
+                ? (parseFloat(exchange.total_usd || 0) / parseFloat(totalUsdStr)) * 100 
+                : 0
+              const color = EXCHANGE_COLORS[index % EXCHANGE_COLORS.length]
+
+              return (
+                <View key={exchange.name || exchange.exchange} style={styles.exchangeRow}>
+                  <View style={[styles.colorIndicator, { backgroundColor: color }]} />
+                  {icon && <Image source={icon} style={styles.exchangeIcon} />}
+                  <Text style={[styles.exchangeName, { color: colors.text }]} numberOfLines={1}>
+                    {exchange.name || exchange.exchange}
+                  </Text>
+                  <Text style={[styles.exchangePercentage, { color: colors.textSecondary }]}>
+                    {percentage.toFixed(1)}%
+                  </Text>
+                  <Text style={[styles.exchangeValue, { color: colors.text }]}>
+                    {hideValue(`$${apiService.formatUSD(parseFloat(exchange.total_usd || 0))}`)}
+                  </Text>
+                </View>
+              )
+            })}
+        </View>
+      )}
     </View>
   )
 })
@@ -474,5 +530,50 @@ const styles = StyleSheet.create({
     fontSize: 11,  // Data tooltip (reduzido de 12px)
     fontWeight: fontWeights.regular,
     opacity: 0.7,
+  },
+  // Estilos da lista de exchanges
+  exchangesList: {
+    width: '100%',
+    marginTop: 8,
+    gap: 6,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    opacity: 0.3,
+    marginBottom: 6,
+  },
+  exchangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  colorIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  exchangeIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  exchangeName: {
+    fontSize: 10,
+    fontWeight: '600',
+    flex: 1,
+  },
+  exchangePercentage: {
+    fontSize: 10,
+    fontWeight: '600',
+    width: 38,
+    textAlign: 'right',
+  },
+  exchangeValue: {
+    fontSize: 11,
+    fontWeight: '600',
+    width: 60,
+    textAlign: 'right',
   },
 })
