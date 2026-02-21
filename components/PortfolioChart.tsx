@@ -411,6 +411,9 @@ export const PortfolioChart = memo(function PortfolioChart({
       {balanceData?.exchanges && balanceData.exchanges.length > 0 && (
         <View style={styles.exchangesList}>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <Text style={[styles.exchangesTitle, { color: colors.textTertiary }]}>
+            By Exchange
+          </Text>
           {balanceData.exchanges
             .sort((a: any, b: any) => parseFloat(b.total_usd || 0) - parseFloat(a.total_usd || 0))
             .map((exchange: any, index: number) => {
@@ -546,8 +549,8 @@ const styles = StyleSheet.create({
   exchangeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    gap: 6,
+    paddingVertical: 3,
   },
   colorIndicator: {
     width: 8,
@@ -563,17 +566,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     flex: 1,
+    lineHeight: 18,
   },
   exchangePercentage: {
-    fontSize: 10,
-    fontWeight: '600',
-    width: 38,
+    fontSize: 12,
+    fontWeight: '700',
+    width: 45,
     textAlign: 'right',
+    lineHeight: 18,
   },
   exchangeValue: {
     fontSize: 11,
     fontWeight: '600',
-    width: 60,
+    width: 65,
     textAlign: 'right',
+    lineHeight: 18,
   },
 })
