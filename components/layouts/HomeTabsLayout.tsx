@@ -54,7 +54,6 @@ export const HomeTabsLayout: React.FC<HomeTabsLayoutProps> = ({ pnl, pnlLoading 
           <PortfolioOverview pnl={pnl} pnlLoading={pnlLoading} />
           <MarketOverview />
           <TopGainersLosers />
-          <ExchangesHorizontalChart />
         </View>
         
         <View style={{ display: activeTab === 1 ? 'flex' : 'none', paddingTop: 16, paddingHorizontal: 16 }}>
