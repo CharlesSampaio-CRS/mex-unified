@@ -337,14 +337,14 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       backgroundColor: colors.background,
     },
     header: {
-      paddingTop: 40,
-      paddingBottom: 24,
-      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 32,
+      paddingHorizontal: 32,
       backgroundColor: colors.background,
     },
     logoContainer: {
       alignItems: 'center',
-      marginBottom: 12,
+      marginBottom: 20,
     },
     logo: {
       fontSize: 48,
