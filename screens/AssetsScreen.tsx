@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -25,6 +25,9 @@ export function AssetsScreen({ navigation }: any) {
   const { unreadCount } = useNotifications();
   
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
+  const [hideZero, setHideZero] = useState(false);
+  const [selectedExchange, setSelectedExchange] = useState<string>('All');
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [tokenModalVisible, setTokenModalVisible] = useState(false);
   const [selectedTokenForDetails, setSelectedTokenForDetails] = useState<{ exchangeId: string; symbol: string } | null>(null);
@@ -54,7 +57,7 @@ export function AssetsScreen({ navigation }: any) {
   }, [refreshBalance]);
 
   // Transform data to GenericItemList format - Grouped by Exchange
-  const assetsSections = useMemo(() => {
+  const allAssetsSections = useMemo(() => {
     const exchangeMap = new Map<string, { exchangeId: string; exchangeName: string; items: any[] }>();
 
     if (balanceData?.exchanges) {
@@ -71,36 +74,33 @@ export function AssetsScreen({ navigation }: any) {
           const price = parseFloat((token.price_usd || 0).toString());
           const value = parseFloat((token.value_usd || token.usd_value || 0).toString());
 
-          // Only add tokens with balance > 0
-          if (value > 0) {
-            const usdtData = balances['USDT'] || balances['usdt'];
-            const usdtBalance = usdtData ? parseFloat((usdtData.free || 0).toString()) : 0;
+          const usdtData = balances['USDT'] || balances['usdt'];
+          const usdtBalance = usdtData ? parseFloat((usdtData.free || 0).toString()) : 0;
 
-            const tokenData = {
-              id: `${exchangeId}-${symbolUpper}`,
-              symbol: symbolUpper,
-              name: symbolUpper,
-              amount,
-              free,
-              used,
-              priceUSD: price,
-              valueUSD: value,
-              variation24h: token.change_24h ?? null,
+          const tokenData = {
+            id: `${exchangeId}-${symbolUpper}`,
+            symbol: symbolUpper,
+            name: symbolUpper,
+            amount,
+            free,
+            used,
+            priceUSD: price,
+            valueUSD: value,
+            variation24h: token.change_24h ?? null,
+            exchangeId,
+            exchangeName,
+            isStablecoin: ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD'].includes(symbolUpper),
+            usdtBalance,
+          };
+
+          if (!exchangeMap.has(exchangeId)) {
+            exchangeMap.set(exchangeId, {
               exchangeId,
               exchangeName,
-              isStablecoin: ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD'].includes(symbolUpper),
-              usdtBalance,
-            };
-
-            if (!exchangeMap.has(exchangeId)) {
-              exchangeMap.set(exchangeId, {
-                exchangeId,
-                exchangeName,
-                items: []
-              });
-            }
-            exchangeMap.get(exchangeId)!.items.push(tokenData);
+              items: []
+            });
           }
+          exchangeMap.get(exchangeId)!.items.push(tokenData);
         });
       });
     }
@@ -116,7 +116,50 @@ export function AssetsScreen({ navigation }: any) {
     return sections;
   }, [balanceData]);
 
-  // Calculate totals
+  // Apply filters
+  const assetsSections = useMemo(() => {
+    return allAssetsSections
+      .map(section => {
+        // Filter by exchange
+        if (selectedExchange !== 'All' && section.exchangeId !== selectedExchange) {
+          return null;
+        }
+
+        // Filter items within section
+        const filteredItems = section.items.filter(item => {
+          // Hide zero balance
+          if (hideZero && item.valueUSD === 0) return false;
+          
+          // Search filter
+          if (search) {
+            const q = search.toLowerCase();
+            return item.symbol.toLowerCase().includes(q) || item.name.toLowerCase().includes(q);
+          }
+          
+          return true;
+        });
+
+        // Return section only if it has items after filtering
+        if (filteredItems.length === 0) return null;
+
+        return {
+          ...section,
+          items: filteredItems
+        };
+      })
+      .filter(Boolean) as typeof allAssetsSections;
+  }, [allAssetsSections, search, hideZero, selectedExchange]);
+
+  // Get unique exchanges for filter
+  const availableExchanges = useMemo(() => {
+    const exchanges = allAssetsSections.map(section => ({
+      id: section.exchangeId,
+      name: section.exchangeName
+    }));
+    return exchanges;
+  }, [allAssetsSections]);
+
+  // Calculate totals (from filtered data)
   const totals = useMemo(() => {
     let totalValue = 0;
     let totalAssets = 0;
@@ -131,17 +174,123 @@ export function AssetsScreen({ navigation }: any) {
     return { totalValue, totalAssets };
   }, [assetsSections]);
 
+  // Calculate global totals (all assets, unfiltered)
+  const globalTotals = useMemo(() => {
+    let totalValue = 0;
+    let totalAssets = 0;
+
+    allAssetsSections.forEach(section => {
+      section.items.forEach(item => {
+        if (item.valueUSD > 0) {
+          totalValue += item.valueUSD;
+          totalAssets++;
+        }
+      });
+    });
+
+    return { totalValue, totalAssets };
+  }, [allAssetsSections]);
+
   const loading = balanceLoading;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title="Assets"
-        subtitle={`${totals.totalAssets} ${totals.totalAssets === 1 ? 'asset' : 'assets'} • ${hideValue(`$${apiService.formatUSD(totals.totalValue)}`)}`}
+        subtitle={`${globalTotals.totalAssets} ${globalTotals.totalAssets === 1 ? 'asset' : 'assets'} • ${hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`)}`}
         onNotificationsPress={onNotificationsPress}
         onProfilePress={onProfilePress}
         unreadCount={unreadCount}
       />
+      
+      {/* Filters Section */}
+      <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        {/* Search Bar */}
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Buscar por nome ou símbolo..."
+            placeholderTextColor={colors.textTertiary}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Filter Options Row */}
+        <View style={styles.filterRow}>
+          {/* Hide Zero Balance Toggle */}
+          <View style={styles.toggleContainer}>
+            <Text style={[styles.toggleLabel, { color: colors.text }]}>Ocultar saldo zero</Text>
+            <Switch
+              value={hideZero}
+              onValueChange={setHideZero}
+              trackColor={{ false: colors.border, true: colors.primaryLight }}
+              thumbColor={hideZero ? colors.primary : colors.textTertiary}
+            />
+          </View>
+        </View>
+
+        {/* Exchange Filter */}
+        {availableExchanges.length > 1 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.exchangeFilterScroll}
+            contentContainerStyle={styles.exchangeFilterContent}
+          >
+            <TouchableOpacity
+              style={[
+                styles.exchangeFilterChip,
+                { 
+                  backgroundColor: selectedExchange === 'All' ? colors.primary : colors.surface,
+                  borderColor: selectedExchange === 'All' ? colors.primary : colors.border 
+                }
+              ]}
+              onPress={() => setSelectedExchange('All')}
+            >
+              <Text style={[
+                styles.exchangeFilterText,
+                { color: selectedExchange === 'All' ? '#fff' : colors.text }
+              ]}>
+                Todas
+              </Text>
+            </TouchableOpacity>
+            {availableExchanges.map(exchange => (
+              <TouchableOpacity
+                key={exchange.id}
+                style={[
+                  styles.exchangeFilterChip,
+                  { 
+                    backgroundColor: selectedExchange === exchange.id ? colors.primary : colors.surface,
+                    borderColor: selectedExchange === exchange.id ? colors.primary : colors.border 
+                  }
+                ]}
+                onPress={() => setSelectedExchange(exchange.id)}
+              >
+                <Text style={[
+                  styles.exchangeFilterText,
+                  { color: selectedExchange === exchange.id ? '#fff' : colors.text }
+                ]}>
+                  {exchange.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Results Count */}
+        <View style={styles.resultsCount}>
+          <Text style={[styles.resultsCountText, { color: colors.textSecondary }]}>
+            {totals.totalAssets} {totals.totalAssets === 1 ? 'ativo encontrado' : 'ativos encontrados'}
+          </Text>
+        </View>
+      </View>
       
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -294,6 +443,67 @@ export function AssetsScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: commonStyles.screenContainer,
+  filtersContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  exchangeFilterScroll: {
+    marginBottom: 8,
+  },
+  exchangeFilterContent: {
+    paddingRight: 16,
+    gap: 8,
+  },
+  exchangeFilterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 8,
+  },
+  exchangeFilterText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  resultsCount: {
+    paddingVertical: 4,
+  },
+  resultsCountText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
