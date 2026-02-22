@@ -120,7 +120,8 @@ export const Header = memo(function Header({
   hideIcons = false, 
   onNotificationsPress, 
   onProfilePress,
-  // onSearchPress removido - busca agora está dentro da lista de tokens
+  onAlertsPress,
+  onSettingsPress,
   unreadCount = 0,
   title,
   subtitle
@@ -131,8 +132,7 @@ export const Header = memo(function Header({
   const { user } = useAuth()
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
-  const [iconSelectorVisible, setIconSelectorVisible] = useState(false)
-  const [selectedIcon, setSelectedIcon] = useState<string>('')
+  const [profileMenuVisible, setProfileMenuVisible] = useState(false)
   
   // Gera as iniciais do usuário para o avatar
   const getUserInitials = () => {
@@ -195,16 +195,6 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
         
-        {/* Botão Grid - Seletor de Ícones */}
-        <TouchableOpacity 
-          style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => setIconSelectorVisible(true)}
-        >
-          <GridIcon color={colors.text} />
-        </TouchableOpacity>
-        
-        {/* Botão de busca removido - agora está dentro da lista de tokens */}
-        
         <TouchableOpacity 
           style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={onNotificationsPress}
@@ -219,10 +209,10 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
         
-        {/* User Avatar - Primeiro à direita */}
+        {/* User Avatar - Abre menu com Alertas e Config */}
         <TouchableOpacity 
           style={[styles.userAvatar, { backgroundColor: colors.primary, borderColor: colors.border }]}
-          onPress={onProfilePress}
+          onPress={() => setProfileMenuVisible(true)}
           activeOpacity={0.7}
         >
           {user?.avatar ? (
@@ -233,12 +223,16 @@ export const Header = memo(function Header({
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Modal de Seleção de Ícones */}
-      <IconSelectorModal
-        visible={iconSelectorVisible}
-        onClose={() => setIconSelectorVisible(false)}
-        onSelectIcon={setSelectedIcon}
-        selectedIconId={selectedIcon}
+      {/* Profile Menu Modal */}
+      <ProfileMenuModal
+        visible={profileMenuVisible}
+        onClose={() => setProfileMenuVisible(false)}
+        onAlertsPress={() => {
+          onAlertsPress?.();
+        }}
+        onSettingsPress={() => {
+          onSettingsPress?.();
+        }}
       />
     </View>
   )

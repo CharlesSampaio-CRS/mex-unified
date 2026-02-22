@@ -40,6 +40,14 @@ export function OrdersScreen({ navigation }: any) {
     navigation?.navigate('Settings', { initialTab: 'profile' });
   }, [navigation]);
 
+  const onAlertsPress = useCallback(() => {
+    navigation?.navigate('Favoritos');
+  }, [navigation]);
+
+  const onSettingsPress = useCallback(() => {
+    navigation?.navigate('Settings');
+  }, [navigation]);
+
   // Refresh
   const handleRefresh = useCallback(async () => {
     await refreshOrders();
@@ -173,6 +181,8 @@ export function OrdersScreen({ navigation }: any) {
         subtitle={`${globalTotals.totalOrders} ${globalTotals.totalOrders === 1 ? 'order' : 'orders'} • ${hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`)}`}
         onNotificationsPress={onNotificationsPress}
         onProfilePress={onProfilePress}
+        onAlertsPress={onAlertsPress}
+        onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
       />
       

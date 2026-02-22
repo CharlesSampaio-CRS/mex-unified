@@ -47,6 +47,14 @@ export function AssetsScreen({ navigation }: any) {
     navigation?.navigate('Settings', { initialTab: 'profile' });
   }, [navigation]);
 
+  const onAlertsPress = useCallback(() => {
+    navigation?.navigate('Favoritos');
+  }, [navigation]);
+
+  const onSettingsPress = useCallback(() => {
+    navigation?.navigate('Settings');
+  }, [navigation]);
+
   // Refresh
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -199,6 +207,8 @@ export function AssetsScreen({ navigation }: any) {
         subtitle={`${globalTotals.totalAssets} ${globalTotals.totalAssets === 1 ? 'asset' : 'assets'} • ${hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`)}`}
         onNotificationsPress={onNotificationsPress}
         onProfilePress={onProfilePress}
+        onAlertsPress={onAlertsPress}
+        onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
       />
       
