@@ -1,22 +1,31 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useBalance } from '@/contexts/BalanceContext';
 import { usePrivacy } from '@/contexts/PrivacyContext';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { apiService } from '@/services/api';
+import { Header } from '@/components/Header';
+import { NotificationsModal } from '@/components/NotificationsModal';
 import { GenericItemList } from '@/components/GenericItemList';
 import { TokenDetailsModal } from '@/components/token-details-modal';
 import { TradeModal } from '@/components/trade-modal';
 import { getExchangeBalances, getExchangeId, getExchangeName } from '@/lib/exchange-helpers';
+import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 
-export function AssetsScreen() {
+export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
+  const { unreadCount } = useNotifications();
   
   const [refreshing, setRefreshing] = useState(false);
+  const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [tokenModalVisible, setTokenModalVisible] = useState(false);
   const [selectedTokenForDetails, setSelectedTokenForDetails] = useState<{ exchangeId: string; symbol: string } | null>(null);
   const [tradeModalVisible, setTradeModalVisible] = useState(false);
@@ -27,6 +36,14 @@ export function AssetsScreen() {
     currentPrice: number;
     balance: { token: number; usdt: number };
   } | null>(null);
+
+  const onNotificationsPress = useCallback(() => {
+    setNotificationsModalVisible(true);
+  }, []);
+
+  const onProfilePress = useCallback(() => {
+    navigation?.navigate('Settings', { initialTab: 'profile' });
+  }, [navigation]);
 
   // Refresh
   const handleRefresh = useCallback(async () => {
@@ -117,34 +134,16 @@ export function AssetsScreen() {
   const loading = balanceLoading;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header with totals */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Meus Assets
-        </Text>
-        <View style={styles.totalsRow}>
-          <View style={styles.totalItem}>
-            <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
-              Total
-            </Text>
-            <Text style={[styles.totalValue, { color: colors.text }]}>
-              {hideValue(`$${apiService.formatUSD(totals.totalValue)}`)}
-            </Text>
-          </View>
-          <View style={styles.totalItem}>
-            <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
-              Assets
-            </Text>
-            <Text style={[styles.totalValue, { color: colors.text }]}>
-              {totals.totalAssets}
-            </Text>
-          </View>
-        </View>
-      </View>
-
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Header 
+        title="Assets"
+        subtitle={`${totals.totalAssets} ${totals.totalAssets === 1 ? 'asset' : 'assets'} • ${hideValue(`$${apiService.formatUSD(totals.totalValue)}`)}`}
+        onNotificationsPress={onNotificationsPress}
+        onProfilePress={onProfilePress}
+        unreadCount={unreadCount}
+      />
+      
       <ScrollView
-        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -284,44 +283,17 @@ export function AssetsScreen() {
           balance={selectedTrade.balance}
         />
       )}
-    </View>
+
+      <NotificationsModal 
+        visible={notificationsModalVisible}
+        onClose={() => setNotificationsModalVisible(false)}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingTop: 16,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    fontSize: typography.h2,
-    fontWeight: fontWeights.bold,
-    marginBottom: 12,
-  },
-  totalsRow: {
-    flexDirection: 'row',
-    gap: 24,
-  },
-  totalItem: {
-    flex: 1,
-  },
-  totalLabel: {
-    fontSize: 12,
-    fontWeight: fontWeights.regular,
-    marginBottom: 4,
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: fontWeights.semibold,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: commonStyles.screenContainer,
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
