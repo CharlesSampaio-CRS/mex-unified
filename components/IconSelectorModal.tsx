@@ -18,6 +18,8 @@ const AVAILABLE_ICONS = [
   { id: 'target', name: 'Target', icon: 'target' },
   { id: 'flag', name: 'Flag', icon: 'flag' },
   { id: 'chart', name: 'Chart', icon: 'chart' },
+  { id: 'bell', name: 'Bell', icon: 'bell' },
+  { id: 'settings', name: 'Settings', icon: 'settings' },
 ]
 
 // Componentes de ícones
