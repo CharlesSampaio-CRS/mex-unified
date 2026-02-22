@@ -7,7 +7,7 @@ import { useLanguage } from "../contexts/LanguageContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
 import { LogoIcon } from "./LogoIcon"
-import { IconSelectorModal } from "./IconSelectorModal"
+import { ProfileMenuModal } from "./ProfileMenuModal"
 
 // Eye Icon (valores visíveis)
 const EyeIcon = ({ color }: { color: string }) => (
@@ -95,7 +95,8 @@ interface HeaderProps {
   hideIcons?: boolean
   onNotificationsPress?: () => void
   onProfilePress?: () => void
-  // onSearchPress removido - busca agora está dentro da lista de tokens
+  onAlertsPress?: () => void
+  onSettingsPress?: () => void
   unreadCount?: number
   title?: string
   subtitle?: string
