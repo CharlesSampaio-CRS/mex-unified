@@ -243,7 +243,7 @@ function MainTabs() {
           name="Favoritos"
           component={WatchlistManager}
           options={{
-            tabBarLabel: 'Alertas',
+            tabBarLabel: '',
             tabBarIcon: ({ color }) => <NotificationsIcon color={color} />,
           }}
         />
@@ -251,7 +251,7 @@ function MainTabs() {
           name="Settings"
           component={SettingsScreen}
           options={{
-            tabBarLabel: 'Config',
+            tabBarLabel: '',
             tabBarIcon: ({ color }) => <SettingsIcon color={color} />,
           }}
         />
