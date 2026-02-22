@@ -520,7 +520,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: typography.bodySmall,  // 15
+    fontWeight: fontWeights.regular,
     paddingVertical: 0,
   },
   filterRow: {
@@ -535,8 +536,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   toggleLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.caption,  // 14
+    fontWeight: fontWeights.medium,
   },
   exchangeFilterScroll: {
     marginBottom: 8,
@@ -553,15 +554,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   exchangeFilterText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.tiny,  // 13
+    fontWeight: fontWeights.semibold,
   },
   resultsCount: {
     paddingVertical: 4,
   },
   resultsCountText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.micro,  // 12
+    fontWeight: fontWeights.medium,
   },
   emptyState: {
     alignItems: 'center',
@@ -570,13 +571,14 @@ const styles = StyleSheet.create({
     marginTop: 60,
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.h4,  // 18
+    fontWeight: fontWeights.semibold,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: typography.caption,  // 14
+    fontWeight: fontWeights.regular,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -594,12 +596,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   exchangeName: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.body,  // 16
+    fontWeight: fontWeights.bold,
   },
   exchangeCount: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.micro,  // 12
+    fontWeight: fontWeights.medium,
   },
   assetCard: {
     borderRadius: 16,
@@ -628,29 +630,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   symbolIconText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.h4,  // 18
+    fontWeight: fontWeights.bold,
   },
   assetSymbol: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.body,  // 16
+    fontWeight: fontWeights.bold,
     marginBottom: 2,
   },
   assetName: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.micro,  // 12
+    fontWeight: fontWeights.medium,
   },
   valueSection: {
     alignItems: 'flex-end',
   },
   assetValue: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.body,  // 16
+    fontWeight: fontWeights.bold,
     marginBottom: 2,
   },
   assetAmount: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.micro,  // 12
+    fontWeight: fontWeights.regular,
   },
   cardBody: {
     paddingHorizontal: 16,
@@ -663,12 +665,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailLabel: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.tiny,  // 13
+    fontWeight: fontWeights.medium,
   },
   detailValue: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.tiny,  // 13
+    fontWeight: fontWeights.semibold,
   },
   variationBadgeInline: {
     paddingHorizontal: 8,
@@ -676,8 +678,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   variationTextInline: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: typography.micro,  // 12
+    fontWeight: fontWeights.bold,
   },
   tradeButton: {
     flexDirection: 'row',
@@ -688,8 +690,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   tradeButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: typography.buttonSmall,  // 14
+    fontWeight: fontWeights.bold,
   },
   variationBadge: {
     paddingHorizontal: 8,
@@ -698,6 +700,6 @@ const styles = StyleSheet.create({
   },
   variationText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 });
