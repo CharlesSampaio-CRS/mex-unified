@@ -30,6 +30,7 @@ if (__DEV__) {
 }
 
 import { HomeScreen } from "./screens/HomeScreen"
+import { AssetsScreen } from "./screens/AssetsScreen"
 import { ExchangesScreen } from "./screens/ExchangesScreen"
 import { StrategyScreen } from "./screens/StrategyScreen"
 import { SettingsScreen } from "./screens/SettingsScreen"
@@ -206,6 +207,14 @@ function MainTabs() {
           }}
         />
         <Tab.Screen
+          name="Assets"
+          component={AssetsScreen}
+          options={{
+            tabBarLabel: 'Assets',
+            tabBarIcon: ({ color }) => <WalletIcon color={color} />,
+          }}
+        />
+        <Tab.Screen
           name="Exchanges"
           component={ExchangesScreen}
           options={{
@@ -321,6 +330,26 @@ export default function App() {
 const HomeIcon = ({ color }: { color: string }) => (
   <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke={color} strokeWidth="1.8" />
+  </Svg>
+)
+
+const WalletIcon = ({ color }: { color: string }) => (
+  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M19 7H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <Path 
+      d="M3 9V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <Circle cx="16" cy="14" r="1.5" fill={color} />
   </Svg>
 )
 
