@@ -240,7 +240,7 @@ export const Header = memo(function Header({
       <IconSelectorModal
         visible={iconSelectorVisible}
         onClose={() => setIconSelectorVisible(false)}
-        selectedIcon={selectedIcon}
+        selectedIconId={selectedIcon}
         onSelectIcon={(iconName) => {
           onIconSelect?.(iconName)
           setIconSelectorVisible(false)
