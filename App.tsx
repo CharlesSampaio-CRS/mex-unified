@@ -38,6 +38,18 @@ import { SettingsScreen } from "./screens/SettingsScreen"
 import { LoginScreen } from "./screens/LoginScreen"
 import { SignUpScreen } from "./screens/SignUpScreen"
 import { WatchlistManager } from "./components/WatchlistManager"
+import { StarScreen } from "./screens/StarScreen"
+import { HeartScreen } from "./screens/HeartScreen"
+import { FireScreen } from "./screens/FireScreen"
+import { LightningScreen } from "./screens/LightningScreen"
+import { RocketScreen } from "./screens/RocketScreen"
+import { TrophyScreen } from "./screens/TrophyScreen"
+import { ShieldScreen } from "./screens/ShieldScreen"
+import { CrownScreen } from "./screens/CrownScreen"
+import { DiamondScreen } from "./screens/DiamondScreen"
+import { TargetScreen } from "./screens/TargetScreen"
+import { FlagScreen } from "./screens/FlagScreen"
+import { ChartScreen } from "./screens/ChartScreen"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
 import { BalanceProvider, useBalance } from "./contexts/BalanceContext"
@@ -251,6 +263,90 @@ function MainTabs() {
           component={SettingsScreen}
           options={{
             tabBarButton: () => null, // Oculta da navegação inferior
+          }}
+        />
+        <Tab.Screen
+          name="Star"
+          component={StarScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Heart"
+          component={HeartScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Fire"
+          component={FireScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Lightning"
+          component={LightningScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Rocket"
+          component={RocketScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Trophy"
+          component={TrophyScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Shield"
+          component={ShieldScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Crown"
+          component={CrownScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Diamond"
+          component={DiamondScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Target"
+          component={TargetScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Flag"
+          component={FlagScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Chart"
+          component={ChartScreen}
+          options={{
+            tabBarButton: () => null,
           }}
         />
       </Tab.Navigator>

@@ -103,6 +103,7 @@ interface HeaderProps {
   subtitle?: string
   selectedIcon?: string
   onIconSelect?: (iconName: string) => void
+  navigation?: any
 }
 
 // User Icon (perfil)
@@ -129,7 +130,8 @@ export const Header = memo(function Header({
   title,
   subtitle,
   selectedIcon,
-  onIconSelect
+  onIconSelect,
+  navigation
 }: HeaderProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
@@ -241,17 +243,9 @@ export const Header = memo(function Header({
         visible={iconSelectorVisible}
         onClose={() => setIconSelectorVisible(false)}
         selectedIconId={selectedIcon}
-        onSelectIcon={(iconName) => {
-          onIconSelect?.(iconName)
+        onNavigate={(screenName) => {
           setIconSelectorVisible(false)
-        }}
-        onAlertsPress={() => {
-          setIconSelectorVisible(false)
-          onAlertsPress?.()
-        }}
-        onSettingsPress={() => {
-          setIconSelectorVisible(false)
-          onSettingsPress?.()
+          navigation?.navigate(screenName)
         }}
       />
 

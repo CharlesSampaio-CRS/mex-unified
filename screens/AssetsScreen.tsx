@@ -210,6 +210,7 @@ export function AssetsScreen({ navigation }: any) {
         onAlertsPress={onAlertsPress}
         onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
+        navigation={navigation}
       />
       
       {/* Filters Section */}

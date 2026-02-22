@@ -119,6 +119,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
         onAlertsPress={onAlertsPress}
         onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
+        navigation={navigation}
       />
       {/* <View style={styles.testActions}>
         <TouchableOpacity

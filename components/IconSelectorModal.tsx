@@ -4,22 +4,22 @@ import Svg, { Path, Circle, Rect, Polygon } from "react-native-svg"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
 
-// Grid de ícones disponíveis
+// Grid de ícones disponíveis - todos agora são de navegação
 const AVAILABLE_ICONS = [
-  { id: 'star', name: 'Star', icon: 'star' },
-  { id: 'heart', name: 'Heart', icon: 'heart' },
-  { id: 'fire', name: 'Fire', icon: 'fire' },
-  { id: 'lightning', name: 'Lightning', icon: 'lightning' },
-  { id: 'rocket', name: 'Rocket', icon: 'rocket' },
-  { id: 'trophy', name: 'Trophy', icon: 'trophy' },
-  { id: 'shield', name: 'Shield', icon: 'shield' },
-  { id: 'crown', name: 'Crown', icon: 'crown' },
-  { id: 'diamond', name: 'Diamond', icon: 'diamond' },
-  { id: 'target', name: 'Target', icon: 'target' },
-  { id: 'flag', name: 'Flag', icon: 'flag' },
-  { id: 'chart', name: 'Chart', icon: 'chart' },
-  { id: 'bell', name: 'Alerts', icon: 'bell', isNavigation: true },
-  { id: 'settings', name: 'Settings', icon: 'settings', isNavigation: true },
+  { id: 'star', name: 'Star', icon: 'star', screen: 'Star' },
+  { id: 'heart', name: 'Heart', icon: 'heart', screen: 'Heart' },
+  { id: 'fire', name: 'Fire', icon: 'fire', screen: 'Fire' },
+  { id: 'lightning', name: 'Lightning', icon: 'lightning', screen: 'Lightning' },
+  { id: 'rocket', name: 'Rocket', icon: 'rocket', screen: 'Rocket' },
+  { id: 'trophy', name: 'Trophy', icon: 'trophy', screen: 'Trophy' },
+  { id: 'shield', name: 'Shield', icon: 'shield', screen: 'Shield' },
+  { id: 'crown', name: 'Crown', icon: 'crown', screen: 'Crown' },
+  { id: 'diamond', name: 'Diamond', icon: 'diamond', screen: 'Diamond' },
+  { id: 'target', name: 'Target', icon: 'target', screen: 'Target' },
+  { id: 'flag', name: 'Flag', icon: 'flag', screen: 'Flag' },
+  { id: 'chart', name: 'Chart', icon: 'chart', screen: 'Chart' },
+  { id: 'bell', name: 'Alerts', icon: 'bell', screen: 'Favoritos' },
+  { id: 'settings', name: 'Settings', icon: 'settings', screen: 'Settings' },
 ]
 
 // Componentes de ícones
@@ -229,35 +229,22 @@ const iconComponents: Record<string, React.FC<{ color: string }>> = {
 interface IconSelectorModalProps {
   visible: boolean
   onClose: () => void
-  onSelectIcon: (iconId: string) => void
+  onNavigate?: (screenName: string) => void
   selectedIconId?: string
-  onAlertsPress?: () => void
-  onSettingsPress?: () => void
 }
 
 export const IconSelectorModal = memo(function IconSelectorModal({
   visible,
   onClose,
-  onSelectIcon,
+  onNavigate,
   selectedIconId,
-  onAlertsPress,
-  onSettingsPress,
 }: IconSelectorModalProps) {
   const { colors } = useTheme()
 
   const handleIconPress = (item: typeof AVAILABLE_ICONS[0]) => {
-    // Se for ícone de navegação, chama o callback apropriado
-    if (item.isNavigation) {
-      if (item.id === 'bell' && onAlertsPress) {
-        onAlertsPress()
-        onClose()
-      } else if (item.id === 'settings' && onSettingsPress) {
-        onSettingsPress()
-        onClose()
-      }
-    } else {
-      // Se for ícone de seleção normal
-      onSelectIcon(item.id)
+    // Navega para a tela correspondente
+    if (onNavigate && item.screen) {
+      onNavigate(item.screen)
       onClose()
     }
   }
