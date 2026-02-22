@@ -31,6 +31,7 @@ if (__DEV__) {
 
 import { HomeScreen } from "./screens/HomeScreen"
 import { AssetsScreen } from "./screens/AssetsScreen"
+import { OrdersScreen } from "./screens/OrdersScreen"
 import { ExchangesScreen } from "./screens/ExchangesScreen"
 import { StrategyScreen } from "./screens/StrategyScreen"
 import { SettingsScreen } from "./screens/SettingsScreen"
@@ -231,6 +232,14 @@ function MainTabs() {
           }}
         />
         <Tab.Screen
+          name="Orders"
+          component={OrdersScreen}
+          options={{
+            tabBarLabel: 'Orders',
+            tabBarIcon: ({ color }) => <OrdersIcon color={color} />,
+          }}
+        />
+        <Tab.Screen
           name="Favoritos"
           component={WatchlistManager}
           options={{
@@ -368,6 +377,32 @@ const RobotIcon = ({ color }: { color: string }) => (
     <Path d="M12 3v5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     <Circle cx="12" cy="3" r="1" fill={color} />
     <Path d="M5 14h2M17 14h2" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </Svg>
+)
+
+const OrdersIcon = ({ color }: { color: string }) => (
+  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <Path 
+      d="M14 2v6h6" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <Path 
+      d="M9 13h6M9 17h6" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
   </Svg>
 )
 
