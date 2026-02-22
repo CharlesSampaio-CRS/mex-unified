@@ -492,7 +492,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       flexDirection: 'row',
       justifyContent: 'center',
       marginTop: 24,
-      paddingBottom: 32,
+      paddingBottom: 48,
     },
     signupText: {
       color: colors.textSecondary,
@@ -515,7 +515,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
