@@ -1,28 +1,100 @@
-{
-    "success": true,
-    "exchanges": [
-        {
-            "exchange": "OKX",
-            "exchange_id": "693481148b0a41e8b6acb077",
-            "success": false,
-            "error": "Failed to fetch balance: AuthenticationError: okx requires \"password\" credential",
-            "balances": {},
-            "total_usd": 0.0
-        },
-        {
-            "exchange": "MEXC",
-            "exchange_id": "693481148b0a41e8b6acb07b",
-            "success": false,
-            "error": "Failed to fetch balance: BadRequest: mexc {\"code\":10072,\"msg\":\"Api key info invalid\"}",
-            "balances": {},
-            "total_usd": 0.0
-        }
-    ],
-    "total_usd": 0.0,
-    "timestamp": 1771539747
-} 
+import { useState, useMemo } from 'react';
+import { mockAssets, Asset, Exchange } from '@/data/mockAssets';
+import PortfolioHeader from '@/components/PortfolioHeader';
+import AssetFilters from '@/components/AssetFilters';
+import AssetCard from '@/components/AssetCard';
+import TokenDetailSheet from '@/components/TokenDetailSheet';
+import TradeSheet from '@/components/TradeSheet';
 
-curl 'http://54.94.231.254:3002/api/v1/orders/fetch/secure' \
-  -X 'POST' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwibmFtZSI6InVzZXIiLCJyb2xlcyI6WyJ1c2VyIl0sImlzX2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzcxNTM5NzM0LCJleHAiOjE3NzE2MjYxMzQsImp0aSI6IjQ4MmJlZjY4LTg4NWMtNGUyMC04NzEzLWUwYWE0ZWZlMDU3ZSIsImF1ZCI6InRyYWRpbmctYXBpIiwiaXNzIjoidHJhZGluZy1zZXJ2aWNlIn0.zDIAMe2spsKgljz6KH6vaN5HyTG_G9Hh4gcWwFvuGL4'
+const Index = () => {
+  const [search, setSearch] = useState('');
+  const [hideZero, setHideZero] = useState(false);
+  const [selectedExchange, setSelectedExchange] = useState<Exchange | 'All'>('All');
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [tradeAsset, setTradeAsset] = useState<Asset | null>(null);
+  const [tradeOpen, setTradeOpen] = useState(false);
+
+  const filteredAssets = useMemo(() => {
+    return mockAssets.filter((a) => {
+      if (hideZero && a.balance === 0) return false;
+      if (selectedExchange !== 'All' && a.exchange !== selectedExchange) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return a.symbol.toLowerCase().includes(q) || a.name.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [search, hideZero, selectedExchange]);
+
+  const totalValue = useMemo(() =>
+    mockAssets.reduce((sum, a) => sum + a.balance * a.currentPrice, 0), []);
+
+  const totalChange = useMemo(() => {
+    const assetsWithBalance = mockAssets.filter(a => a.balance > 0);
+    if (assetsWithBalance.length === 0) return 0;
+    const weightedChange = assetsWithBalance.reduce((sum, a) => {
+      const value = a.balance * a.currentPrice;
+      return sum + a.change24h * (value / totalValue);
+    }, 0);
+    return weightedChange;
+  }, [totalValue]);
+
+  const handleSelect = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setDetailOpen(true);
+  };
+
+  const handleTrade = (asset: Asset) => {
+    setDetailOpen(false);
+    setTradeAsset(asset);
+    setTimeout(() => setTradeOpen(true), 200);
+  };
+
+  return (
+    <div className="min-h-screen bg-background max-w-md mx-auto">
+      <PortfolioHeader totalValue={totalValue} totalChange={totalChange} />
+
+      <AssetFilters
+        search={search}
+        onSearchChange={setSearch}
+        hideZero={hideZero}
+        onHideZeroChange={setHideZero}
+        selectedExchange={selectedExchange}
+        onExchangeChange={setSelectedExchange}
+      />
+
+      {/* Asset List */}
+      <div className="px-5 py-4 space-y-2">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs text-muted-foreground font-medium">
+            {filteredAssets.length} ativos
+          </span>
+        </div>
+        {filteredAssets.map((asset, i) => (
+          <AssetCard key={asset.id} asset={asset} index={i} onSelect={handleSelect} />
+        ))}
+        {filteredAssets.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            Nenhum ativo encontrado
+          </div>
+        )}
+      </div>
+
+      <TokenDetailSheet
+        asset={selectedAsset}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        onTrade={handleTrade}
+      />
+
+      <TradeSheet
+        asset={tradeAsset}
+        open={tradeOpen}
+        onClose={() => setTradeOpen(false)}
+      />
+    </div>
+  );
+};
+
+export default Index;
