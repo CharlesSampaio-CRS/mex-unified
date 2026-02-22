@@ -245,6 +245,14 @@ export const Header = memo(function Header({
           onIconSelect?.(iconName)
           setIconSelectorVisible(false)
         }}
+        onAlertsPress={() => {
+          setIconSelectorVisible(false)
+          onAlertsPress?.()
+        }}
+        onSettingsPress={() => {
+          setIconSelectorVisible(false)
+          onSettingsPress?.()
+        }}
       />
 
       {/* Profile Menu Modal */}
