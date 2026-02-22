@@ -239,18 +239,21 @@ function MainTabs() {
             tabBarIcon: ({ color }) => <OrdersIcon color={color} />,
           }}
         />
+        <Tab.Screen
+          name="Favoritos"
+          component={WatchlistManager}
+          options={{
+            tabBarButton: () => null, // Oculta da navegação inferior
+          }}
+        />
+        <Tab.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            tabBarButton: () => null, // Oculta da navegação inferior
+          }}
+        />
       </Tab.Navigator>
-  )
-}
-
-// Main Stack Navigator - inclui tabs e telas adicionais (Favoritos, Settings)
-function MainStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen name="Favoritos" component={WatchlistManager} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-    </Stack.Navigator>
   )
 }
 
@@ -274,7 +277,7 @@ function AppNavigator() {
       {isAuthenticated ? (
         <>
           {!isLoadingData ? (
-            <MainStack />
+            <MainTabs />
           ) : (
             // Durante carregamento de dados, mostra tela de loading ao invés de voltar pro login
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
