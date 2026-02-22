@@ -228,6 +228,14 @@ function MainTabs() {
           }}
         />
         <Tab.Screen
+          name="Orders"
+          component={OrdersScreen}
+          options={{
+            tabBarLabel: 'Orders',
+            tabBarIcon: ({ color }) => <OrdersIcon color={color} />,
+          }}
+        />
+        <Tab.Screen
           name="Exchanges"
           component={ExchangesScreen}
           options={{
@@ -241,14 +249,6 @@ function MainTabs() {
           options={{
             tabBarLabel: t('nav.strategies'),
             tabBarIcon: ({ color }) => <RobotIcon color={color} />,
-          }}
-        />
-        <Tab.Screen
-          name="Orders"
-          component={OrdersScreen}
-          options={{
-            tabBarLabel: 'Orders',
-            tabBarIcon: ({ color }) => <OrdersIcon color={color} />,
           }}
         />
         <Tab.Screen
