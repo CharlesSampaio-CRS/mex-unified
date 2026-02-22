@@ -8,6 +8,7 @@ import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
 import { LogoIcon } from "./LogoIcon"
 import { ProfileMenuModal } from "./ProfileMenuModal"
+import { IconSelectorModal } from "./IconSelectorModal"
 
 // Eye Icon (valores visíveis)
 const EyeIcon = ({ color }: { color: string }) => (
@@ -100,6 +101,8 @@ interface HeaderProps {
   unreadCount?: number
   title?: string
   subtitle?: string
+  selectedIcon?: string
+  onIconSelect?: (iconName: string) => void
 }
 
 // User Icon (perfil)
@@ -124,7 +127,9 @@ export const Header = memo(function Header({
   onSettingsPress,
   unreadCount = 0,
   title,
-  subtitle
+  subtitle,
+  selectedIcon,
+  onIconSelect
 }: HeaderProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
@@ -133,6 +138,7 @@ export const Header = memo(function Header({
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
   const [profileMenuVisible, setProfileMenuVisible] = useState(false)
+  const [iconSelectorVisible, setIconSelectorVisible] = useState(false)
   
   // Gera as iniciais do usuário para o avatar
   const getUserInitials = () => {
@@ -197,6 +203,13 @@ export const Header = memo(function Header({
         
         <TouchableOpacity 
           style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => setIconSelectorVisible(true)}
+        >
+          <GridIcon color={colors.text} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={onNotificationsPress}
         >
           <BellIcon color={colors.text} />
@@ -222,6 +235,17 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Icon Selector Modal */}
+      <IconSelectorModal
+        visible={iconSelectorVisible}
+        onClose={() => setIconSelectorVisible(false)}
+        selectedIcon={selectedIcon}
+        onSelectIcon={(iconName) => {
+          onIconSelect?.(iconName)
+          setIconSelectorVisible(false)
+        }}
+      />
 
       {/* Profile Menu Modal */}
       <ProfileMenuModal
