@@ -80,11 +80,11 @@ export function OrdersScreen({ navigation }: any) {
 
         // Filter items within section
         const filteredItems = section.items.filter(item => {
-          // Skip items without required fields
-          if (!item || !item.side || !item.symbol) return false;
+          // Skip items without id
+          if (!item || !item.id) return false;
           
           // Filter by type
-          if (selectedType !== 'All' && item.side !== selectedType) return false;
+          if (selectedType !== 'All' && item.side && item.side !== selectedType) return false;
           
           // Search filter
           if (search) {
@@ -370,7 +370,7 @@ export function OrdersScreen({ navigation }: any) {
 
                 {/* Order Cards */}
                 {section.items.map((item) => {
-                  if (!item || !item.id || !item.side || !item.symbol) return null;
+                  if (!item || !item.id) return null;
                   
                   const isCancelling = cancellingOrderIds.has(item.id);
                   const isBuy = item.side === 'buy';
