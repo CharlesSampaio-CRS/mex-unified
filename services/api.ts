@@ -346,8 +346,6 @@ export const apiService = {
     count: number;
   }> {
     try {
-      console.log('📋 [API] Listando exchanges do usuário');
-      
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/user/exchanges`,
         {
@@ -362,9 +360,6 @@ export const apiService = {
       }
 
       const data = await response.json();
-
-      console.log('✅ [API] Exchanges listadas:', data.count);
-
       return data;
     } catch (error) {
       console.error('❌ [API] Erro ao listar exchanges:', error);
@@ -386,8 +381,6 @@ export const apiService = {
     }
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🔧 [API] Atualizando exchange:', exchangeId);
-      
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/user/exchanges/${exchangeId}`,
         {
@@ -403,9 +396,6 @@ export const apiService = {
       }
 
       const data = await response.json();
-
-      console.log('✅ [API] Exchange atualizada');
-
       return data;
     } catch (error) {
       console.error('❌ [API] Erro ao atualizar exchange:', error);

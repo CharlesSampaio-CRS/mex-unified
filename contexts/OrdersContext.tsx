@@ -84,23 +84,11 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     setError(null)
 
     try {
-      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
-      console.log('📋 [OrdersContext] Buscando orders via endpoint seguro (MongoDB)...')
-      
-      const apiStartTime = performance.now(); // ⚡ Tempo antes da chamada API
+      const apiStartTime = performance.now();
       const response = await apiService.getOrdersSecure()
-      const apiEndTime = performance.now(); // ⚡ Tempo depois da chamada API
+      const apiEndTime = performance.now();
       
-      console.log(`⏱️ [OrdersContext] API levou ${(apiEndTime - apiStartTime).toFixed(0)}ms`)
-      
-      console.log('📋 [OrdersContext] Response recebida:', {
-        success: response?.success,
-        ordersCount: response?.orders?.length,
-        hasOrders: !!response?.orders
-      });
-            
       if (!response || !response.success) {
-        console.log('⚠️ [OrdersContext] Response não é success');
         setOrdersByExchange([])
         setTimestamp(Date.now())
         return
@@ -110,12 +98,6 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       
       if (response.orders && response.orders.length > 0) {
         response.orders.forEach((order: any) => {
-          console.log('📋 [OrdersContext] Order da API:', {
-            id: order.id,
-            exchange_order_id: order.exchange_order_id,
-            symbol: order.symbol
-          });
-          
           const exchangeId = order.exchange_id || order.exchange || 'unknown'
           const exchangeName = order.exchange_name || order.exchange || exchangeId
           
@@ -143,9 +125,6 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         orders: ex.orders,
       }))
       
-      console.log('📊 [OrdersContext] Results criados:', results.length);
-      console.log('📊 [OrdersContext] Results data:', results);
-      
       // 🎯 DETECTA ORDENS EXECUTADAS: Compara com lista anterior
       // Só detecta após a primeira carga (ignora carga inicial)
       if (hasFetchedInitialRef.current && response.orders) {
@@ -153,10 +132,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       }
       
       setOrdersByExchange(results)
-      console.log('📊 [OrdersContext] setOrdersByExchange chamado com:', results.length, 'exchanges');
       setTimestamp(Date.now())
-      
-      console.log(`✅ [OrdersContext] Orders carregadas: ${response.orders?.length || 0} total`)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch orders'
       console.error('❌ [OrdersContext] Erro ao buscar orders:', errorMsg)
@@ -179,10 +155,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user?.id) return
     
-    console.log('📝 [OrdersContext] Registrando callback para carregar orders após balance...')
-    
     onBalanceLoaded(() => {
-      console.log('🔔 [OrdersContext] Balance carregado/atualizado! Carregando orders...')
       // 🔥 SEMPRE carrega orders quando balance atualiza (não só no primeiro)
       const isFirstLoad = !hasFetchedInitialRef.current
       hasFetchedInitialRef.current = true
