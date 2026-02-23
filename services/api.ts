@@ -1,6 +1,7 @@
 import { BalanceResponse, AvailableExchangesResponse, LinkedExchangesResponse, PortfolioEvolutionResponse, DailyPnlResponse } from '@/types/api';
 import { config } from '@/lib/config';
 import { decryptData } from '@/lib/encryption';
+import { curlLogger } from './curl-logger';
 // ❌ CACHE DESABILITADO - Mocks que não fazem nada, sempre busca dados frescos
 const cacheService = { 
   get: <T = any>(...args: any[]): T | null => null, 
@@ -106,6 +107,14 @@ async function fetchWithTimeout(
     }
     
     try {
+      // 📋 Log curl antes de fazer a requisição
+      curlLogger.logRequest(
+        mergedOptions.method || 'GET',
+        url,
+        mergedOptions.headers as Record<string, string>,
+        mergedOptions.body
+      );
+      
       const fetchPromise = fetch(url, mergedOptions);
       const timeoutPromise = new Promise<Response>((_, reject) =>
         setTimeout(() => reject(new Error(`Request timeout after ${timeout}ms`)), timeout)
