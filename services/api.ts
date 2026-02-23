@@ -669,24 +669,16 @@ export const apiService = {
       } 
       const url = `${API_BASE_URL}/exchanges/available`;
       
-      console.log('📡 [API] Buscando exchanges disponíveis:', url)
-      
       const response = await fetchWithTimeout(url, { 
         method: 'GET',
         cache: forceRefresh ? 'no-store' : 'default'
-      }, TIMEOUTS.STANDARD); // List available exchanges
+      }, TIMEOUTS.STANDARD);
       
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
       
       const data: AvailableExchangesResponse = await response.json();
-      
-      console.log('✅ [API] Exchanges disponíveis recebidas:', {
-        success: data.success,
-        count: data.exchanges?.length || 0,
-        firstExchange: data.exchanges?.[0]
-      })
             
       // Cache locally
       if (!forceRefresh || (data as any).from_cache) {
