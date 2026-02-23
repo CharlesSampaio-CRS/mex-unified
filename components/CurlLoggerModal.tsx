@@ -224,12 +224,22 @@ export function CurlLoggerModal({ visible, onClose }: CurlLoggerModalProps) {
                           {req.method}
                         </Text>
                       </View>
-                      <Text
-                        style={[styles.requestUrl, { color: colors.text }]}
-                        numberOfLines={1}
-                      >
-                        {req.url.replace(/^https?:\/\//, '').split('?')[0]}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[styles.requestName, { color: colors.text }]}
+                          numberOfLines={1}
+                        >
+                          {req.name || req.url.replace(/^https?:\/\//, '').split('?')[0]}
+                        </Text>
+                        {req.name && (
+                          <Text
+                            style={[styles.requestUrl, { color: colors.textTertiary }]}
+                            numberOfLines={1}
+                          >
+                            {req.url.replace(/^https?:\/\//, '').split('?')[0]}
+                          </Text>
+                        )}
+                      </View>
                     </View>
                     <Ionicons
                       name={isExpanded ? 'chevron-up' : 'chevron-down'}
@@ -376,10 +386,15 @@ const styles = StyleSheet.create({
     fontSize: typography.tiny,
     fontWeight: fontWeights.bold,
   },
+  requestName: {
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
+    marginBottom: 2,
+  },
   requestUrl: {
     flex: 1,
-    fontSize: typography.caption,
-    fontWeight: fontWeights.medium,
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
   },
   timestamp: {
     fontSize: typography.micro,

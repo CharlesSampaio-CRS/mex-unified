@@ -5,6 +5,7 @@ interface CurlRequest {
   timestamp: string;
   method: string;
   url: string;
+  name: string; // Nome da requisição
   curl: string;
   hash: string; // Para identificar duplicatas
 }
@@ -54,6 +55,32 @@ class CurlLogger {
   }
 
   /**
+   * Extrai nome amigável da URL
+   */
+  private extractName(url: string): string {
+    // Remove protocolo
+    const cleanUrl = url.replace(/^https?:\/\//, '');
+    
+    // Remove query string
+    const withoutQuery = cleanUrl.split('?')[0];
+    
+    // Pega o path
+    const parts = withoutQuery.split('/');
+    
+    // Remove hostname (primeiro elemento)
+    parts.shift();
+    
+    // Se tem path, pega últimos 2 segmentos
+    if (parts.length > 0) {
+      const path = parts.length > 2 ? parts.slice(-2).join('/') : parts.join('/');
+      return path || withoutQuery.split('/')[0];
+    }
+    
+    // Se não tem path, retorna hostname
+    return withoutQuery.split('/')[0];
+  }
+
+  /**
    * Converte uma requisição HTTP em comando curl limpo
    */
   private generateCurl(
@@ -88,7 +115,8 @@ class CurlLogger {
     method: string,
     url: string,
     headers: Record<string, string> = {},
-    body?: any
+    body?: any,
+    name?: string
   ) {
     if (!this.isEnabled) return;
 
@@ -102,6 +130,7 @@ class CurlLogger {
     }
 
     const curl = this.generateCurl(method, url, headers, body);
+    const requestName = name || this.extractName(url);
     
     const request: CurlRequest = {
       timestamp: new Date().toISOString(),
@@ -109,6 +138,7 @@ class CurlLogger {
       url,
       curl,
       hash,
+      name: requestName,
     };
 
     this.requests.push(request);
@@ -157,7 +187,7 @@ class CurlLogger {
         minute: '2-digit',
       });
       
-      output += `## ${index + 1}. ${req.method} - ${timestamp}\n\n`;
+      output += `## ${index + 1}. ${req.name || req.method} - ${timestamp}\n\n`;
       output += `\`\`\`bash\n${req.curl}\n\`\`\`\n\n`;
     });
 
