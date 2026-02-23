@@ -63,57 +63,75 @@ export function CompactOrderCard({
   return (
     <GradientCard style={[styles.card, { borderColor: colors.border }, isCancelling && { opacity: 0.5 }]}>
       {/* Linha Compacta - Sempre Visível */}
-      <TouchableOpacity 
-        style={styles.compactRow}
-        onPress={() => setExpanded(!expanded)}
-        activeOpacity={0.7}
-        disabled={isCancelling}
-      >
-        {/* Esquerda: Ícone + Símbolo (Token) */}
-        <View style={styles.leftSection}>
-          {/* Ícone do Token (padrão BTC para testes futuros) */}
-          <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
-            <Ionicons name="logo-bitcoin" size={14} color={colors.primary} />
-          </View>
-          
-          <Text style={[styles.symbol, { color: colors.text }]}>
-            {(() => {
-              // Extrair token base do símbolo (ex: BTC/USDT -> Btc)
-              const baseToken = order.symbol.split('/')[0] || order.symbol;
-              return baseToken.charAt(0).toUpperCase() + baseToken.slice(1).toLowerCase();
-            })()}
-          </Text>
-        </View>
+      <View style={styles.mainContainer}>
+        {/* Linha Superior: Info + Ações */}
+        <View style={styles.topRow}>
+          {/* Esquerda: Ícone + Símbolo (Token) */}
+          <TouchableOpacity 
+            style={styles.leftSection}
+            onPress={() => setExpanded(!expanded)}
+            activeOpacity={0.7}
+            disabled={isCancelling}
+          >
+            {/* Ícone do Token */}
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
+              <Ionicons name="logo-bitcoin" size={14} color={colors.primary} />
+            </View>
+            
+            <View style={styles.tokenInfo}>
+              <Text style={[styles.symbol, { color: colors.text }]}>
+                {(() => {
+                  // Extrair token base do símbolo (ex: BTC/USDT -> Btc)
+                  const baseToken = order.symbol.split('/')[0] || order.symbol;
+                  return baseToken.charAt(0).toUpperCase() + baseToken.slice(1).toLowerCase();
+                })()}
+              </Text>
+              
+              <View style={[
+                styles.sideBadgeSmall,
+                { backgroundColor: order.side === 'buy' ? colors.successLight : colors.dangerLight }
+              ]}>
+                <Text style={[
+                  styles.sideTextSmall,
+                  { color: order.side === 'buy' ? colors.success : colors.danger }
+                ]}>
+                  {order.side === 'buy' ? 'Buy' : 'Sell'}
+                </Text>
+              </View>
+            </View>
 
-        {/* Direita: Side + Quote Currency + Chevron */}
-        <View style={styles.rightSection}>
-          <View style={[
-            styles.sideBadge,
-            { backgroundColor: order.side === 'buy' ? colors.successLight : colors.dangerLight }
-          ]}>
-            <Text style={[
-              styles.sideText,
-              { color: order.side === 'buy' ? colors.success : colors.danger }
-            ]}>
-              {order.side === 'buy' ? 'Buy' : 'Sell'}
-            </Text>
+            <Ionicons 
+              name={expanded ? "chevron-up" : "chevron-down"} 
+              size={14} 
+              color={colors.textSecondary}
+              style={styles.chevron}
+            />
+          </TouchableOpacity>
+
+          {/* Direita: Botões de Ação */}
+          <View style={styles.actionsRowCompact}>
+            {onClone && (
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: colors.primary + '10' }]}
+                onPress={onClone}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="copy-outline" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+
+            {onCancel && (
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: colors.danger + '10' }]}
+                onPress={onCancel}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
+              </TouchableOpacity>
+            )}
           </View>
-          
-          <Text style={[styles.quoteCurrency, { color: colors.textSecondary }]}>
-            {(() => {
-              // Extrair moeda de cotação (ex: BTC/USDT -> USD)
-              const quoteCurrency = order.symbol.split('/')[1] || 'USD';
-              return quoteCurrency.replace('USDT', 'USD').replace('BUSD', 'USD');
-            })()}
-          </Text>
-          
-          <Ionicons 
-            name={expanded ? "chevron-up" : "chevron-down"} 
-            size={16} 
-            color={colors.textSecondary}
-          />
         </View>
-      </TouchableOpacity>
+      </View>
 
       {/* Detalhes Expandidos */}
       {expanded && (
@@ -233,6 +251,15 @@ const styles = StyleSheet.create({
     padding: 0,
     overflow: 'hidden',
   },
+  mainContainer: {
+    padding: 6,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   compactRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -243,9 +270,14 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 0,
-    flexShrink: 0,
+    flex: 1,
     gap: 6,
+  },
+  tokenInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
   },
   iconContainer: {
     width: 22,
@@ -264,10 +296,23 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
   },
+  sideBadgeSmall: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
   sideText: {
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
+  },
+  sideTextSmall: {
+    fontSize: 9,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  chevron: {
+    marginLeft: 4,
   },
   quoteCurrency: {
     fontSize: 11,
@@ -281,6 +326,18 @@ const styles = StyleSheet.create({
     flex: 0,
     flexShrink: 0,
     gap: 4,
+  },
+  actionsRowCompact: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  iconButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   expandedSection: {
     paddingTop: 8,
