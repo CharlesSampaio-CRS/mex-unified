@@ -98,27 +98,29 @@ export function CompactOrdersList({
         </View>
       ) : (
         /* Lista de Orders Compacta */
-        orders.map((order) => {
-          const orderId = getOrderId(order);
-          const isCancelling = cancellingOrderIds.has(orderId);
-          
-          return (
-            <CompactOrderCard
-              key={orderId}
-              order={order}
-              exchangeId={exchangeId}
-              exchangeName={exchangeName}
-              isCancelling={isCancelling}
-              hideValue={hideValue}
-              onCancel={() => onCancelOrder(order)}
-              onClone={() => onCloneOrder(order)}
-              onViewDetails={() => onViewDetails(order)}
-              formatAmount={formatAmount}
-              formatPrice={formatPrice}
-              formatDate={formatDate}
-            />
-          );
-        })
+        <View>
+          {orders.map((order) => {
+            const orderId = getOrderId(order);
+            const isCancelling = cancellingOrderIds.has(orderId);
+            
+            return (
+              <CompactOrderCard
+                key={orderId}
+                order={order}
+                exchangeId={exchangeId}
+                exchangeName={exchangeName}
+                isCancelling={isCancelling}
+                hideValue={hideValue}
+                onCancel={() => onCancelOrder(order)}
+                onClone={() => onCloneOrder(order)}
+                onViewDetails={() => onViewDetails(order)}
+                formatAmount={formatAmount}
+                formatPrice={formatPrice}
+                formatDate={formatDate}
+              />
+            );
+          })}
+        </View>
       )}
         </>
       )}
