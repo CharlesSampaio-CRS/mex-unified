@@ -1,11 +1,16 @@
-curl -X POST http://localhost:3002/api/v1/orders/cancel \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6IiIsIm5hbWUiOm51bGwsInJvbGVzIjpbXSwiaXNfYWN0aXZlIjp0cnVlLCJpYXQiOjE3NzE4ODM0NzMsImV4cCI6MTc3NDQ3NTQ3MywianRpIjoiMTNhMmU4N2EtM2RkZi00ZmZjLThjNWUtNmJhMzZjZGU3ZTRiIiwiYXVkIjoidHJhZGluZy1hcGkiLCJpc3MiOiJ0cmFkaW5nLXNlcnZpY2UifQ.-rMxSIbJm9Zyf0dMmMc7Gfgu5-CGfxSR4gEXtKGtY4E" \ 
-  -d '{
-    "exchange_id": "693481148b0a41e8b6acb07b",
-    "symbol": "REKTCOIN/USDT",
-    "order_id": "C02__651530101430734848014"
-  }' 
+ ERROR  ❌ [TradeModal] Erro ao criar ordem: [Error: Funcionalidade não implementada. Usar trading-service diretamente.]
+ ERROR  Stack: 
 
-  nao encontra no servidor 
-  
+Code: api.ts
+  986 |       }
+  987 |       
+> 988 |       throw new Error(errorMessage)
+      |                      ^
+  989 |     }
+  990 |   },
+  991 |
+Call Stack
+  apiService.createSellOrder (services/api.ts:988:22)
+  apiService.createSellOrder (services/api.ts:961:24)
+  confirmTrade (components/trade-modal.tsx:341:43)
+  TradeModal (components/trade-modal.tsx:312:21)
