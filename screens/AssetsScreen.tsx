@@ -558,8 +558,7 @@ const styles = StyleSheet.create({
   exchangeFilterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 12,
     marginRight: 6,
   },
   exchangeFilterText: {
