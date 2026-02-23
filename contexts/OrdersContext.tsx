@@ -85,8 +85,15 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
       console.log('📋 [OrdersContext] Buscando orders via endpoint seguro (MongoDB)...')
       const response = await apiService.getOrdersSecure()
+      
+      console.log('📋 [OrdersContext] Response recebida:', {
+        success: response?.success,
+        ordersCount: response?.orders?.length,
+        hasOrders: !!response?.orders
+      });
             
       if (!response || !response.success) {
+        console.log('⚠️ [OrdersContext] Response não é success');
         setOrdersByExchange([])
         setTimestamp(Date.now())
         return
@@ -96,6 +103,12 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       
       if (response.orders && response.orders.length > 0) {
         response.orders.forEach((order: any) => {
+          console.log('📋 [OrdersContext] Order da API:', {
+            id: order.id,
+            exchange_order_id: order.exchange_order_id,
+            symbol: order.symbol
+          });
+          
           const exchangeId = order.exchange_id || order.exchange || 'unknown'
           const exchangeName = order.exchange_name || order.exchange || exchangeId
           
@@ -107,7 +120,13 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
             })
           }
           
-          exchangesWithOrders.get(exchangeId)!.orders.push(order)
+          // ✅ GARANTIR QUE A ORDEM TENHA UM ID
+          const orderWithId = {
+            ...order,
+            id: order.id || order.exchange_order_id || `${order.exchange}_${order.symbol}_${order.timestamp}`
+          };
+          
+          exchangesWithOrders.get(exchangeId)!.orders.push(orderWithId)
         })
       }
       
@@ -117,6 +136,9 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         orders: ex.orders,
       }))
       
+      console.log('📊 [OrdersContext] Results criados:', results.length);
+      console.log('📊 [OrdersContext] Results data:', results);
+      
       // 🎯 DETECTA ORDENS EXECUTADAS: Compara com lista anterior
       // Só detecta após a primeira carga (ignora carga inicial)
       if (hasFetchedInitialRef.current && response.orders) {
@@ -124,6 +146,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       }
       
       setOrdersByExchange(results)
+      console.log('📊 [OrdersContext] setOrdersByExchange chamado com:', results.length, 'exchanges');
       setTimestamp(Date.now())
       
       console.log(`✅ [OrdersContext] Orders carregadas: ${response.orders?.length || 0} total`)

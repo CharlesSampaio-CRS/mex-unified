@@ -57,17 +57,32 @@ export function OrdersScreen({ navigation }: any) {
   const allOrdersSections = useMemo(() => {
     console.log('📦 OrdersByExchange:', ordersByExchange);
     console.log('📦 OrdersByExchange length:', ordersByExchange?.length);
+    console.log('📦 OrdersByExchange type:', typeof ordersByExchange);
+    console.log('📦 OrdersByExchange isArray:', Array.isArray(ordersByExchange));
     
-    const sections = ordersByExchange.map(exchange => ({
-      exchangeId: exchange.exchangeId,
-      exchangeName: exchange.exchangeName,
-      items: exchange.orders.map(order => ({
-        ...order,
-        id: order.id,
+    if (!ordersByExchange || ordersByExchange.length === 0) {
+      console.log('⚠️ OrdersByExchange está vazio ou undefined!');
+      return [];
+    }
+    
+    const sections = ordersByExchange.map((exchange, index) => {
+      console.log(`📦 Processing exchange ${index}:`, {
+        exchangeId: exchange?.exchangeId,
+        exchangeName: exchange?.exchangeName,
+        ordersCount: exchange?.orders?.length
+      });
+      
+      return {
         exchangeId: exchange.exchangeId,
         exchangeName: exchange.exchangeName,
-      }))
-    }));
+        items: exchange.orders.map(order => ({
+          ...order,
+          id: order.id,
+          exchangeId: exchange.exchangeId,
+          exchangeName: exchange.exchangeName,
+        }))
+      };
+    });
 
     console.log('📦 Sections created:', sections.length);
     console.log('📦 First section:', sections[0]);
