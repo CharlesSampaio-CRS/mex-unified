@@ -80,6 +80,9 @@ export function OrdersScreen({ navigation }: any) {
 
         // Filter items within section
         const filteredItems = section.items.filter(item => {
+          // Skip items without required fields
+          if (!item || !item.side || !item.symbol) return false;
+          
           // Filter by type
           if (selectedType !== 'All' && item.side !== selectedType) return false;
           
@@ -119,6 +122,7 @@ export function OrdersScreen({ navigation }: any) {
 
     ordersSections.forEach(section => {
       section.items.forEach(item => {
+        if (!item || typeof item.price !== 'number' || typeof item.amount !== 'number') return;
         totalOrders++;
         totalValue += item.price * item.amount;
       });
@@ -134,6 +138,7 @@ export function OrdersScreen({ navigation }: any) {
 
     allOrdersSections.forEach(section => {
       section.items.forEach(item => {
+        if (!item || typeof item.price !== 'number' || typeof item.amount !== 'number') return;
         totalOrders++;
         totalValue += item.price * item.amount;
       });
@@ -365,9 +370,11 @@ export function OrdersScreen({ navigation }: any) {
 
                 {/* Order Cards */}
                 {section.items.map((item) => {
-                  const isCancelling = cancellingOrderIds.has(item.id || '');
+                  if (!item || !item.id || !item.side || !item.symbol) return null;
+                  
+                  const isCancelling = cancellingOrderIds.has(item.id);
                   const isBuy = item.side === 'buy';
-                  const orderValue = item.price * item.amount;
+                  const orderValue = (item.price || 0) * (item.amount || 0);
 
                   return (
                     <TouchableOpacity
