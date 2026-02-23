@@ -1,16 +1,4 @@
- ERROR  ❌ [TradeModal] Erro ao criar ordem: [Error: Funcionalidade não implementada. Usar trading-service diretamente.]
- ERROR  Stack: 
-
-Code: api.ts
-  986 |       }
-  987 |       
-> 988 |       throw new Error(errorMessage)
-      |                      ^
-  989 |     }
-  990 |   },
-  991 |
-Call Stack
-  apiService.createSellOrder (services/api.ts:988:22)
-  apiService.createSellOrder (services/api.ts:961:24)
-  confirmTrade (components/trade-modal.tsx:341:43)
-  TradeModal (components/trade-modal.tsx:312:21)
+ LOG  🔍 FILTER - Inicio: {"allSections": 1, "search": "", "selectedExchange": "All", "selectedType": "All"}
+ LOG  🔍 FILTER - Resultado: 1 sections
+ LOG    Section 0: MEXC - 1 items
+ ERROR  Text strings must be rendered within a <Text> component.
