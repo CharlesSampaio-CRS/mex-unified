@@ -55,6 +55,9 @@ export function OrdersScreen({ navigation }: any) {
 
   // Transform data - All orders from all exchanges
   const allOrdersSections = useMemo(() => {
+    console.log('📦 OrdersByExchange:', ordersByExchange);
+    console.log('📦 OrdersByExchange length:', ordersByExchange?.length);
+    
     const sections = ordersByExchange.map(exchange => ({
       exchangeId: exchange.exchangeId,
       exchangeName: exchange.exchangeName,
@@ -66,6 +69,9 @@ export function OrdersScreen({ navigation }: any) {
       }))
     }));
 
+    console.log('📦 Sections created:', sections.length);
+    console.log('📦 First section:', sections[0]);
+    
     return sections;
   }, [ordersByExchange]);
 
