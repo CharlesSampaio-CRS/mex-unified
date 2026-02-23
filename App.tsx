@@ -7,34 +7,34 @@ import { useEffect, useRef, useState } from "react"
 import Svg, { Path, Rect, Circle } from "react-native-svg"
 
 // 🔥 ERROR HANDLER GLOBAL - Captura TODOS os erros não tratados
-if (__DEV__) {
-  const originalConsoleError = console.error
-  console.error = (...args) => {
-    // 🔍 Log detalhado para encontrar fonte do erro
-    const errorMessage = args[0]
-    if (typeof errorMessage === 'string' && errorMessage.includes('Text strings must be rendered')) {
-      console.log('🔴 TEXT RENDER ERROR DETECTED!')
-      console.log('🔴 Arguments:', JSON.stringify(args, null, 2))
-      console.log('🔴 Component stack:', new Error().stack)
-      
-      // Tenta pegar o componentStack do React se disponível
-      if (args[1] && typeof args[1] === 'object' && args[1].componentStack) {
-        console.log('🔴 React Component Stack:', args[1].componentStack)
-      }
-    }
-    originalConsoleError(...args)
-  }
-  
-  // Captura erros não tratados do JavaScript
-  ErrorUtils.setGlobalHandler((error, isFatal) => {
-    console.error('FATAL ERROR:', { 
-      message: error?.message,
-      name: error?.name,
-      isFatal, 
-      stack: error?.stack 
-    })
-  })
-}
+// if (__DEV__) {
+//   const originalConsoleError = console.error
+//   console.error = (...args) => {
+//     // 🔍 Log detalhado para encontrar fonte do erro
+//     const errorMessage = args[0]
+//     if (typeof errorMessage === 'string' && errorMessage.includes('Text strings must be rendered')) {
+//       console.log('🔴 TEXT RENDER ERROR DETECTED!')
+//       console.log('🔴 Arguments:', JSON.stringify(args, null, 2))
+//       console.log('🔴 Component stack:', new Error().stack)
+//       
+//       // Tenta pegar o componentStack do React se disponível
+//       if (args[1] && typeof args[1] === 'object' && args[1].componentStack) {
+//         console.log('🔴 React Component Stack:', args[1].componentStack)
+//       }
+//     }
+//     originalConsoleError(...args)
+//   }
+//   
+//   // Captura erros não tratados do JavaScript
+//   ErrorUtils.setGlobalHandler((error, isFatal) => {
+//     console.error('FATAL ERROR:', { 
+//       message: error?.message,
+//       name: error?.name,
+//       isFatal, 
+//       stack: error?.stack 
+//     })
+//   })
+// }
 
 // Desabilitar warnings de desenvolvimento (mas manter erros)
 if (__DEV__) {
