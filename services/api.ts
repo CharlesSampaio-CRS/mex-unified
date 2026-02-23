@@ -928,8 +928,8 @@ export const apiService = {
     price?: number
   ): Promise<any> {
     try {
-      // TODO: Implementar chamada direta à API do trading-service
-      throw new Error('Funcionalidade de criar ordem de compra não implementada. Usar trading-service diretamente.');
+      // Usa o método createOrder com side='buy'
+      return await this.createOrder(exchangeId, token, orderType, 'buy', amount, price);
     } catch (error: any) {
       // Melhora mensagens de erro comuns
       let errorMessage = error.message || 'Erro ao criar ordem de compra'
@@ -967,10 +967,8 @@ export const apiService = {
     price?: number
   ): Promise<any> {
     try {
-      // TODO: Implementar endpoint direto do trading-service: POST /orders/sell
-      throw new Error(
-        "Funcionalidade não implementada. Usar trading-service diretamente."
-      );
+      // Usa o método createOrder com side='sell'
+      return await this.createOrder(exchangeId, token, orderType, 'sell', amount, price);
     } catch (error: any) {
       // Melhora mensagens de erro comuns
       let errorMessage = error.message || 'Erro ao criar ordem de venda'
