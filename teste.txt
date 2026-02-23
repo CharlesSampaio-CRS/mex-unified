@@ -1,16 +1,1 @@
-
- LOG  🔴 CONSOLE ERROR INTERCEPTED: {"args": ["Text strings must be rendered within a <Text> component."], "stack": "Error
-    at anonymous (http://192.168.18.15:8081/App.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app&minify=false&modulesOnly=true&runModule=false&shallow=true:80:25)
-    at createTextInstance (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:33202:51)
-    at completeWork (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:30912:58)
-    at runWithFiberInDEV (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:26678:135)
-    at completeUnitOfWork (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:32444:36)
-    at performUnitOfWork (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:32382:44)
-    at workLoopSync (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:32273:57)
-    at renderRootSync (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:32257:21)
-    at performWorkOnRoot (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:32005:90)
-    at performSyncWorkOnRoot (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:28027:24)
-    at flushSyncWorkAcrossRoots_impl (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:27947:329)
-    at processRootScheduleInMicrotask (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:27966:36)
-    at anonymous (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:28038:184)"}
- ERROR  Text strings must be rendered within a <Text> component.
+ ERROR  Error canceling order: [Error: this.getAuthToken is not a function (it is undefined)]
