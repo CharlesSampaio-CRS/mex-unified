@@ -193,7 +193,7 @@ export function OrdersScreen({ navigation }: any) {
     setCancellingOrderIds(prev => new Set(prev).add(order.id));
 
     try {
-      const response = await apiService.cancelOrder(exchangeId, order.symbol, order.id);
+      const response = await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, order.id);
       
       if (response.success) {
         // Refresh orders after successful cancellation

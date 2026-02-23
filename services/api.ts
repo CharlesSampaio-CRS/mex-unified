@@ -669,6 +669,43 @@ export const apiService = {
   },
 
   /**
+   * 🔐 Busca exchanges do usuário com credenciais (para uso interno)
+   * Endpoint: GET /api/v1/user/exchanges (com JWT)
+   * @returns Promise com lista de exchanges incluindo api_key e api_secret
+   */
+  async getUserExchangesWithCredentials(): Promise<any> {
+    try {
+      const token = await secureStorage.getItemAsync('access_token');
+      
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+      
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/user/exchanges`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+        },
+        TIMEOUTS.STANDARD
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      console.error('❌ Get User Exchanges Error:', error);
+      throw new Error(error.message || 'Erro ao buscar exchanges do usuário');
+    }
+  },
+
+  /**
    * Busca as exchanges já conectadas do usuário
    * @param userId ID do usuário
    * @returns Promise com a lista de exchanges conectadas
@@ -1083,33 +1120,45 @@ export const apiService = {
   },
 
   /**
-   * ❌ Cancela uma ordem aberta (usando credenciais salvas - JWT)
-   * @param exchangeId ID da exchange
+   * ❌ Cancela uma ordem aberta
+   * Usa endpoint /orders/cancel-with-creds que requer credenciais diretas
+   * @param exchangeType CCXT ID da exchange (ex: "binance", "mexc")
+   * @param apiKey API Key da exchange
+   * @param apiSecret API Secret da exchange
    * @param symbol Par de negociação
    * @param orderId ID da ordem a cancelar
    * @returns Promise com resultado do cancelamento
    */
   async cancelOrder(
-    exchangeId: string,
+    exchangeType: string,
+    apiKey: string,
+    apiSecret: string,
     symbol: string,
     orderId: string
   ): Promise<any> {
     try {
       const body = {
-        exchange_id: exchangeId,
+        ccxt_id: exchangeType,
+        api_key: apiKey,
+        api_secret: apiSecret,
         symbol: symbol,
         order_id: orderId
       }
       
-      const token = await secureStorage.getItemAsync('access_token');
+      curlLogger.logRequest(
+        'POST',
+        `${API_BASE_URL}/orders/cancel-with-creds`,
+        { 'Content-Type': 'application/json' },
+        JSON.stringify(body),
+        'Cancel Order'
+      );
       
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}/orders/cancel/secure`,
+        `${API_BASE_URL}/orders/cancel-with-creds`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(body),
         },
@@ -1118,13 +1167,59 @@ export const apiService = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `API error: ${response.status} ${response.statusText}`);
+        throw new Error(errorData.error || errorData.message || `API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       return data;
     } catch (error: any) {
+      console.error('❌ Cancel Order Error:', error);
       throw new Error(error.message || 'Erro ao cancelar ordem')
+    }
+  },
+
+  /**
+   * ❌ Cancela uma ordem (helper que busca credenciais automaticamente)
+   * @param exchangeId ID da exchange no banco
+   * @param symbol Par de negociação
+   * @param orderId ID da ordem a cancelar
+   * @returns Promise com resultado do cancelamento
+   */
+  async cancelOrderByExchangeId(
+    exchangeId: string,
+    symbol: string,
+    orderId: string
+  ): Promise<any> {
+    try {
+      // 1. Buscar exchanges do usuário com credenciais
+      const exchangesData = await this.getUserExchangesWithCredentials();
+      
+      if (!exchangesData || !exchangesData.exchanges || exchangesData.exchanges.length === 0) {
+        throw new Error('Nenhuma exchange encontrada');
+      }
+      
+      // 2. Encontrar a exchange específica
+      const exchange = exchangesData.exchanges.find((ex: any) => ex.id === exchangeId || ex._id === exchangeId);
+      
+      if (!exchange) {
+        throw new Error('Exchange não encontrada');
+      }
+      
+      if (!exchange.api_key || !exchange.api_secret) {
+        throw new Error('Credenciais da exchange não disponíveis');
+      }
+      
+      // 3. Cancelar usando as credenciais
+      return await this.cancelOrder(
+        exchange.exchange_type || exchange.ccxt_id,
+        exchange.api_key,
+        exchange.api_secret,
+        symbol,
+        orderId
+      );
+    } catch (error: any) {
+      console.error('❌ Cancel Order By Exchange ID Error:', error);
+      throw error;
     }
   },
 

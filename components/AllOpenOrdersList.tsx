@@ -210,7 +210,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     setCancellingOrderIds(prev => new Set(prev).add(orderId));
 
     try {
-      const result = await apiService.cancelOrder(exchangeId, order.symbol, orderId);
+      const result = await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, orderId);
       
       if (result.success) {
         // ✅ REMOÇÃO OTIMISTA: Remove da lista IMEDIATAMENTE
