@@ -1,31 +1,23 @@
-# Fazer login primeiro
-curl -X POST http://54.94.231.254:3002/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "seu@email.com",
-    "password": "sua_senha"
-  }'
-
-# Copiar o "access_token" da resposta
+eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwibmFtZSI6InVzZXIiLCJyb2xlcyI6WyJ1c2VyIl0sImlzX2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzcxODgzNDczLCJleHAiOjE3NzE5Njk4NzMsImp0aSI6IjJhZjE5ZWE0LWY5YWQtNDA0Yi1iNTcyLTVkNzgyMGY1OTBkYiIsImF1ZCI6InRyYWRpbmctYXBpIiwiaXNzIjoidHJhZGluZy1zZXJ2aWNlIn0.zP2_4QG4UP9jWdwRa0O1IFJ7eIJjB8NQiKpYlxFSkJc","refresh_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6IiIsIm5hbWUiOm51bGwsInJvbGVzIjpbXSwiaXNfYWN0aXZlIjp0cnVlLCJpYXQiOjE3NzE4ODM0NzMsImV4cCI6MTc3NDQ3NTQ3MywianRpIjoiMTNhMmU4N2EtM2RkZi00ZmZjLThjNWUtNmJhMzZjZGU3ZTRiIiwiYXVkIjoidHJhZGluZy1hcGkiLCJpc3MiOiJ0cmFkaW5nLXNlcnZpY2UifQ.-rMxSIbJm9Zyf0dMmMc7Gfgu5-CGfxSR4gEXtKGtY4E
 
 
 # Listar suas exchanges
 curl -X GET http://54.94.231.254:3002/api/v1/user/exchanges \
-  -H "Authorization: Bearer SEU_TOKEN"
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwibmFtZSI6InVzZXIiLCJyb2xlcyI6WyJ1c2VyIl0sImlzX2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzcxODgzNDczLCJleHAiOjE3NzE5Njk4NzMsImp0aSI6IjJhZjE5ZWE0LWY5YWQtNDA0Yi1iNTcyLTVkNzgyMGY1OTBkYiIsImF1ZCI6InRyYWRpbmctYXBpIiwiaXNzIjoidHJhZGluZy1zZXJ2aWNlIn0.zP2_4QG4UP9jWdwRa0O1IFJ7eIJjB8NQiKpYlxFSkJc"
 
 # Copiar o "id" (MongoDB ObjectID) da exchange desejada
 
 # Buscar suas orders abertas
 curl -X POST http://54.94.231.254:3002/api/v1/orders/fetch/secure \
-  -H "Authorization: Bearer SEU_TOKEN"
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwibmFtZSI6InVzZXIiLCJyb2xlcyI6WyJ1c2VyIl0sImlzX2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzcxODgzNDczLCJleHAiOjE3NzE5Njk4NzMsImp0aSI6IjJhZjE5ZWE0LWY5YWQtNDA0Yi1iNTcyLTVkNzgyMGY1OTBkYiIsImF1ZCI6InRyYWRpbmctYXBpIiwiaXNzIjoidHJhZGluZy1zZXJ2aWNlIn0.zP2_4QG4UP9jWdwRa0O1IFJ7eIJjB8NQiKpYlxFSkJc"
 
 # Copiar o "id" da ordem que quer cancelar
 
 curl -X POST http://54.94.231.254:3002/api/v1/orders/cancel \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwibmFtZSI6InVzZXIiLCJyb2xlcyI6WyJ1c2VyIl0sImlzX2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzcxODgzNDczLCJleHAiOjE3NzE5Njk4NzMsImp0aSI6IjJhZjE5ZWE0LWY5YWQtNDA0Yi1iNTcyLTVkNzgyMGY1OTBkYiIsImF1ZCI6InRyYWRpbmctYXBpIiwiaXNzIjoidHJhZGluZy1zZXJ2aWNlIn0.zP2_4QG4UP9jWdwRa0O1IFJ7eIJjB8NQiKpYlxFSkJc" \
   -d '{
-    "exchange_id": "67b8e9d8c4f1a2b3e4d5f6a7",
-    "symbol": "BTC/USDT",
-    "order_id": "987654321"
+    "exchange_id": "693481148b0a41e8b6acb07b",
+    "symbol": "REKTCOIN/USDT",
+    "order_id": "C02__651530101430734848014"
   }'
