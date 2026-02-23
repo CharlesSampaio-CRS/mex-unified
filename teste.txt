@@ -1,1 +1,8 @@
- ERROR  Error canceling order: [Error: this.getAuthToken is not a function (it is undefined)]
+ ao consultar oders 
+ LOG  🔵 cURL: curl -X POST -H "Authorization: Bearer ***" -H "Content-Type: application/json" "http://54.94.231.254:3002/api/v1/orders/fetch/secure"
+ WARN  ⚠️ Erro a
+
+ao tentar cancelar 
+ cURL: curl -X GET -H "Authorization: Bearer ***" -H "Content-Type: application/json" "http://54.94.231.254:3002/api/v1/user/exchanges"
+ ERROR  ❌ Cancel Order By Exchange ID Error: [Error: Exchange não encontrada]
+ ERROR  Error canceling order: [Error: Exchange não encontrada]
