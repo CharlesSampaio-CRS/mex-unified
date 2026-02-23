@@ -42,7 +42,7 @@ export function CompactOrdersList({
   getOrderId,
 }: CompactOrdersListProps) {
   const { colors } = useTheme();
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false); // Começa expandido
 
   return (
     <View style={styles.container}>
