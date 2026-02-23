@@ -258,15 +258,14 @@ export function AssetsScreen({ navigation }: any) {
               style={[
                 styles.exchangeFilterChip,
                 { 
-                  backgroundColor: selectedExchange === 'All' ? colors.primary : colors.surface,
-                  borderColor: selectedExchange === 'All' ? colors.primary : colors.border 
+                  backgroundColor: selectedExchange === 'All' ? colors.primary : colors.background,
                 }
               ]}
               onPress={() => setSelectedExchange('All')}
             >
               <Text style={[
                 styles.exchangeFilterText,
-                { color: selectedExchange === 'All' ? '#fff' : colors.text }
+                { color: selectedExchange === 'All' ? '#fff' : colors.textSecondary }
               ]}>
                 Todas
               </Text>
@@ -277,15 +276,14 @@ export function AssetsScreen({ navigation }: any) {
                 style={[
                   styles.exchangeFilterChip,
                   { 
-                    backgroundColor: selectedExchange === exchange.id ? colors.primary : colors.surface,
-                    borderColor: selectedExchange === exchange.id ? colors.primary : colors.border 
+                    backgroundColor: selectedExchange === exchange.id ? colors.primary : colors.background,
                   }
                 ]}
                 onPress={() => setSelectedExchange(exchange.id)}
               >
                 <Text style={[
                   styles.exchangeFilterText,
-                  { color: selectedExchange === exchange.id ? '#fff' : colors.text }
+                  { color: selectedExchange === exchange.id ? '#fff' : colors.textSecondary }
                 ]}>
                   {exchange.name}
                 </Text>
@@ -555,18 +553,18 @@ const styles = StyleSheet.create({
   },
   exchangeFilterContent: {
     paddingRight: 16,
-    gap: 8,
+    gap: 6,
   },
   exchangeFilterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1,
-    marginRight: 8,
+    marginRight: 6,
   },
   exchangeFilterText: {
-    fontSize: typography.tiny,  // 13
-    fontWeight: fontWeights.semibold,
+    fontSize: typography.micro,  // 12 - menor e mais clean
+    fontWeight: fontWeights.medium,
   },
   resultsCount: {
     paddingVertical: 4,
