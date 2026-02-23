@@ -498,6 +498,14 @@ export function AssetsScreen({ navigation }: any) {
           symbol={selectedTrade.symbol}
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
+          onOrderCreated={async () => {
+            console.log('🎉 [AssetsScreen] Ordem criada - atualizando balances...')
+            await refreshBalance()
+          }}
+          onBalanceUpdate={async () => {
+            console.log('💰 [AssetsScreen] Atualizando balances após ordem...')
+            await refreshBalance()
+          }}
         />
       )}
 

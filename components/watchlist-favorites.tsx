@@ -422,6 +422,14 @@ export function WatchlistFavorites() {
           symbol={selectedTrade.symbol}
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
+          onOrderCreated={async () => {
+            console.log('🎉 [WatchlistFavorites] Ordem criada - atualizando balances...')
+            await refreshBalance()
+          }}
+          onBalanceUpdate={async () => {
+            console.log('💰 [WatchlistFavorites] Atualizando balances após ordem...')
+            await refreshBalance()
+          }}
         />
       )}
     </ScrollView>
