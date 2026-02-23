@@ -226,6 +226,7 @@ export const apiService = {
    * 🔐 SECURE: Busca orders usando JWT (sem credenciais no body)
    * Endpoint: POST /orders/fetch/secure
    * Backend busca exchanges do MongoDB automaticamente
+   * ⚡ OTIMIZADO: Timeout reduzido para 12s (suficiente para 3-4 exchanges)
    */
   async getOrdersSecure(): Promise<any> {
     try {
@@ -235,7 +236,7 @@ export const apiService = {
           method: 'POST',
           cache: 'no-store'
         },
-        TIMEOUTS.SLOW
+        TIMEOUTS.NORMAL  // ⚡ Reduzido de SLOW (20s) para NORMAL (12s)
       );
 
       if (!response.ok) {

@@ -72,6 +72,8 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const fetchOrders = useCallback(async (forceRefresh = false) => {
     if (!user?.id) return
 
+    const startTime = performance.now(); // ⚡ Inicia cronômetro
+    
     // ✅ ATIVA ESTADOS DE LOADING IMEDIATAMENTE (antes de qualquer await)
     if (forceRefresh) {
       setRefreshing(true)
@@ -84,7 +86,12 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     try {
       // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
       console.log('📋 [OrdersContext] Buscando orders via endpoint seguro (MongoDB)...')
+      
+      const apiStartTime = performance.now(); // ⚡ Tempo antes da chamada API
       const response = await apiService.getOrdersSecure()
+      const apiEndTime = performance.now(); // ⚡ Tempo depois da chamada API
+      
+      console.log(`⏱️ [OrdersContext] API levou ${(apiEndTime - apiStartTime).toFixed(0)}ms`)
       
       console.log('📋 [OrdersContext] Response recebida:', {
         success: response?.success,
@@ -156,9 +163,8 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       setError(errorMsg)
       setOrdersByExchange([])
     } finally {
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      // antes de desativar o loading/refreshing
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // ⚡ OTIMIZADO: Reduzido delay de 300ms para 100ms
+      await new Promise(resolve => setTimeout(resolve, 100))
       
       setLoading(false)
       setRefreshing(false)
