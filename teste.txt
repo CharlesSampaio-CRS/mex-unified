@@ -1,8 +1,3 @@
- ao consultar oders 
- LOG  🔵 cURL: curl -X POST -H "Authorization: Bearer ***" -H "Content-Type: application/json" "http://54.94.231.254:3002/api/v1/orders/fetch/secure"
- WARN  ⚠️ Erro a
-
-ao tentar cancelar 
- cURL: curl -X GET -H "Authorization: Bearer ***" -H "Content-Type: application/json" "http://54.94.231.254:3002/api/v1/user/exchanges"
- ERROR  ❌ Cancel Order By Exchange ID Error: [Error: Exchange não encontrada]
- ERROR  Error canceling order: [Error: Exchange não encontrada]
+ LOG  🔵 cURL: curl -X POST -H "Authorization: Bearer ***" -H "Content-Type: application/json" -d '{"exchange_id":"693481148b0a41e8b6acb07b","symbol":"REKTCOIN/USDT","order_id":"C02__651530580936138752014"}' "http://54.94.231.254:3002/api/v1/orders/cancel"
+ ERROR  ❌ Cancel Order Error: [Error: API error: 404 ]
+ ERROR  Error canceling order: [Error: API error: 404 ]
