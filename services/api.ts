@@ -1101,7 +1101,7 @@ export const apiService = {
         order_id: orderId
       }
       
-      const token = await this.getAuthToken();
+      const token = await secureStorage.getItemAsync('access_token');
       
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/orders/cancel/secure`,
