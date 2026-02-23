@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOrders } from '../contexts/OrdersContext';
 import { usePrivacy } from '../contexts/PrivacyContext';
 import { useBalance } from '../contexts/BalanceContext';
+import { useNotifications } from '../contexts/NotificationsContext';
 import { apiService } from '../services/api';
 import { OpenOrder, getOrderId } from '../types/orders';
 import { OrderDetailsModal } from './order-details-modal';
@@ -27,6 +28,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   const { ordersByExchange, loading, refreshing: contextRefreshing, timestamp, refresh } = useOrders();
   const { hideValue: hideValueFn, valuesHidden } = usePrivacy();
   const { refresh: refreshBalance, data: balanceData } = useBalance();
+  const { addNotification } = useNotifications();
   const [searchQuery, setSearchQuery] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   
@@ -222,6 +224,22 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
           const newSet = new Set(prev);
           newSet.delete(orderId);
           return newSet;
+        });
+        
+        // 🔔 Notificação de sucesso
+        addNotification({
+          type: 'success',
+          title: '✅ Ordem Cancelada',
+          message: `Ordem ${order.side === 'buy' ? 'de compra' : 'de venda'} cancelada: ${order.amount.toFixed(8)} ${order.symbol.split('/')[0]} @ ${apiService.formatUSD(order.price)}`,
+          data: {
+            icon: '🗑️',
+            orderId,
+            exchangeName,
+            symbol: order.symbol,
+            side: order.side,
+            amount: order.amount,
+            price: order.price
+          }
         });
         
         // Recarrega em background (silencioso - sem loading)
