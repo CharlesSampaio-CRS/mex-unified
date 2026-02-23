@@ -77,7 +77,14 @@ export function OrdersScreen({ navigation }: any) {
 
   // Apply filters
   const ordersSections = useMemo(() => {
-    return allOrdersSections
+    console.log('🔍 FILTER - Inicio:', {
+      allSections: allOrdersSections.length,
+      selectedExchange,
+      selectedType,
+      search
+    });
+    
+    const result = allOrdersSections
       .map(section => {
         // Filter by exchange
         if (selectedExchange !== 'All' && section.exchangeId !== selectedExchange) {
@@ -110,6 +117,11 @@ export function OrdersScreen({ navigation }: any) {
         };
       })
       .filter(Boolean) as typeof allOrdersSections;
+    
+    console.log('🔍 FILTER - Resultado:', result.length, 'sections');
+    result.forEach((s, i) => console.log(`  Section ${i}: ${s.exchangeName} - ${s.items.length} items`));
+    
+    return result;
   }, [allOrdersSections, search, selectedType, selectedExchange]);
 
   // Get unique exchanges for filter
