@@ -21,7 +21,6 @@ import { useNotifications } from "../contexts/NotificationsContext"
 import { Header } from "../components/Header"
 import { NotificationsModal } from "../components/NotificationsModal"
 import { ConfirmModal } from "../components/ConfirmModal"
-import { CurlLoggerModal } from "../components/CurlLoggerModal"
 import { TabBar } from "../components/TabBar"
 import { LogoIcon } from "../components/LogoIcon"
 import { typography, fontWeights } from "../lib/typography"
@@ -69,7 +68,6 @@ export function SettingsScreen({ navigation, route }: any) {
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false)
   const [logoutModalVisible, setLogoutModalVisible] = useState(false)
-  const [curlLoggerModalVisible, setCurlLoggerModalVisible] = useState(false)
   
   // Estados de segurança  
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
@@ -722,28 +720,6 @@ export function SettingsScreen({ navigation, route }: any) {
             <Text style={[styles.menuItemArrow, { color: colors.textSecondary }]}>›</Text>
           </TouchableOpacity>
 
-          {/* cURL Logger */}
-          <TouchableOpacity 
-            style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.itemGap }]}
-            onPress={() => setCurlLoggerModalVisible(true)}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIconContainer, { backgroundColor: colors.surface }]}>
-                <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
-                    stroke={colors.text}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </View>
-              <Text style={[styles.menuItemText, { color: colors.text }]}>cURL Logger</Text>
-            </View>
-            <Text style={[styles.menuItemArrow, { color: colors.textSecondary }]}>›</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity 
             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.itemGap }]}
             onPress={() => setTermsModalVisible(true)}
@@ -1263,12 +1239,6 @@ export function SettingsScreen({ navigation, route }: any) {
         confirmText={t('common.confirm')}
         cancelText={t('common.cancel')}
         confirmColor="#ef4444"
-      />
-
-      {/* cURL Logger Modal */}
-      <CurlLoggerModal
-        visible={curlLoggerModalVisible}
-        onClose={() => setCurlLoggerModalVisible(false)}
       />
     </SafeAreaView>
   )
