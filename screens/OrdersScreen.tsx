@@ -216,7 +216,7 @@ export function OrdersScreen({ navigation }: any) {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title="Orders"
-        subtitle={`${globalTotals.totalOrders} ${globalTotals.totalOrders === 1 ? 'order' : 'orders'} • ${hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`)}`}
+        subtitle={`${globalTotals.totalOrders || 0} ${(globalTotals.totalOrders || 0) === 1 ? 'order' : 'orders'} • ${hideValue(`$${apiService.formatUSD(globalTotals.totalValue || 0)}`)}`}
         onNotificationsPress={onNotificationsPress}
         onProfilePress={onProfilePress}
         onAlertsPress={onAlertsPress}
@@ -352,7 +352,7 @@ export function OrdersScreen({ navigation }: any) {
         {/* Results Count */}
         <View style={styles.resultsCount}>
           <Text style={[styles.resultsCountText, { color: colors.textSecondary }]}>
-            {totals.totalOrders} {totals.totalOrders === 1 ? 'ordem encontrada' : 'ordens encontradas'}
+            {totals.totalOrders || 0} {(totals.totalOrders || 0) === 1 ? 'ordem encontrada' : 'ordens encontradas'}
           </Text>
         </View>
       </View>

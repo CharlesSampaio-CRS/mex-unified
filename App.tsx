@@ -11,10 +11,17 @@ if (__DEV__) {
   const originalConsoleError = console.error
   console.error = (...args) => {
     // 🔍 Log detalhado para encontrar fonte do erro
-    console.log('🔴 CONSOLE ERROR INTERCEPTED:', {
-      args,
-      stack: new Error().stack
-    })
+    const errorMessage = args[0]
+    if (typeof errorMessage === 'string' && errorMessage.includes('Text strings must be rendered')) {
+      console.log('🔴 TEXT RENDER ERROR DETECTED!')
+      console.log('🔴 Arguments:', JSON.stringify(args, null, 2))
+      console.log('🔴 Component stack:', new Error().stack)
+      
+      // Tenta pegar o componentStack do React se disponível
+      if (args[1] && typeof args[1] === 'object' && args[1].componentStack) {
+        console.log('🔴 React Component Stack:', args[1].componentStack)
+      }
+    }
     originalConsoleError(...args)
   }
   
@@ -26,7 +33,6 @@ if (__DEV__) {
       isFatal, 
       stack: error?.stack 
     })
-    // Removi o alert para não bloquear
   })
 }
 
