@@ -10,13 +10,23 @@ import Svg, { Path, Rect, Circle } from "react-native-svg"
 if (__DEV__) {
   const originalConsoleError = console.error
   console.error = (...args) => {
+    // 🔍 Log detalhado para encontrar fonte do erro
+    console.log('🔴 CONSOLE ERROR INTERCEPTED:', {
+      args,
+      stack: new Error().stack
+    })
     originalConsoleError(...args)
   }
   
   // Captura erros não tratados do JavaScript
   ErrorUtils.setGlobalHandler((error, isFatal) => {
-    console.error('FATAL ERROR:', { error, isFatal, stack: error?.stack })
-    alert(`FATAL ERROR: ${error?.message}`)
+    console.error('FATAL ERROR:', { 
+      message: error?.message,
+      name: error?.name,
+      isFatal, 
+      stack: error?.stack 
+    })
+    // Removi o alert para não bloquear
   })
 }
 
