@@ -1,5 +1,35 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView          
+          // Search filter
+          if (search) {
+            const q = search.toLowerCase();
+            const match = item.symbol.toLowerCase().includes(q);
+            if (!match) console.log('❌ Item filtered by search');
+            return match;
+          }
+          
+          console.log('✅ Item passed all filters');
+          return true;
+        });
+
+        console.log('🔍 Filtered items count:', filteredItems.length);
+
+        // Return section only if it has items after filtering
+        if (filteredItems.length === 0) {
+          console.log('❌ Section removed: no items after filtering');
+          return null;
+        }
+
+        return {
+          ...section,
+          items: filteredItems
+        };
+      })
+      .filter(Boolean) as typeof allOrdersSections;
+  }, [allOrdersSections, selectedExchange, selectedType, search]);
+
+  console.log('📊 Final ordersSections:', ordersSections.length);
+  console.log('📊 Final ordersSections data:', ordersSections);RefreshControl, TextInput, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -77,20 +107,33 @@ export function OrdersScreen({ navigation }: any) {
 
   // Apply filters
   const ordersSections = useMemo(() => {
+    console.log('🔍 Starting filter - allOrdersSections:', allOrdersSections.length);
+    
     return allOrdersSections
       .map(section => {
+        console.log('🔍 Processing section:', section.exchangeName, 'items:', section.items.length);
+        
         // Filter by exchange
         if (selectedExchange !== 'All' && section.exchangeId !== selectedExchange) {
+          console.log('❌ Section filtered out by exchange');
           return null;
         }
 
         // Filter items within section
         const filteredItems = section.items.filter(item => {
+          console.log('🔍 Filtering item:', item?.symbol, 'id:', item?.id, 'side:', item?.side);
+          
           // Skip items without id
-          if (!item || !item.id) return false;
+          if (!item || !item.id) {
+            console.log('❌ Item filtered: no id');
+            return false;
+          }
           
           // Filter by type
-          if (selectedType !== 'All' && item.side && item.side !== selectedType) return false;
+          if (selectedType !== 'All' && item.side && item.side !== selectedType) {
+            console.log('❌ Item filtered by type:', item.side, '!==', selectedType);
+            return false;
+          }
           
           // Search filter
           if (search) {
