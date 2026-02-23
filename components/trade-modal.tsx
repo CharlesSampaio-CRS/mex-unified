@@ -432,28 +432,9 @@ export function TradeModal({
           console.log('⚠️ [TradeModal] onBalanceUpdate não foi fornecido')
         }
         
+        // ✅ Notificação visual já foi mostrada acima (addNotification)
+        // Alert removido - mantém apenas notificação não-intrusiva
         
-        // Mostra alerta de sucesso (em background)
-        setTimeout(() => {
-          let alertTitle = 'Ordem Criada'
-          let alertMessage = `Ordem ${orderId} criada com sucesso!\n\nStatus: ${orderStatus}\nQuantidade: ${amountNum.toFixed(8)} ${symbol}\nTotal: ${apiService.formatUSD(total)}`
-          
-          if (isDryRun) {
-            alertTitle = 'Ordem Simulada'
-            alertMessage = `Ordem ${orderId} foi simulada com sucesso!\n\nStatus: ${orderStatus}\nTipo: ${orderType}\nLado: ${isBuy ? 'Compra' : 'Venda'}\nQuantidade: ${amountNum.toFixed(8)} ${symbol}\n${orderType === 'limit' ? `Preço: ${apiService.formatUSD(priceNum)}` : 'Preço: Mercado'}\nTotal: ${apiService.formatUSD(total)}\n\n⚠️ Sistema em modo DRY-RUN`
-          } else if (isExecuted && isFullyFilled) {
-            alertTitle = 'Ordem Executada!'
-            alertMessage = `Ordem ${orderId} foi executada completamente!\n\n✅ Executado: ${orderFilled.toFixed(8)} ${symbol}\n💰 Preço médio: ${avgPrice ? apiService.formatUSD(avgPrice) : 'N/A'}\n💵 Total: ${apiService.formatUSD(total)}\n\nStatus: ${orderStatus}`
-          } else if (isPartiallyFilled) {
-            alertTitle = '⚡ Ordem Parcialmente Executada'
-            alertMessage = `Ordem ${orderId} foi parcialmente executada!\n\n✅ Executado: ${orderFilled.toFixed(8)} de ${orderAmount.toFixed(8)} ${symbol} (${fillPercent.toFixed(0)}%)\n⏳ Restante: ${(orderAmount - orderFilled).toFixed(8)} ${symbol}\n💰 Preço médio: ${avgPrice ? apiService.formatUSD(avgPrice) : 'N/A'}\n\nStatus: ${orderStatus}`
-          } else if (orderType === 'limit') {
-            alertTitle = 'Ordem Limite Aguardando'
-            alertMessage = `Ordem ${orderId} criada e aguardando execução!\n\n📊 Quantidade: ${amountNum.toFixed(8)} ${symbol}\n💵 Preço limite: ${apiService.formatUSD(priceNum)}\n💰 Total: ${apiService.formatUSD(total)}\n\nStatus: ${orderStatus}\n\nA ordem será executada quando o preço de mercado atingir seu limite.`
-          }
-          
-          Alert.alert(alertTitle, alertMessage)
-        }, 100)
       } else {
         // ❌ API retornou success=false (erro lógico)
         console.error('❌ [TradeModal] API retornou success=false:', result)
