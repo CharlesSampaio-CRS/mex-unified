@@ -1083,37 +1083,33 @@ export const apiService = {
   },
 
   /**
-   * ❌ Cancela uma ordem aberta
-   * @param userId ID do usuário
+   * ❌ Cancela uma ordem aberta (usando credenciais salvas - JWT)
+   * @param exchangeId ID da exchange
+   * @param symbol Par de negociação
    * @param orderId ID da ordem a cancelar
-   * @param exchangeId ID da exchange (obrigatório)
-   * @param symbol Par de negociação (opcional)
    * @returns Promise com resultado do cancelamento
    */
   async cancelOrder(
-    userId: string,
-    orderId: string,
-    exchangeId?: string,
-    symbol?: string
+    exchangeId: string,
+    symbol: string,
+    orderId: string
   ): Promise<any> {
     try {
-      if (!exchangeId) {
-        throw new Error('exchangeId é obrigatório para cancelar ordem')
-      }
-
       const body = {
-        user_id: userId,
         exchange_id: exchangeId,
-        order_id: orderId,
-        ...(symbol && { symbol })
+        symbol: symbol,
+        order_id: orderId
       }
       
+      const token = await this.getAuthToken();
+      
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}/orders/cancel`,
+        `${API_BASE_URL}/orders/cancel/secure`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(body),
         },
