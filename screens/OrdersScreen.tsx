@@ -405,9 +405,21 @@ export function OrdersScreen({ navigation }: any) {
                 {section.items.map((item) => {
                   if (!item || !item.id) return null;
                   
+                  // Validação extra para garantir dados válidos
+                  if (!item.price || !item.amount || !item.symbol || !item.side) {
+                    console.warn('⚠️ Ordem com dados incompletos:', item.id);
+                    return null;
+                  }
+                  
                   const isCancelling = cancellingOrderIds.has(item.id);
                   const isBuy = item.side === 'buy';
                   const orderValue = (item.price || 0) * (item.amount || 0);
+                  
+                  // Validação do orderValue
+                  if (!isFinite(orderValue) || isNaN(orderValue)) {
+                    console.warn('⚠️ OrderValue inválido para ordem:', item.id, orderValue);
+                    return null;
+                  }
 
                   return (
                     <TouchableOpacity
@@ -456,10 +468,10 @@ export function OrdersScreen({ navigation }: any) {
                         </View>
                         <View style={styles.valueSection}>
                           <Text style={[styles.orderValue, { color: colors.text }]}>
-                            {hideValue(`$${apiService.formatUSD(orderValue)}`)}
+                            {hideValue(`$${apiService.formatUSD(orderValue || 0)}`)}
                           </Text>
                           <Text style={[styles.orderType, { color: colors.textSecondary }]}>
-                            {item.type ? item.type.toUpperCase() : 'LIMIT'}
+                            {item.type ? String(item.type).toUpperCase() : 'LIMIT'}
                           </Text>
                         </View>
                       </View>
@@ -471,7 +483,7 @@ export function OrdersScreen({ navigation }: any) {
                             Preço
                           </Text>
                           <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                            {hideValue(`$${apiService.formatUSD(item.price)}`)}
+                            {hideValue(`$${apiService.formatUSD(item.price || 0)}`)}
                           </Text>
                         </View>
 
@@ -480,7 +492,7 @@ export function OrdersScreen({ navigation }: any) {
                             Quantidade
                           </Text>
                           <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                            {hideValue(apiService.formatTokenAmount(item.amount.toString()))}
+                            {hideValue(apiService.formatTokenAmount(String(item.amount || 0)))}
                           </Text>
                         </View>
 
@@ -490,7 +502,7 @@ export function OrdersScreen({ navigation }: any) {
                               Executado
                             </Text>
                             <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                              {hideValue(apiService.formatTokenAmount(item.filled.toString()))}
+                              {hideValue(apiService.formatTokenAmount(String(item.filled || 0)))}
                             </Text>
                           </View>
                         )}
