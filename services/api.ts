@@ -1194,8 +1194,8 @@ export const apiService = {
   },
 
   /**
-   * ❌ Cancela uma ordem (helper que busca credenciais automaticamente)
-   * @param exchangeId ID da exchange no banco
+   * ❌ Cancela uma ordem (usando JWT - busca credenciais do backend)
+   * @param exchangeId ID da exchange no MongoDB
    * @param symbol Par de negociação
    * @param orderId ID da ordem a cancelar
    * @returns Promise com resultado do cancelamento
@@ -1206,34 +1206,40 @@ export const apiService = {
     orderId: string
   ): Promise<any> {
     try {
-      // 1. Buscar exchanges do usuário com credenciais
-      const exchangesData = await this.getUserExchangesWithCredentials();
+      const token = await secureStorage.getItemAsync('access_token');
       
-      if (!exchangesData || !exchangesData.exchanges || exchangesData.exchanges.length === 0) {
-        throw new Error('Nenhuma exchange encontrada');
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
       }
       
-      // 2. Encontrar a exchange específica
-      const exchange = exchangesData.exchanges.find((ex: any) => ex.id === exchangeId || ex._id === exchangeId);
+      const body = {
+        exchange_id: exchangeId,
+        symbol: symbol,
+        order_id: orderId
+      };
       
-      if (!exchange) {
-        throw new Error('Exchange não encontrada');
-      }
-      
-      if (!exchange.api_key || !exchange.api_secret) {
-        throw new Error('Credenciais da exchange não disponíveis');
-      }
-      
-      // 3. Cancelar usando as credenciais
-      return await this.cancelOrder(
-        exchange.exchange_type || exchange.ccxt_id,
-        exchange.api_key,
-        exchange.api_secret,
-        symbol,
-        orderId
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/orders/cancel`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(body),
+        },
+        TIMEOUTS.NORMAL
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
     } catch (error: any) {
-      console.error('❌ Cancel Order By Exchange ID Error:', error);
+      console.error('❌ Cancel Order Error:', error);
       throw error;
     }
   },
