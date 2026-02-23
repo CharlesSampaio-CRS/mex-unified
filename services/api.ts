@@ -262,35 +262,6 @@ export const apiService = {
     }
   },
 
-  /**
-   * 🔐 SECURE: Busca orders usando JWT (sem credenciais no body)
-   * Endpoint: POST /orders/fetch/secure
-   * Backend busca exchanges do MongoDB automaticamente
-   * ⚡ OTIMIZADO: Timeout reduzido para 12s (suficiente para 3-4 exchanges)
-   */
-  async getOrdersSecure(): Promise<any> {
-    try {
-      const response = await fetchWithTimeout(
-        `${API_BASE_URL}/orders/fetch/secure`,
-        {
-          method: 'POST',
-          cache: 'no-store'
-        },
-        TIMEOUTS.NORMAL  // ⚡ Reduzido de SLOW (20s) para NORMAL (12s)
-      );
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('❌ [API] Erro ao buscar orders (seguro):', error);
-      throw error;
-    }
-  },
-
   // ==================== 📝 GERENCIAMENTO DE EXCHANGES (MongoDB) ====================
 
   /**
@@ -1142,38 +1113,90 @@ export const apiService = {
     }
   },
 
+  // ==================== ORDERS ====================
+
   /**
-   * ❌ Cancela uma ordem aberta
-   * Usa endpoint /orders/cancel-with-creds que requer credenciais diretas
-   * @param exchangeType CCXT ID da exchange (ex: "binance", "mexc")
-   * @param apiKey API Key da exchange
-   * @param apiSecret API Secret da exchange
-   * @param symbol Par de negociação
-   * @param orderId ID da ordem a cancelar
-   * @returns Promise com resultado do cancelamento
+   * 📊 Busca orders abertas (usando JWT)
+   * @returns Promise com lista de orders
    */
-  async cancelOrder(
-    exchangeType: string,
-    apiKey: string,
-    apiSecret: string,
-    symbol: string,
-    orderId: string
-  ): Promise<any> {
+  async getOrdersSecure(): Promise<any> {
     try {
-      const body = {
-        ccxt_id: exchangeType,
-        api_key: apiKey,
-        api_secret: apiSecret,
-        symbol: symbol,
-        order_id: orderId
-      }
+      const token = await secureStorage.getItemAsync('access_token');
       
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}/orders/cancel-with-creds`,
+        `${API_BASE_URL}/orders/fetch/secure`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        },
+        TIMEOUTS.NORMAL
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('❌ Get Orders Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * ➕ Cria uma nova ordem (usando JWT)
+   * @param exchangeId ID da exchange no MongoDB
+   * @param symbol Par de negociação (ex: "BTC/USDT")
+   * @param orderType Tipo da ordem: "market" ou "limit"
+   * @param side Lado da ordem: "buy" ou "sell"
+   * @param amount Quantidade a comprar/vender
+   * @param price Preço (obrigatório para limit orders)
+   * @returns Promise com ordem criada
+   */
+  async createOrder(
+    exchangeId: string,
+    symbol: string,
+    orderType: 'market' | 'limit',
+    side: 'buy' | 'sell',
+    amount: number,
+    price?: number
+  ): Promise<any> {
+    try {
+      const token = await secureStorage.getItemAsync('access_token');
+      
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+
+      // Validação
+      if (orderType === 'limit' && !price) {
+        throw new Error('Preço é obrigatório para orders limit');
+      }
+
+      const body = {
+        exchange_id: exchangeId,
+        symbol: symbol,
+        order_type: orderType,
+        side: side,
+        amount: amount,
+        price: price
+      };
+
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/orders/create`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(body),
         },
@@ -1182,25 +1205,25 @@ export const apiService = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || `API error: ${response.status} ${response.statusText}`);
+        throw new Error(errorData.error || errorData.message || `API error: ${response.status}`);
       }
 
       const data = await response.json();
       return data;
     } catch (error: any) {
-      console.error('❌ Cancel Order Error:', error);
-      throw new Error(error.message || 'Erro ao cancelar ordem')
+      console.error('❌ Create Order Error:', error);
+      throw error;
     }
   },
 
   /**
-   * ❌ Cancela uma ordem (usando JWT - busca credenciais do backend)
+   * ❌ Cancela uma ordem (usando JWT)
    * @param exchangeId ID da exchange no MongoDB
    * @param symbol Par de negociação
    * @param orderId ID da ordem a cancelar
    * @returns Promise com resultado do cancelamento
    */
-  async cancelOrderByExchangeId(
+  async cancelOrder(
     exchangeId: string,
     symbol: string,
     orderId: string
@@ -1211,13 +1234,13 @@ export const apiService = {
       if (!token) {
         throw new Error('Token de autenticação não encontrado');
       }
-      
+
       const body = {
         exchange_id: exchangeId,
         symbol: symbol,
         order_id: orderId
       };
-      
+
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/orders/cancel`,
         {
@@ -1233,7 +1256,7 @@ export const apiService = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || `API error: ${response.status} ${response.statusText}`);
+        throw new Error(errorData.error || errorData.message || `API error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -1242,6 +1265,18 @@ export const apiService = {
       console.error('❌ Cancel Order Error:', error);
       throw error;
     }
+  },
+
+  /**
+   * ❌ Alias para cancelOrder (manter compatibilidade)
+   * @deprecated Use cancelOrder instead
+   */
+  async cancelOrderByExchangeId(
+    exchangeId: string,
+    symbol: string,
+    orderId: string
+  ): Promise<any> {
+    return this.cancelOrder(exchangeId, symbol, orderId);
   },
 
   /**
