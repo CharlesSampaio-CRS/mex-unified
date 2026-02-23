@@ -184,6 +184,7 @@ export function OrdersScreen({ navigation }: any) {
         onAlertsPress={onAlertsPress}
         onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
+        navigation={navigation}
       />
       
       {/* Filters Section */}
@@ -303,7 +304,7 @@ export function OrdersScreen({ navigation }: any) {
                   styles.exchangeFilterText,
                   { color: selectedExchange === exchange.id ? '#fff' : colors.text }
                 ]}>
-                  {exchange.name}
+                  {exchange.name || 'Exchange'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -355,7 +356,7 @@ export function OrdersScreen({ navigation }: any) {
                 {/* Exchange Header */}
                 <View style={styles.exchangeHeader}>
                   <Text style={[styles.exchangeName, { color: colors.text }]}>
-                    {section.exchangeName}
+                    {section.exchangeName || 'Exchange'}
                   </Text>
                   <Text style={[styles.exchangeCount, { color: colors.textSecondary }]}>
                     {section.items.length} {section.items.length === 1 ? 'ordem' : 'ordens'}
@@ -398,7 +399,7 @@ export function OrdersScreen({ navigation }: any) {
                           </View>
                           <View>
                             <Text style={[styles.orderSymbol, { color: colors.text }]}>
-                              {item.symbol}
+                              {item.symbol || 'N/A'}
                             </Text>
                             <View style={[
                               styles.typeBadge,
@@ -418,7 +419,7 @@ export function OrdersScreen({ navigation }: any) {
                             {hideValue(`$${apiService.formatUSD(orderValue)}`)}
                           </Text>
                           <Text style={[styles.orderType, { color: colors.textSecondary }]}>
-                            {item.type?.toUpperCase() || 'LIMIT'}
+                            {item.type ? item.type.toUpperCase() : 'LIMIT'}
                           </Text>
                         </View>
                       </View>
@@ -645,46 +646,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    marginRight: 8,
   },
   typeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   orderSymbol: {
-    fontSize: typography.body,
+    fontSize: typography.caption,  // 14 - menor
     fontWeight: fontWeights.bold,
     marginBottom: 4,
   },
   typeBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 4,
     alignSelf: 'flex-start',
   },
   typeBadgeText: {
-    fontSize: 10,
+    fontSize: 9,  // menor
     fontWeight: fontWeights.bold,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   valueSection: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   orderValue: {
-    fontSize: typography.body,
+    fontSize: typography.caption,  // 14 - menor
     fontWeight: fontWeights.bold,
     marginBottom: 2,
   },
   orderType: {
-    fontSize: typography.micro,
+    fontSize: typography.micro,  // 12
     fontWeight: fontWeights.medium,
   },
   cardBody: {
     paddingHorizontal: 16,
     paddingBottom: 12,
-    gap: 8,
+    gap: 6,
   },
   detailRow: {
     flexDirection: 'row',
@@ -692,11 +695,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailLabel: {
-    fontSize: typography.tiny,
+    fontSize: typography.micro,  // 12 - menor
     fontWeight: fontWeights.medium,
   },
   detailValue: {
-    fontSize: typography.tiny,
+    fontSize: typography.micro,  // 12 - menor
     fontWeight: fontWeights.semibold,
   },
   cancelButton: {
