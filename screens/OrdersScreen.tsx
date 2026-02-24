@@ -18,7 +18,7 @@ import { typography, fontWeights } from '@/lib/typography';
 export function OrdersScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
-  const { ordersByExchange, loading, refreshing, refresh } = useOrders();
+  const { ordersByExchange, loading, refreshing, refresh, removeOrder } = useOrders();
   const { hideValue } = usePrivacy();
   const { unreadCount } = useNotifications();
   
@@ -105,17 +105,21 @@ export function OrdersScreen({ navigation }: any) {
       // Cancela ordem na API
       await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, order.id);
       
-      // Remove loading state imediatamente (visual feedback)
+      // ✅ REMOÇÃO OTIMISTA IMEDIATA: Remove da lista sem esperar refresh
+      console.log('✅ [ORDERS-SCREEN] Ordem cancelada, removendo da lista:', orderId)
+      removeOrder(orderId);
+      
+      // Remove do set de cancelamento
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(orderId);
         return newSet;
       });
       
-      // Atualiza orders do backend após delay (não bloqueia UI)
+      // Sincroniza com backend em background (silencioso, não bloqueia UI)
       setTimeout(() => {
         refresh();
-      }, 100);
+      }, 2000);
     } catch (error) {
       console.error('Erro ao cancelar ordem:', error);
       setCancellingOrderIds(prev => {
@@ -124,7 +128,7 @@ export function OrdersScreen({ navigation }: any) {
         return newSet;
       });
     }
-  }, [cancellingOrderIds, refresh]);
+  }, [cancellingOrderIds, refresh, removeOrder]);
 
   // Renderiza order card
   const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string) => {

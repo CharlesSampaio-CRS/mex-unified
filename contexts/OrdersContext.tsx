@@ -19,6 +19,7 @@ interface OrdersContextType {
   totalOrders: number
   timestamp: number | null
   refresh: () => Promise<void>
+  removeOrder: (orderId: string) => void  // Remoção otimista imediata
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
@@ -125,6 +126,21 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     await fetchOrders(true);
   }, [fetchOrders]);
 
+  // 🚀 Remoção otimista: Remove uma ordem da lista localmente sem esperar API
+  const removeOrder = useCallback((orderId: string) => {
+    console.log('🗑️ [ORDERS-CONTEXT] Remoção otimista da ordem:', orderId)
+    setOrdersByExchange(prev => {
+      const updated = prev.map(exchange => ({
+        ...exchange,
+        orders: exchange.orders.filter(order => order.id !== orderId)
+      })).filter(exchange => exchange.orders.length > 0) // Remove exchanges sem ordens
+      
+      console.log('🗑️ [ORDERS-CONTEXT] Ordens restantes:', updated.reduce((sum, ex) => sum + ex.orders.length, 0))
+      return updated
+    })
+    setTimestamp(Date.now())
+  }, [])
+
   // Carrega orders imediatamente ao logar
   useEffect(() => {
     if (user?.id) {
@@ -144,6 +160,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         totalOrders,
         timestamp,
         refresh,
+        removeOrder,
       }}
     >
       {children}

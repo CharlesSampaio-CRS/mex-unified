@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useBalance } from "../contexts/BalanceContext"
+import { useOrders } from "../contexts/OrdersContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
@@ -30,6 +31,7 @@ export function OpenOrdersModal({
   const { colors } = useTheme()
   const { t, language } = useLanguage()
   const { refresh: refreshBalance } = useBalance()
+  const { removeOrder: removeOrderFromContext, refresh: refreshOrders } = useOrders()
   const [orders, setOrders] = useState<OpenOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -306,8 +308,11 @@ export function OpenOrdersModal({
       if (isSuccess) {
         console.log('✅ [OpenOrdersModal] Ordem cancelada com sucesso')
         
-        // ✅ REMOÇÃO OTIMISTA: Remove da lista IMEDIATAMENTE
+        // ✅ REMOÇÃO OTIMISTA: Remove da lista local IMEDIATAMENTE
         setOrders(prev => prev.filter(o => o.id !== orderToCancel.id))
+        
+        // ✅ REMOÇÃO OTIMISTA GLOBAL: Remove do contexto global de ordens
+        removeOrderFromContext(orderToCancel.id)
         
         // ✅ FEEDBACK IMEDIATO: Fecha modais
         setConfirmCancelVisible(false)
@@ -317,6 +322,11 @@ export function OpenOrdersModal({
         
         // Atualiza em background (silencioso)
         refreshBalance().catch(console.error)
+        
+        // Sincroniza com backend em background
+        setTimeout(() => {
+          refreshOrders().catch(console.error)
+        }, 2000)
         
         // Chama callback se existir
         if (onOrderCancelled) {
@@ -398,6 +408,13 @@ export function OpenOrdersModal({
           const failedOrderIds = new Set(result.failed_orders.map((fo: any) => fo.order_id || fo.orderId));
           setOrders(prev => prev.filter(order => failedOrderIds.has(order.id)));
           
+          // ✅ REMOÇÃO PARCIAL GLOBAL: Remove do contexto global as ordens canceladas
+          orders.forEach(order => {
+            if (!failedOrderIds.has(order.id)) {
+              removeOrderFromContext(order.id)
+            }
+          })
+          
           // NÃO fecha o modal para mostrar o erro
           return
         }
@@ -407,10 +424,21 @@ export function OpenOrdersModal({
         // ✅ REMOÇÃO OTIMISTA: Limpa TODAS as ordens imediatamente
         setOrders([])
         
+        // ✅ REMOÇÃO GLOBAL: Remove todas as ordens desta exchange do contexto global
+        orders.forEach(order => {
+          removeOrderFromContext(order.id)
+        })
+        
         // ✅ FEEDBACK IMEDIATO: Fecha modais
         setConfirmCancelAllVisible(false)
         onClose()
         setCancelAllLoading(false)
+        
+        // Sincroniza com backend em background
+        setTimeout(() => {
+          refreshOrders().catch(console.error)
+          refreshBalance().catch(console.error)
+        }, 2000)
         
         // Chama callback
         if (onOrderCancelled) {
