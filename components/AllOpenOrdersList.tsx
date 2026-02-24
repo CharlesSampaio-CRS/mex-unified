@@ -30,18 +30,23 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   const [searchQuery, setSearchQuery] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Filtrar ordens por busca - SIMPLIFICADO
+  // Filtrar ordens por busca - SIMPLIFICADO com validação
   const filteredOrdersByExchange = useMemo(() => {
     if (!searchQuery.trim()) return ordersByExchange;
     
     const query = searchQuery.toLowerCase();
     return ordersByExchange
+      .filter(exchange => exchange && exchange.orders) // ✅ Valida exchange primeiro
       .map(exchange => ({
         ...exchange,
-        orders: exchange.orders.filter(order => 
-          order?.symbol?.toLowerCase().includes(query) ||
-          exchange.exchangeName?.toLowerCase().includes(query)
-        )
+        orders: exchange.orders.filter(order => {
+          // ✅ Validação completa
+          if (!order) return false;
+          const symbol = order.symbol || '';
+          const exchangeName = exchange.exchangeName || '';
+          return symbol.toLowerCase().includes(query) ||
+                 exchangeName.toLowerCase().includes(query);
+        })
       }))
       .filter(exchange => exchange.orders.length > 0);
   }, [ordersByExchange, searchQuery]);
@@ -116,6 +121,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   }, [ordersByExchange]);
 
   const formatPrice = (price: number) => {
+    if (price === undefined || price === null || isNaN(price)) return '0.00';
     return price.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 8,
@@ -123,6 +129,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   };
 
   const formatAmount = (amount: number) => {
+    if (amount === undefined || amount === null || isNaN(amount)) return '0.00';
     return amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 8,
@@ -130,6 +137,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   };
 
   const formatDate = (timestamp: number) => {
+    if (!timestamp || isNaN(timestamp)) return 'Unknown';
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -341,18 +349,22 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
         if (!exchangeData || !exchangeData.orders || exchangeData.orders.length === 0) {
           return null;
         }
+        
+        // ✅ Garante que exchangeId e exchangeName são strings válidas
+        const safeExchangeId = exchangeData.exchangeId || 'unknown';
+        const safeExchangeName = exchangeData.exchangeName || 'Unknown';
 
         return (
           <CompactOrdersList
-            key={exchangeData.exchangeId || `exchange-${Math.random()}`}
-            exchangeId={exchangeData.exchangeId}
-            exchangeName={exchangeData.exchangeName || 'Unknown'}
+            key={`${safeExchangeId}-${Math.random()}`}
+            exchangeId={safeExchangeId}
+            exchangeName={safeExchangeName}
             orders={exchangeData.orders}
             loading={loading}
             hideValue={valuesHidden}
             cancellingOrderIds={cancellingOrderIds}
-            onCancelOrder={(order) => handleCancelOrder(order, exchangeData.exchangeId, exchangeData.exchangeName)}
-            onCloneOrder={(order) => handleCloneOrder(order, exchangeData.exchangeId, exchangeData.exchangeName)}
+            onCancelOrder={(order) => handleCancelOrder(order, safeExchangeId, safeExchangeName)}
+            onCloneOrder={(order) => handleCloneOrder(order, safeExchangeId, safeExchangeName)}
             onViewDetails={handleOpenDetails}
             formatAmount={formatAmount}
             formatPrice={formatPrice}
