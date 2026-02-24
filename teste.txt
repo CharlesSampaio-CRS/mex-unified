@@ -1,11 +1,15 @@
-
-iOS Bundling failed 552ms node_modules/expo/AppEntry.js (1378 modules)
- ERROR  SyntaxError: /home/adm-system/Documents/projects/mex/mex-unified/components/trade-modal.tsx: Unterminated string constant. (5:24)
-
-  3 | import { useTheme } from '@/contexts/ThemeContext'
-  4 | import { useLanguage } from '@/contexts/LanguageContext'
-> 5 | import { useAuth } from '@/contexts/Aut      if (result.success) {
-    |                         ^
-  6 |         onClose();
-  7 |         InteractionManager.runAfterInteractions(() => {
-  8 |           if (onOrderCreated) {
+ LOG  ✅ Ordem criada com sucesso!
+ LOG  🔄 Executando callbacks...
+ LOG  ⚠️ onBalanceUpdate não definido
+ LOG  🔄 Chamando onOrderCreated
+ LOG  🟠 [BALANCE-CONTEXT] ========================================
+ LOG  🟠 [BALANCE-CONTEXT] refresh() chamado
+ LOG  🟠 [BALANCE-CONTEXT] Chamando fetchBalances(forceRefresh=true)...
+ LOG  🔐 [BalanceContext] Lock adquirido, iniciando fetch...
+ LOG  📡 [BalanceContext] Chamando apiService.getBalances()...
+ LOG  ✅ Callbacks executados
+ LOG  ✅ [BalanceContext] Resposta recebida: COM DADOS
+ LOG  🧹 [BalanceContext] Finalizando fetchBalances, removendo loading...
+ LOG  ✅ [BalanceContext] Loading removido, isFetching=false
+ LOG  🟠 [BALANCE-CONTEXT] refresh() concluído em 6841ms
+ LOG  🟠 [BALANCE-CONTEXT] ========================================
