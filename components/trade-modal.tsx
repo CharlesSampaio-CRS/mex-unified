@@ -4,6 +4,8 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotifications } from '@/contexts/NotificationsContext'
+import { useOrders } from '@/contexts/OrdersContext'
+import { useBalance } from '@/contexts/BalanceContext'
 import { typography, fontWeights } from '@/lib/typography'
 import { apiService } from '@/services/api'
 import { AnimatedLogoIcon } from '@/components/AnimatedLogoIcon'
@@ -41,6 +43,8 @@ export function TradeModal({
   const { t } = useLanguage()
   const { user } = useAuth()
   const { addNotification } = useNotifications()
+  const { addOrder, refresh: refreshOrders } = useOrders()
+  const { refresh: refreshBalance } = useBalance()
   
   const [orderSide, setOrderSide] = useState<OrderSide>('buy')
   const [orderType, setOrderType] = useState<OrderType>('limit')
@@ -328,19 +332,40 @@ export function TradeModal({
           )
       
       if (result.success) {
-        // Captura referências ANTES de fechar o modal (evita perda por desmontagem)
-        const balanceCallback = onBalanceUpdate;
-        const ordersCallback = onOrderCreated;
-        
         // 1. Fecha modal imediatamente
         onClose();
         
-        // 2. Atualiza ordens e balance logo em seguida (exchange já processou quando API retorna sucesso)
+        // 2. ✅ INSERÇÃO OTIMISTA: Adiciona a ordem na lista IMEDIATAMENTE (só para limit)
+        if (orderType === 'limit') {
+          const newOrder = {
+            id: result.order_id || result.orderId || result.id || `temp_${Date.now()}`,
+            exchange_order_id: result.order_id || result.orderId || result.id,
+            symbol: tradingPair,
+            type: orderType as 'limit' | 'market',
+            side: orderSide as 'buy' | 'sell',
+            price: priceNum,
+            amount: amountNum,
+            filled: 0,
+            remaining: amountNum,
+            status: 'open' as const,
+            timestamp: Date.now(),
+            datetime: new Date().toISOString(),
+            cost: 0,
+            exchange_id: exchangeId,
+            exchange_name: exchangeName,
+          }
+          addOrder(newOrder, exchangeId, exchangeName)
+        }
+        
+        // 3. Chama callbacks legados (para outros componentes que dependem deles)
+        if (onOrderCreated) onOrderCreated();
+        if (onBalanceUpdate) onBalanceUpdate();
+        
+        // 4. Sincroniza com backend em background (silencioso, corrige dados reais)
         setTimeout(() => {
-          console.log('🔄 [TRADE-MODAL] Atualizando ordens e balance após criação...')
-          if (ordersCallback) ordersCallback();
-          if (balanceCallback) balanceCallback();
-        }, 300);
+          refreshOrders().catch(console.error)
+          refreshBalance().catch(console.error)
+        }, 3000);
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
         setCreateOrderError(errorMsg);

@@ -20,6 +20,7 @@ interface OrdersContextType {
   timestamp: number | null
   refresh: () => Promise<void>
   removeOrder: (orderId: string) => void  // Remoção otimista imediata
+  addOrder: (order: OpenOrder, exchangeId: string, exchangeName: string) => void // Inserção otimista imediata
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
@@ -141,6 +142,31 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     setTimestamp(Date.now())
   }, [])
 
+  // 🚀 Inserção otimista: Adiciona uma ordem na lista localmente sem esperar API
+  const addOrder = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
+    console.log('➕ [ORDERS-CONTEXT] Inserção otimista da ordem:', order.id, order.symbol)
+    setOrdersByExchange(prev => {
+      const existingExchange = prev.find(ex => ex.exchangeId === exchangeId)
+      
+      if (existingExchange) {
+        // Exchange já existe, adiciona a ordem
+        return prev.map(ex => 
+          ex.exchangeId === exchangeId
+            ? { ...ex, orders: [order, ...ex.orders] }
+            : ex
+        )
+      } else {
+        // Exchange nova, cria grupo
+        return [...prev, {
+          exchangeId,
+          exchangeName,
+          orders: [order]
+        }]
+      }
+    })
+    setTimestamp(Date.now())
+  }, [])
+
   // Carrega orders imediatamente ao logar
   useEffect(() => {
     if (user?.id) {
@@ -161,6 +187,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         timestamp,
         refresh,
         removeOrder,
+        addOrder,
       }}
     >
       {children}
