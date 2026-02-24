@@ -63,7 +63,7 @@ export function OrdersScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
   const { ordersByExchange, loading, refreshing, refresh, removeOrder, recentlyAddedIds } = useOrders();
-  const { refresh: refreshBalance } = useBalance();
+  const { data: balanceData, refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
   const { unreadCount } = useNotifications();
   
@@ -77,6 +77,46 @@ export function OrdersScreen({ navigation }: any) {
   const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
   const onProfilePress = useCallback(() => navigation?.navigate('Settings', { initialTab: 'profile' }), [navigation]);
   const onSettingsPress = useCallback(() => navigation?.navigate('Settings'), [navigation]);
+
+  // 💰 Mapa de preços atuais dos tokens (para calcular PnL)
+  const tokenPrices = useMemo(() => {
+    const prices: Record<string, number> = {};
+    if (!balanceData?.exchanges) return prices;
+
+    for (const exchange of balanceData.exchanges) {
+      if (!exchange.success) continue;
+
+      // Nova estrutura: balances (Record<string, Balance>)
+      if (exchange.balances) {
+        for (const [symbol, balance] of Object.entries(exchange.balances)) {
+          const bal = balance as any;
+          const total = parseFloat((bal.total || 0).toString());
+          const usdValue = parseFloat((bal.usd_value || bal.value_usd || 0).toString());
+          if (total > 0 && usdValue > 0) {
+            const pricePerUnit = usdValue / total;
+            const sym = symbol.toUpperCase();
+            // Usa o melhor preço (mais atualizado) entre exchanges
+            if (!prices[sym] || pricePerUnit > 0) {
+              prices[sym] = pricePerUnit;
+            }
+          }
+        }
+      }
+
+      // Estrutura antiga: tokens (Record<string, Token>)
+      if (exchange.tokens) {
+        for (const [symbol, token] of Object.entries(exchange.tokens)) {
+          const tok = token as any;
+          const priceUsd = parseFloat((tok.price_usd || 0).toString());
+          if (priceUsd > 0) {
+            prices[symbol.toUpperCase()] = priceUsd;
+          }
+        }
+      }
+    }
+
+    return prices;
+  }, [balanceData]);
 
   // Filtra orders
   const filteredSections = useMemo(() => {
@@ -194,6 +234,23 @@ export function OrdersScreen({ navigation }: any) {
     
     // Determina casas decimais adequadas para o preço
     const priceDecimals = price < 0.01 ? 8 : price < 1 ? 6 : price < 100 ? 4 : 2;
+
+    // 💰 Calcula PnL estimado (diferença entre preço da ordem e preço atual)
+    const baseToken = (order.symbol || '').split('/')[0]?.toUpperCase();
+    const currentPrice = baseToken ? (tokenPrices[baseToken] || 0) : 0;
+    const currentValue = currentPrice * amount;
+    // Para VENDA: lucro = orderValue - currentValue (vender acima do preço atual = lucro)
+    // Para COMPRA: lucro = currentValue - orderValue (comprar abaixo do preço atual = lucro)  
+    const pnlValue = currentPrice > 0
+      ? (isBuy ? currentValue - orderValue : orderValue - currentValue)
+      : 0;
+    const pnlPercent = currentPrice > 0 && currentValue > 0
+      ? (isBuy 
+          ? ((currentPrice - price) / price) * 100
+          : ((price - currentPrice) / currentPrice) * 100)
+      : 0;
+    const hasPnl = currentPrice > 0 && Math.abs(pnlValue) > 0.001;
+    const isPnlPositive = pnlValue >= 0;
     
     if (!isFinite(orderValue) || isNaN(orderValue)) return null;
 
@@ -229,19 +286,46 @@ export function OrdersScreen({ navigation }: any) {
               />
             </View>
             <View>
-              <Text style={[styles.orderSymbol, { color: colors.text }]}>
-                {String(order.symbol || 'N/A')}
-              </Text>
-              <View style={[
-                styles.typeBadge,
-                { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-              ]}>
-                <Text style={[
-                  styles.typeBadgeText,
-                  { color: isBuy ? colors.success : colors.danger }
-                ]}>
-                  {String(isBuy ? 'COMPRA' : 'VENDA')}
+              <View style={styles.symbolWithPnl}>
+                <Text style={[styles.orderSymbol, { color: colors.text }]}>
+                  {String(order.symbol || 'N/A')}
                 </Text>
+                {hasPnl && (
+                  <View style={[
+                    styles.pnlBadge,
+                    { backgroundColor: isPnlPositive ? colors.successLight : colors.dangerLight }
+                  ]}>
+                    <Ionicons
+                      name={isPnlPositive ? 'caret-up' : 'caret-down'}
+                      size={10}
+                      color={isPnlPositive ? colors.success : colors.danger}
+                    />
+                    <Text style={[
+                      styles.pnlText,
+                      { color: isPnlPositive ? colors.success : colors.danger }
+                    ]}>
+                      {String(hideValue(`$${apiService.formatUSD(Math.abs(pnlValue), Math.abs(pnlValue) < 1 ? 4 : 2)}`))}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.badgeRow}>
+                <View style={[
+                  styles.typeBadge,
+                  { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
+                ]}>
+                  <Text style={[
+                    styles.typeBadgeText,
+                    { color: isBuy ? colors.success : colors.danger }
+                  ]}>
+                    {String(isBuy ? 'COMPRA' : 'VENDA')}
+                  </Text>
+                </View>
+                <View style={[styles.typeBadge, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>
+                    {String((order.type || 'LIMIT').toString().toUpperCase())}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -249,9 +333,11 @@ export function OrdersScreen({ navigation }: any) {
             <Text style={[styles.orderValue, { color: colors.text }]}>
               {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
             </Text>
-            <Text style={[styles.orderType, { color: colors.textSecondary }]}>
-              {String((order.type || 'LIMIT').toString().toUpperCase())}
-            </Text>
+            {hasPnl && (
+              <Text style={[styles.pnlPercent, { color: isPnlPositive ? colors.success : colors.danger }]}>
+                {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -329,7 +415,7 @@ export function OrdersScreen({ navigation }: any) {
         </TouchableOpacity>
       </AnimatedOrderCard>
     );
-  }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder]);
+  }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder, tokenPrices]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -606,7 +692,33 @@ const styles = StyleSheet.create({
   orderSymbol: {
     fontSize: typography.caption,
     fontWeight: fontWeights.bold,
+  },
+  symbolWithPnl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
+  },
+  pnlBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  pnlText: {
+    fontSize: 10,
+    fontWeight: fontWeights.bold,
+  },
+  pnlPercent: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.bold,
+    marginTop: 1,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 4,
   },
   typeBadge: {
     paddingHorizontal: 6,
