@@ -1,2 +1,11 @@
- LOG  🟣 [ORDERS-CONTEXT] ========================================
- ERROR  Text strings must be rendered within a <Text> component.
+
+iOS Bundling failed 552ms node_modules/expo/AppEntry.js (1378 modules)
+ ERROR  SyntaxError: /home/adm-system/Documents/projects/mex/mex-unified/components/trade-modal.tsx: Unterminated string constant. (5:24)
+
+  3 | import { useTheme } from '@/contexts/ThemeContext'
+  4 | import { useLanguage } from '@/contexts/LanguageContext'
+> 5 | import { useAuth } from '@/contexts/Aut      if (result.success) {
+    |                         ^
+  6 |         onClose();
+  7 |         InteractionManager.runAfterInteractions(() => {
+  8 |           if (onOrderCreated) {
