@@ -25,6 +25,7 @@ function BlinkingOrderItem({
   isCancelling, 
   style 
 }: { 
+  key?: string;
   children: React.ReactNode; 
   isCancelling: boolean; 
   style: any; 
@@ -710,9 +711,8 @@ export function OpenOrdersModal({
                     const isRecentlyAdded = recentlyAddedIds.has(orderId);
                     const isAnimating = isCancelling || isRecentlyAdded;
                     
-                    return (
-                    <React.Fragment key={orderId}>
-                    <BlinkingOrderItem
+                    return (<BlinkingOrderItem
+                      key={orderId}
                       isCancelling={isAnimating}
                       style={[styles.orderItemCompact, { 
                         backgroundColor: colors.surface,
@@ -805,7 +805,6 @@ export function OpenOrdersModal({
                         </View>
                       </View>
                     </BlinkingOrderItem>
-                    </React.Fragment>
                   )})}
                 </View>
               )}

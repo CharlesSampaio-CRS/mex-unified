@@ -22,6 +22,7 @@ function AnimatedOrderCard({
   isCancelling, 
   style 
 }: { 
+  key?: string;
   children: React.ReactNode; 
   isCancelling: boolean; 
   style: any; 
@@ -195,6 +196,7 @@ export function OrdersScreen({ navigation }: any) {
 
     return (
       <AnimatedOrderCard
+        key={orderId}
         isCancelling={isAnimating}
         style={[
           styles.orderCard,
@@ -270,7 +272,7 @@ export function OrdersScreen({ navigation }: any) {
             </Text>
           </View>
 
-          {order.filled && Number(order.filled) > 0 && (
+          {order.filled != null && Number(order.filled) > 0 && (
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
                 Executado
@@ -281,7 +283,7 @@ export function OrdersScreen({ navigation }: any) {
             </View>
           )}
 
-          {order.timestamp && (
+          {order.timestamp != null && order.timestamp > 0 && (
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
                 Data
@@ -462,11 +464,7 @@ export function OrdersScreen({ navigation }: any) {
                     {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
                   </Text>
                 </View>
-                {section.orders.map(order => (
-                  <View key={String(order.id)}>
-                    {renderOrderCard(order, section.exchangeId)}
-                  </View>
-                ))}
+                {section.orders.map(order => renderOrderCard(order, section.exchangeId))}
               </View>
             ))}
           </View>
