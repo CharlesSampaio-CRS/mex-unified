@@ -146,8 +146,8 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
       setLoading(true)
       setError(null)
       
-      // 1️⃣ Buscar a exchange do banco local
-      const exchange = await exchangeService.getExchangeById(exchangeId)
+      // 1️⃣ Buscar a exchange do banco com credenciais
+      const exchange = await exchangeService.getExchangeById(exchangeId, user.id)
       if (!exchange) {
         throw new Error('Exchange não encontrada')
       }
