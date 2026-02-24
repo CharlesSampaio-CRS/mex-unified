@@ -1123,11 +1123,10 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           symbol={selectedTrade.symbol}
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
-          onOrderCreated={async () => {
-            console.log('🎉 [AssetsList] Ordem criada - atualizando em background...');
+          onOrderCreated={() => {
+            console.log('🎉 [AssetsList] Ordem criada - disparando atualizações...');
             
-            // ⚡ Executa IMEDIATAMENTE em background (sem await no callback principal)
-            // O TradeModal não espera, fecha instantaneamente
+            // ⚡ Dispara em background IMEDIATAMENTE (função síncrona)
             refreshBalance().catch(err => {
               console.error('❌ [AssetsList] Erro ao atualizar balance:', err);
             });
@@ -1136,11 +1135,11 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               console.error('❌ [AssetsList] Erro ao atualizar orders:', err);
             });
             
-            console.log('✅ [AssetsList] Atualizações disparadas em background!');
+            console.log('✅ [AssetsList] Atualizações disparadas!');
           }}
-          onBalanceUpdate={async () => {
+          onBalanceUpdate={() => {
             // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
-            console.log('⏭️ [AssetsList] onBalanceUpdate pulado (já atualizado)');
+            console.log('⏭️ [AssetsList] onBalanceUpdate pulado');
           }}
         />
       )}
