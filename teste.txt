@@ -1,4 +1,2 @@
- LOG  🔍 FILTER - Inicio: {"allSections": 1, "search": "", "selectedExchange": "All", "selectedType": "All"}
- LOG  🔍 FILTER - Resultado: 1 sections
- LOG    Section 0: MEXC - 1 items
- ERROR  Text strings must be rendered within a <Text> component.
+console.js:661 Text strings must be rendered within a <Text> component. Error Stack:
+    at RCTView (<anonymous>)
