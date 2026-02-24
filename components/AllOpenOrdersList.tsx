@@ -77,7 +77,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   
   const [confirmCancelVisible, setConfirmCancelVisible] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string; exchangeName: string } | null>(null);
-  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelLoading] = useState(false); // ⚠️ Mantido por compatibilidade com modal (sempre false)
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set()); // IDs das ordens sendo canceladas
 
