@@ -1,14 +1,2 @@
- LOG  🔵 [TRADE-MODAL] ========================================
- LOG  🔵 [TRADE-MODAL] handleSubmit() - CRIANDO ORDEM DIRETO (SEM MODAL DE CONFIRMAÇÃO)
- LOG  🔵 [TRADE-MODAL] Validações OK, criando ordem...
- LOG  🔵 [TRADE-MODAL] Tipo: VENDA
- LOG  🔵 [TRADE-MODAL] Exchange: MEXC (693481148b0a41e8b6acb07b)
- LOG  🔵 [TRADE-MODAL] Par: REKTCOIN
- LOG  🔵 [TRADE-MODAL] Quantidade: 404984734.2415331
- LOG  🔵 [TRADE-MODAL] Tipo ordem: limit
- LOG  🔵 [TRADE-MODAL] Preço: 0.0000727
- LOG  🔵 [TRADE-MODAL] Total: 29442.39017935946
- LOG  🔵 [TRADE-MODAL] Enviando requisição para API...
- ERROR  ❌ Create Order Error: [Error: Failed to create order: BadSymbol: mexc does not have market symbol REKTCOIN]
- ERROR  ❌ [TRADE-MODAL] Exception ao criar ordem: [Error: Token "REKTCOIN" não está disponível nesta exchange]
- LOG  🔵 [TRADE-MODAL] ========================================
+ LOG  🟣 [ORDERS-CONTEXT] ========================================
+ ERROR  Text strings must be rendered within a <Text> component.
