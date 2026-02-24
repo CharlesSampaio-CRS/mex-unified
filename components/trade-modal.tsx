@@ -370,21 +370,25 @@ export function TradeModal({
         console.log('✅ [TRADE-MODAL] Fechando modal...')
         console.log('✅ [TRADE-MODAL] Timestamp antes de fechar:', Date.now())
         
-        // Fecha modal imediatamente
-        console.log('✅ [TRADE-MODAL] Chamando setConfirmTradeVisible(false)...')
-        setConfirmTradeVisible(false);
+        // ⚠️ SETSTATE COMENTADOS PARA TESTE
+        console.log('⚠️ [TRADE-MODAL] setState COMENTADOS - testando apenas onClose()')
         
-        console.log('✅ [TRADE-MODAL] Chamando setPendingOrder(null)...')
-        setPendingOrder(null);
+        // console.log('✅ [TRADE-MODAL] Chamando setConfirmTradeVisible(false)...')
+        // setConfirmTradeVisible(false);
         
-        console.log('✅ [TRADE-MODAL] Chamando setCreateOrderLoading(false)...')
-        setCreateOrderLoading(false);
+        // console.log('✅ [TRADE-MODAL] Chamando setPendingOrder(null)...')
+        // setPendingOrder(null);
         
-        console.log('✅ [TRADE-MODAL] Chamando setCreateOrderError(null)...')
-        setCreateOrderError(null);
+        // console.log('✅ [TRADE-MODAL] Chamando setCreateOrderLoading(false)...')
+        // setCreateOrderLoading(false);
         
-        console.log('✅ [TRADE-MODAL] Chamando onClose()...')
+        // console.log('✅ [TRADE-MODAL] Chamando setCreateOrderError(null)...')
+        // setCreateOrderError(null);
+        
+        console.log('✅ [TRADE-MODAL] Chamando APENAS onClose()...')
+        console.log('✅ [TRADE-MODAL] Timestamp ANTES do onClose:', Date.now())
         onClose();
+        console.log('✅ [TRADE-MODAL] Timestamp DEPOIS do onClose:', Date.now())
         
         console.log('✅ [TRADE-MODAL] Modal fechado')
         console.log('✅ [TRADE-MODAL] Timestamp depois de fechar:', Date.now())
