@@ -792,6 +792,16 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           </View>
         </View>
 
+        {/* Indicador de atualização após trade */}
+        {refreshing && (
+          <View style={styles.refreshingBanner}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.refreshingText, { color: colors.primary }]}>
+              Atualizando...
+            </Text>
+          </View>
+        )}
+
         {/* Campo de Busca */}
         <View style={styles.searchContainer}>
           <Text style={[styles.searchIcon, { color: colors.textSecondary }]}>🔍</Text>
@@ -1163,6 +1173,18 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
 const styles = StyleSheet.create({
   listContainer: {
     marginTop: 0,
+  },
+  // Banner de atualização
+  refreshingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 8,
+  },
+  refreshingText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   // Campo de Busca
   searchContainer: {

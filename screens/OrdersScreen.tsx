@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -380,6 +380,16 @@ export function OrdersScreen({ navigation }: any) {
           />
         }
       >
+        {/* Banner de atualização programática */}
+        {refreshing && (
+          <View style={styles.refreshingBanner}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.refreshingText, { color: colors.primary }]}>
+              Atualizando ordens...
+            </Text>
+          </View>
+        )}
+
         {loading && filteredSections.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
@@ -438,6 +448,17 @@ export function OrdersScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: commonStyles.screenContainer,
+  refreshingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 8,
+  },
+  refreshingText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
   filtersContainer: {
     paddingHorizontal: 16,
     paddingTop: 12,
