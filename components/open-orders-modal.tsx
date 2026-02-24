@@ -414,6 +414,9 @@ export function OpenOrdersModal({
             }
           })
           
+          // ✅ Atualiza balance/assets imediatamente (fundos parcialmente liberados)
+          refreshBalance().catch(console.error)
+          
           // NÃO fecha o modal para mostrar o erro
           return
         }
@@ -433,10 +436,12 @@ export function OpenOrdersModal({
         onClose()
         setCancelAllLoading(false)
         
+        // ✅ Atualiza balance/assets imediatamente (fundos liberados ao cancelar)
+        refreshBalance().catch(console.error)
+        
         // Sincroniza com backend em background
         setTimeout(() => {
           refreshOrders().catch(console.error)
-          refreshBalance().catch(console.error)
         }, 2000)
         
         // Chama callback

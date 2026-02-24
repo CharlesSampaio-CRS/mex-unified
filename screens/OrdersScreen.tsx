@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useOrders } from '@/contexts/OrdersContext';
+import { useBalance } from '@/contexts/BalanceContext';
 import { usePrivacy } from '@/contexts/PrivacyContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +20,7 @@ export function OrdersScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
   const { ordersByExchange, loading, refreshing, refresh, removeOrder } = useOrders();
+  const { refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
   const { unreadCount } = useNotifications();
   
@@ -116,6 +118,9 @@ export function OrdersScreen({ navigation }: any) {
         return newSet;
       });
       
+      // ✅ Atualiza balance/assets imediatamente (fundos liberados ao cancelar)
+      refreshBalance().catch(console.error);
+      
       // Sincroniza com backend em background (silencioso, não bloqueia UI)
       setTimeout(() => {
         refresh();
@@ -128,7 +133,7 @@ export function OrdersScreen({ navigation }: any) {
         return newSet;
       });
     }
-  }, [cancellingOrderIds, refresh, removeOrder]);
+  }, [cancellingOrderIds, refresh, removeOrder, refreshBalance]);
 
   // Renderiza order card
   const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string) => {
