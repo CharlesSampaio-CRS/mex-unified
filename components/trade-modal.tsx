@@ -416,23 +416,23 @@ export function TradeModal({
         // }
         console.log('🧪 [TradeModal] TESTE SEM NOTIFICAÇÃO - Modal vai fechar...');
         
-        // 🔄 DISPARA CALLBACKS EM BACKGROUND PRIMEIRO (fire-and-forget)
-        // Não usa Promise.resolve().then() - executa direto
-        if (onOrderCreated) {
-          try {
-            onOrderCreated();
-          } catch (err) {
-            console.error('❌ [TradeModal] Erro em onOrderCreated:', err);
-          }
-        }
+        // 🔄 CALLBACKS COMENTADOS PARA TESTE
+        // if (onOrderCreated) {
+        //   try {
+        //     onOrderCreated();
+        //   } catch (err) {
+        //     console.error('❌ [TradeModal] Erro em onOrderCreated:', err);
+        //   }
+        // }
         
-        if (onBalanceUpdate) {
-          try {
-            onBalanceUpdate();
-          } catch (err) {
-            console.error('❌ [TradeModal] Erro em onBalanceUpdate:', err);
-          }
-        }
+        // if (onBalanceUpdate) {
+        //   try {
+        //     onBalanceUpdate();
+        //   } catch (err) {
+        //     console.error('❌ [TradeModal] Erro em onBalanceUpdate:', err);
+        //   }
+        // }
+        console.log('🧪 [TradeModal] TESTE - Callbacks também comentados');
         
         // ✅ FECHA MODAL IMEDIATAMENTE (DEPOIS de disparar callbacks)
         setConfirmTradeVisible(false);

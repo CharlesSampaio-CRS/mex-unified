@@ -46,6 +46,11 @@ export function CompactOrderCard({
 
   // Função para formatar números grandes de forma compacta
   const formatCompactNumber = (value: number): string => {
+    // ✅ VALIDAÇÃO: Garante retorno válido
+    if (value === undefined || value === null || isNaN(value)) {
+      return '0';
+    }
+    
     if (value >= 1_000_000_000) {
       return `${(value / 1_000_000_000).toFixed(2)}Bi`;
     } else if (value >= 1_000_000) {
@@ -81,8 +86,13 @@ export function CompactOrderCard({
             <View style={styles.tokenInfo}>
               <Text style={[styles.symbol, { color: colors.text }]}>
                 {(() => {
+                  // ✅ VALIDAÇÃO: Garante que order.symbol existe
+                  if (!order || !order.symbol || typeof order.symbol !== 'string') {
+                    return 'Unknown';
+                  }
                   // Extrair token base do símbolo (ex: BTC/USDT -> Btc)
                   const baseToken = order.symbol.split('/')[0] || order.symbol;
+                  if (!baseToken) return 'Unknown';
                   return baseToken.charAt(0).toUpperCase() + baseToken.slice(1).toLowerCase();
                 })()}
               </Text>
@@ -141,19 +151,19 @@ export function CompactOrderCard({
             <View style={styles.priceInfoItem}>
               <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Amount:</Text>
               <Text style={[styles.priceInfoValue, { color: colors.text }]}>
-                {hideValue ? '••••••' : formatCompactNumber(order.amount)}
+                {hideValue ? '••••••' : (order.amount !== undefined ? formatCompactNumber(order.amount) : '0')}
               </Text>
             </View>
             <View style={styles.priceInfoItem}>
               <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Price:</Text>
               <Text style={[styles.priceInfoValue, { color: colors.text }]}>
-                {hideValue ? '••••••' : `$${formatPrice(order.price)}`}
+                {hideValue ? '••••••' : (order.price !== undefined ? `$${formatPrice(order.price)}` : '$0')}
               </Text>
             </View>
             <View style={styles.priceInfoItem}>
               <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Time:</Text>
               <Text style={[styles.priceInfoValue, { color: colors.text }]}>
-                {formatDate(order.timestamp)}
+                {order.timestamp ? formatDate(order.timestamp) : 'Unknown'}
               </Text>
             </View>
           </View>
@@ -164,14 +174,14 @@ export function CompactOrderCard({
             <View style={styles.detailItem}>
               <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Type:</Text>
               <Text style={[styles.detailValue, { color: colors.text }]}>
-                {order.type.toUpperCase()}
+                {order.type ? order.type.toUpperCase() : 'UNKNOWN'}
               </Text>
             </View>
             
             <View style={styles.detailItem}>
               <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Status:</Text>
               <Text style={[styles.detailValue, { color: colors.text }]}>
-                {order.status}
+                {order.status || 'unknown'}
               </Text>
             </View>
 
