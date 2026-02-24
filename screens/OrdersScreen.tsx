@@ -192,6 +192,9 @@ export function OrdersScreen({ navigation }: any) {
     const amount = Number(order.amount) || 0;
     const orderValue = price * amount;
     
+    // Determina casas decimais adequadas para o preço
+    const priceDecimals = price < 0.01 ? 8 : price < 1 ? 6 : price < 100 ? 4 : 2;
+    
     if (!isFinite(orderValue) || isNaN(orderValue)) return null;
 
     return (
@@ -244,7 +247,7 @@ export function OrdersScreen({ navigation }: any) {
           </View>
           <View style={styles.valueSection}>
             <Text style={[styles.orderValue, { color: colors.text }]}>
-              {String(hideValue(`$${apiService.formatUSD(orderValue)}`))}
+              {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
             </Text>
             <Text style={[styles.orderType, { color: colors.textSecondary }]}>
               {String((order.type || 'LIMIT').toString().toUpperCase())}
@@ -259,7 +262,7 @@ export function OrdersScreen({ navigation }: any) {
               Preço
             </Text>
             <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-              {String(hideValue(`$${apiService.formatUSD(price)}`))}
+              {String(hideValue(`$${apiService.formatUSD(price, priceDecimals)}`))}
             </Text>
           </View>
 
