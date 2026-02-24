@@ -368,15 +368,26 @@ export function TradeModal({
       if (result.success) {
         console.log('✅ [TRADE-MODAL] Ordem criada com sucesso!')
         console.log('✅ [TRADE-MODAL] Fechando modal...')
+        console.log('✅ [TRADE-MODAL] Timestamp antes de fechar:', Date.now())
         
         // Fecha modal imediatamente
+        console.log('✅ [TRADE-MODAL] Chamando setConfirmTradeVisible(false)...')
         setConfirmTradeVisible(false);
+        
+        console.log('✅ [TRADE-MODAL] Chamando setPendingOrder(null)...')
         setPendingOrder(null);
+        
+        console.log('✅ [TRADE-MODAL] Chamando setCreateOrderLoading(false)...')
         setCreateOrderLoading(false);
+        
+        console.log('✅ [TRADE-MODAL] Chamando setCreateOrderError(null)...')
         setCreateOrderError(null);
+        
+        console.log('✅ [TRADE-MODAL] Chamando onClose()...')
         onClose();
         
         console.log('✅ [TRADE-MODAL] Modal fechado')
+        console.log('✅ [TRADE-MODAL] Timestamp depois de fechar:', Date.now())
         console.log('✅ [TRADE-MODAL] Disparando callbacks em background...')
         
         // Callbacks em background (não espera)

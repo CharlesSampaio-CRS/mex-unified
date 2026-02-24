@@ -1122,7 +1122,17 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
       {selectedTrade && (
         <TradeModal
           visible={tradeModalVisible}
-          onClose={() => setTradeModalVisible(false)}
+          onClose={() => {
+            console.log('🟢 [ASSETS-LIST] ========================================')
+            console.log('🟢 [ASSETS-LIST] onClose() chamado')
+            console.log('🟢 [ASSETS-LIST] Timestamp:', Date.now())
+            console.log('🟢 [ASSETS-LIST] Chamando setTradeModalVisible(false)...')
+            
+            setTradeModalVisible(false)
+            
+            console.log('🟢 [ASSETS-LIST] Modal fechado')
+            console.log('🟢 [ASSETS-LIST] ========================================')
+          }}
           exchangeId={selectedTrade.exchangeId}
           exchangeName={selectedTrade.exchangeName}
           symbol={selectedTrade.symbol}
