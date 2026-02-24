@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -112,10 +112,10 @@ export function OrdersScreen({ navigation }: any) {
         return newSet;
       });
       
-      // Atualiza orders do backend após animação
-      InteractionManager.runAfterInteractions(() => {
+      // Atualiza orders do backend após delay (não bloqueia UI)
+      setTimeout(() => {
         refresh();
-      });
+      }, 100);
     } catch (error) {
       console.error('Erro ao cancelar ordem:', error);
       setCancellingOrderIds(prev => {

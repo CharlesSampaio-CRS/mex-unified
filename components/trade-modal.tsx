@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, InteractionManager } from 'react-native'
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable } from 'react-native'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -328,8 +328,14 @@ export function TradeModal({
           )
       
       if (result.success) {
+        // 1. Fecha modal imediatamente
         onClose();
-        // ⚠️ CALLBACKS REMOVIDOS - NÃO ATUALIZA BALANCE/ORDERS
+        
+        // 2. Atualiza balance e orders após um pequeno delay (não bloqueia UI)
+        setTimeout(() => {
+          if (onBalanceUpdate) onBalanceUpdate();
+          if (onOrderCreated) onOrderCreated();
+        }, 100);
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
         setCreateOrderError(errorMsg);
