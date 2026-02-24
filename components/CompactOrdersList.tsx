@@ -60,7 +60,7 @@ export function CompactOrdersList({
             style={{ marginRight: 6 }}
           />
           <Text style={[styles.exchangeName, { color: colors.text }]}>
-            {exchangeName}
+            {exchangeName || 'Unknown Exchange'}
           </Text>
         </View>
         
@@ -73,7 +73,7 @@ export function CompactOrdersList({
           </View>
         ) : (
           <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
-            {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+            {(orders || []).length} {(orders || []).length === 1 ? 'order' : 'orders'}
           </Text>
         )}
       </TouchableOpacity>

@@ -48,7 +48,8 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     const query = searchQuery.toLowerCase().trim();
     return localOrdersByExchange
       .map(exchange => {
-        const exchangeName = exchange.exchangeName.toLowerCase();
+        // ✅ PROTEÇÃO: Valida exchangeName antes de usar
+        const exchangeName = (exchange?.exchangeName || '').toLowerCase();
         
         // Se o nome da exchange corresponde, retorna todas as ordens
         if (exchangeName.includes(query)) {
@@ -58,12 +59,17 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
         // Caso contrário, filtra apenas ordens com símbolos correspondentes
         return {
           ...exchange,
-          orders: exchange.orders.filter(order => 
-            order.symbol.toLowerCase().includes(query)
-          )
+          orders: (exchange.orders || []).filter(order => {
+            // ✅ PROTEÇÃO: Valida order.symbol antes de usar
+            if (!order || !order.symbol || typeof order.symbol !== 'string') {
+              console.warn('⚠️ [AllOpenOrdersList] Ordem com symbol inválido:', order);
+              return false;
+            }
+            return order.symbol.toLowerCase().includes(query);
+          })
         };
       })
-      .filter(exchange => exchange.orders.length > 0);
+      .filter(exchange => exchange && exchange.orders && exchange.orders.length > 0);
   }, [localOrdersByExchange, searchQuery]);
   
   const totalOrders = filteredOrdersByExchange.reduce((sum, ex) => sum + ex.orders.length, 0);
@@ -214,19 +220,25 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     // ✅ REMOÇÃO OTIMISTA: Remove da lista ANTES da API
     removeOrderLocally(orderId, exchangeId);
     
+    // ✅ PROTEÇÃO: Valida dados antes de criar notificação
+    const orderSymbol = order?.symbol || 'UNKNOWN';
+    const baseToken = orderSymbol.split('/')[0] || orderSymbol;
+    const orderAmount = order?.amount || 0;
+    const orderPrice = order?.price || 0;
+    
     // 🔔 Notificação de sucesso IMEDIATA (otimista)
     addNotification({
       type: 'success',
       title: '✅ Ordem Cancelada',
-      message: `Ordem ${order.side === 'buy' ? 'de compra' : 'de venda'} cancelada: ${order.amount.toFixed(8)} ${order.symbol.split('/')[0]} @ ${apiService.formatUSD(order.price)}`,
+      message: `Ordem ${order.side === 'buy' ? 'de compra' : 'de venda'} cancelada: ${orderAmount.toFixed(8)} ${baseToken} @ ${apiService.formatUSD(orderPrice)}`,
       data: {
         icon: '🗑️',
         orderId,
         exchangeName,
-        symbol: order.symbol,
+        symbol: orderSymbol,
         side: order.side,
-        amount: order.amount,
-        price: order.price
+        amount: orderAmount,
+        price: orderPrice
       }
     });
 
@@ -299,7 +311,9 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
           }
         } else {
           // Para ordem de venda, verificar saldo do token base
-          const [baseAsset] = order.symbol.split('/');
+          // ✅ PROTEÇÃO: Valida order.symbol antes de split
+          const orderSymbol = order?.symbol || 'UNKNOWN/USDT';
+          const [baseAsset] = orderSymbol.split('/');
           const tokenBalance = exchange.balances[baseAsset];
           if (tokenBalance && tokenBalance.free < order.amount) {
             setInsufficientBalance(true);
