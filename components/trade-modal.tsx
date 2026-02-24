@@ -335,17 +335,12 @@ export function TradeModal({
         // 1. Fecha modal imediatamente
         onClose();
         
-        // 2. Atualiza orders após delay curto (ordens já estão na exchange)
+        // 2. Atualiza ordens e balance logo em seguida (exchange já processou quando API retorna sucesso)
         setTimeout(() => {
-          console.log('🔄 [TRADE-MODAL] Atualizando ordens após criação...')
+          console.log('🔄 [TRADE-MODAL] Atualizando ordens e balance após criação...')
           if (ordersCallback) ordersCallback();
-        }, 500);
-        
-        // 3. Atualiza balance com delay maior (exchange precisa processar)
-        setTimeout(() => {
-          console.log('🔄 [TRADE-MODAL] Atualizando balance após criação de ordem...')
           if (balanceCallback) balanceCallback();
-        }, 2000);
+        }, 300);
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
         setCreateOrderError(errorMsg);
