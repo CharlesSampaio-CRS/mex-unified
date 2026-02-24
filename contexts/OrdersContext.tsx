@@ -37,18 +37,20 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const [recentlyAddedIds, setRecentlyAddedIds] = useState<Set<string>>(new Set());
   const [recentlyAffectedSymbols, setRecentlyAffectedSymbols] = useState<Set<string>>(new Set());
 
-  const fetchOrders = useCallback(async (forceRefresh = false) => {
+  const fetchOrders = useCallback(async (forceRefresh = false, silent = false) => {
     if (!user?.id) return
     
     console.log('🟣 [ORDERS-CONTEXT] ========================================')
     console.log('🟣 [ORDERS-CONTEXT] Iniciando busca de ordens')
-    console.log('🟣 [ORDERS-CONTEXT] ForceRefresh:', forceRefresh)
+    console.log('🟣 [ORDERS-CONTEXT] ForceRefresh:', forceRefresh, 'Silent:', silent)
     console.log('🟣 [ORDERS-CONTEXT] User ID:', user.id)
     
-    if (forceRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
+    if (!silent) {
+      if (forceRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
     }
     
     setError(null);
@@ -225,6 +227,18 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     if (user?.id) {
       fetchOrders(false);
     }
+  }, [user?.id, fetchOrders]);
+
+  // ⏰ Auto-refresh a cada 30s (silencioso, sem loading visual)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const interval = setInterval(() => {
+      console.log('⏰ [ORDERS-CONTEXT] Auto-refresh (30s)');
+      fetchOrders(true, true);
+    }, 30 * 1000);
+
+    return () => clearInterval(interval);
   }, [user?.id, fetchOrders]);
 
   const totalOrders = ordersByExchange.reduce((sum, ex) => sum + ex.orders.length, 0);
