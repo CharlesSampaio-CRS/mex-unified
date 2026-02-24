@@ -100,12 +100,18 @@ export function CompactOrdersList({
         /* Lista de Orders Compacta */
         <View>
           {orders.map((order) => {
+            // ✅ Validação: Ignora orders inválidas
+            if (!order || !order.id) {
+              console.warn('⚠️ [CompactOrdersList] Ordem inválida detectada:', order);
+              return null;
+            }
+            
             const orderId = getOrderId(order);
             const isCancelling = cancellingOrderIds.has(orderId);
             
             return (
               <CompactOrderCard
-                key={orderId}
+                key={orderId || `order-${Math.random()}`}
                 order={order}
                 exchangeId={exchangeId}
                 exchangeName={exchangeName}

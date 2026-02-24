@@ -434,13 +434,16 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
         // Lista de orders compacta por exchange
         <>
       {filteredOrdersByExchange.map((exchangeData) => {
-        if (exchangeData.orders.length === 0) return null;
+        // ✅ Validação: Ignora exchanges sem dados válidos
+        if (!exchangeData || !exchangeData.orders || exchangeData.orders.length === 0) {
+          return null;
+        }
 
         return (
           <CompactOrdersList
-            key={exchangeData.exchangeId}
+            key={exchangeData.exchangeId || `exchange-${Math.random()}`}
             exchangeId={exchangeData.exchangeId}
-            exchangeName={exchangeData.exchangeName}
+            exchangeName={exchangeData.exchangeName || 'Unknown'}
             orders={exchangeData.orders}
             loading={loading}
             hideValue={valuesHidden}
