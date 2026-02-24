@@ -388,19 +388,22 @@ export function TradeModal({
         
         console.log('✅ [TRADE-MODAL] Modal fechado')
         console.log('✅ [TRADE-MODAL] Timestamp depois de fechar:', Date.now())
-        console.log('✅ [TRADE-MODAL] Disparando callbacks em background...')
         
-        // Callbacks em background (não espera)
-        setTimeout(() => {
-          console.log('🔄 [TRADE-MODAL] Executando callback onOrderCreated...')
-          if (onOrderCreated) onOrderCreated();
-          
-          console.log('🔄 [TRADE-MODAL] Executando callback onBalanceUpdate...')
-          if (onBalanceUpdate) onBalanceUpdate();
-          
-          console.log('✅ [TRADE-MODAL] Callbacks executados')
-          console.log('🔵 [TRADE-MODAL] ========================================')
-        }, 0);
+        // ⚠️ CALLBACKS REMOVIDOS PARA TESTE DE TRAVAMENTO
+        console.log('⚠️ [TRADE-MODAL] Callbacks foram REMOVIDOS para teste')
+        console.log('⚠️ [TRADE-MODAL] Se não travar, o problema são os callbacks!')
+        console.log('🔵 [TRADE-MODAL] ========================================')
+        
+        // setTimeout(() => {
+        //   console.log('🔄 [TRADE-MODAL] Executando callback onOrderCreated...')
+        //   if (onOrderCreated) onOrderCreated();
+        //   
+        //   console.log('🔄 [TRADE-MODAL] Executando callback onBalanceUpdate...')
+        //   if (onBalanceUpdate) onBalanceUpdate();
+        //   
+        //   console.log('✅ [TRADE-MODAL] Callbacks executados')
+        //   console.log('🔵 [TRADE-MODAL] ========================================')
+        // }, 0);
         
       } else {
         // ❌ Erro da API
