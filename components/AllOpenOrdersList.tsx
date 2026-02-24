@@ -27,55 +27,30 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   const { ordersByExchange, loading, refreshing: contextRefreshing, timestamp, refresh } = useOrders();
   const { hideValue: hideValueFn, valuesHidden } = usePrivacy();
   const { refresh: refreshBalance, data: balanceData } = useBalance();
-  const { addNotification } = useNotifications();
   const [searchQuery, setSearchQuery] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // 🆕 Estado local para ordens (permite remoção otimista)
-  const [localOrdersByExchange, setLocalOrdersByExchange] = useState(ordersByExchange);
-  
-  // Sincroniza estado local quando ordersByExchange atualiza
-  useEffect(() => {
-    setLocalOrdersByExchange(ordersByExchange);
-  }, [ordersByExchange]);
-  
-  // Filtrar ordens por busca (nome da exchange ou símbolo do token)
+  // Filtrar ordens por busca - SIMPLIFICADO
   const filteredOrdersByExchange = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return localOrdersByExchange;
-    }
+    if (!searchQuery.trim()) return ordersByExchange;
     
-    const query = searchQuery.toLowerCase().trim();
-    return localOrdersByExchange
-      .map(exchange => {
-        // ✅ PROTEÇÃO: Valida exchangeName antes de usar
-        const exchangeName = (exchange?.exchangeName || '').toLowerCase();
-        
-        // Se o nome da exchange corresponde, retorna todas as ordens
-        if (exchangeName.includes(query)) {
-          return exchange;
-        }
-        
-        // Caso contrário, filtra apenas ordens com símbolos correspondentes
-        return {
-          ...exchange,
-          orders: (exchange.orders || []).filter(order => {
-            // ✅ PROTEÇÃO: Valida order.symbol antes de usar
-            if (!order || !order.symbol || typeof order.symbol !== 'string') {
-              return false;
-            }
-            return order.symbol.toLowerCase().includes(query);
-          })
-        };
-      })
-      .filter(exchange => exchange && exchange.orders && exchange.orders.length > 0);
-  }, [localOrdersByExchange, searchQuery]);
+    const query = searchQuery.toLowerCase();
+    return ordersByExchange
+      .map(exchange => ({
+        ...exchange,
+        orders: exchange.orders.filter(order => 
+          order?.symbol?.toLowerCase().includes(query) ||
+          exchange.exchangeName?.toLowerCase().includes(query)
+        )
+      }))
+      .filter(exchange => exchange.orders.length > 0);
+  }, [ordersByExchange, searchQuery]);
   
   const totalOrders = filteredOrdersByExchange.reduce((sum, ex) => sum + ex.orders.length, 0);
   
   const gradientColors: readonly [string, string, ...string[]] = isDark 
     ? ['rgba(26, 26, 26, 0.95)', 'rgba(38, 38, 38, 0.95)', 'rgba(26, 26, 26, 0.95)']
-    : ['rgba(250, 250, 249, 1)', 'rgba(247, 246, 244, 1)', 'rgba(250, 250, 249, 1)']
+    : ['rgba(250, 250, 249, 1)', 'rgba(247, 246, 244, 1)', 'rgba(250, 250, 249, 1)'];
   
   const [selectedOrder, setSelectedOrder] = useState<OpenOrder | null>(null);
   const [orderDetailsVisible, setOrderDetailsVisible] = useState(false);
@@ -176,21 +151,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     setOrderDetailsVisible(true);
   };
 
-  // 🆕 Remove ordem localmente (otimista)
-  const removeOrderLocally = (orderId: string, exchangeId: string) => {
-    setLocalOrdersByExchange(prev => 
-      prev.map(exchange => {
-        if (exchange.exchangeId === exchangeId) {
-          return {
-            ...exchange,
-            orders: exchange.orders.filter(order => getOrderId(order) !== orderId)
-          };
-        }
-        return exchange;
-      }).filter(exchange => exchange.orders.length > 0) // Remove exchanges sem ordens
-    );
-  };
-
   const handleCancelOrder = (order: OpenOrder, exchangeId: string, exchangeName: string) => {
     setOrderToCancel({ order, exchangeId, exchangeName });
     setConfirmCancelVisible(true);
@@ -206,7 +166,8 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     
     try {
       await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, orderId);
-      removeOrderLocally(orderId, exchangeId);
+      // Recarrega lista após cancelar
+      await refresh();
     } catch (error: any) {
       // Erro - nada a fazer, ordem permanece
     } finally {
