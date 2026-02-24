@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Pressable, Modal, Animated, TextInput } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Pressable, Modal, TextInput } from "react-native"
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
@@ -15,12 +15,10 @@ import { SkeletonExchangeItem } from "./SkeletonLoaders"
 import { TokenDetailsModal } from "./token-details-modal"
 import { TradeModal } from "./trade-modal"
 import { CreateAlertModal } from "./create-price-alert-modal"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { getExchangeLogo } from "@/lib/exchange-logos"
 import { typography, fontWeights } from "@/lib/typography"
 import { useTokenMonitor } from "@/hooks/use-token-monitor"
 import { useOpenOrdersSync } from "@/hooks/useOpenOrdersSync"
-import { CompactAssetsList } from "./CompactAssetsList"
 import { getExchangeId, getExchangeName, getTotalUsd, getExchangeBalances } from "@/lib/exchange-helpers"
 
 // ❌ CACHE REMOVIDO - Sempre busca dados frescos
@@ -980,52 +978,59 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           const exchangeTotalUSD = getTotalUsd(exchange)
 
           return (
-            <CompactAssetsList
-              key={getExchangeId(exchange)}
-              exchangeId={getExchangeId(exchange)}
-              exchangeName={getExchangeName(exchange)}
-              exchangeTotalUSD={exchangeTotalUSD}
-              assets={formattedAssets}
-              loading={refreshing}
-              hideValue={valuesHidden}
-              onToggleFavorite={(symbol) => handleToggleFavorite(symbol)}
-              onCreateAlert={(asset) => {
-                setSelectedTokenForAlert({
-                  symbol: asset.symbol,
-                  price: asset.priceUSD,
-                  exchangeId: asset.exchangeId,
-                  exchangeName: asset.exchangeName,
-                })
-                setAlertModalVisible(true)
-              }}
-              onTrade={(asset) => {
-                if (asset.isStablecoin) return
-                
-                setSelectedTrade({
-                  exchangeId: asset.exchangeId,
-                  exchangeName: asset.exchangeName,
-                  symbol: asset.symbol,
-                  currentPrice: asset.priceUSD,
-                  balance: { 
-                    token: asset.free,
-                    usdt: asset.usdtBalance
-                  }
-                })
-                setTradeModalVisible(true)
-              }}
-              onViewDetails={(asset) => {
-                setSelectedToken({
-                  exchangeId: asset.exchangeId,
-                  symbol: asset.symbol
-                })
-                setTokenModalVisible(true)
-              }}
-              getFavoriteState={(symbol) => isWatching(symbol)}
-              getAlertState={(symbol, exchangeId) => {
-                const tokenAlerts = getAlertsForToken(symbol, exchangeId)
-                return tokenAlerts.length > 0
-              }}
-            />
+            <View key={getExchangeId(exchange)} style={styles.exchangeSection}>
+              <View style={[styles.exchangeHeader, { backgroundColor: colors.card }]}>
+                <View style={styles.simpleExchangeTitleRow}>
+                  <Image 
+                    source={getExchangeLogo(getExchangeName(exchange))} 
+                    style={styles.simpleExchangeLogo}
+                    resizeMode="contain"
+                  />
+                  <Text style={[styles.simpleExchangeTitle, { color: colors.text }]}>
+                    {String(getExchangeName(exchange))}
+                  </Text>
+                </View>
+                <Text style={[styles.simpleExchangeTotal, { color: colors.text }]}>
+                  {String(valuesHidden ? '****' : apiService.formatUSD(exchangeTotalUSD))}
+                </Text>
+              </View>
+              
+              {formattedAssets.map((asset: any) => (
+                <TouchableOpacity
+                  key={asset.id}
+                  style={[styles.simpleAssetCard, { backgroundColor: colors.card }]}
+                  onPress={() => {
+                    setSelectedToken({
+                      exchangeId: asset.exchangeId,
+                      symbol: asset.symbol
+                    })
+                    setTokenModalVisible(true)
+                  }}
+                >
+                  <View style={styles.simpleAssetInfo}>
+                    <Text style={[styles.simpleAssetSymbol, { color: colors.text }]}>
+                      {String(asset.symbol)}
+                    </Text>
+                    <Text style={[styles.simpleAssetAmount, { color: colors.textSecondary }]}>
+                      {String(asset.amount)} {String(asset.symbol)}
+                    </Text>
+                  </View>
+                  <View style={styles.simpleAssetRight}>
+                    <Text style={[styles.simpleAssetValue, { color: colors.text }]}>
+                      {String(valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD))}
+                    </Text>
+                    {!asset.isStablecoin && asset.variation24h !== undefined && (
+                      <Text style={[
+                        styles.simpleAssetVariation,
+                        { color: asset.variation24h >= 0 ? colors.success : colors.danger }
+                      ]}>
+                        {String((asset.variation24h >= 0 ? '+' : '') + asset.variation24h.toFixed(2))}%
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           )
         })}
       </View>
@@ -2061,6 +2066,57 @@ const styles = StyleSheet.create({
     fontSize: typography.caption,
     fontWeight: fontWeights.medium,
     textAlign: 'center',
+  },
+  // Estilos para listagem inline de assets (simple)
+  simpleExchangeSection: {
+    marginBottom: 16,
+  },
+  simpleExchangeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  simpleExchangeLogo: {
+    width: 24,
+    height: 24,
+  },
+  simpleExchangeTitle: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.bold,
+  },
+  simpleExchangeTotal: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
+  },
+  simpleAssetCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    marginTop: 8,
+    borderRadius: 8,
+  },
+  simpleAssetInfo: {
+    flex: 1,
+  },
+  simpleAssetSymbol: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
+  },
+  simpleAssetAmount: {
+    fontSize: typography.caption,
+    marginTop: 2,
+  },
+  simpleAssetRight: {
+    alignItems: 'flex-end',
+  },
+  simpleAssetValue: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.medium,
+  },
+  simpleAssetVariation: {
+    fontSize: typography.caption,
+    marginTop: 2,
   },
 })
 
