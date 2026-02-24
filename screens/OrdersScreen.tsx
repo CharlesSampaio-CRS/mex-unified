@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -16,10 +16,52 @@ import { OpenOrder } from '@/types/orders';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 
+// Sub-componente com animação piscante para ordens sendo canceladas
+function AnimatedOrderCard({ 
+  children, 
+  isCancelling, 
+  style 
+}: { 
+  children: React.ReactNode; 
+  isCancelling: boolean; 
+  style: any; 
+}) {
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isCancelling) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnim, {
+            toValue: 0.3,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnim, {
+            toValue: 0.7,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      blinkAnim.setValue(1);
+    }
+  }, [isCancelling]);
+
+  return (
+    <Animated.View style={[style, { opacity: isCancelling ? blinkAnim : 1 }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export function OrdersScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
-  const { ordersByExchange, loading, refreshing, refresh, removeOrder } = useOrders();
+  const { ordersByExchange, loading, refreshing, refresh, removeOrder, recentlyAddedIds } = useOrders();
   const { refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
   const { unreadCount } = useNotifications();
@@ -141,6 +183,8 @@ export function OrdersScreen({ navigation }: any) {
     
     const orderId = String(order.id || '');
     const isCancelling = cancellingOrderIds.has(orderId);
+    const isRecentlyAdded = recentlyAddedIds.has(orderId);
+    const isAnimating = isCancelling || isRecentlyAdded;
     const isBuy = order.side === 'buy';
     
     const price = Number(order.price) || 0;
@@ -150,20 +194,22 @@ export function OrdersScreen({ navigation }: any) {
     if (!isFinite(orderValue) || isNaN(orderValue)) return null;
 
     return (
-      <TouchableOpacity
-        key={orderId}
+      <AnimatedOrderCard
+        isCancelling={isAnimating}
         style={[
           styles.orderCard,
           { 
             backgroundColor: colors.surface,
-            borderColor: colors.border,
-            opacity: isCancelling ? 0.5 : 1
+            borderColor: isRecentlyAdded ? colors.primary : colors.border,
           }
         ]}
-        activeOpacity={0.7}
-        onPress={() => handleOrderPress(order)}
-        disabled={isCancelling}
       >
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          activeOpacity={0.7}
+          onPress={() => handleOrderPress(order)}
+          disabled={isCancelling}
+        >
         {/* Header */}
         <View style={styles.cardHeader}>
           <View style={styles.symbolSection}>
@@ -275,9 +321,10 @@ export function OrdersScreen({ navigation }: any) {
             </>
           )}
         </TouchableOpacity>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </AnimatedOrderCard>
     );
-  }, [cancellingOrderIds, colors, hideValue, handleOrderPress, handleCancelOrder]);
+  }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -415,7 +462,11 @@ export function OrdersScreen({ navigation }: any) {
                     {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
                   </Text>
                 </View>
-                {section.orders.map(order => renderOrderCard(order, section.exchangeId))}
+                {section.orders.map(order => (
+                  <View key={String(order.id)}>
+                    {renderOrderCard(order, section.exchangeId)}
+                  </View>
+                ))}
               </View>
             ))}
           </View>

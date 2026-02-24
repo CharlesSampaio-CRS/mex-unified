@@ -18,6 +18,7 @@ interface OrdersContextType {
   error: string | null
   totalOrders: number
   timestamp: number | null
+  recentlyAddedIds: Set<string>  // IDs de ordens recém-criadas (para animação)
   refresh: () => Promise<void>
   removeOrder: (orderId: string) => void  // Remoção otimista imediata
   addOrder: (order: OpenOrder, exchangeId: string, exchangeName: string) => void // Inserção otimista imediata
@@ -32,6 +33,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timestamp, setTimestamp] = useState<number | null>(null);
+  const [recentlyAddedIds, setRecentlyAddedIds] = useState<Set<string>>(new Set());
 
   const fetchOrders = useCallback(async (forceRefresh = false) => {
     if (!user?.id) return
@@ -144,7 +146,9 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
 
   // 🚀 Inserção otimista: Adiciona uma ordem na lista localmente sem esperar API
   const addOrder = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
-    console.log('➕ [ORDERS-CONTEXT] Inserção otimista da ordem:', order.id, order.symbol)
+    const orderId = String(order.id || `temp_${Date.now()}`)
+    console.log('➕ [ORDERS-CONTEXT] Inserção otimista da ordem:', orderId, order.symbol)
+    
     setOrdersByExchange(prev => {
       const existingExchange = prev.find(ex => ex.exchangeId === exchangeId)
       
@@ -165,6 +169,16 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       }
     })
     setTimestamp(Date.now())
+    
+    // ✨ Marca como recém-adicionado (animação piscante por 3s)
+    setRecentlyAddedIds(prev => new Set(prev).add(orderId))
+    setTimeout(() => {
+      setRecentlyAddedIds(prev => {
+        const next = new Set(prev)
+        next.delete(orderId)
+        return next
+      })
+    }, 3000)
   }, [])
 
   // Carrega orders imediatamente ao logar
@@ -185,6 +199,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         error,
         totalOrders,
         timestamp,
+        recentlyAddedIds,
         refresh,
         removeOrder,
         addOrder,

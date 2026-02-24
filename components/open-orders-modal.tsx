@@ -1,5 +1,5 @@
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator } from "react-native"
-import { useState, useEffect, useRef } from "react"
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator, Animated } from "react-native"
+import React, { useState, useEffect, useRef } from "react"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useBalance } from "../contexts/BalanceContext"
@@ -19,6 +19,48 @@ interface OpenOrdersModalProps {
   onOrderCancelled?: () => void  // Callback chamado após cancelamento de ordem
 }
 
+// Sub-componente com animação piscante para ordens sendo canceladas
+function BlinkingOrderItem({ 
+  children, 
+  isCancelling, 
+  style 
+}: { 
+  children: React.ReactNode; 
+  isCancelling: boolean; 
+  style: any; 
+}) {
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isCancelling) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnim, {
+            toValue: 0.3,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnim, {
+            toValue: 0.7,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      blinkAnim.setValue(1);
+    }
+  }, [isCancelling]);
+
+  return (
+    <Animated.View style={[style, { opacity: isCancelling ? blinkAnim : 1 }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export function OpenOrdersModal({ 
   visible, 
   onClose, 
@@ -31,7 +73,7 @@ export function OpenOrdersModal({
   const { colors } = useTheme()
   const { t, language } = useLanguage()
   const { refresh: refreshBalance } = useBalance()
-  const { removeOrder: removeOrderFromContext, refresh: refreshOrders } = useOrders()
+  const { removeOrder: removeOrderFromContext, refresh: refreshOrders, recentlyAddedIds } = useOrders()
   const [orders, setOrders] = useState<OpenOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -664,15 +706,17 @@ export function OpenOrdersModal({
                 <View style={styles.ordersList}>
                   {orders.map((order) => {
                     const orderId = getOrderId(order);
-                    const isCancelling = cancellingOrderId === orderId;
+                    const isCancelling = cancellingOrderId === orderId || cancelAllLoading;
+                    const isRecentlyAdded = recentlyAddedIds.has(orderId);
+                    const isAnimating = isCancelling || isRecentlyAdded;
                     
                     return (
-                    <View
-                      key={orderId}
+                    <React.Fragment key={orderId}>
+                    <BlinkingOrderItem
+                      isCancelling={isAnimating}
                       style={[styles.orderItemCompact, { 
                         backgroundColor: colors.surface,
                         borderBottomColor: colors.border,
-                        opacity: isCancelling ? 0.5 : 1
                       }]}
                     >
                       {isCancelling && (
@@ -760,7 +804,8 @@ export function OpenOrdersModal({
                           </View>
                         </View>
                       </View>
-                    </View>
+                    </BlinkingOrderItem>
+                    </React.Fragment>
                   )})}
                 </View>
               )}
