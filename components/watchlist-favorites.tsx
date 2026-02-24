@@ -424,15 +424,11 @@ export function WatchlistFavorites() {
           balance={selectedTrade.balance}
           onOrderCreated={async () => {
             console.log('🎉 [WatchlistFavorites] Ordem criada - atualizando em background...');
-            // ⚡ Atualiza em background sem bloquear
-            setTimeout(async () => {
-              try {
-                await refreshBalance();
-                console.log('✅ [WatchlistFavorites] Balance atualizado!');
-              } catch (err) {
-                console.error('❌ [WatchlistFavorites] Erro:', err);
-              }
-            }, 100);
+            // ⚡ Executa IMEDIATAMENTE em background (sem await)
+            refreshBalance().catch(err => {
+              console.error('❌ [WatchlistFavorites] Erro ao atualizar balance:', err);
+            });
+            console.log('✅ [WatchlistFavorites] Atualização disparada!');
           }}
           onBalanceUpdate={async () => {
             // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
