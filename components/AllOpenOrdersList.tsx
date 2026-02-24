@@ -78,7 +78,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   const [confirmCancelVisible, setConfirmCancelVisible] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string; exchangeName: string } | null>(null);
   const [cancelLoading] = useState(false); // ⚠️ Mantido por compatibilidade com modal (sempre false)
-  const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set()); // IDs das ordens sendo canceladas
 
   // Estado para confirmar clonagem de ordem
@@ -190,12 +189,16 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   const handleCancelOrder = (order: OpenOrder, exchangeId: string, exchangeName: string) => {
     setOrderToCancel({ order, exchangeId, exchangeName });
     setConfirmCancelVisible(true);
-    setCancelError(null);
   };
 
   const confirmCancelOrder = async (order: OpenOrder, exchangeId: string, exchangeName: string) => {
     if (!user?.id) {
-      setCancelError('Usuário não autenticado');
+      // ❌ Erro de autenticação
+      addNotification({
+        type: 'error',
+        title: '❌ Erro',
+        message: 'Usuário não autenticado',
+      });
       return;
     }
 
@@ -204,7 +207,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
     // ⚡ OTIMIZADO: Fecha modal e limpa estados ANTES da API
     setConfirmCancelVisible(false);
     setOrderToCancel(null);
-    setCancelError(null);
     
     // ✅ Marca a ordem como "cancelando" IMEDIATAMENTE
     setCancellingOrderIds(prev => new Set(prev).add(orderId));
@@ -472,7 +474,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
           if (!cancelLoading) {
             setConfirmCancelVisible(false);
             setOrderToCancel(null);
-            setCancelError(null);
           }
         }}
       >
@@ -482,7 +483,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
             if (!cancelLoading) {
               setConfirmCancelVisible(false);
               setOrderToCancel(null);
-              setCancelError(null);
             }
           }}
         >
@@ -535,14 +535,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
                     </Text>
                   </View>
                 </View>
-
-                {cancelError && (
-                  <View style={[styles.errorBox, { backgroundColor: colors.dangerLight, borderColor: colors.danger }]}>
-                    <Text style={[styles.errorText, { color: colors.danger }]}>
-                      ❌ {cancelError}
-                    </Text>
-                  </View>
-                )}
               </View>
             )}
 
@@ -552,7 +544,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
                 onPress={() => {
                   setConfirmCancelVisible(false);
                   setOrderToCancel(null);
-                  setCancelError(null);
                 }}
                 disabled={cancelLoading}
               >
@@ -579,7 +570,7 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
                   <AnimatedLogoIcon size={20} />
                 ) : (
                   <Text style={[styles.modalButtonText, { color: '#fff' }]}>
-                    {cancelError ? 'Tentar Novamente' : 'Sim, Cancelar'}
+                    Sim, Cancelar
                   </Text>
                 )}
               </TouchableOpacity>
