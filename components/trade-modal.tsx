@@ -410,26 +410,30 @@ export function TradeModal({
           }
         })
         
-        // ✅ AGUARDA CALLBACKS COMPLETAREM ANTES DE FECHAR
-        // Isso previne race conditions e garante que a UI está atualizada
-        try {
-          if (onOrderCreated) {
-            await onOrderCreated();
-          }
-          
-          if (onBalanceUpdate) {
-            await onBalanceUpdate();
-          }
-        } catch (err) {
-          console.error('❌ [TradeModal] Erro nos callbacks:', err);
-        }
-        
-        // Fecha modais APÓS callbacks completarem
+        // ✅ FECHA MODAL IMEDIATAMENTE após API retornar sucesso
         setConfirmTradeVisible(false);
         setPendingOrder(null);
         setCreateOrderLoading(false);
         setCreateOrderError(null);
         onClose();
+        
+        // 🔄 ATUALIZAÇÃO EM BACKGROUND (não bloqueia UI)
+        // Executa callbacks de forma assíncrona sem await
+        if (onOrderCreated) {
+          Promise.resolve()
+            .then(() => onOrderCreated())
+            .catch(err => {
+              console.error('❌ [TradeModal] Erro em onOrderCreated:', err);
+            });
+        }
+        
+        if (onBalanceUpdate) {
+          Promise.resolve()
+            .then(() => onBalanceUpdate())
+            .catch(err => {
+              console.error('❌ [TradeModal] Erro em onBalanceUpdate:', err);
+            });
+        }
         
         // ✅ Notificação visual já foi mostrada acima (addNotification)
         // Alert removido - mantém apenas notificação não-intrusiva

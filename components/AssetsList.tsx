@@ -1124,20 +1124,23 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
           onOrderCreated={async () => {
-            console.log('🎉 [AssetsList] Ordem criada - iniciando atualização única...')
+            console.log('🎉 [AssetsList] Ordem criada - atualizando em background...');
             
-            // ✅ OTIMIZADO: Balance refresh já dispara orders refresh via callback
-            // Então só precisa atualizar o balance - orders virá automaticamente
-            await refreshBalance()
-            
-            // 🔄 Atualiza lista local de orders da exchange
-            await fetchOpenOrdersForExchange(selectedTrade.exchangeId)
-            
-            console.log('✅ [AssetsList] Atualização concluída!')
+            // ⚡ OTIMIZADO: Atualiza apenas balance (dispara orders via callback)
+            // Usa timeout para não bloquear a thread principal
+            setTimeout(async () => {
+              try {
+                await refreshBalance();
+                await fetchOpenOrdersForExchange(selectedTrade.exchangeId);
+                console.log('✅ [AssetsList] Atualização concluída!');
+              } catch (err) {
+                console.error('❌ [AssetsList] Erro na atualização:', err);
+              }
+            }, 100);
           }}
           onBalanceUpdate={async () => {
             // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
-            console.log('⏭️ [AssetsList] onBalanceUpdate chamado mas pulado (já atualizado)')
+            console.log('⏭️ [AssetsList] onBalanceUpdate pulado (já atualizado)');
           }}
         />
       )}

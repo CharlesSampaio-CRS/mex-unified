@@ -423,13 +423,20 @@ export function WatchlistFavorites() {
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
           onOrderCreated={async () => {
-            console.log('🎉 [WatchlistFavorites] Ordem criada - atualizando balance...')
-            // ✅ Balance refresh dispara orders refresh automaticamente
-            await refreshBalance()
+            console.log('🎉 [WatchlistFavorites] Ordem criada - atualizando em background...');
+            // ⚡ Atualiza em background sem bloquear
+            setTimeout(async () => {
+              try {
+                await refreshBalance();
+                console.log('✅ [WatchlistFavorites] Balance atualizado!');
+              } catch (err) {
+                console.error('❌ [WatchlistFavorites] Erro:', err);
+              }
+            }, 100);
           }}
           onBalanceUpdate={async () => {
             // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
-            console.log('⏭️ [WatchlistFavorites] onBalanceUpdate pulado (já atualizado)')
+            console.log('⏭️ [WatchlistFavorites] onBalanceUpdate pulado');
           }}
         />
       )}
