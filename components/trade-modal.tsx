@@ -347,143 +347,31 @@ export function TradeModal({
             orderType === 'limit' ? priceNum : undefined
           )
       
-      
-      
-      // Verifica se a ordem foi criada com sucesso
+      // ✅ Sucesso - fecha modal e dispara callbacks
       if (result.success) {
-        console.log('✅ [TradeModal] Ordem criada com sucesso:', result)
-        
-        const isDryRun = result.dry_run === true
-        const orderId = result.order?.id || 'N/A'
-        const orderStatus = result.order?.status || 'unknown'
-        const orderFilled = result.order?.filled || 0
-        const orderAmount = result.order?.amount || amountNum
-        const avgPrice = result.order?.cost && orderFilled > 0 
-          ? result.order.cost / orderFilled 
-          : priceNum
-        
-        
-        // 🎯 DETECÇÃO INTELIGENTE: Verifica se ordem foi executada
-        const isExecuted = orderStatus === 'closed' || orderStatus === 'filled'
-        const fillPercent = orderAmount > 0 ? (orderFilled / orderAmount) * 100 : 0
-        const isPartiallyFilled = fillPercent > 0 && fillPercent < 100
-        const isFullyFilled = fillPercent >= 99 // Tolerância de 1% para arredondamento
-
-        // 🔔 NOTIFICAÇÃO: Inteligente baseada no status real da ordem
-        const isBuy = orderSide === 'buy'
-        
-        let notificationTitle = '✅ Ordem Criada'
-        let notificationMessage = `Ordem ${isBuy ? 'de compra' : 'de venda'} criada: ${amountNum.toFixed(8)} ${symbol} ${orderType === 'limit' ? `@ ${apiService.formatUSD(priceNum)}` : 'a mercado'}`
-        
-        if (isDryRun) {
-          notificationTitle = ' Ordem Simulada'
-          notificationMessage = `Ordem ${isBuy ? 'de compra' : 'de venda'} simulada: ${amountNum.toFixed(8)} ${symbol} ${orderType === 'limit' ? `@ ${apiService.formatUSD(priceNum)}` : 'a mercado'}`
-        } else if (isExecuted && isFullyFilled) {
-          notificationTitle = 'Ordem Executada!'
-          notificationMessage = `Ordem ${isBuy ? 'de compra' : 'de venda'} executada: ${orderFilled.toFixed(8)} ${symbol} ${avgPrice ? `@ ${apiService.formatUSD(avgPrice)}` : 'a mercado'}`
-        } else if (isPartiallyFilled) {
-          notificationTitle = ' Ordem Parcialmente Executada'
-          notificationMessage = `Ordem ${isBuy ? 'de compra' : 'de venda'}: ${orderFilled.toFixed(8)} de ${orderAmount.toFixed(8)} ${symbol} executados (${fillPercent.toFixed(0)}%)`
-        } else if (orderType === 'limit') {
-          notificationTitle = ' Ordem Limite Criada'
-          notificationMessage = `Ordem ${isBuy ? 'de compra' : 'de venda'} aguardando execução: ${amountNum.toFixed(8)} ${symbol} @ ${apiService.formatUSD(priceNum)}`
-        }
-        
-        // 🔔 NOTIFICAÇÃO COMENTADA PARA TESTE
-        // try {
-        //   addNotification({
-        //     type: 'success',
-        //     title: notificationTitle,
-        //     message: notificationMessage,
-        //     data: {
-        //       icon: isExecuted ? '🎉' : (isBuy ? '🟢' : '🔴'),
-        //       orderId,
-        //       exchangeName,
-        //       symbol,
-        //       side: orderSide,
-        //       type: orderType,
-        //       amount: amountNum,
-        //       filled: orderFilled,
-        //       fillPercent: fillPercent,
-        //       price: orderType === 'limit' ? priceNum : avgPrice,
-        //       avgPrice: avgPrice,
-        //       status: orderStatus,
-        //       total
-        //     }
-        //   });
-        // } catch (err) {
-        //   console.error('❌ [TradeModal] Erro crítico em notificação:', err);
-        // }
-        console.log('🧪 [TradeModal] TESTE SEM NOTIFICAÇÃO - Modal vai fechar...');
-        
-        // 🔄 DISPARA CALLBACKS EM BACKGROUND PRIMEIRO (fire-and-forget)
-        if (onOrderCreated) {
-          try {
-            onOrderCreated();
-          } catch (err) {
-            console.error('❌ [TradeModal] Erro em onOrderCreated:', err);
-          }
-        }
-        
-        if (onBalanceUpdate) {
-          try {
-            onBalanceUpdate();
-          } catch (err) {
-            console.error('❌ [TradeModal] Erro em onBalanceUpdate:', err);
-          }
-        }
-        
-        // ✅ FECHA MODAL IMEDIATAMENTE (DEPOIS de disparar callbacks)
+        // Fecha modal imediatamente
         setConfirmTradeVisible(false);
         setPendingOrder(null);
         setCreateOrderLoading(false);
         setCreateOrderError(null);
         onClose();
         
-        // ✅ Notificação visual já foi mostrada acima (addNotification)
-        // Alert removido - mantém apenas notificação não-intrusiva
+        // Callbacks em background (não espera)
+        setTimeout(() => {
+          if (onOrderCreated) onOrderCreated();
+          if (onBalanceUpdate) onBalanceUpdate();
+        }, 0);
         
       } else {
-        // ❌ API retornou success=false (erro lógico)
-        console.error('❌ [TradeModal] API retornou success=false:', result)
-        
-        // Tenta extrair mensagem de erro de diferentes campos
-        let errorMsg = 'Erro ao criar ordem'
-        
-        // Se for limitação da exchange (ex: MEXC), usa details diretamente
-        if (result.exchange_limitation && result.details) {
-          errorMsg = result.details
-        } else if (result.details) {
-          errorMsg = result.details
-        } else if (result.error) {
-          // Tenta parsear o erro
-          const parsedError = parseErrorResponse(result.error)
-          if (parsedError.code) {
-            errorMsg = `${parsedError.code}: ${parsedError.message}`
-          } else {
-            errorMsg = parsedError.message
-          }
-        } else if (result.message) {
-          errorMsg = result.message
-        }
-        
-        setCreateOrderError(errorMsg)
+        // ❌ Erro da API
+        const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
+        setCreateOrderError(errorMsg);
       }
     } catch (error: any) {
-      console.error('❌ [TradeModal] Erro ao criar ordem:', error)
-      console.error('Stack:', error.stack)
-      
-      // Tenta parsear a mensagem de erro
-      const errorMsg = error.message || 'Não foi possível criar a ordem. Tente novamente.'
-      const parsedError = parseErrorResponse(errorMsg)
-      
-      if (parsedError.code) {
-        setCreateOrderError(`${parsedError.code}: ${parsedError.message}`)
-      } else {
-        setCreateOrderError(parsedError.message)
-      }
+      const errorMsg = error.message || 'Não foi possível criar a ordem';
+      setCreateOrderError(errorMsg);
     } finally {
-      setCreateOrderLoading(false)
+      setCreateOrderLoading(false);
     }
   }
 

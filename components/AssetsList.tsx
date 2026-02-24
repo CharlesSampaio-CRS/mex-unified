@@ -1124,22 +1124,8 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
           onOrderCreated={() => {
-            console.log('🎉 [AssetsList] Ordem criada - disparando atualizações...');
-            
-            // ⚡ Dispara em background IMEDIATAMENTE (função síncrona)
-            refreshBalance().catch(err => {
-              console.error('❌ [AssetsList] Erro ao atualizar balance:', err);
-            });
-            
-            fetchOpenOrdersForExchange(selectedTrade.exchangeId).catch(err => {
-              console.error('❌ [AssetsList] Erro ao atualizar orders:', err);
-            });
-            
-            console.log('✅ [AssetsList] Atualizações disparadas!');
-          }}
-          onBalanceUpdate={() => {
-            // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
-            console.log('⏭️ [AssetsList] onBalanceUpdate pulado');
+            refreshBalance();
+            fetchOpenOrdersForExchange(selectedTrade.exchangeId);
           }}
         />
       )}

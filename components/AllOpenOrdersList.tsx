@@ -62,7 +62,6 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
           orders: (exchange.orders || []).filter(order => {
             // ✅ PROTEÇÃO: Valida order.symbol antes de usar
             if (!order || !order.symbol || typeof order.symbol !== 'string') {
-              console.warn('⚠️ [AllOpenOrdersList] Ordem com symbol inválido:', order);
               return false;
             }
             return order.symbol.toLowerCase().includes(query);
@@ -198,94 +197,23 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
   };
 
   const confirmCancelOrder = async (order: OpenOrder, exchangeId: string, exchangeName: string) => {
-    if (!user?.id) {
-      // ❌ Erro de autenticação
-      addNotification({
-        type: 'error',
-        title: '❌ Erro',
-        message: 'Usuário não autenticado',
-      });
-      return;
-    }
+    if (!user?.id) return;
 
     const orderId = getOrderId(order);
-    
-    // ⚡ OTIMIZADO: Fecha modal e limpa estados ANTES da API
     setConfirmCancelVisible(false);
     setOrderToCancel(null);
-    
-    // ✅ Marca a ordem como "cancelando" IMEDIATAMENTE
     setCancellingOrderIds(prev => new Set(prev).add(orderId));
     
-    // ✅ REMOÇÃO OTIMISTA: Remove da lista ANTES da API
-    removeOrderLocally(orderId, exchangeId);
-    
-    // ✅ PROTEÇÃO: Valida dados antes de criar notificação
-    const orderSymbol = order?.symbol || 'UNKNOWN';
-    const baseToken = orderSymbol.split('/')[0] || orderSymbol;
-    const orderAmount = order?.amount || 0;
-    const orderPrice = order?.price || 0;
-    
-    // 🔔 Notificação de sucesso IMEDIATA (otimista)
-    addNotification({
-      type: 'success',
-      title: '✅ Ordem Cancelada',
-      message: `Ordem ${order.side === 'buy' ? 'de compra' : 'de venda'} cancelada: ${orderAmount.toFixed(8)} ${baseToken} @ ${apiService.formatUSD(orderPrice)}`,
-      data: {
-        icon: '🗑️',
-        orderId,
-        exchangeName,
-        symbol: orderSymbol,
-        side: order.side,
-        amount: orderAmount,
-        price: orderPrice
-      }
-    });
-
-    // 🔄 API call em background (não bloqueia UI)
     try {
-      const result = await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, orderId);
-      
-      // Remove do Set de "cancelando"
-      setCancellingOrderIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(orderId);
-        return newSet;
-      });
-      
-      if (!result.success) {
-        // ❌ Se API falhou, mostra erro mas não reverte (pode já ter cancelado na exchange)
-        const errorMsg = result.error || result.message || 'Erro ao cancelar ordem';
-        console.warn('⚠️ [AllOpenOrdersList] API cancel retornou erro:', errorMsg);
-        
-        // Mostra notificação de aviso
-        addNotification({
-          type: 'warning',
-          title: '⚠️ Aviso',
-          message: `A ordem foi removida da lista, mas houve um erro na confirmação: ${errorMsg}`,
-        });
-      }
-      
-      // Recarrega em background (silencioso - sem loading)
-      refresh().catch(console.error);
-      refreshBalance().catch(console.error);
-      
+      await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, orderId);
+      removeOrderLocally(orderId, exchangeId);
     } catch (error: any) {
-      // Remove do Set se deu erro
+      // Erro - nada a fazer, ordem permanece
+    } finally {
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(orderId);
         return newSet;
-      });
-      
-      const errorMessage = error.message || 'Erro desconhecido ao cancelar ordem';
-      console.error('❌ [AllOpenOrdersList] Erro ao cancelar ordem:', errorMessage);
-      
-      // Mostra notificação de erro
-      addNotification({
-        type: 'error',
-        title: '❌ Erro',
-        message: `Erro ao cancelar ordem: ${errorMessage}. Verifique se a ordem ainda existe.`,
       });
     }
   };

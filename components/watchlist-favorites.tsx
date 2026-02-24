@@ -422,18 +422,7 @@ export function WatchlistFavorites() {
           symbol={selectedTrade.symbol}
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
-          onOrderCreated={() => {
-            console.log('🎉 [WatchlistFavorites] Ordem criada - disparando atualização...');
-            // ⚡ Dispara em background IMEDIATAMENTE
-            refreshBalance().catch(err => {
-              console.error('❌ [WatchlistFavorites] Erro:', err);
-            });
-            console.log('✅ [WatchlistFavorites] Atualização disparada!');
-          }}
-          onBalanceUpdate={() => {
-            // ⚠️ NÃO FAZ NADA
-            console.log('⏭️ [WatchlistFavorites] onBalanceUpdate pulado');
-          }}
+          onOrderCreated={() => refreshBalance()}
         />
       )}
     </ScrollView>

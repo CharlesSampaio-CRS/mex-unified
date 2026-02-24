@@ -498,18 +498,7 @@ export function AssetsScreen({ navigation }: any) {
           symbol={selectedTrade.symbol}
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
-          onOrderCreated={() => {
-            console.log('🎉 [AssetsScreen] Ordem criada - disparando atualização...');
-            // ⚡ Dispara em background IMEDIATAMENTE
-            refreshBalance().catch(err => {
-              console.error('❌ [AssetsScreen] Erro:', err);
-            });
-            console.log('✅ [AssetsScreen] Atualização disparada!');
-          }}
-          onBalanceUpdate={() => {
-            // ⚠️ NÃO FAZ NADA
-            console.log('⏭️ [AssetsScreen] onBalanceUpdate pulado');
-          }}
+          onOrderCreated={() => refreshBalance()}
         />
       )}
 

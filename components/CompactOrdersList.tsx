@@ -102,7 +102,6 @@ export function CompactOrdersList({
           {orders.map((order) => {
             // ✅ Validação: Ignora orders inválidas
             if (!order || !order.id) {
-              console.warn('⚠️ [CompactOrdersList] Ordem inválida detectada:', order);
               return null;
             }
             
