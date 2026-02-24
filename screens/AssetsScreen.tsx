@@ -500,15 +500,11 @@ export function AssetsScreen({ navigation }: any) {
           balance={selectedTrade.balance}
           onOrderCreated={async () => {
             console.log('🎉 [AssetsScreen] Ordem criada - atualizando em background...');
-            // ⚡ Atualiza em background sem bloquear
-            setTimeout(async () => {
-              try {
-                await refreshBalance();
-                console.log('✅ [AssetsScreen] Balance atualizado!');
-              } catch (err) {
-                console.error('❌ [AssetsScreen] Erro:', err);
-              }
-            }, 100);
+            // ⚡ Executa IMEDIATAMENTE em background (sem await)
+            refreshBalance().catch(err => {
+              console.error('❌ [AssetsScreen] Erro ao atualizar balance:', err);
+            });
+            console.log('✅ [AssetsScreen] Atualização disparada!');
           }}
           onBalanceUpdate={async () => {
             // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
