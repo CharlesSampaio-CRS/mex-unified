@@ -410,8 +410,6 @@ export function TradeModal({
               status: orderStatus,
               total
             }
-          }).catch(err => {
-            console.error('❌ [TradeModal] Erro ao criar notificação:', err);
           });
         } catch (err) {
           console.error('❌ [TradeModal] Erro crítico em notificação:', err);
