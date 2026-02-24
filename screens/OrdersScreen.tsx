@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -99,35 +99,25 @@ export function OrdersScreen({ navigation }: any) {
     const orderId = String(order.id || '');
     if (cancellingOrderIds.has(orderId)) return;
 
-    console.log('🔴 [ORDERS-SCREEN] ========================================')
-    console.log('🔴 [ORDERS-SCREEN] Iniciando cancelamento de ordem')
-    console.log('🔴 [ORDERS-SCREEN] Order ID:', orderId)
-    console.log('🔴 [ORDERS-SCREEN] Exchange ID:', exchangeId)
-    console.log('🔴 [ORDERS-SCREEN] Symbol:', order.symbol)
-    console.log('🔴 [ORDERS-SCREEN] Side:', order.side)
-
     setCancellingOrderIds(prev => new Set(prev).add(orderId));
 
     try {
-      const startTime = Date.now()
-      console.log('🔴 [ORDERS-SCREEN] Chamando cancelOrderByExchangeId...')
-      
+      // Cancela ordem na API
       await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, order.id);
       
-      const cancelTime = Date.now() - startTime
-      console.log(`✅ [ORDERS-SCREEN] Ordem cancelada com sucesso em ${cancelTime}ms`)
-      console.log('🔴 [ORDERS-SCREEN] Chamando refresh() para atualizar lista...')
+      // Remove loading state imediatamente (visual feedback)
+      setCancellingOrderIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(orderId);
+        return newSet;
+      });
       
-      const refreshStartTime = Date.now()
-      await refresh();
-      
-      const refreshTime = Date.now() - refreshStartTime
-      console.log(`✅ [ORDERS-SCREEN] Lista atualizada em ${refreshTime}ms`)
-      console.log('🔴 [ORDERS-SCREEN] ========================================')
+      // Atualiza orders do backend após animação
+      InteractionManager.runAfterInteractions(() => {
+        refresh();
+      });
     } catch (error) {
-      console.error('❌ [ORDERS-SCREEN] Erro ao cancelar ordem:', error);
-      console.log('🔴 [ORDERS-SCREEN] ========================================')
-    } finally {
+      console.error('Erro ao cancelar ordem:', error);
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(orderId);

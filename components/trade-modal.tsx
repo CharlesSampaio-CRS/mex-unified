@@ -2,8 +2,11 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView,
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { useAuth } from '@/contexts/AuthContext'
-import { useNotifications } from '@/contexts/NotificationsContext'
+import { useAuth } from '@/contexts/Aut      if (result.success) {
+        onClose();
+        InteractionManager.runAfterInteractions(() => {
+          if (onOrderCreated) {
+            onOrderCreated();rt { useNotifications } from '@/contexts/NotificationsContext'
 import { typography, fontWeights } from '@/lib/typography'
 import { apiService } from '@/services/api'
 import { AnimatedLogoIcon } from '@/components/AnimatedLogoIcon'
@@ -304,25 +307,12 @@ export function TradeModal({
       return
     }
 
-    console.log('🔵 [TRADE-MODAL] Validações OK, criando ordem...')
-    console.log('🔵 [TRADE-MODAL] Tipo:', isBuy ? 'COMPRA' : 'VENDA')
-    console.log('🔵 [TRADE-MODAL] Exchange:', exchangeName, `(${exchangeId})`)
-    console.log('🔵 [TRADE-MODAL] Par:', symbol)
-    console.log('🔵 [TRADE-MODAL] Quantidade:', amountNum)
-    console.log('🔵 [TRADE-MODAL] Tipo ordem:', orderType)
-    console.log('🔵 [TRADE-MODAL] Preço:', orderType === 'limit' ? priceNum : 'MERCADO')
-    console.log('🔵 [TRADE-MODAL] Total:', total)
-
     setCreateOrderLoading(true)
     setCreateOrderError(null)
 
     try {
-      console.log('🔵 [TRADE-MODAL] Enviando requisição para API...')
-      const startTime = Date.now()
-
-      // 🔧 Garante que símbolo tenha /USDT
       const tradingPair = symbol.includes('/') ? symbol : `${symbol}/USDT`
-      console.log('🔵 [TRADE-MODAL] Par formatado:', tradingPair)
+    
 
       const result = isBuy
         ? await apiService.createBuyOrder(
@@ -342,11 +332,6 @@ export function TradeModal({
             orderType === 'limit' ? priceNum : undefined
           )
       
-      const apiTime = Date.now() - startTime
-      console.log(`🔵 [TRADE-MODAL] Resposta da API recebida em ${apiTime}ms`)
-      console.log('🔵 [TRADE-MODAL] Sucesso:', result.success)
-      
-      // ✅ Sucesso - fecha modal e dispara callbacks APÓS animações
       if (result.success) {
         console.log('✅ [TRADE-MODAL] Ordem criada com sucesso!')
         
@@ -364,17 +349,10 @@ export function TradeModal({
           }
           
           if (onBalanceUpdate) {
-            console.log('🔄 [TRADE-MODAL] Chamando onBalanceUpdate...')
             onBalanceUpdate();
           }
-          
-          console.log('✅ [TRADE-MODAL] Callbacks executados com sucesso!')
         });
-        
-        console.log('🔵 [TRADE-MODAL] ========================================')
-        
       } else {
-        // ❌ Erro da API
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
         console.error('❌ [TRADE-MODAL] Erro ao criar ordem:', errorMsg)
         setCreateOrderError(errorMsg);
