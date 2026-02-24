@@ -139,9 +139,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       setError(errorMsg)
       setOrdersByExchange([])
     } finally {
-      // ⚡ OTIMIZADO: Reduzido delay de 300ms para 100ms
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
+      // ⚡ PERFORMANCE: Reduzido de 100ms para 0ms - sem delay artificial
       setLoading(false)
       setRefreshing(false)
     }

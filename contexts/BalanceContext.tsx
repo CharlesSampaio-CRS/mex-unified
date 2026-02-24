@@ -128,9 +128,8 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
     } finally {
       console.log('🧹 [BalanceContext] Finalizando fetchBalances, removendo loading...')
       
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      // antes de desativar o loading/refreshing
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // ⚡ PERFORMANCE: Reduzido de 300ms para 50ms - UI ainda processa mas sem delay perceptível
+      await new Promise(resolve => setTimeout(resolve, 50))
       
       setLoading(false)
       setRefreshing(false)

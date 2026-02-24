@@ -410,27 +410,26 @@ export function TradeModal({
           }
         })
         
-        // Fecha modais
-        setConfirmTradeVisible(false)
-        setPendingOrder(null)
-        setCreateOrderLoading(false)
-        setCreateOrderError(null)
-        onClose()
-        
-        // Chama callbacks em background
-        if (onOrderCreated) {
-          Promise.resolve(onOrderCreated()).catch(err => {
-            console.error('❌ [TradeModal] Erro em onOrderCreated:', err)
-          })
+        // ✅ AGUARDA CALLBACKS COMPLETAREM ANTES DE FECHAR
+        // Isso previne race conditions e garante que a UI está atualizada
+        try {
+          if (onOrderCreated) {
+            await onOrderCreated();
+          }
+          
+          if (onBalanceUpdate) {
+            await onBalanceUpdate();
+          }
+        } catch (err) {
+          console.error('❌ [TradeModal] Erro nos callbacks:', err);
         }
         
-        if (onBalanceUpdate) {
-          Promise.resolve(onBalanceUpdate()).catch(err => {
-            console.error('❌ [TradeModal] Erro em onBalanceUpdate:', err)
-          })
-        } else {
-          console.log('⚠️ [TradeModal] onBalanceUpdate não foi fornecido')
-        }
+        // Fecha modais APÓS callbacks completarem
+        setConfirmTradeVisible(false);
+        setPendingOrder(null);
+        setCreateOrderLoading(false);
+        setCreateOrderError(null);
+        onClose();
         
         // ✅ Notificação visual já foi mostrada acima (addNotification)
         // Alert removido - mantém apenas notificação não-intrusiva

@@ -499,12 +499,13 @@ export function AssetsScreen({ navigation }: any) {
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
           onOrderCreated={async () => {
-            console.log('🎉 [AssetsScreen] Ordem criada - atualizando balances...')
+            console.log('🎉 [AssetsScreen] Ordem criada - atualizando balance...')
+            // ✅ Balance refresh dispara orders refresh automaticamente
             await refreshBalance()
           }}
           onBalanceUpdate={async () => {
-            console.log('💰 [AssetsScreen] Atualizando balances após ordem...')
-            await refreshBalance()
+            // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
+            console.log('⏭️ [AssetsScreen] onBalanceUpdate pulado (já atualizado)')
           }}
         />
       )}

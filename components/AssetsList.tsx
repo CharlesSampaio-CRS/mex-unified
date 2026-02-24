@@ -1124,19 +1124,20 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
           onOrderCreated={async () => {
-            console.log('🎉 [AssetsList] Ordem criada com sucesso!')
+            console.log('🎉 [AssetsList] Ordem criada - iniciando atualização única...')
             
-            // 1. Atualiza a lista local de orders da exchange
+            // ✅ OTIMIZADO: Balance refresh já dispara orders refresh via callback
+            // Então só precisa atualizar o balance - orders virá automaticamente
+            await refreshBalance()
+            
+            // 🔄 Atualiza lista local de orders da exchange
             await fetchOpenOrdersForExchange(selectedTrade.exchangeId)
             
-            // 2. Atualiza o contexto global de orders (AllOpenOrdersList)
-            console.log('🔄 [AssetsList] Atualizando OrdersContext...')
-            await refreshOrders()
-            console.log('✅ [AssetsList] OrdersContext atualizado!')
+            console.log('✅ [AssetsList] Atualização concluída!')
           }}
           onBalanceUpdate={async () => {
-            // Atualiza o balance/portfolio após criar ordem
-            await refreshBalance()
+            // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
+            console.log('⏭️ [AssetsList] onBalanceUpdate chamado mas pulado (já atualizado)')
           }}
         />
       )}

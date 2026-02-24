@@ -423,12 +423,13 @@ export function WatchlistFavorites() {
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
           onOrderCreated={async () => {
-            console.log('🎉 [WatchlistFavorites] Ordem criada - atualizando balances...')
+            console.log('🎉 [WatchlistFavorites] Ordem criada - atualizando balance...')
+            // ✅ Balance refresh dispara orders refresh automaticamente
             await refreshBalance()
           }}
           onBalanceUpdate={async () => {
-            console.log('💰 [WatchlistFavorites] Atualizando balances após ordem...')
-            await refreshBalance()
+            // ⚠️ NÃO FAZ NADA - já atualizado no onOrderCreated
+            console.log('⏭️ [WatchlistFavorites] onBalanceUpdate pulado (já atualizado)')
           }}
         />
       )}
