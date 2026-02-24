@@ -6,6 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useBalance } from '@/contexts/BalanceContext';
 import { usePrivacy } from '@/contexts/PrivacyContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useOrders } from '@/contexts/OrdersContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { apiService } from '@/services/api';
 import { Header } from '@/components/Header';
@@ -22,6 +23,7 @@ export function AssetsScreen({ navigation }: any) {
   const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
   const { unreadCount } = useNotifications();
+  const { refresh: refreshOrders } = useOrders();
   
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
@@ -493,7 +495,13 @@ export function AssetsScreen({ navigation }: any) {
           symbol={selectedTrade.symbol}
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
-          onOrderCreated={() => refreshBalance()}
+          onBalanceUpdate={() => {
+            refreshBalance()
+          }}
+          onOrderCreated={() => {
+            refreshBalance()
+            refreshOrders()
+          }}
         />
       )}
 

@@ -1129,10 +1129,15 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
           onBalanceUpdate={() => {
+            console.log('🔄 [ASSETS-LIST] onBalanceUpdate chamado após criação de ordem')
             refreshBalance();
           }}
           onOrderCreated={() => {
+            console.log('🔄 [ASSETS-LIST] onOrderCreated chamado após criação de ordem')
+            // 1. Atualiza o contexto global de ordens
             refreshOrders();
+            // 2. Atualiza a contagem local de ordens para a exchange específica
+            fetchOpenOrdersForExchange(selectedTrade.exchangeId);
           }}
         />
       )}

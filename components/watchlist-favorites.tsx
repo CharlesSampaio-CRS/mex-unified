@@ -11,6 +11,7 @@ import { useWatchlist } from "@/contexts/WatchlistContext"
 import { useBalance } from "@/contexts/BalanceContext"
 import { usePrivacy } from "@/contexts/PrivacyContext"
 import { useAlerts } from "@/contexts/AlertsContext"
+import { useOrders } from "@/contexts/OrdersContext"
 import { apiService } from "@/services/api"
 import { CreateAlertModal } from "./create-price-alert-modal"
 import { TokenDetailsModal } from "./token-details-modal"
@@ -34,6 +35,7 @@ export function WatchlistFavorites() {
   const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance()
   const { hideValue } = usePrivacy()
   const { getAlertsForToken } = useAlerts()
+  const { refresh: refreshOrders } = useOrders()
   
   const [refreshing, setRefreshing] = useState(false)
   const [alertModalVisible, setAlertModalVisible] = useState(false)
@@ -422,7 +424,13 @@ export function WatchlistFavorites() {
           symbol={selectedTrade.symbol}
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
-          onOrderCreated={() => refreshBalance()}
+          onBalanceUpdate={() => {
+            refreshBalance()
+          }}
+          onOrderCreated={() => {
+            refreshBalance()
+            refreshOrders()
+          }}
         />
       )}
     </ScrollView>
