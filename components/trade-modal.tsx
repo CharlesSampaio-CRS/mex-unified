@@ -46,11 +46,8 @@ export function TradeModal({
   const [orderType, setOrderType] = useState<OrderType>('limit')
   const [amount, setAmount] = useState('')
   const [price, setPrice] = useState(currentPrice < 0.01 ? currentPrice.toFixed(10).replace(/\.?0+$/, '') : currentPrice.toString())
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [confirmTradeVisible, setConfirmTradeVisible] = useState(false)
-  const [pendingOrder, setPendingOrder] = useState<{amount: number, price: number, total: number} | null>(null)
   
-  // Estados para loading e erro no modal de confirmação
+  // Estados para loading e erro da criação de ordem
   const [createOrderLoading, setCreateOrderLoading] = useState(false)
   const [createOrderError, setCreateOrderError] = useState<string | null>(null)
 
@@ -235,9 +232,7 @@ export function TradeModal({
       setAmount('')
       setPrice(currentPrice < 0.01 ? currentPrice.toFixed(10).replace(/\.?0+$/, '') : currentPrice.toString())
       
-      // Limpa estados do modal de confirmação
-      setConfirmTradeVisible(false)
-      setPendingOrder(null)
+      // Limpa estados de loading e erro
       setCreateOrderLoading(false)
       setCreateOrderError(null)
     }
@@ -268,7 +263,8 @@ export function TradeModal({
 
   const handleSubmit = async () => {
     
-    
+    console.log('🔵 [TRADE-MODAL] ========================================')
+    console.log('🔵 [TRADE-MODAL] handleSubmit() - CRIANDO ORDEM DIRETO (SEM MODAL DE CONFIRMAÇÃO)')
     
     const amountNum = parseFloat(amount)
     const priceNum = parseFloat(price)
@@ -302,51 +298,33 @@ export function TradeModal({
       return
     }
 
-    
-    
-    // Salva dados da ordem pendente e abre modal de confirmação
-    setPendingOrder({ amount: amountNum, price: priceNum, total })
-    setConfirmTradeVisible(true)
-  }
-
-  const confirmTrade = async () => {
-    if (!pendingOrder) return
-    
+    // ⚠️ CRIAR ORDEM DIRETO - SEM MODAL DE CONFIRMAÇÃO
     if (!user?.id) {
       Alert.alert('Erro', 'Usuário não autenticado')
       return
     }
 
-    console.log('🔵 [TRADE-MODAL] ========================================')
-    console.log('🔵 [TRADE-MODAL] Iniciando criação de ordem')
+    console.log('🔵 [TRADE-MODAL] Validações OK, criando ordem...')
     console.log('🔵 [TRADE-MODAL] Tipo:', isBuy ? 'COMPRA' : 'VENDA')
     console.log('🔵 [TRADE-MODAL] Exchange:', exchangeName, `(${exchangeId})`)
     console.log('🔵 [TRADE-MODAL] Par:', symbol)
-    console.log('🔵 [TRADE-MODAL] Quantidade:', pendingOrder.amount)
+    console.log('🔵 [TRADE-MODAL] Quantidade:', amountNum)
     console.log('🔵 [TRADE-MODAL] Tipo ordem:', orderType)
-    console.log('🔵 [TRADE-MODAL] Preço:', orderType === 'limit' ? pendingOrder.price : 'MERCADO')
-    console.log('🔵 [TRADE-MODAL] Total:', pendingOrder.total)
+    console.log('🔵 [TRADE-MODAL] Preço:', orderType === 'limit' ? priceNum : 'MERCADO')
+    console.log('🔵 [TRADE-MODAL] Total:', total)
 
     setCreateOrderLoading(true)
     setCreateOrderError(null)
-    
+
     try {
-      const amountNum = pendingOrder.amount
-      const priceNum = pendingOrder.price
-      const total = pendingOrder.total
-      
-      // 🔧 Forma o par de trading (ex: BTC/USDT)
-      const tradingPair = symbol.includes('/') ? symbol : `${symbol.toUpperCase()}/USDT`
-      
       console.log('🔵 [TRADE-MODAL] Enviando requisição para API...')
       const startTime = Date.now()
-      
-      // Chama a API de compra ou venda
-      const result = isBuy 
+
+      const result = isBuy
         ? await apiService.createBuyOrder(
             user.id,
             exchangeId,
-            tradingPair,
+            symbol,
             amountNum,
             orderType,
             orderType === 'limit' ? priceNum : undefined
@@ -354,7 +332,7 @@ export function TradeModal({
         : await apiService.createSellOrder(
             user.id,
             exchangeId,
-            tradingPair,
+            symbol,
             amountNum,
             orderType,
             orderType === 'limit' ? priceNum : undefined
@@ -364,67 +342,38 @@ export function TradeModal({
       console.log(`🔵 [TRADE-MODAL] Resposta da API recebida em ${apiTime}ms`)
       console.log('🔵 [TRADE-MODAL] Sucesso:', result.success)
       
-      // ✅ Sucesso - fecha modal e dispara callbacks
+      // ✅ Sucesso - fecha modal e dispara callbacks em background
       if (result.success) {
         console.log('✅ [TRADE-MODAL] Ordem criada com sucesso!')
-        console.log('✅ [TRADE-MODAL] Fechando modal...')
-        console.log('✅ [TRADE-MODAL] Timestamp antes de fechar:', Date.now())
         
-        // ⚠️ SETSTATE COMENTADOS PARA TESTE
-        console.log('⚠️ [TRADE-MODAL] setState COMENTADOS - testando apenas onClose()')
-        
-        // console.log('✅ [TRADE-MODAL] Chamando setConfirmTradeVisible(false)...')
-        // setConfirmTradeVisible(false);
-        
-        // console.log('✅ [TRADE-MODAL] Chamando setPendingOrder(null)...')
-        // setPendingOrder(null);
-        
-        // console.log('✅ [TRADE-MODAL] Chamando setCreateOrderLoading(false)...')
-        // setCreateOrderLoading(false);
-        
-        // console.log('✅ [TRADE-MODAL] Chamando setCreateOrderError(null)...')
-        // setCreateOrderError(null);
-        
-        console.log('✅ [TRADE-MODAL] Chamando APENAS onClose()...')
-        console.log('✅ [TRADE-MODAL] Timestamp ANTES do onClose:', Date.now())
+        // Fecha modal imediatamente
         onClose();
-        console.log('✅ [TRADE-MODAL] Timestamp DEPOIS do onClose:', Date.now())
         
-        console.log('✅ [TRADE-MODAL] Modal fechado')
-        console.log('✅ [TRADE-MODAL] Timestamp depois de fechar:', Date.now())
+        // Dispara callbacks em background sem bloquear
+        setTimeout(() => {
+          if (onOrderCreated) onOrderCreated();
+          if (onBalanceUpdate) onBalanceUpdate();
+        }, 0);
         
-        // ⚠️ CALLBACKS REMOVIDOS PARA TESTE DE TRAVAMENTO
-        console.log('⚠️ [TRADE-MODAL] Callbacks foram REMOVIDOS para teste')
-        console.log('⚠️ [TRADE-MODAL] Se não travar, o problema são os callbacks!')
         console.log('🔵 [TRADE-MODAL] ========================================')
-        
-        // setTimeout(() => {
-        //   console.log('🔄 [TRADE-MODAL] Executando callback onOrderCreated...')
-        //   if (onOrderCreated) onOrderCreated();
-        //   
-        //   console.log('🔄 [TRADE-MODAL] Executando callback onBalanceUpdate...')
-        //   if (onBalanceUpdate) onBalanceUpdate();
-        //   
-        //   console.log('✅ [TRADE-MODAL] Callbacks executados')
-        //   console.log('🔵 [TRADE-MODAL] ========================================')
-        // }, 0);
         
       } else {
         // ❌ Erro da API
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
         console.error('❌ [TRADE-MODAL] Erro ao criar ordem:', errorMsg)
-        console.log('🔵 [TRADE-MODAL] ========================================')
         setCreateOrderError(errorMsg);
       }
-    } catch (error: any) {
-      const errorMsg = error.message || 'Não foi possível criar a ordem';
-      console.error('❌ [TRADE-MODAL] Exceção ao criar ordem:', errorMsg)
-      console.error('❌ [TRADE-MODAL] Stack:', error.stack)
-      console.log('🔵 [TRADE-MODAL] ========================================')
-      setCreateOrderError(errorMsg);
+      
+    } catch (error) {
+      console.error('❌ [TRADE-MODAL] Exception ao criar ordem:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      setCreateOrderError(errorMessage);
     } finally {
-      setCreateOrderLoading(false);
+      setCreateOrderLoading(false)
     }
+    
+    // ⚠️ Ordem criada DIRETO - sem modal de confirmação
+    console.log('🔵 [TRADE-MODAL] ========================================')
   }
 
   return (
@@ -672,183 +621,21 @@ export function TradeModal({
                   backgroundColor: isBuy ? '#10b98120' : '#ef444420',
                   borderColor: isBuy ? '#10b981' : '#ef4444',
                 },
-                isSubmitting && styles.submitButtonDisabled
+                createOrderLoading && styles.submitButtonDisabled
               ]}
               onPress={handleSubmit}
-              disabled={isSubmitting}
+              disabled={createOrderLoading}
             >
               <Text style={[
                 styles.submitButtonText,
                 { color: isBuy ? '#10b981' : '#ef4444' }
               ]}>
-                {String(isSubmitting ? 'Criando ordem...' : `${isBuy ? 'Comprar' : 'Vender'} ${symbol}`)}
+                {String(createOrderLoading ? 'Criando ordem...' : `${isBuy ? 'Comprar' : 'Vender'} ${symbol}`)}
               </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
       </View>
-
-      {/* Modal de Confirmação de Trade */}
-      <Modal
-        visible={confirmTradeVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setConfirmTradeVisible(false)}
-      >
-        <Pressable 
-          style={styles.confirmOverlay} 
-          onPress={() => setConfirmTradeVisible(false)}
-        >
-          <Pressable 
-            style={styles.confirmSafeArea} 
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={[styles.confirmContainer, { backgroundColor: colors.surface }]}>
-              {/* Header */}
-              <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.confirmTitle, { color: colors.text }]}>
-                  {isBuy ? t('trade.buy') : t('trade.sell')}
-                </Text>
-              </View>
-
-              {/* Content */}
-              <View style={styles.confirmContent}>
-                {/* Mostra loading */}
-                {createOrderLoading && (
-                  <View style={styles.loadingContainer}>
-                    <AnimatedLogoIcon size={32} />
-                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-                      {t('trade.creatingOrder')}
-                    </Text>
-                  </View>
-                )}
-                
-                {/* Mostra erro */}
-                {createOrderError && (
-                  <View style={styles.errorContainerClean}>
-                    {(() => {
-                      const parsedError = parseErrorResponse(createOrderError)
-                      return (
-                        <>
-                          {parsedError.code && (
-                            <Text style={[styles.errorCodeText, { color: colors.textSecondary }]}>
-                              {t('orders.errorCode')}: {parsedError.code}
-                            </Text>
-                          )}
-                          
-                          <Text style={[styles.errorMessageText, { color: colors.text }]}>
-                            {parsedError.message}
-                          </Text>
-                        </>
-                      )
-                    })()}
-                  </View>
-                )}
-                
-                {/* Mostra mensagem de confirmação apenas se não está em loading e sem erro */}
-                {!createOrderLoading && !createOrderError && (
-                  <>
-                    <Text style={[styles.confirmMessage, { color: colors.textSecondary }]}>
-                      {String(isBuy ? t('trade.confirmBuy') : t('trade.confirmSell'))} {String(symbol.toUpperCase())}?
-                    </Text>
-                    
-                    {pendingOrder && (
-                      <View style={[styles.confirmDetails, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-                        <View style={styles.confirmDetailRow}>
-                      <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>
-                        Par:
-                      </Text>
-                      <Text style={[styles.confirmValue, { color: colors.text }]}>
-                        {String(symbol.toUpperCase())}/USDT
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.confirmDetailRow}>
-                      <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>
-                        Lado:
-                      </Text>
-                      <Text style={[styles.confirmValue, { color: isBuy ? '#10b981' : '#ef4444' }]}>
-                        {String(isBuy ? 'Compra' : 'Venda')}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.confirmDetailRow}>
-                      <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>
-                        Tipo:
-                      </Text>
-                      <Text style={[styles.confirmValue, { color: colors.text }]}>
-                        {String(orderType === 'market' ? 'Mercado' : 'Limite')}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.confirmDetailRow}>
-                      <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>
-                        Quantidade:
-                      </Text>
-                      <Text style={[styles.confirmValue, { color: colors.text }]}>
-                        {String(pendingOrder.amount.toFixed(8))} {String(symbol.toUpperCase())}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.confirmDetailRow}>
-                      <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>
-                        Preço:
-                      </Text>
-                      <Text style={[styles.confirmValue, { color: colors.text }]}>
-                        {String(orderType === 'market' ? 'Mercado' : `$ ${apiService.formatUSD(pendingOrder.price)}`)}
-                      </Text>
-                    </View>
-                    
-                    <View style={[styles.confirmDetailRow, styles.confirmTotalRow, { borderTopColor: colors.border }]}>
-                      <Text style={[styles.confirmLabel, { color: colors.textSecondary, fontWeight: fontWeights.semibold }]}>
-                        Total:
-                      </Text>
-                      <Text style={[styles.confirmValue, { color: colors.text, fontWeight: fontWeights.semibold, fontSize: typography.h4 }]}>
-                        $ {String(apiService.formatUSD(pendingOrder.total))}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-                  </>
-                )}
-              </View>
-
-              {/* Footer com botões */}
-              <View style={styles.confirmFooter}>
-                {/* Botão Voltar/Fechar - sempre disponível */}
-                <TouchableOpacity
-                  onPress={() => {
-                    setConfirmTradeVisible(false)
-                    setPendingOrder(null)
-                    setCreateOrderError(null) // Limpa erro ao fechar
-                  }}
-                  disabled={createOrderLoading}
-                  style={[styles.confirmButton, styles.confirmButtonCancel, { 
-                    borderColor: colors.border,
-                    opacity: createOrderLoading ? 0.5 : 1
-                  }]}
-                >
-                  <Text style={[styles.confirmButtonText, { color: colors.textSecondary }]}>
-                    {createOrderError ? t('common.close') : t('common.cancel')}
-                  </Text>
-                </TouchableOpacity>
-                
-                {/* Botão Confirmar ou Tentar Novamente */}
-                {!createOrderLoading && (
-                  <TouchableOpacity
-                    onPress={confirmTrade}
-                    style={[styles.confirmButton, styles.confirmButtonConfirm, { backgroundColor: isBuy ? '#10b981' : '#ef4444' }]}
-                  >
-                    <Text style={[styles.confirmButtonText, { color: '#fff' }]}>
-                      {createOrderError ? t('common.tryAgain') : (isBuy ? t('trade.buy') : t('trade.sell'))}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </Modal>
   )
 }
@@ -1035,125 +822,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   submitButtonDisabled: {
-    opacity: 0.5, // 0.6→0.5
+    opacity: 0.5,
   },
   submitButtonText: {
     fontSize: typography.h4,
-    fontWeight: fontWeights.medium, // bold→medium
-  },
-  // Estilos do modal de confirmação
-  confirmOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  confirmSafeArea: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  confirmContainer: {
-    borderRadius: 16,
-    width: "100%",
-    maxWidth: 400,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  confirmHeader: {
-    padding: 20,
-    borderBottomWidth: 1,
-    alignItems: "center",
-  },
-  confirmTitle: {
-    fontSize: typography.h3,
-    fontWeight: fontWeights.semibold,
-  },
-  confirmContent: {
-    padding: 20,
-    gap: 16,
-  },
-  confirmMessage: {
-    fontSize: typography.body,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  confirmDetails: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 12,
-  },
-  confirmDetailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  confirmTotalRow: {
-    paddingTop: 12,
-    marginTop: 4,
-    borderTopWidth: 1,
-  },
-  confirmLabel: {
-    fontSize: typography.bodySmall,
-  },
-  confirmValue: {
-    fontSize: typography.bodySmall,
     fontWeight: fontWeights.medium,
   },
-  confirmFooter: {
-    flexDirection: "row",
-    padding: 20,
-    gap: 12,
-  },
-  confirmButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmButtonCancel: {
-    borderWidth: 1,
-  },
-  confirmButtonConfirm: {
-    // backgroundColor definido inline
-  },
-  confirmButtonText: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-  },
-  // Estilos para loading e erro
-  loadingContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    paddingVertical: 20,
-  },
-  loadingText: {
-    fontSize: typography.body,
-    textAlign: "center",
-  },
-  errorContainerClean: {
-    alignItems: "center",
-    paddingVertical: 12,
-    gap: 4,
-  },
-  errorCodeText: {
-    fontSize: typography.caption,
-    opacity: 0.7,
-    marginTop: 4,
-  },
-  errorMessageText: {
-    fontSize: typography.body,
-    textAlign: "center",
-    lineHeight: 22,
-    marginTop: 8,
-  },
 })
-
