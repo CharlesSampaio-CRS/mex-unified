@@ -1125,7 +1125,6 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           balance={selectedTrade.balance}
           onOrderCreated={() => {
             refreshBalance();
-            fetchOpenOrdersForExchange(selectedTrade.exchangeId);
           }}
         />
       )}

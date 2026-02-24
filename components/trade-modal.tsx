@@ -387,11 +387,11 @@ export function TradeModal({
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View>
-              <Text style={[styles.title, { color: colors.text }]}>Trade {symbol.toUpperCase()}</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Trade {String(symbol.toUpperCase())}</Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                {exchangeName} • {currentPrice < 0.01 
+                {String(exchangeName)} • {String(currentPrice < 0.01 
                   ? currentPrice.toFixed(10).replace(/\.?0+$/, '') 
-                  : apiService.formatUSD(currentPrice)}
+                  : apiService.formatUSD(currentPrice))}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -527,10 +527,10 @@ export function TradeModal({
             <View style={styles.section}>
               <View style={styles.labelRow}>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.label, { color: colors.text }]}>
-                  Quantidade ({symbol})
+                  Quantidade ({String(symbol)})
                 </Text>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.balanceText, { color: colors.textSecondary }]}> 
-                  Disponível: {availableBalance.toFixed(8)}
+                  Disponível: {String(availableBalance.toFixed(8))}
                 </Text>
               </View>
               <TextInput
@@ -558,7 +558,7 @@ export function TradeModal({
                     onPress={() => handlePercentage(percent)}
                   >
                     <Text style={[styles.percentageButtonText, { color: colors.primary }]}>
-                      {percent}%
+                      {String(percent)}%
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -598,14 +598,14 @@ export function TradeModal({
                       Quantidade
                     </Text>
                     <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
-                      {(() => {
+                      {String((() => {
                         const qty = parseFloat(amount || '0')
                         if (qty === 0) return '0.00'
                         if (qty >= 1000000) return `${(qty / 1000000).toFixed(2)}Mi`
                         if (qty >= 1000) return `${(qty / 1000).toFixed(2)}K`
                         if (qty < 1) return qty.toFixed(8).replace(/\.?0+$/, '')
                         return qty.toFixed(2)
-                      })()} {symbol.toUpperCase()}
+                      })())} {String(symbol.toUpperCase())}
                     </Text>
                   </View>
                 </>
@@ -629,7 +629,7 @@ export function TradeModal({
                 styles.submitButtonText,
                 { color: isBuy ? '#10b981' : '#ef4444' }
               ]}>
-                {isSubmitting ? 'Criando ordem...' : `${isBuy ? 'Comprar' : 'Vender'} ${symbol}`}
+                {String(isSubmitting ? 'Criando ordem...' : `${isBuy ? 'Comprar' : 'Vender'} ${symbol}`)}
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -697,7 +697,7 @@ export function TradeModal({
                 {!createOrderLoading && !createOrderError && (
                   <>
                     <Text style={[styles.confirmMessage, { color: colors.textSecondary }]}>
-                      {isBuy ? t('trade.confirmBuy') : t('trade.confirmSell')} {symbol.toUpperCase()}?
+                      {String(isBuy ? t('trade.confirmBuy') : t('trade.confirmSell'))} {String(symbol.toUpperCase())}?
                     </Text>
                     
                     {pendingOrder && (
@@ -707,7 +707,7 @@ export function TradeModal({
                         Par:
                       </Text>
                       <Text style={[styles.confirmValue, { color: colors.text }]}>
-                        {symbol.toUpperCase()}/USDT
+                        {String(symbol.toUpperCase())}/USDT
                       </Text>
                     </View>
                     
@@ -716,7 +716,7 @@ export function TradeModal({
                         Lado:
                       </Text>
                       <Text style={[styles.confirmValue, { color: isBuy ? '#10b981' : '#ef4444' }]}>
-                        {isBuy ? 'Compra' : 'Venda'}
+                        {String(isBuy ? 'Compra' : 'Venda')}
                       </Text>
                     </View>
                     
@@ -725,7 +725,7 @@ export function TradeModal({
                         Tipo:
                       </Text>
                       <Text style={[styles.confirmValue, { color: colors.text }]}>
-                        {orderType === 'market' ? 'Mercado' : 'Limite'}
+                        {String(orderType === 'market' ? 'Mercado' : 'Limite')}
                       </Text>
                     </View>
                     
@@ -734,7 +734,7 @@ export function TradeModal({
                         Quantidade:
                       </Text>
                       <Text style={[styles.confirmValue, { color: colors.text }]}>
-                        {pendingOrder.amount.toFixed(8)} {symbol.toUpperCase()}
+                        {String(pendingOrder.amount.toFixed(8))} {String(symbol.toUpperCase())}
                       </Text>
                     </View>
                     
@@ -743,7 +743,7 @@ export function TradeModal({
                         Preço:
                       </Text>
                       <Text style={[styles.confirmValue, { color: colors.text }]}>
-                        {orderType === 'market' ? 'Mercado' : `$ ${apiService.formatUSD(pendingOrder.price)}`}
+                        {String(orderType === 'market' ? 'Mercado' : `$ ${apiService.formatUSD(pendingOrder.price)}`)}
                       </Text>
                     </View>
                     
@@ -752,7 +752,7 @@ export function TradeModal({
                         Total:
                       </Text>
                       <Text style={[styles.confirmValue, { color: colors.text, fontWeight: fontWeights.semibold, fontSize: typography.h4 }]}>
-                        $ {apiService.formatUSD(pendingOrder.total)}
+                        $ {String(apiService.formatUSD(pendingOrder.total))}
                       </Text>
                     </View>
                   </View>
