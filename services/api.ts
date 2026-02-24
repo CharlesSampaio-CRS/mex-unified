@@ -36,50 +36,6 @@ interface LocalUserExchangeRow {
 }
 
 /**
- * Gera comando cURL a partir de uma requisição fetch
- */
-function generateCurlCommand(url: string, options: RequestInit): string {
-  const method = options.method || 'GET';
-  const headers = options.headers as Record<string, string> || {};
-  
-  let curl = `curl -X ${method}`;
-  
-  // Adiciona headers
-  Object.entries(headers).forEach(([key, value]) => {
-    // Mascara tokens e credenciais sensíveis
-    if (key.toLowerCase() === 'authorization' && value.includes('Bearer')) {
-      curl += ` -H "${key}: Bearer ***"`;
-    } else {
-      curl += ` -H "${key}: ${value}"`;
-    }
-  });
-  
-  // Adiciona body se existir
-  if (options.body) {
-    const bodyStr = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
-    
-    // Mascara credenciais no body
-    let maskedBody = bodyStr;
-    try {
-      const bodyObj = JSON.parse(bodyStr);
-      if (bodyObj.api_key) bodyObj.api_key = '***';
-      if (bodyObj.api_secret) bodyObj.api_secret = '***';
-      if (bodyObj.passphrase) bodyObj.passphrase = '***';
-      if (bodyObj.password) bodyObj.password = '***';
-      maskedBody = JSON.stringify(bodyObj);
-    } catch {
-      // Se não for JSON, usa original
-    }
-    
-    curl += ` -d '${maskedBody}'`;
-  }
-  
-  curl += ` "${url}"`;
-  
-  return curl;
-}
-
-/**
  * Request timeout constants (in milliseconds)
  * Timeouts são configurados baseados na complexidade da operação
  * ⚡ OTIMIZADO: Timeouts mais agressivos para melhor UX
@@ -151,10 +107,6 @@ async function fetchWithTimeout(
     }
     
     try {
-      // 🔵 Log cURL command para debug
-      const curlCommand = generateCurlCommand(url, mergedOptions);
-      console.log('🔵 cURL:', curlCommand);
-      
       const fetchPromise = fetch(url, mergedOptions);
       const timeoutPromise = new Promise<Response>((_, reject) =>
         setTimeout(() => reject(new Error(`Request timeout after ${timeout}ms`)), timeout)
