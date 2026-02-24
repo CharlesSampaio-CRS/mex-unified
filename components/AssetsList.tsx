@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Pressable, Modal, TextInput } from "react-native"
-import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Pressable, Modal, TextInput, Animated } from "react-native"
+import React, { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
@@ -32,12 +32,59 @@ interface AssetsListProps {
   onRefreshOrders?: () => void  // Callback para atualizar ordens
 }
 
+// Sub-componente com animação piscante para tokens afetados por create/cancel
+function BlinkingAssetCard({ 
+  children, 
+  isAffected, 
+  style,
+  onPress
+}: { 
+  key?: string;
+  children: React.ReactNode; 
+  isAffected: boolean; 
+  style: any;
+  onPress: () => void;
+}) {
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isAffected) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnim, {
+            toValue: 0.4,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      blinkAnim.setValue(1);
+    }
+  }, [isAffected]);
+
+  return (
+    <Animated.View style={{ opacity: isAffected ? blinkAnim : 1 }}>
+      <TouchableOpacity style={style} onPress={onPress}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefreshOrders }: AssetsListProps) {
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const { data, loading, error, refresh: refreshBalance, refreshing } = useBalance()
-  const { refresh: refreshOrders } = useOrders()
+  const { refresh: refreshOrders, recentlyAffectedSymbols } = useOrders()
   const { hideValue, valuesHidden } = usePrivacy()
   const { addToken, removeToken, isWatching } = useWatchlist()
   const { getAlertsForToken } = useAlerts()
@@ -996,8 +1043,9 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               </View>
               
               {formattedAssets.map((asset: any) => (
-                <TouchableOpacity
+                <BlinkingAssetCard
                   key={asset.id}
+                  isAffected={recentlyAffectedSymbols.has(asset.symbol?.toUpperCase())}
                   style={[styles.simpleAssetCard, { backgroundColor: colors.card }]}
                   onPress={() => {
                     setSelectedToken({
@@ -1028,7 +1076,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                       </Text>
                     )}
                   </View>
-                </TouchableOpacity>
+                </BlinkingAssetCard>
               ))}
             </View>
           )

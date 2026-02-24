@@ -19,8 +19,9 @@ interface OrdersContextType {
   totalOrders: number
   timestamp: number | null
   recentlyAddedIds: Set<string>  // IDs de ordens recém-criadas (para animação)
+  recentlyAffectedSymbols: Set<string> // Símbolos de tokens afetados por create/cancel (para animação no Assets)
   refresh: () => Promise<void>
-  removeOrder: (orderId: string) => void  // Remoção otimista imediata
+  removeOrder: (orderId: string, symbol?: string) => void  // Remoção otimista imediata
   addOrder: (order: OpenOrder, exchangeId: string, exchangeName: string) => void // Inserção otimista imediata
 }
 
@@ -34,6 +35,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [timestamp, setTimestamp] = useState<number | null>(null);
   const [recentlyAddedIds, setRecentlyAddedIds] = useState<Set<string>>(new Set());
+  const [recentlyAffectedSymbols, setRecentlyAffectedSymbols] = useState<Set<string>>(new Set());
 
   const fetchOrders = useCallback(async (forceRefresh = false) => {
     if (!user?.id) return
@@ -129,20 +131,52 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     await fetchOrders(true);
   }, [fetchOrders]);
 
+  // Helper: Marca um símbolo como recém-afetado (animação piscante no Assets por 4s)
+  const markSymbolAffected = useCallback((symbol: string) => {
+    // Extrai o token base do par (ex: "BTC/USDT" → "BTC")
+    const baseToken = symbol.split('/')[0]?.toUpperCase() || symbol.toUpperCase()
+    console.log('✨ [ORDERS-CONTEXT] Marcando token como afetado:', baseToken)
+    setRecentlyAffectedSymbols(prev => new Set(prev).add(baseToken))
+    setTimeout(() => {
+      setRecentlyAffectedSymbols(prev => {
+        const next = new Set(prev)
+        next.delete(baseToken)
+        return next
+      })
+    }, 4000)
+  }, [])
+
   // 🚀 Remoção otimista: Remove uma ordem da lista localmente sem esperar API
-  const removeOrder = useCallback((orderId: string) => {
+  const removeOrder = useCallback((orderId: string, symbol?: string) => {
     console.log('🗑️ [ORDERS-CONTEXT] Remoção otimista da ordem:', orderId)
+    
+    // Encontra o símbolo da ordem antes de remover (se não fornecido)
+    if (!symbol) {
+      for (const exchange of ordersByExchange) {
+        const order = exchange.orders.find(o => o.id === orderId)
+        if (order) {
+          symbol = order.symbol
+          break
+        }
+      }
+    }
+    
     setOrdersByExchange(prev => {
       const updated = prev.map(exchange => ({
         ...exchange,
         orders: exchange.orders.filter(order => order.id !== orderId)
-      })).filter(exchange => exchange.orders.length > 0) // Remove exchanges sem ordens
+      })).filter(exchange => exchange.orders.length > 0)
       
       console.log('🗑️ [ORDERS-CONTEXT] Ordens restantes:', updated.reduce((sum, ex) => sum + ex.orders.length, 0))
       return updated
     })
     setTimestamp(Date.now())
-  }, [])
+    
+    // ✨ Marca o token como afetado para animação na lista de Assets
+    if (symbol) {
+      markSymbolAffected(symbol)
+    }
+  }, [ordersByExchange, markSymbolAffected])
 
   // 🚀 Inserção otimista: Adiciona uma ordem na lista localmente sem esperar API
   const addOrder = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
@@ -179,7 +213,12 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         return next
       })
     }, 3000)
-  }, [])
+    
+    // ✨ Marca o token como afetado para animação na lista de Assets
+    if (order.symbol) {
+      markSymbolAffected(order.symbol)
+    }
+  }, [markSymbolAffected])
 
   // Carrega orders imediatamente ao logar
   useEffect(() => {
@@ -200,6 +239,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         totalOrders,
         timestamp,
         recentlyAddedIds,
+        recentlyAffectedSymbols,
         refresh,
         removeOrder,
         addOrder,
