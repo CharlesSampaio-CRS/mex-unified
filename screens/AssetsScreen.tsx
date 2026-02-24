@@ -47,10 +47,6 @@ export function AssetsScreen({ navigation }: any) {
     navigation?.navigate('Settings', { initialTab: 'profile' });
   }, [navigation]);
 
-  const onAlertsPress = useCallback(() => {
-    navigation?.navigate('Favoritos');
-  }, [navigation]);
-
   const onSettingsPress = useCallback(() => {
     navigation?.navigate('Settings');
   }, [navigation]);
@@ -204,10 +200,9 @@ export function AssetsScreen({ navigation }: any) {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title="Assets"
-        subtitle={`${globalTotals.totalAssets} ${globalTotals.totalAssets === 1 ? 'asset' : 'assets'} • ${hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`)}`}
+        subtitle={`${String(globalTotals.totalAssets)} ${String(globalTotals.totalAssets === 1 ? 'asset' : 'assets')} • ${String(hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`))}`}
         onNotificationsPress={onNotificationsPress}
         onProfilePress={onProfilePress}
-        onAlertsPress={onAlertsPress}
         onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
         navigation={navigation}
@@ -337,10 +332,10 @@ export function AssetsScreen({ navigation }: any) {
                 {/* Exchange Header */}
                 <View style={styles.exchangeHeader}>
                   <Text style={[styles.exchangeName, { color: colors.text }]}>
-                    {section.exchangeName}
+                    {String(section.exchangeName || 'Unknown')}
                   </Text>
                   <Text style={[styles.exchangeCount, { color: colors.textSecondary }]}>
-                    {section.items.length} {section.items.length === 1 ? 'ativo' : 'ativos'}
+                    {String(section.items.length)} {String(section.items.length === 1 ? 'ativo' : 'ativos')}
                   </Text>
                 </View>
 
@@ -369,24 +364,24 @@ export function AssetsScreen({ navigation }: any) {
                       <View style={styles.symbolSection}>
                         <View style={[styles.symbolIcon, { backgroundColor: colors.primaryLight }]}>
                           <Text style={[styles.symbolIconText, { color: colors.primary }]}>
-                            {item.symbol.charAt(0)}
+                            {String((item.symbol || '?').charAt(0))}
                           </Text>
                         </View>
                         <View>
                           <Text style={[styles.assetSymbol, { color: colors.text }]}>
-                            {item.symbol}
+                            {String(item.symbol || 'Unknown')}
                           </Text>
                           <Text style={[styles.assetName, { color: colors.textSecondary }]}>
-                            {item.name}
+                            {String(item.name || 'Unknown')}
                           </Text>
                         </View>
                       </View>
                       <View style={styles.valueSection}>
                         <Text style={[styles.assetValue, { color: colors.text }]}>
-                          {hideValue(`$${apiService.formatUSD(item.valueUSD)}`)}
+                          {String(hideValue(`$${apiService.formatUSD(item.valueUSD || 0)}`))}
                         </Text>
                         <Text style={[styles.assetAmount, { color: colors.textSecondary }]}>
-                          {hideValue(apiService.formatTokenAmount(item.amount.toString()))}
+                          {String(hideValue(apiService.formatTokenAmount(String(item.amount || 0))))}
                         </Text>
                       </View>
                     </View>
@@ -398,7 +393,7 @@ export function AssetsScreen({ navigation }: any) {
                           Preço
                         </Text>
                         <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                          {hideValue(`$${apiService.formatUSD(item.priceUSD)}`)}
+                          {String(hideValue(`$${apiService.formatUSD(item.priceUSD || 0)}`))}
                         </Text>
                       </View>
                       
@@ -415,7 +410,7 @@ export function AssetsScreen({ navigation }: any) {
                               styles.variationTextInline,
                               { color: item.variation24h >= 0 ? colors.success : colors.danger }
                             ]}>
-                              {item.variation24h >= 0 ? '▲' : '▼'} {Math.abs(item.variation24h).toFixed(2)}%
+                              {String(item.variation24h >= 0 ? '▲' : '▼')} {String(Math.abs(item.variation24h || 0).toFixed(2))}%
                             </Text>
                           </View>
                         </View>
@@ -426,7 +421,7 @@ export function AssetsScreen({ navigation }: any) {
                           Disponível
                         </Text>
                         <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                          {hideValue(apiService.formatTokenAmount(item.free.toString()))}
+                          {String(hideValue(apiService.formatTokenAmount(String(item.free || 0))))}
                         </Text>
                       </View>
 
@@ -436,7 +431,7 @@ export function AssetsScreen({ navigation }: any) {
                             Bloqueado
                           </Text>
                           <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                            {hideValue(apiService.formatTokenAmount(item.used.toString()))}
+                            {String(hideValue(apiService.formatTokenAmount(String(item.used || 0))))}
                           </Text>
                         </View>
                       )}

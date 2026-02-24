@@ -1,12 +1,11 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useOrders } from '@/contexts/OrdersContext';
 import { usePrivacy } from '@/contexts/PrivacyContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { Header } from '@/components/Header';
@@ -18,216 +17,263 @@ import { typography, fontWeights } from '@/lib/typography';
 
 export function OrdersScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const { t } = useLanguage();
   const { user } = useAuth();
-  const { ordersByExchange, loading: ordersLoading, refreshing, refresh: refreshOrders, timestamp } = useOrders();
+  const { ordersByExchange, loading, refreshing, refresh } = useOrders();
   const { hideValue } = usePrivacy();
   const { unreadCount } = useNotifications();
   
   const [search, setSearch] = useState('');
-  const [selectedExchange, setSelectedExchange] = useState<string>('All');
   const [selectedType, setSelectedType] = useState<'All' | 'buy' | 'sell'>('All');
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [orderDetailsVisible, setOrderDetailsVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OpenOrder | null>(null);
   const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set());
 
-  const onNotificationsPress = useCallback(() => {
-    setNotificationsModalVisible(true);
-  }, []);
+  const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
+  const onProfilePress = useCallback(() => navigation?.navigate('Settings', { initialTab: 'profile' }), [navigation]);
+  const onSettingsPress = useCallback(() => navigation?.navigate('Settings'), [navigation]);
 
-  const onProfilePress = useCallback(() => {
-    navigation?.navigate('Settings', { initialTab: 'profile' });
-  }, [navigation]);
-
-  const onAlertsPress = useCallback(() => {
-    navigation?.navigate('Favoritos');
-  }, [navigation]);
-
-  const onSettingsPress = useCallback(() => {
-    navigation?.navigate('Settings');
-  }, [navigation]);
-
-  // Refresh
-  const handleRefresh = useCallback(async () => {
-    await refreshOrders();
-  }, [refreshOrders]);
-
-  // Transform data - All orders from all exchanges
-  const allOrdersSections = useMemo(() => {
-    console.log('📦 OrdersByExchange:', ordersByExchange);
-    console.log('📦 OrdersByExchange length:', ordersByExchange?.length);
-    console.log('📦 OrdersByExchange type:', typeof ordersByExchange);
-    console.log('📦 OrdersByExchange isArray:', Array.isArray(ordersByExchange));
+  // Filtra orders
+  const filteredSections = useMemo(() => {
+    if (!ordersByExchange || ordersByExchange.length === 0) return [];
     
-    if (!ordersByExchange || ordersByExchange.length === 0) {
-      console.log('⚠️ OrdersByExchange está vazio ou undefined!');
-      return [];
-    }
-    
-    const sections = ordersByExchange.map((exchange, index) => {
-      console.log(`📦 Processing exchange ${index}:`, {
-        exchangeId: exchange?.exchangeId,
-        exchangeName: exchange?.exchangeName,
-        ordersCount: exchange?.orders?.length
-      });
-      
-      return {
-        exchangeId: exchange.exchangeId,
-        exchangeName: exchange.exchangeName,
-        items: exchange.orders.map(order => ({
-          ...order,
-          id: order.id,
-          exchangeId: exchange.exchangeId,
-          exchangeName: exchange.exchangeName,
-        }))
-      };
-    });
-
-    console.log('📦 Sections created:', sections.length);
-    console.log('📦 First section:', sections[0]);
-    
-    return sections;
-  }, [ordersByExchange]);
-
-  // Apply filters
-  const ordersSections = useMemo(() => {
-    console.log('🔍 FILTER - Inicio:', {
-      allSections: allOrdersSections.length,
-      selectedExchange,
-      selectedType,
-      search
-    });
-    
-    const result = allOrdersSections
-      .map(section => {
-        // Filter by exchange
-        if (selectedExchange !== 'All' && section.exchangeId !== selectedExchange) {
-          return null;
-        }
-
-        // Filter items within section
-        const filteredItems = section.items.filter(item => {
-          // Skip items without id
-          if (!item || !item.id) return false;
+    return ordersByExchange
+      .map(exchange => {
+        if (!exchange || !exchange.orders) return null;
+        
+        const filtered = exchange.orders.filter(order => {
+          if (!order || !order.id || !order.symbol || !order.side) return false;
           
-          // Filter by type
-          if (selectedType !== 'All' && item.side && item.side !== selectedType) return false;
+          // Filtro de tipo
+          if (selectedType !== 'All' && order.side !== selectedType) return false;
           
-          // Search filter
+          // Filtro de busca
           if (search) {
             const q = search.toLowerCase();
-            return item.symbol.toLowerCase().includes(q);
+            const symbol = String(order.symbol || '').toLowerCase();
+            if (!symbol.includes(q)) return false;
           }
           
           return true;
         });
-
-        // Return section only if it has items after filtering
-        if (filteredItems.length === 0) return null;
-
+        
+        if (filtered.length === 0) return null;
+        
         return {
-          ...section,
-          items: filteredItems
+          exchangeId: String(exchange.exchangeId || 'unknown'),
+          exchangeName: String(exchange.exchangeName || 'Unknown'),
+          orders: filtered
         };
       })
-      .filter(Boolean) as typeof allOrdersSections;
-    
-    console.log('🔍 FILTER - Resultado:', result.length, 'sections');
-    result.forEach((s, i) => console.log(`  Section ${i}: ${s.exchangeName} - ${s.items.length} items`));
-    
-    return result;
-  }, [allOrdersSections, search, selectedType, selectedExchange]);
+      .filter(Boolean) as Array<{ exchangeId: string; exchangeName: string; orders: OpenOrder[] }>;
+  }, [ordersByExchange, search, selectedType]);
 
-  // Get unique exchanges for filter
-  const availableExchanges = useMemo(() => {
-    const exchanges = allOrdersSections.map(section => ({
-      id: section.exchangeId,
-      name: section.exchangeName
-    }));
-    return exchanges;
-  }, [allOrdersSections]);
-
-  // Calculate totals (from filtered data)
+  // Totais
   const totals = useMemo(() => {
-    let totalOrders = 0;
-    let totalValue = 0;
-
-    ordersSections.forEach(section => {
-      section.items.forEach(item => {
-        if (!item || typeof item.price !== 'number' || typeof item.amount !== 'number') return;
-        totalOrders++;
-        totalValue += item.price * item.amount;
+    let count = 0;
+    let value = 0;
+    
+    filteredSections.forEach(section => {
+      section.orders.forEach(order => {
+        if (!order) return;
+        const price = Number(order.price) || 0;
+        const amount = Number(order.amount) || 0;
+        const orderValue = price * amount;
+        
+        if (isFinite(orderValue) && !isNaN(orderValue)) {
+          count++;
+          value += orderValue;
+        }
       });
     });
+    
+    return { count, value };
+  }, [filteredSections]);
 
-    return { totalOrders, totalValue };
-  }, [ordersSections]);
-
-  // Calculate global totals (all orders, unfiltered)
-  const globalTotals = useMemo(() => {
-    let totalOrders = 0;
-    let totalValue = 0;
-
-    allOrdersSections.forEach(section => {
-      section.items.forEach(item => {
-        if (!item || typeof item.price !== 'number' || typeof item.amount !== 'number') return;
-        totalOrders++;
-        totalValue += item.price * item.amount;
-      });
-    });
-
-    return { totalOrders, totalValue };
-  }, [allOrdersSections]);
-
-  // Handle order selection
   const handleOrderPress = useCallback((order: OpenOrder) => {
     setSelectedOrder(order);
     setOrderDetailsVisible(true);
   }, []);
 
-  // Handle cancel order
   const handleCancelOrder = useCallback(async (order: OpenOrder, exchangeId: string) => {
-    if (cancellingOrderIds.has(order.id)) return;
+    const orderId = String(order.id || '');
+    if (cancellingOrderIds.has(orderId)) return;
 
-    setCancellingOrderIds(prev => new Set(prev).add(order.id));
+    setCancellingOrderIds(prev => new Set(prev).add(orderId));
 
     try {
-      const response = await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, order.id);
-      
-      if (response.success) {
-        // Refresh orders after successful cancellation
-        await refreshOrders();
-      }
+      await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, order.id);
+      await refresh();
     } catch (error) {
-      console.error('Error canceling order:', error);
+      console.error('❌ Error canceling order:', error);
     } finally {
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);
-        newSet.delete(order.id);
+        newSet.delete(orderId);
         return newSet;
       });
     }
-  }, [cancellingOrderIds, refreshOrders]);
+  }, [cancellingOrderIds, refresh]);
 
-  const loading = ordersLoading;
+  // Renderiza order card
+  const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string) => {
+    if (!order || !order.id) return null;
+    
+    const orderId = String(order.id || '');
+    const isCancelling = cancellingOrderIds.has(orderId);
+    const isBuy = order.side === 'buy';
+    
+    const price = Number(order.price) || 0;
+    const amount = Number(order.amount) || 0;
+    const orderValue = price * amount;
+    
+    if (!isFinite(orderValue) || isNaN(orderValue)) return null;
+
+    return (
+      <TouchableOpacity
+        key={orderId}
+        style={[
+          styles.orderCard,
+          { 
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            opacity: isCancelling ? 0.5 : 1
+          }
+        ]}
+        activeOpacity={0.7}
+        onPress={() => handleOrderPress(order)}
+        disabled={isCancelling}
+      >
+        {/* Header */}
+        <View style={styles.cardHeader}>
+          <View style={styles.symbolSection}>
+            <View style={[
+              styles.typeIcon,
+              { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
+            ]}>
+              <Ionicons 
+                name={isBuy ? 'arrow-up' : 'arrow-down'} 
+                size={20} 
+                color={isBuy ? colors.success : colors.danger}
+              />
+            </View>
+            <View>
+              <Text style={[styles.orderSymbol, { color: colors.text }]}>
+                {String(order.symbol || 'N/A')}
+              </Text>
+              <View style={[
+                styles.typeBadge,
+                { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
+              ]}>
+                <Text style={[
+                  styles.typeBadgeText,
+                  { color: isBuy ? colors.success : colors.danger }
+                ]}>
+                  {String(isBuy ? 'COMPRA' : 'VENDA')}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View style={styles.valueSection}>
+            <Text style={[styles.orderValue, { color: colors.text }]}>
+              {String(hideValue(`$${apiService.formatUSD(orderValue)}`))}
+            </Text>
+            <Text style={[styles.orderType, { color: colors.textSecondary }]}>
+              {String((order.type || 'LIMIT').toString().toUpperCase())}
+            </Text>
+          </View>
+        </View>
+
+        {/* Body */}
+        <View style={styles.cardBody}>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
+              Preço
+            </Text>
+            <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
+              {String(hideValue(`$${apiService.formatUSD(price)}`))}
+            </Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
+              Quantidade
+            </Text>
+            <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
+              {String(hideValue(apiService.formatTokenAmount(String(amount))))}
+            </Text>
+          </View>
+
+          {order.filled && Number(order.filled) > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
+                Executado
+              </Text>
+              <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
+                {String(hideValue(apiService.formatTokenAmount(String(order.filled))))}
+              </Text>
+            </View>
+          )}
+
+          {order.timestamp && (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
+                Data
+              </Text>
+              <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
+                {String(new Date(order.timestamp).toLocaleDateString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }))}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Cancel Button */}
+        <TouchableOpacity
+          style={[styles.cancelButton, { borderTopColor: colors.border }]}
+          onPress={() => handleCancelOrder(order, exchangeId)}
+          disabled={isCancelling}
+        >
+          {isCancelling ? (
+            <>
+              <Ionicons name="hourglass-outline" size={16} color={colors.textSecondary} />
+              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
+                Cancelando...
+              </Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
+              <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
+                Cancelar Ordem
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  }, [cancellingOrderIds, colors, hideValue, handleOrderPress, handleCancelOrder]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         title="Orders"
-        subtitle={`${globalTotals.totalOrders || 0} ${(globalTotals.totalOrders || 0) === 1 ? 'order' : 'orders'} • ${hideValue(`$${apiService.formatUSD(globalTotals.totalValue || 0)}`)}`}
+        subtitle={`${String(totals.count)} ${totals.count === 1 ? 'order' : 'orders'} • ${String(hideValue(`$${apiService.formatUSD(totals.value)}`))}`}
         onNotificationsPress={onNotificationsPress}
         onProfilePress={onProfilePress}
-        onAlertsPress={onAlertsPress}
         onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
         navigation={navigation}
       />
       
-      {/* Filters Section */}
+      {/* Filters */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        {/* Search Bar */}
+        {/* Search */}
         <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
           <TextInput
@@ -251,110 +297,60 @@ export function OrdersScreen({ navigation }: any) {
               styles.typeFilterChip,
               { 
                 backgroundColor: selectedType === 'All' ? colors.primary : colors.surface,
-                borderColor: selectedType === 'All' ? colors.primary : colors.border 
+                borderColor: selectedType === 'All' ? colors.primary : colors.border
               }
             ]}
             onPress={() => setSelectedType('All')}
           >
             <Text style={[
               styles.typeFilterText,
-              { color: selectedType === 'All' ? '#fff' : colors.text }
+              { color: selectedType === 'All' ? colors.background : colors.text }
             ]}>
               Todas
             </Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[
               styles.typeFilterChip,
               { 
                 backgroundColor: selectedType === 'buy' ? colors.success : colors.surface,
-                borderColor: selectedType === 'buy' ? colors.success : colors.border 
+                borderColor: selectedType === 'buy' ? colors.success : colors.border
               }
             ]}
             onPress={() => setSelectedType('buy')}
           >
             <Text style={[
               styles.typeFilterText,
-              { color: selectedType === 'buy' ? '#fff' : colors.text }
+              { color: selectedType === 'buy' ? colors.background : colors.text }
             ]}>
               Compra
             </Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[
               styles.typeFilterChip,
               { 
                 backgroundColor: selectedType === 'sell' ? colors.danger : colors.surface,
-                borderColor: selectedType === 'sell' ? colors.danger : colors.border 
+                borderColor: selectedType === 'sell' ? colors.danger : colors.border
               }
             ]}
             onPress={() => setSelectedType('sell')}
           >
             <Text style={[
               styles.typeFilterText,
-              { color: selectedType === 'sell' ? '#fff' : colors.text }
+              { color: selectedType === 'sell' ? colors.background : colors.text }
             ]}>
               Venda
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Exchange Filter */}
-        {availableExchanges.length > 1 && (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.exchangeFilterScroll}
-            contentContainerStyle={styles.exchangeFilterContent}
-          >
-            <TouchableOpacity
-              style={[
-                styles.exchangeFilterChip,
-                { 
-                  backgroundColor: selectedExchange === 'All' ? colors.primary : colors.surface,
-                  borderColor: selectedExchange === 'All' ? colors.primary : colors.border 
-                }
-              ]}
-              onPress={() => setSelectedExchange('All')}
-            >
-              <Text style={[
-                styles.exchangeFilterText,
-                { color: selectedExchange === 'All' ? '#fff' : colors.text }
-              ]}>
-                Todas
-              </Text>
-            </TouchableOpacity>
-            {availableExchanges.map(exchange => (
-              <TouchableOpacity
-                key={exchange.id}
-                style={[
-                  styles.exchangeFilterChip,
-                  { 
-                    backgroundColor: selectedExchange === exchange.id ? colors.primary : colors.surface,
-                    borderColor: selectedExchange === exchange.id ? colors.primary : colors.border 
-                  }
-                ]}
-                onPress={() => setSelectedExchange(exchange.id)}
-              >
-                <Text style={[
-                  styles.exchangeFilterText,
-                  { color: selectedExchange === exchange.id ? '#fff' : colors.text }
-                ]}>
-                  {exchange.name || 'Exchange'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
         {/* Results Count */}
-        <View style={styles.resultsCount}>
-          <Text style={[styles.resultsCountText, { color: colors.textSecondary }]}>
-            {totals.totalOrders || 0} {(totals.totalOrders || 0) === 1 ? 'ordem encontrada' : 'ordens encontradas'}
-          </Text>
-        </View>
+        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
+          {String(totals.count)} {String(totals.count === 1 ? 'ordem encontrada' : 'ordens encontradas')}
+        </Text>
       </View>
       
       <ScrollView
@@ -362,201 +358,50 @@ export function OrdersScreen({ navigation }: any) {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={handleRefresh}
+            onRefresh={refresh}
             tintColor={colors.primary}
             colors={[colors.primary]}
             progressBackgroundColor={colors.surface}
           />
         }
       >
-        {loading && ordersSections.length === 0 ? (
+        {loading && filteredSections.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
               Carregando ordens...
             </Text>
           </View>
-        ) : ordersSections.length === 0 ? (
+        ) : filteredSections.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={64} color={colors.textTertiary} />
             <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
               Nenhuma ordem encontrada
             </Text>
             <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-              {search || selectedType !== 'All' || selectedExchange !== 'All' 
+              {search || selectedType !== 'All' 
                 ? 'Tente ajustar os filtros' 
-                : 'Você não possui ordens abertas no momento'}
+                : 'Você não possui ordens abertas'}
             </Text>
           </View>
         ) : (
           <View style={styles.ordersListContainer}>
-            {ordersSections.map((section) => (
+            {filteredSections.map((section) => (
               <View key={section.exchangeId} style={styles.exchangeSection}>
-                {/* Exchange Header */}
                 <View style={styles.exchangeHeader}>
                   <Text style={[styles.exchangeName, { color: colors.text }]}>
-                    {section.exchangeName || 'Exchange'}
+                    {String(section.exchangeName)}
                   </Text>
                   <Text style={[styles.exchangeCount, { color: colors.textSecondary }]}>
-                    {section.items.length} {section.items.length === 1 ? 'ordem' : 'ordens'}
+                    {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
                   </Text>
                 </View>
-
-                {/* Order Cards */}
-                {section.items.map((item) => {
-                  if (!item || !item.id) return null;
-                  
-                  // Validação extra para garantir dados válidos
-                  if (!item.price || !item.amount || !item.symbol || !item.side) {
-                    console.warn('⚠️ Ordem com dados incompletos:', item.id);
-                    return null;
-                  }
-                  
-                  const isCancelling = cancellingOrderIds.has(item.id);
-                  const isBuy = item.side === 'buy';
-                  const orderValue = (item.price || 0) * (item.amount || 0);
-                  
-                  // Validação do orderValue
-                  if (!isFinite(orderValue) || isNaN(orderValue)) {
-                    console.warn('⚠️ OrderValue inválido para ordem:', item.id, orderValue);
-                    return null;
-                  }
-
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={[
-                        styles.orderCard,
-                        { 
-                          backgroundColor: colors.surface,
-                          borderColor: colors.border,
-                          opacity: isCancelling ? 0.5 : 1
-                        }
-                      ]}
-                      activeOpacity={0.7}
-                      onPress={() => handleOrderPress(item)}
-                      disabled={isCancelling}
-                    >
-                      {/* Card Header: Symbol + Type Badge */}
-                      <View style={styles.cardHeader}>
-                        <View style={styles.symbolSection}>
-                          <View style={[
-                            styles.typeIcon,
-                            { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-                          ]}>
-                            <Ionicons 
-                              name={isBuy ? 'arrow-up' : 'arrow-down'} 
-                              size={20} 
-                              color={isBuy ? colors.success : colors.danger}
-                            />
-                          </View>
-                          <View>
-                            <Text style={[styles.orderSymbol, { color: colors.text }]}>
-                              {item.symbol || 'N/A'}
-                            </Text>
-                            <View style={[
-                              styles.typeBadge,
-                              { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-                            ]}>
-                              <Text style={[
-                                styles.typeBadgeText,
-                                { color: isBuy ? colors.success : colors.danger }
-                              ]}>
-                                {isBuy ? 'COMPRA' : 'VENDA'}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                        <View style={styles.valueSection}>
-                          <Text style={[styles.orderValue, { color: colors.text }]}>
-                            {hideValue(`$${apiService.formatUSD(orderValue || 0)}`)}
-                          </Text>
-                          <Text style={[styles.orderType, { color: colors.textSecondary }]}>
-                            {item.type ? String(item.type).toUpperCase() : 'LIMIT'}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Card Body: Details */}
-                      <View style={styles.cardBody}>
-                        <View style={styles.detailRow}>
-                          <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                            Preço
-                          </Text>
-                          <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                            {hideValue(`$${apiService.formatUSD(item.price || 0)}`)}
-                          </Text>
-                        </View>
-
-                        <View style={styles.detailRow}>
-                          <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                            Quantidade
-                          </Text>
-                          <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                            {hideValue(apiService.formatTokenAmount(String(item.amount || 0)))}
-                          </Text>
-                        </View>
-
-                        {item.filled && item.filled > 0 && (
-                          <View style={styles.detailRow}>
-                            <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                              Executado
-                            </Text>
-                            <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                              {hideValue(apiService.formatTokenAmount(String(item.filled || 0)))}
-                            </Text>
-                          </View>
-                        )}
-
-                        {item.timestamp && (
-                          <View style={styles.detailRow}>
-                            <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                              Data
-                            </Text>
-                            <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                              {new Date(item.timestamp).toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Card Footer: Cancel Button */}
-                      <TouchableOpacity
-                        style={[styles.cancelButton, { borderTopColor: colors.border }]}
-                        onPress={() => handleCancelOrder(item, section.exchangeId)}
-                        disabled={isCancelling}
-                      >
-                        {isCancelling ? (
-                          <>
-                            <Ionicons name="hourglass-outline" size={16} color={colors.textSecondary} />
-                            <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
-                              Cancelando...
-                            </Text>
-                          </>
-                        ) : (
-                          <>
-                            <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
-                            <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
-                              Cancelar Ordem
-                            </Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    </TouchableOpacity>
-                  );
-                })}
+                {section.orders.map(order => renderOrderCard(order, section.exchangeId))}
               </View>
             ))}
           </View>
         )}
       </ScrollView>
 
-      {/* Order Details Modal */}
       {selectedOrder && (
         <OrderDetailsModal
           visible={orderDetailsVisible}
@@ -616,30 +461,10 @@ const styles = StyleSheet.create({
     fontSize: typography.tiny,
     fontWeight: fontWeights.semibold,
   },
-  exchangeFilterScroll: {
-    marginBottom: 8,
-  },
-  exchangeFilterContent: {
-    paddingRight: 16,
-    gap: 8,
-  },
-  exchangeFilterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginRight: 8,
-  },
-  exchangeFilterText: {
-    fontSize: typography.tiny,
-    fontWeight: fontWeights.semibold,
-  },
   resultsCount: {
-    paddingVertical: 4,
-  },
-  resultsCountText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
+    paddingVertical: 4,
   },
   emptyState: {
     alignItems: 'center',
@@ -698,7 +523,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
-    marginRight: 8,
   },
   typeIcon: {
     width: 36,
@@ -708,7 +532,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   orderSymbol: {
-    fontSize: typography.caption,  // 14 - menor
+    fontSize: typography.caption,
     fontWeight: fontWeights.bold,
     marginBottom: 4,
   },
@@ -719,21 +543,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   typeBadgeText: {
-    fontSize: 9,  // menor
+    fontSize: 9,
     fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
   valueSection: {
     alignItems: 'flex-end',
-    flexShrink: 0,
   },
   orderValue: {
-    fontSize: typography.caption,  // 14 - menor
+    fontSize: typography.caption,
     fontWeight: fontWeights.bold,
     marginBottom: 2,
   },
   orderType: {
-    fontSize: typography.micro,  // 12
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
   cardBody: {
@@ -747,11 +570,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailLabel: {
-    fontSize: typography.micro,  // 12 - menor
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
   detailValue: {
-    fontSize: typography.micro,  // 12 - menor
+    fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
   },
   cancelButton: {
