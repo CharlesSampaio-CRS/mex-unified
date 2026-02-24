@@ -1,2 +1,33 @@
-console.js:661 Text strings must be rendered within a <Text> component. Error Stack:
-    at RCTView (<anonymous>)
+ ERROR  ❌ Erro ao carregar token: [TypeError: _servicesExchangeService.exchangeService.getExchangeById is not a function (it is undefined)] 
+
+  LOG  ✅ [BalanceContext] Loading removido, isFetching=false
+ LOG  🔵 [TRADE-MODAL] ========================================
+ LOG  🔵 [TRADE-MODAL] Iniciando criação de ordem
+ LOG  🔵 [TRADE-MODAL] Tipo: VENDA
+ LOG  🔵 [TRADE-MODAL] Exchange: MEXC (693481148b0a41e8b6acb07b)
+ LOG  🔵 [TRADE-MODAL] Par: REKTCOIN
+ LOG  🔵 [TRADE-MODAL] Quantidade: 404984734.2415331
+ LOG  🔵 [TRADE-MODAL] Tipo ordem: limit
+ LOG  🔵 [TRADE-MODAL] Preço: 0.0000695
+ LOG  🔵 [TRADE-MODAL] Total: 28146.43902978655
+ LOG  🔵 [TRADE-MODAL] Enviando requisição para API...
+ LOG  🔵 [TRADE-MODAL] Resposta da API recebida em 4662ms
+ LOG  🔵 [TRADE-MODAL] Sucesso: true
+ LOG  ✅ [TRADE-MODAL] Ordem criada com sucesso!
+ LOG  ✅ [TRADE-MODAL] Fechando modal...
+ LOG  ✅ [TRADE-MODAL] Modal fechado
+ LOG  ✅ [TRADE-MODAL] Disparando callbacks em background...
+ LOG  🔄 [TRADE-MODAL] Executando callback onOrderCreated...
+ LOG  🟠 [BALANCE-CONTEXT] ========================================
+ LOG  🟠 [BALANCE-CONTEXT] refresh() chamado
+ LOG  🟠 [BALANCE-CONTEXT] Chamando fetchBalances(forceRefresh=true)...
+ LOG  🔐 [BalanceContext] Lock adquirido, iniciando fetch...
+ LOG  📡 [BalanceContext] Chamando apiService.getBalances()...
+ LOG  🔄 [TRADE-MODAL] Executando callback onBalanceUpdate...
+ LOG  ✅ [TRADE-MODAL] Callbacks executados
+ LOG  🔵 [TRADE-MODAL] ========================================
+ LOG  ✅ [BalanceContext] Resposta recebida: COM DADOS
+ LOG  🧹 [BalanceContext] Finalizando fetchBalances, removendo loading...
+ LOG  ✅ [BalanceContext] Loading removido, isFetching=false
+ LOG  🟠 [BALANCE-CONTEXT] refresh() concluído em 6641ms
+ LOG  🟠 [BALANCE-CONTEXT] ========================================
