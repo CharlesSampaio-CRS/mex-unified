@@ -389,51 +389,58 @@ export function TradeModal({
           notificationMessage = `Ordem ${isBuy ? 'de compra' : 'de venda'} aguardando execução: ${amountNum.toFixed(8)} ${symbol} @ ${apiService.formatUSD(priceNum)}`
         }
         
-        addNotification({
-          type: 'success',
-          title: notificationTitle,
-          message: notificationMessage,
-          data: {
-            icon: isExecuted ? '🎉' : (isBuy ? '🟢' : '🔴'),
-            orderId,
-            exchangeName,
-            symbol,
-            side: orderSide,
-            type: orderType,
-            amount: amountNum,
-            filled: orderFilled,
-            fillPercent: fillPercent,
-            price: orderType === 'limit' ? priceNum : avgPrice,
-            avgPrice: avgPrice,
-            status: orderStatus,
-            total
-          }
-        })
+        // 🔔 NOTIFICAÇÃO EM BACKGROUND (não bloqueia)
+        try {
+          addNotification({
+            type: 'success',
+            title: notificationTitle,
+            message: notificationMessage,
+            data: {
+              icon: isExecuted ? '🎉' : (isBuy ? '🟢' : '🔴'),
+              orderId,
+              exchangeName,
+              symbol,
+              side: orderSide,
+              type: orderType,
+              amount: amountNum,
+              filled: orderFilled,
+              fillPercent: fillPercent,
+              price: orderType === 'limit' ? priceNum : avgPrice,
+              avgPrice: avgPrice,
+              status: orderStatus,
+              total
+            }
+          }).catch(err => {
+            console.error('❌ [TradeModal] Erro ao criar notificação:', err);
+          });
+        } catch (err) {
+          console.error('❌ [TradeModal] Erro crítico em notificação:', err);
+        }
         
-        // ✅ FECHA MODAL IMEDIATAMENTE após API retornar sucesso
+        // 🔄 DISPARA CALLBACKS EM BACKGROUND PRIMEIRO (fire-and-forget)
+        // Não usa Promise.resolve().then() - executa direto
+        if (onOrderCreated) {
+          try {
+            onOrderCreated();
+          } catch (err) {
+            console.error('❌ [TradeModal] Erro em onOrderCreated:', err);
+          }
+        }
+        
+        if (onBalanceUpdate) {
+          try {
+            onBalanceUpdate();
+          } catch (err) {
+            console.error('❌ [TradeModal] Erro em onBalanceUpdate:', err);
+          }
+        }
+        
+        // ✅ FECHA MODAL IMEDIATAMENTE (DEPOIS de disparar callbacks)
         setConfirmTradeVisible(false);
         setPendingOrder(null);
         setCreateOrderLoading(false);
         setCreateOrderError(null);
         onClose();
-        
-        // 🔄 ATUALIZAÇÃO EM BACKGROUND (não bloqueia UI)
-        // Executa callbacks de forma assíncrona sem await
-        if (onOrderCreated) {
-          Promise.resolve()
-            .then(() => onOrderCreated())
-            .catch(err => {
-              console.error('❌ [TradeModal] Erro em onOrderCreated:', err);
-            });
-        }
-        
-        if (onBalanceUpdate) {
-          Promise.resolve()
-            .then(() => onBalanceUpdate())
-            .catch(err => {
-              console.error('❌ [TradeModal] Erro em onBalanceUpdate:', err);
-            });
-        }
         
         // ✅ Notificação visual já foi mostrada acima (addNotification)
         // Alert removido - mantém apenas notificação não-intrusiva
