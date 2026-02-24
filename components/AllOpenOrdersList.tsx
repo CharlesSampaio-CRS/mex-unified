@@ -122,35 +122,49 @@ export const AllOpenOrdersList = forwardRef((props: {}, ref: React.Ref<AllOpenOr
 
   const formatPrice = (price: number) => {
     if (price === undefined || price === null || isNaN(price)) return '0.00';
-    return price.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 8,
-    });
+    try {
+      const formatted = price.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 8,
+      });
+      return String(formatted || '0.00');
+    } catch (error) {
+      return '0.00';
+    }
   };
 
   const formatAmount = (amount: number) => {
     if (amount === undefined || amount === null || isNaN(amount)) return '0.00';
-    return amount.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 8,
-    });
+    try {
+      const formatted = amount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 8,
+      });
+      return String(formatted || '0.00');
+    } catch (error) {
+      return '0.00';
+    }
   };
 
   const formatDate = (timestamp: number) => {
     if (!timestamp || isNaN(timestamp)) return 'Unknown';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    
-    if (hours < 1) {
-      const minutes = Math.floor(diff / (1000 * 60));
-      return t('orders.timeAgo.minutes').replace('{minutes}', String(minutes));
-    } else if (hours < 24) {
-      return t('orders.timeAgo.hours').replace('{hours}', String(hours));
-    } else {
-      const days = Math.floor(hours / 24);
-      return t('orders.timeAgo.days').replace('{days}', String(days));
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      
+      if (hours < 1) {
+        const minutes = Math.floor(diff / (1000 * 60));
+        return String(t('orders.timeAgo.minutes').replace('{minutes}', String(minutes)));
+      } else if (hours < 24) {
+        return String(t('orders.timeAgo.hours').replace('{hours}', String(hours)));
+      } else {
+        const days = Math.floor(hours / 24);
+        return String(t('orders.timeAgo.days').replace('{days}', String(days)));
+      }
+    } catch (error) {
+      return 'Unknown';
     }
   };
 

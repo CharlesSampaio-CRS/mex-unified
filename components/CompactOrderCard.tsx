@@ -51,17 +51,22 @@ export function CompactOrderCard({
       return '0';
     }
     
-    if (value >= 1_000_000_000) {
-      return `${(value / 1_000_000_000).toFixed(2)}Bi`;
-    } else if (value >= 1_000_000) {
-      return `${(value / 1_000_000).toFixed(2)}Mi`;
-    } else if (value >= 1_000) {
-      return `${(value / 1_000).toFixed(2)}K`;
-    } else if (value >= 1) {
-      return value.toFixed(2);
-    } else {
-      // Para valores muito pequenos (< 1), mostrar até 8 casas decimais
-      return value.toFixed(8).replace(/\.?0+$/, '');
+    try {
+      if (value >= 1_000_000_000) {
+        return `${(value / 1_000_000_000).toFixed(2)}Bi`;
+      } else if (value >= 1_000_000) {
+        return `${(value / 1_000_000).toFixed(2)}Mi`;
+      } else if (value >= 1_000) {
+        return `${(value / 1_000).toFixed(2)}K`;
+      } else if (value >= 1) {
+        return value.toFixed(2);
+      } else {
+        // Para valores muito pequenos (< 1), mostrar até 8 casas decimais
+        const formatted = value.toFixed(8).replace(/\.?0+$/, '');
+        return formatted || '0';
+      }
+    } catch (error) {
+      return '0';
     }
   };
 
@@ -151,19 +156,19 @@ export function CompactOrderCard({
             <View style={styles.priceInfoItem}>
               <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Amount:</Text>
               <Text style={[styles.priceInfoValue, { color: colors.text }]}>
-                {hideValue ? '••••••' : (order.amount !== undefined ? formatCompactNumber(order.amount) : '0')}
+                {hideValue ? '••••••' : String(order.amount !== undefined ? formatCompactNumber(order.amount) : '0')}
               </Text>
             </View>
             <View style={styles.priceInfoItem}>
               <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Price:</Text>
               <Text style={[styles.priceInfoValue, { color: colors.text }]}>
-                {hideValue ? '••••••' : (order.price !== undefined ? `$${formatPrice(order.price)}` : '$0')}
+                {hideValue ? '••••••' : String(order.price !== undefined ? `$${formatPrice(order.price)}` : '$0')}
               </Text>
             </View>
             <View style={styles.priceInfoItem}>
               <Text style={[styles.priceInfoLabel, { color: colors.textSecondary }]}>Time:</Text>
               <Text style={[styles.priceInfoValue, { color: colors.text }]}>
-                {order.timestamp ? formatDate(order.timestamp) : 'Unknown'}
+                {String(order.timestamp ? formatDate(order.timestamp) : 'Unknown')}
               </Text>
             </View>
           </View>
@@ -174,14 +179,14 @@ export function CompactOrderCard({
             <View style={styles.detailItem}>
               <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Type:</Text>
               <Text style={[styles.detailValue, { color: colors.text }]}>
-                {order.type ? order.type.toUpperCase() : 'UNKNOWN'}
+                {String(order.type ? order.type.toUpperCase() : 'UNKNOWN')}
               </Text>
             </View>
             
             <View style={styles.detailItem}>
               <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Status:</Text>
               <Text style={[styles.detailValue, { color: colors.text }]}>
-                {order.status || 'unknown'}
+                {String(order.status || 'unknown')}
               </Text>
             </View>
 
@@ -189,7 +194,7 @@ export function CompactOrderCard({
               <View style={styles.detailItem}>
                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Filled:</Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {hideValue ? '••••••' : formatCompactNumber(order.filled)}
+                  {String(hideValue ? '••••••' : formatCompactNumber(order.filled))}
                 </Text>
               </View>
             )}
@@ -198,7 +203,7 @@ export function CompactOrderCard({
               <View style={styles.detailItem}>
                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Remaining:</Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {hideValue ? '••••••' : formatCompactNumber(order.remaining)}
+                  {String(hideValue ? '••••••' : formatCompactNumber(order.remaining))}
                 </Text>
               </View>
             )}
@@ -207,7 +212,7 @@ export function CompactOrderCard({
               <View style={styles.detailItem}>
                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Cost:</Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {hideValue ? '••••••' : `$${formatCompactNumber(order.cost)}`}
+                  {String(hideValue ? '••••••' : `$${formatCompactNumber(order.cost)}`)}
                 </Text>
               </View>
             )}
