@@ -1129,12 +1129,10 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
           onBalanceUpdate={() => {
-            console.log('🟢 [ASSETS-LIST] onBalanceUpdate chamado')
             refreshBalance();
           }}
           onOrderCreated={() => {
-            console.log('🟢 [ASSETS-LIST] onOrderCreated chamado')
-            refreshBalance();
+            refreshOrders();
           }}
         />
       )}
