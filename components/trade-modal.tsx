@@ -389,31 +389,32 @@ export function TradeModal({
           notificationMessage = `Ordem ${isBuy ? 'de compra' : 'de venda'} aguardando execução: ${amountNum.toFixed(8)} ${symbol} @ ${apiService.formatUSD(priceNum)}`
         }
         
-        // 🔔 NOTIFICAÇÃO EM BACKGROUND (não bloqueia)
-        try {
-          addNotification({
-            type: 'success',
-            title: notificationTitle,
-            message: notificationMessage,
-            data: {
-              icon: isExecuted ? '🎉' : (isBuy ? '🟢' : '🔴'),
-              orderId,
-              exchangeName,
-              symbol,
-              side: orderSide,
-              type: orderType,
-              amount: amountNum,
-              filled: orderFilled,
-              fillPercent: fillPercent,
-              price: orderType === 'limit' ? priceNum : avgPrice,
-              avgPrice: avgPrice,
-              status: orderStatus,
-              total
-            }
-          });
-        } catch (err) {
-          console.error('❌ [TradeModal] Erro crítico em notificação:', err);
-        }
+        // 🔔 NOTIFICAÇÃO COMENTADA PARA TESTE
+        // try {
+        //   addNotification({
+        //     type: 'success',
+        //     title: notificationTitle,
+        //     message: notificationMessage,
+        //     data: {
+        //       icon: isExecuted ? '🎉' : (isBuy ? '🟢' : '🔴'),
+        //       orderId,
+        //       exchangeName,
+        //       symbol,
+        //       side: orderSide,
+        //       type: orderType,
+        //       amount: amountNum,
+        //       filled: orderFilled,
+        //       fillPercent: fillPercent,
+        //       price: orderType === 'limit' ? priceNum : avgPrice,
+        //       avgPrice: avgPrice,
+        //       status: orderStatus,
+        //       total
+        //     }
+        //   });
+        // } catch (err) {
+        //   console.error('❌ [TradeModal] Erro crítico em notificação:', err);
+        // }
+        console.log('🧪 [TradeModal] TESTE SEM NOTIFICAÇÃO - Modal vai fechar...');
         
         // 🔄 DISPARA CALLBACKS EM BACKGROUND PRIMEIRO (fire-and-forget)
         // Não usa Promise.resolve().then() - executa direto
