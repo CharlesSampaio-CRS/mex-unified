@@ -320,11 +320,15 @@ export function TradeModal({
       console.log('🔵 [TRADE-MODAL] Enviando requisição para API...')
       const startTime = Date.now()
 
+      // 🔧 Garante que símbolo tenha /USDT
+      const tradingPair = symbol.includes('/') ? symbol : `${symbol}/USDT`
+      console.log('🔵 [TRADE-MODAL] Par formatado:', tradingPair)
+
       const result = isBuy
         ? await apiService.createBuyOrder(
             user.id,
             exchangeId,
-            symbol,
+            tradingPair,
             amountNum,
             orderType,
             orderType === 'limit' ? priceNum : undefined
@@ -332,7 +336,7 @@ export function TradeModal({
         : await apiService.createSellOrder(
             user.id,
             exchangeId,
-            symbol,
+            tradingPair,
             amountNum,
             orderType,
             orderType === 'limit' ? priceNum : undefined
