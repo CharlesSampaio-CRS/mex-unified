@@ -297,10 +297,9 @@ export function OpenOrdersModal({
     
     try {
       const result = await apiService.cancelOrder(
-        userId,
-        orderToCancel.id,
         exchangeId,
-        orderToCancel.symbol
+        orderToCancel.symbol,
+        orderToCancel.id
       )
       
       const isSuccess = result.success === true || (!result.error && !result.success)
