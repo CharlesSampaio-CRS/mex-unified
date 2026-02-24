@@ -342,20 +342,20 @@ export function TradeModal({
       console.log(`🔵 [TRADE-MODAL] Resposta da API recebida em ${apiTime}ms`)
       console.log('🔵 [TRADE-MODAL] Sucesso:', result.success)
       
-      // ✅ Sucesso - fecha modal e dispara callbacks em background
+      // ✅ Sucesso - TESTE: SEM CALLBACKS
       if (result.success) {
         console.log('✅ [TRADE-MODAL] Ordem criada com sucesso!')
-        
-        // Fecha modal imediatamente
-        onClose();
-        
-        // Dispara callbacks em background sem bloquear
-        setTimeout(() => {
-          if (onOrderCreated) onOrderCreated();
-          if (onBalanceUpdate) onBalanceUpdate();
-        }, 0);
-        
+        console.log('⚠️ [TESTE] NÃO vai chamar NADA - sem onClose, sem callbacks')
+        console.log('⚠️ [TESTE] Se não travar = problema está nos callbacks')
         console.log('🔵 [TRADE-MODAL] ========================================')
+        
+        // ⚠️ TUDO COMENTADO PARA TESTE
+        // onClose();
+        
+        // setTimeout(() => {
+        //   if (onOrderCreated) onOrderCreated();
+        //   if (onBalanceUpdate) onBalanceUpdate();
+        // }, 0);
         
       } else {
         // ❌ Erro da API
