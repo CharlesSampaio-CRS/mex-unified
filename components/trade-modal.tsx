@@ -328,13 +328,27 @@ export function TradeModal({
           )
       
       if (result.success) {
+        console.log('✅ Ordem criada com sucesso!');
+        
         // 1. Fecha modal imediatamente
         onClose();
         
         // 2. Atualiza balance e orders após um pequeno delay (não bloqueia UI)
         setTimeout(() => {
-          if (onBalanceUpdate) onBalanceUpdate();
-          if (onOrderCreated) onOrderCreated();
+          console.log('🔄 Executando callbacks...');
+          if (onBalanceUpdate) {
+            console.log('🔄 Chamando onBalanceUpdate');
+            onBalanceUpdate();
+          } else {
+            console.log('⚠️ onBalanceUpdate não definido');
+          }
+          if (onOrderCreated) {
+            console.log('🔄 Chamando onOrderCreated');
+            onOrderCreated();
+          } else {
+            console.log('⚠️ onOrderCreated não definido');
+          }
+          console.log('✅ Callbacks executados');
         }, 100);
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
