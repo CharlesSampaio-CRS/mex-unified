@@ -34,6 +34,11 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const fetchOrders = useCallback(async (forceRefresh = false) => {
     if (!user?.id) return
     
+    console.log('🟣 [ORDERS-CONTEXT] ========================================')
+    console.log('🟣 [ORDERS-CONTEXT] Iniciando busca de ordens')
+    console.log('🟣 [ORDERS-CONTEXT] ForceRefresh:', forceRefresh)
+    console.log('🟣 [ORDERS-CONTEXT] User ID:', user.id)
+    
     if (forceRefresh) {
       setRefreshing(true);
     } else {
@@ -43,11 +48,21 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
+      const startTime = Date.now()
+      console.log('🟣 [ORDERS-CONTEXT] Chamando getOrdersSecure...')
+      
       const response = await apiService.getOrdersSecure();
       
+      const apiTime = Date.now() - startTime
+      console.log(`🟣 [ORDERS-CONTEXT] Resposta recebida em ${apiTime}ms`)
+      console.log('🟣 [ORDERS-CONTEXT] Sucesso:', response?.success)
+      console.log('🟣 [ORDERS-CONTEXT] Total de ordens:', response?.orders?.length || 0)
+      
       if (!response?.success || !response.orders) {
+        console.log('⚠️ [ORDERS-CONTEXT] Nenhuma ordem retornada')
         setOrdersByExchange([]);
         setTimestamp(Date.now());
+        console.log('🟣 [ORDERS-CONTEXT] ========================================')
         return;
       }
       
@@ -84,10 +99,20 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         orders: ex.orders,
       }));
       
+      console.log('🟣 [ORDERS-CONTEXT] Ordens agrupadas por exchange:')
+      results.forEach(ex => {
+        console.log(`  - ${ex.exchangeName}: ${ex.orders.length} ordens`)
+      })
+      
       setOrdersByExchange(results);
       setTimestamp(Date.now());
+      console.log('✅ [ORDERS-CONTEXT] Ordens atualizadas com sucesso')
+      console.log('🟣 [ORDERS-CONTEXT] ========================================')
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch orders';
+      console.error('❌ [ORDERS-CONTEXT] Erro ao buscar ordens:', errorMsg)
+      console.error('❌ [ORDERS-CONTEXT] Stack:', err)
+      console.log('🟣 [ORDERS-CONTEXT] ========================================')
       setError(errorMsg);
       setOrdersByExchange([]);
     } finally {

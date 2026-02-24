@@ -142,8 +142,17 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id])
 
   const refresh = useCallback(async () => {
+    console.log('🟠 [BALANCE-CONTEXT] ========================================')
+    console.log('🟠 [BALANCE-CONTEXT] refresh() chamado')
+    console.log('🟠 [BALANCE-CONTEXT] Chamando fetchBalances(forceRefresh=true)...')
+    const startTime = Date.now()
+    
     // ✅ NÃO precisa de lock aqui - fetchBalances já tem o lock isFetchingRef
     await fetchBalances(true, false)
+    
+    const totalTime = Date.now() - startTime
+    console.log(`🟠 [BALANCE-CONTEXT] refresh() concluído em ${totalTime}ms`)
+    console.log('🟠 [BALANCE-CONTEXT] ========================================')
   }, [fetchBalances])
 
   const loadFullBalances = useCallback(async () => {

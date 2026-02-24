@@ -317,6 +317,16 @@ export function TradeModal({
       return
     }
 
+    console.log('🔵 [TRADE-MODAL] ========================================')
+    console.log('🔵 [TRADE-MODAL] Iniciando criação de ordem')
+    console.log('🔵 [TRADE-MODAL] Tipo:', isBuy ? 'COMPRA' : 'VENDA')
+    console.log('🔵 [TRADE-MODAL] Exchange:', exchangeName, `(${exchangeId})`)
+    console.log('🔵 [TRADE-MODAL] Par:', symbol)
+    console.log('🔵 [TRADE-MODAL] Quantidade:', pendingOrder.amount)
+    console.log('🔵 [TRADE-MODAL] Tipo ordem:', orderType)
+    console.log('🔵 [TRADE-MODAL] Preço:', orderType === 'limit' ? pendingOrder.price : 'MERCADO')
+    console.log('🔵 [TRADE-MODAL] Total:', pendingOrder.total)
+
     setCreateOrderLoading(true)
     setCreateOrderError(null)
     
@@ -327,6 +337,9 @@ export function TradeModal({
       
       // 🔧 Forma o par de trading (ex: BTC/USDT)
       const tradingPair = symbol.includes('/') ? symbol : `${symbol.toUpperCase()}/USDT`
+      
+      console.log('🔵 [TRADE-MODAL] Enviando requisição para API...')
+      const startTime = Date.now()
       
       // Chama a API de compra ou venda
       const result = isBuy 
@@ -347,8 +360,15 @@ export function TradeModal({
             orderType === 'limit' ? priceNum : undefined
           )
       
+      const apiTime = Date.now() - startTime
+      console.log(`🔵 [TRADE-MODAL] Resposta da API recebida em ${apiTime}ms`)
+      console.log('🔵 [TRADE-MODAL] Sucesso:', result.success)
+      
       // ✅ Sucesso - fecha modal e dispara callbacks
       if (result.success) {
+        console.log('✅ [TRADE-MODAL] Ordem criada com sucesso!')
+        console.log('✅ [TRADE-MODAL] Fechando modal...')
+        
         // Fecha modal imediatamente
         setConfirmTradeVisible(false);
         setPendingOrder(null);
@@ -356,19 +376,33 @@ export function TradeModal({
         setCreateOrderError(null);
         onClose();
         
+        console.log('✅ [TRADE-MODAL] Modal fechado')
+        console.log('✅ [TRADE-MODAL] Disparando callbacks em background...')
+        
         // Callbacks em background (não espera)
         setTimeout(() => {
+          console.log('🔄 [TRADE-MODAL] Executando callback onOrderCreated...')
           if (onOrderCreated) onOrderCreated();
+          
+          console.log('🔄 [TRADE-MODAL] Executando callback onBalanceUpdate...')
           if (onBalanceUpdate) onBalanceUpdate();
+          
+          console.log('✅ [TRADE-MODAL] Callbacks executados')
+          console.log('🔵 [TRADE-MODAL] ========================================')
         }, 0);
         
       } else {
         // ❌ Erro da API
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
+        console.error('❌ [TRADE-MODAL] Erro ao criar ordem:', errorMsg)
+        console.log('🔵 [TRADE-MODAL] ========================================')
         setCreateOrderError(errorMsg);
       }
     } catch (error: any) {
       const errorMsg = error.message || 'Não foi possível criar a ordem';
+      console.error('❌ [TRADE-MODAL] Exceção ao criar ordem:', errorMsg)
+      console.error('❌ [TRADE-MODAL] Stack:', error.stack)
+      console.log('🔵 [TRADE-MODAL] ========================================')
       setCreateOrderError(errorMsg);
     } finally {
       setCreateOrderLoading(false);
