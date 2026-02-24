@@ -347,20 +347,16 @@ export function TradeModal({
             orderType === 'limit' ? priceNum : undefined
           )
       
-      // ✅ Sucesso - fecha modal e dispara callbacks
+      // ✅ Sucesso - fecha modal APENAS
       if (result.success) {
-        // Fecha modal imediatamente
         setConfirmTradeVisible(false);
         setPendingOrder(null);
         setCreateOrderLoading(false);
         setCreateOrderError(null);
         onClose();
         
-        // Callbacks executam APÓS todas animações terminarem
-        InteractionManager.runAfterInteractions(() => {
-          if (onBalanceUpdate) onBalanceUpdate();
-          if (onOrderCreated) onOrderCreated();
-        });
+        // ⚠️ CALLBACKS REMOVIDOS PARA TESTE - NÃO ATUALIZA BALANCE/ORDERS
+        // Testar se fecha rápido sem travamento
         
       } else {
         // ❌ Erro da API
