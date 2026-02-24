@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable } from 'react-native'
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, InteractionManager } from 'react-native'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -346,20 +346,32 @@ export function TradeModal({
       console.log(`🔵 [TRADE-MODAL] Resposta da API recebida em ${apiTime}ms`)
       console.log('🔵 [TRADE-MODAL] Sucesso:', result.success)
       
-      // ✅ Sucesso - TESTE: SEM CALLBACKS
+      // ✅ Sucesso - fecha modal e dispara callbacks APÓS animações
       if (result.success) {
         console.log('✅ [TRADE-MODAL] Ordem criada com sucesso!')
-        console.log('⚠️ [TESTE] NÃO vai chamar NADA - sem onClose, sem callbacks')
-        console.log('⚠️ [TESTE] Se não travar = problema está nos callbacks')
+        
+        // Fecha modal IMEDIATAMENTE (não bloqueia)
+        onClose();
+        
+        // Callbacks executam DEPOIS que todas animações terminarem
+        // Isso evita bloquear a thread principal durante fechamento do modal
+        InteractionManager.runAfterInteractions(() => {
+          console.log('� [TRADE-MODAL] Executando callbacks após animações...')
+          
+          if (onOrderCreated) {
+            console.log('🔄 [TRADE-MODAL] Chamando onOrderCreated...')
+            onOrderCreated();
+          }
+          
+          if (onBalanceUpdate) {
+            console.log('🔄 [TRADE-MODAL] Chamando onBalanceUpdate...')
+            onBalanceUpdate();
+          }
+          
+          console.log('✅ [TRADE-MODAL] Callbacks executados com sucesso!')
+        });
+        
         console.log('🔵 [TRADE-MODAL] ========================================')
-        
-        // ⚠️ TUDO COMENTADO PARA TESTE
-        // onClose();
-        
-        // setTimeout(() => {
-        //   if (onOrderCreated) onOrderCreated();
-        //   if (onBalanceUpdate) onBalanceUpdate();
-        // }, 0);
         
       } else {
         // ❌ Erro da API
