@@ -66,7 +66,7 @@ export function OrdersScreen({ navigation }: any) {
   const { ordersByExchange, loading, refreshing, refresh, removeOrder, recentlyAddedIds } = useOrders();
   const { data: balanceData, refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, addNotification } = useNotifications();
   
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState<'All' | 'buy' | 'sell'>('All');
@@ -212,6 +212,16 @@ export function OrdersScreen({ navigation }: any) {
       console.log('✅ [ORDERS-SCREEN] Ordem cancelada, removendo da lista:', orderId)
       removeOrder(orderId);
       
+      // 🔔 NOTIFICAÇÃO: Ordem cancelada com sucesso
+      const isBuy = order.side === 'buy';
+      addNotification({
+        type: 'warning',
+        title: '🗑️ Ordem Cancelada',
+        message: `${order.type?.toUpperCase() || 'LIMIT'} ${isBuy ? 'compra' : 'venda'} de ${Number(order.amount || 0) < 1 ? Number(order.amount || 0).toFixed(8).replace(/\.?0+$/, '') : Number(order.amount || 0).toFixed(4)} ${(order.symbol || '').split('/')[0]} cancelada`,
+        icon: '🗑️',
+        data: { action: 'order_cancelled', symbol: order.symbol, side: order.side, orderId: exchangeOrderId }
+      });
+      
       // Remove do set de cancelamento
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);
@@ -226,15 +236,22 @@ export function OrdersScreen({ navigation }: any) {
       setTimeout(() => {
         refresh();
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao cancelar ordem:', error);
+      addNotification({
+        type: 'error',
+        title: '❌ Erro ao Cancelar',
+        message: `Falha ao cancelar ordem de ${(order.symbol || '').split('/')[0]}: ${error.message || 'Erro desconhecido'}`,
+        icon: '⚠️',
+        data: { action: 'cancel_error', symbol: order.symbol, orderId: exchangeOrderId, error: error.message }
+      });
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(orderId);
         return newSet;
       });
     }
-  }, [orderToCancel, refresh, removeOrder, refreshBalance]);
+  }, [orderToCancel, refresh, removeOrder, refreshBalance, addNotification]);
 
   // Renderiza order card
   const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string) => {

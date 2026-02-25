@@ -4,6 +4,7 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useBalance } from "../contexts/BalanceContext"
 import { useOrders } from "../contexts/OrdersContext"
+import { useNotifications } from "../contexts/NotificationsContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
@@ -75,6 +76,7 @@ export function OpenOrdersModal({
   const { t, language } = useLanguage()
   const { refresh: refreshBalance } = useBalance()
   const { removeOrder: removeOrderFromContext, refresh: refreshOrders, recentlyAddedIds } = useOrders()
+  const { addNotification } = useNotifications()
   const [orders, setOrders] = useState<OpenOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -360,6 +362,16 @@ export function OpenOrdersModal({
         // ✅ REMOÇÃO OTIMISTA GLOBAL: Remove do contexto global de ordens
         removeOrderFromContext(orderToCancel.id)
         
+        // 🔔 NOTIFICAÇÃO: Ordem cancelada com sucesso
+        const isBuy = orderToCancel.side === 'buy'
+        addNotification({
+          type: 'warning',
+          title: '🗑️ Ordem Cancelada',
+          message: `${orderToCancel.type?.toUpperCase() || 'LIMIT'} ${isBuy ? 'compra' : 'venda'} de ${Number(orderToCancel.amount || 0) < 1 ? Number(orderToCancel.amount || 0).toFixed(8).replace(/\.?0+$/, '') : Number(orderToCancel.amount || 0).toFixed(4)} ${(orderToCancel.symbol || '').split('/')[0]} cancelada`,
+          icon: '🗑️',
+          data: { action: 'order_cancelled', symbol: orderToCancel.symbol, side: orderToCancel.side, exchange: exchangeName, orderId: exchangeOrderId }
+        })
+        
         // ✅ FEEDBACK IMEDIATO: Fecha modais
         setConfirmCancelVisible(false)
         onClose()
@@ -384,6 +396,13 @@ export function OpenOrdersModal({
         const errorMsg = result.error || result.message || 'Erro ao cancelar ordem'
         setCancelError(errorMsg)
         setCancelLoading(false)
+        addNotification({
+          type: 'error',
+          title: '❌ Erro ao Cancelar',
+          message: `Falha ao cancelar ordem de ${(orderToCancel.symbol || '').split('/')[0]}: ${errorMsg}`,
+          icon: '⚠️',
+          data: { action: 'cancel_error', symbol: orderToCancel.symbol, exchange: exchangeName, error: errorMsg }
+        })
         // Modal de confirmação fica aberto mostrando o erro
       }
     } catch (error: any) {
@@ -405,6 +424,13 @@ export function OpenOrdersModal({
       setCancelError(errorMessage)
       setCancelLoading(false)
       setCancellingOrderId(null)
+      addNotification({
+        type: 'error',
+        title: '❌ Erro ao Cancelar',
+        message: `Falha ao cancelar ordem de ${(orderToCancel.symbol || '').split('/')[0]}: ${errorMessage}`,
+        icon: '⚠️',
+        data: { action: 'cancel_error', symbol: orderToCancel.symbol, exchange: exchangeName, error: errorMessage }
+      })
       // Modal de confirmação fica aberto mostrando o erro
     }
   }
