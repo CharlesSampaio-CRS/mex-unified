@@ -36,6 +36,8 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const [timestamp, setTimestamp] = useState<number | null>(null);
   const [recentlyAddedIds, setRecentlyAddedIds] = useState<Set<string>>(new Set());
   const [recentlyAffectedSymbols, setRecentlyAffectedSymbols] = useState<Set<string>>(new Set());
+  // 🛡️ IDs de ordens recentemente canceladas — o refresh ignora essas ordens por 15s
+  const recentlyCancelledRef = useRef<Map<string, number>>(new Map());
 
   const fetchOrders = useCallback(async (forceRefresh = false, silent = false) => {
     if (!user?.id) return
@@ -108,12 +110,33 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         orders: ex.orders,
       }));
       
-      console.log('🟣 [ORDERS-CONTEXT] Ordens agrupadas por exchange:')
-      results.forEach(ex => {
+      // 🛡️ Filtra ordens recentemente canceladas (evita "fantasmas" reaparecendo)
+      const now = Date.now();
+      const CANCEL_GRACE_PERIOD = 15000; // 15s de proteção
+      // Limpa entradas expiradas
+      for (const [id, ts] of recentlyCancelledRef.current) {
+        if (now - ts > CANCEL_GRACE_PERIOD) recentlyCancelledRef.current.delete(id);
+      }
+      
+      const filteredResults: OrdersByExchange[] = recentlyCancelledRef.current.size > 0
+        ? results.map(ex => ({
+            ...ex,
+            orders: ex.orders.filter(order => {
+              const oid = String(order.id || '');
+              const eoid = String(order.exchange_order_id || '');
+              const isCancelled = recentlyCancelledRef.current.has(oid) || recentlyCancelledRef.current.has(eoid);
+              if (isCancelled) console.log('�️ [ORDERS-CONTEXT] Filtrando ordem cancelada do refresh:', oid);
+              return !isCancelled;
+            })
+          })).filter(ex => ex.orders.length > 0)
+        : results;
+      
+      console.log('�🟣 [ORDERS-CONTEXT] Ordens agrupadas por exchange:')
+      filteredResults.forEach(ex => {
         console.log(`  - ${ex.exchangeName}: ${ex.orders.length} ordens`)
       })
       
-      setOrdersByExchange(results);
+      setOrdersByExchange(filteredResults);
       setTimestamp(Date.now());
       console.log('✅ [ORDERS-CONTEXT] Ordens atualizadas com sucesso')
       console.log('🟣 [ORDERS-CONTEXT] ========================================')
@@ -153,16 +176,24 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const removeOrder = useCallback((orderId: string, symbol?: string) => {
     console.log('🗑️ [ORDERS-CONTEXT] Remoção otimista da ordem:', orderId)
     
-    // Encontra o símbolo da ordem antes de remover (se não fornecido)
-    if (!symbol) {
-      for (const exchange of ordersByExchange) {
-        const order = exchange.orders.find(o => o.id === orderId)
-        if (order) {
-          symbol = order.symbol
-          break
+    // 🛡️ Registra o orderId no grace period para evitar reaparecimento fantasma
+    const now = Date.now()
+    recentlyCancelledRef.current.set(orderId, now)
+    
+    // Encontra o símbolo e exchange_order_id da ordem antes de remover
+    for (const exchange of ordersByExchange) {
+      const order = exchange.orders.find(o => o.id === orderId)
+      if (order) {
+        if (!symbol) symbol = order.symbol
+        // Registra também o exchange_order_id (pode ser diferente do id)
+        if (order.exchange_order_id && order.exchange_order_id !== orderId) {
+          recentlyCancelledRef.current.set(order.exchange_order_id, now)
         }
+        break
       }
     }
+    
+    console.log('🛡️ [ORDERS-CONTEXT] IDs protegidos contra reaparecimento:', [...recentlyCancelledRef.current.keys()])
     
     setOrdersByExchange(prev => {
       const updated = prev.map(exchange => ({
