@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, Clipboard, SafeAreaView, RefreshControl } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, RefreshControl } from "react-native"
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
 import { apiService } from "@/services/api"
 import { exchangeService } from "@/services/exchange-service"
@@ -397,11 +397,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [connecting, setConnecting] = useState(false)
   const [qrScannerVisible, setQrScannerVisible] = useState(false)
   const [currentScanField, setCurrentScanField] = useState<'apiKey' | 'apiSecret' | 'passphrase' | null>(null)
-  
-  // 👁️ Estados para mostrar/ocultar credenciais
-  const [showApiKey, setShowApiKey] = useState(false)
-  const [showApiSecret, setShowApiSecret] = useState(false)
-  const [showPassphrase, setShowPassphrase] = useState(false)
   
   // Modal de confirmação (delete/disconnect)
   const [confirmModalVisible, setConfirmModalVisible] = useState(false)
@@ -842,23 +837,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     setCurrentScanField(null)
   }, [currentScanField])
 
-  const handlePasteFromClipboard = useCallback(async (field: 'apiKey' | 'apiSecret' | 'passphrase') => {
-    try {
-      const text = await Clipboard.getString()
-      if (text) {
-        if (field === 'apiKey') setApiKey(text.trim())
-        else if (field === 'apiSecret') setApiSecret(text.trim())
-        else if (field === 'passphrase') setPassphrase(text.trim())
-        
-        Alert.alert(`✅ ${t('success.pastedClipboard')}`, t('success.textPasted'))
-      } else {
-        Alert.alert(`⚠️ ${t('warning.emptyClipboard')}`, t('warning.noClipboardText'))
-      }
-    } catch (error) {
-      Alert.alert(t('common.error'), t('error.pasteClipboard'))
-    }
-  }, [t])
-
   const handleLinkExchange = useCallback(async () => {
     if (!selectedExchange) {
       return
@@ -1284,49 +1262,21 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     <Text style={[styles.inputLabel, { color: colors.text }]}>API Key *</Text>
                     <View style={styles.inputWithButtons}>
                       <TextInput
-                        style={[styles.inputWithIcons, themedStyles.input]}
+                        style={[styles.inputWithQR, themedStyles.input]}
                         value={apiKey}
                         onChangeText={setApiKey}
                         placeholderTextColor={colors.textSecondary}
                         placeholder="Digite sua API Key"
                         autoCapitalize="none"
                         autoCorrect={false}
-                        secureTextEntry={!showApiKey}
+                        secureTextEntry={true}
                       />
                       <View style={styles.inputActions}>
                         <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                          onPress={() => setShowApiKey(!showApiKey)}
-                        >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            {showApiKey ? (
-                              // Ícone de olho aberto
-                              <>
-                                <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </>
-                            ) : (
-                              // Ícone de olho fechado
-                              <>
-                                <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </>
-                            )}
-                          </Svg>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                          onPress={() => handlePasteFromClipboard('apiKey')}
-                        >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <Path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </Svg>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.primary }]}
+                          style={[styles.qrButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleOpenQRScanner('apiKey')}
                         >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                             <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
                           </Svg>
@@ -1339,49 +1289,21 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     <Text style={[styles.inputLabel, { color: colors.text }]}>API Secret *</Text>
                     <View style={styles.inputWithButtons}>
                       <TextInput
-                        style={[styles.inputWithIcons, themedStyles.input]}
+                        style={[styles.inputWithQR, themedStyles.input]}
                         value={apiSecret}
                         onChangeText={setApiSecret}
                         placeholder="Digite seu API Secret"
                         placeholderTextColor={colors.textSecondary}
-                        secureTextEntry={!showApiSecret}
+                        secureTextEntry={true}
                         autoCapitalize="none"
                         autoCorrect={false}
                       />
                       <View style={styles.inputActions}>
                         <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                          onPress={() => setShowApiSecret(!showApiSecret)}
-                        >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            {showApiSecret ? (
-                              // Ícone de olho aberto
-                              <>
-                                <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </>
-                            ) : (
-                              // Ícone de olho fechado
-                              <>
-                                <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </>
-                            )}
-                          </Svg>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                          onPress={() => handlePasteFromClipboard('apiSecret')}
-                        >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <Path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </Svg>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.primary }]}
+                          style={[styles.qrButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleOpenQRScanner('apiSecret')}
                         >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                             <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
                           </Svg>
@@ -1395,49 +1317,21 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                       <Text style={[styles.inputLabel, { color: colors.text }]}>Passphrase *</Text>
                       <View style={styles.inputWithButtons}>
                         <TextInput
-                          style={[styles.inputWithIcons, themedStyles.input]}
+                          style={[styles.inputWithQR, themedStyles.input]}
                           value={passphrase}
                           onChangeText={setPassphrase}
                           placeholder="Digite sua Passphrase"
                           placeholderTextColor={colors.textSecondary}
-                          secureTextEntry={!showPassphrase}
+                          secureTextEntry={true}
                           autoCapitalize="none"
                           autoCorrect={false}
                         />
                         <View style={styles.inputActions}>
                           <TouchableOpacity
-                            style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                            onPress={() => setShowPassphrase(!showPassphrase)}
-                          >
-                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              {showPassphrase ? (
-                                // Ícone de olho aberto
-                                <>
-                                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </>
-                              ) : (
-                                // Ícone de olho fechado
-                                <>
-                                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </>
-                              )}
-                            </Svg>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                            onPress={() => handlePasteFromClipboard('passphrase')}
-                          >
-                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <Path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </Svg>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.iconButton, { backgroundColor: colors.primary }]}
+                            style={[styles.qrButton, { backgroundColor: colors.primary }]}
                             onPress={() => handleOpenQRScanner('passphrase')}
                           >
-                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                               <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
                             </Svg>
@@ -2560,6 +2454,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     borderWidth: 1,
   },
+  inputWithQR: {
+    borderRadius: 8,
+    padding: 12,
+    paddingRight: 52,
+    fontSize: 14,
+    borderWidth: 1,
+  },
   inputActions: {
     position: 'absolute',
     right: 8,
@@ -2569,6 +2470,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrButton: {
     width: 36,
     height: 36,
     borderRadius: 8,
