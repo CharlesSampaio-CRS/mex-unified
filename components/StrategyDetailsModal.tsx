@@ -14,7 +14,8 @@ import {
 import Svg, { Path, Circle } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { useBackendStrategies, Strategy } from '@/hooks/useBackendStrategies'
+import { Strategy } from '@/hooks/useBackendStrategies'
+import { apiService } from '@/services/api'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 
 interface StrategyDetailsModalProps {
@@ -36,7 +37,6 @@ export function StrategyDetailsModal({
 }: StrategyDetailsModalProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
-  const { strategies } = useBackendStrategies(false) // Não auto-load, usa estratégias passadas
   
   const [strategy, setStrategy] = useState<Strategy | null>(null)
   const [loading, setLoading] = useState(false)
@@ -44,19 +44,39 @@ export function StrategyDetailsModal({
 
   useEffect(() => {
     if (visible && strategyId) {
-      // Busca a estratégia da lista local (já carregada)
-      const found = strategies.find(s => s.id === strategyId)
-      if (found) {
-        setStrategy(found)
-      } else {
-        setError(t('strategy.notFound') || 'Estratégia não encontrada')
-      }
+      // Busca a estratégia diretamente do MongoDB via API
+      fetchStrategy(strategyId)
     } else if (!visible) {
       // Reset when modal closes
       setStrategy(null)
       setError(null)
+      setLoading(false)
     }
-  }, [visible, strategyId, strategies, t])
+  }, [visible, strategyId])
+
+  const fetchStrategy = async (id: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      console.log(`🔍 [StrategyDetails] Buscando estratégia ${id} do MongoDB...`)
+      
+      const response = await apiService.getStrategy(id)
+      const data = response.data
+      
+      if (data?.success && data?.strategy) {
+        setStrategy(data.strategy)
+        console.log(`✅ [StrategyDetails] Estratégia encontrada: ${data.strategy.name}`)
+      } else {
+        setError(t('strategy.notFound') || 'Estratégia não encontrada')
+        console.log(`⚠️ [StrategyDetails] Estratégia não encontrada: ${id}`)
+      }
+    } catch (err: any) {
+      console.error(`❌ [StrategyDetails] Erro ao buscar estratégia:`, err)
+      setError(err.message || t('strategy.notFound') || 'Erro ao carregar estratégia')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const renderContent = () => {
     if (loading) {
@@ -287,7 +307,7 @@ export function StrategyDetailsModal({
                 {t('strategy.createdAt')}
               </Text>
               <Text style={[styles.dateValue, { color: colors.text }]}>
-                {new Date(strategy.created_at).toLocaleDateString('pt-BR', {
+                {new Date(strategy.created_at * 1000).toLocaleDateString('pt-BR', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric'
@@ -302,7 +322,7 @@ export function StrategyDetailsModal({
                 {t('strategy.lastUpdate')}
               </Text>
               <Text style={[styles.dateValue, { color: colors.text }]}>
-                {new Date(strategy.updated_at).toLocaleDateString('pt-BR', {
+                {new Date(strategy.updated_at * 1000).toLocaleDateString('pt-BR', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric'

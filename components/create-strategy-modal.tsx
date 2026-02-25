@@ -458,8 +458,9 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                   </Text>
                 </View>
               ) : token && !showTokenList ? (
-                /* ── Token selecionado: card clean ── */
-                <View style={{ flex: 1, justifyContent: 'center' }}>
+                /* ── Token selecionado: resumo completo da estratégia ── */
+                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                  {/* Card do token selecionado (toque para alterar) */}
                   <TouchableOpacity
                     onPress={() => {
                       setShowTokenList(true)
@@ -470,21 +471,126 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                       borderWidth: 1.5,
                       borderColor: colors.primary,
                       borderRadius: 16,
-                      padding: 20,
+                      padding: 16,
                       backgroundColor: `${colors.primary}08`,
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 8,
+                      gap: 12,
                     }}
                   >
-                    <Text style={{ fontSize: 36 }}>🪙</Text>
-                    <Text style={{ fontSize: 24, fontWeight: '700', color: colors.primary, letterSpacing: 1 }}>
-                      {token}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
-                      Toque para alterar
-                    </Text>
+                    <Text style={{ fontSize: 32 }}>🪙</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 22, fontWeight: '700', color: colors.primary, letterSpacing: 1 }}>
+                        {token}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                        Toque para alterar
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 18, color: colors.textSecondary }}>✏️</Text>
                   </TouchableOpacity>
-                </View>
+
+                  {/* Resumo completo da estratégia */}
+                  <View style={{
+                    marginTop: 16,
+                    borderRadius: 14,
+                    borderWidth: 0.5,
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    overflow: 'hidden',
+                  }}>
+                    {/* Header do resumo */}
+                    <View style={{
+                      backgroundColor: `${colors.primary}10`,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderBottomWidth: 0.5,
+                      borderBottomColor: colors.border,
+                    }}>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                        📋 Resumo da Estratégia
+                      </Text>
+                    </View>
+
+                    {/* Linhas de detalhe */}
+                    <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+                      {/* Nome */}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Nome</Text>
+                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500', maxWidth: '60%', textAlign: 'right' }} numberOfLines={1}>
+                          {token} - {selectedTemplate}
+                        </Text>
+                      </View>
+                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
+
+                      {/* Template */}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Template</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={{ fontSize: 16 }}>
+                            {TEMPLATES.find(tp => tp.id === selectedTemplate)?.icon || '📊'}
+                          </Text>
+                          <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
+                            {t(TEMPLATES.find(tp => tp.id === selectedTemplate)?.nameKey || '')}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
+
+                      {/* Exchange */}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Exchange</Text>
+                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
+                          {getSelectedExchangeName()}
+                        </Text>
+                      </View>
+                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
+
+                      {/* Tipo de Estratégia */}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Tipo</Text>
+                        <Text style={{ fontSize: 14, color: colors.primary, fontWeight: '500' }}>
+                          {selectedTemplate === 'simple' ? 'Grid' : selectedTemplate === 'conservative' ? 'DCA' : 'Trailing Stop'}
+                        </Text>
+                      </View>
+                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
+
+                      {/* Par de Trading */}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Par</Text>
+                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '600' }}>
+                          {token}/USDT
+                        </Text>
+                      </View>
+                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
+
+                      {/* Status */}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Status</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' }} />
+                          <Text style={{ fontSize: 14, color: '#10b981', fontWeight: '500' }}>
+                            Ativa
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Descrição */}
+                  <View style={{
+                    marginTop: 12,
+                    padding: 14,
+                    borderRadius: 12,
+                    backgroundColor: `${colors.textSecondary}08`,
+                    borderWidth: 0.5,
+                    borderColor: colors.border,
+                  }}>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20, fontStyle: 'italic' }}>
+                      {`Estratégia ${selectedTemplate} para ${token} na ${getSelectedExchangeName()}`}
+                    </Text>
+                  </View>
+                </ScrollView>
               ) : (
                 /* ── Lista de tokens: busca + FlatList ── */
                 <View style={{ flex: 1 }}>

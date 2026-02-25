@@ -1614,6 +1614,13 @@ export const apiService = {
   },
 
   /**
+   * Busca uma estratégia específica pelo ID
+   */
+  async getStrategy(id: string) {
+    return this.get(`/strategies/${id}`, TIMEOUTS.FAST);
+  },
+
+  /**
    * Cria nova estratégia
    */
   async createStrategy(data: any) {
