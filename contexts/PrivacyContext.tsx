@@ -5,6 +5,8 @@ interface PrivacyContextType {
   valuesHidden: boolean
   toggleValuesVisibility: () => void
   hideValue: (value: string | number) => string
+  hideZeroBalances: boolean
+  toggleHideZeroBalances: () => void
   isLoading: boolean
 }
 
@@ -23,21 +25,28 @@ interface PrivacyProviderProps {
 }
 
 const PRIVACY_KEY = '@cryptohub:privacy_values_hidden'
+const HIDE_ZERO_KEY = '@cryptohub:hide_zero_balances'
 
 export const PrivacyProvider = ({ children }: PrivacyProviderProps) => {
-  const [valuesHidden, setValuesHidden] = useState(true) // Valores sempre ocultos ao iniciar
+  const [valuesHidden, setValuesHidden] = useState(true)
+  const [hideZeroBalances, setHideZeroBalances] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Carregar preferência ao iniciar
+  // Carregar preferências ao iniciar
   useEffect(() => {
     const loadPrivacyPreference = async () => {
       try {
-        const saved = await AsyncStorage.getItem(PRIVACY_KEY)
+        const [saved, savedZero] = await Promise.all([
+          AsyncStorage.getItem(PRIVACY_KEY),
+          AsyncStorage.getItem(HIDE_ZERO_KEY),
+        ])
         if (saved !== null) {
           setValuesHidden(JSON.parse(saved))
         } else {
-          // Se não houver preferência salva, mantém oculto (padrão)
           setValuesHidden(true)
+        }
+        if (savedZero !== null) {
+          setHideZeroBalances(JSON.parse(savedZero))
         }
       } catch (error) {
         console.error('Error loading privacy preference:', error)
@@ -57,10 +66,20 @@ export const PrivacyProvider = ({ children }: PrivacyProviderProps) => {
       setValuesHidden(newValue)
     } catch (error) {
       console.error('Error saving privacy preference:', error)
-      // Ainda atualiza o estado mesmo se falhar ao salvar
       setValuesHidden(!valuesHidden)
     }
   }, [valuesHidden])
+
+  const toggleHideZeroBalances = useCallback(async () => {
+    try {
+      const newValue = !hideZeroBalances
+      await AsyncStorage.setItem(HIDE_ZERO_KEY, JSON.stringify(newValue))
+      setHideZeroBalances(newValue)
+    } catch (error) {
+      console.error('Error saving hide zero preference:', error)
+      setHideZeroBalances(!hideZeroBalances)
+    }
+  }, [hideZeroBalances])
 
   // Memoize hideValue para evitar recriação
   const hideValue = useCallback((value: string | number): string => {
@@ -88,8 +107,10 @@ export const PrivacyProvider = ({ children }: PrivacyProviderProps) => {
     valuesHidden,
     toggleValuesVisibility,
     hideValue,
+    hideZeroBalances,
+    toggleHideZeroBalances,
     isLoading,
-  }), [valuesHidden, toggleValuesVisibility, hideValue, isLoading])
+  }), [valuesHidden, toggleValuesVisibility, hideValue, hideZeroBalances, toggleHideZeroBalances, isLoading])
 
   return <PrivacyContext.Provider value={value}>{children}</PrivacyContext.Provider>
 }

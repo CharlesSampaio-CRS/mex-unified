@@ -85,10 +85,9 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
   const { user } = useAuth()
   const { data, loading, error, refresh: refreshBalance, refreshing } = useBalance()
   const { refresh: refreshOrders, recentlyAffectedSymbols } = useOrders()
-  const { hideValue, valuesHidden } = usePrivacy()
+  const { hideValue, valuesHidden, hideZeroBalances: hideZeroBalanceExchanges, toggleHideZeroBalances: toggleZeroBalanceExchanges } = usePrivacy()
   const { addToken, removeToken, isWatching } = useWatchlist()
   const { getAlertsForToken } = useAlerts()
-  const [hideZeroBalanceExchanges, setHideZeroBalanceExchanges] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   
   // Estados para busca inteligente na exchange
@@ -432,10 +431,6 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
   useEffect(() => {
     (window as any).__exchangesListRefreshOrdersForExchange = refreshSingleExchangeOrders
   }, [refreshSingleExchangeOrders])
-
-  const toggleZeroBalanceExchanges = useCallback(() => {
-    setHideZeroBalanceExchanges(prev => !prev)
-  }, [])
 
   // �️ Mapeamento de nomes comuns para símbolos corretos
   const tokenNameToSymbol: Record<string, string> = {

@@ -21,13 +21,12 @@ export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance();
-  const { hideValue } = usePrivacy();
+  const { hideValue, hideZeroBalances: hideZero } = usePrivacy();
   const { unreadCount } = useNotifications();
   const { refresh: refreshOrders } = useOrders();
   
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  const [hideZero, setHideZero] = useState(false);
   const [selectedExchange, setSelectedExchange] = useState<string>('All');
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [tokenModalVisible, setTokenModalVisible] = useState(false);
@@ -212,48 +211,21 @@ export function AssetsScreen({ navigation }: any) {
       
       {/* Filters Section */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        {/* Search Bar + Hide Zero toggle inline */}
-        <View style={styles.searchRow}>
-          <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Buscar por nome ou símbolo..."
-              placeholderTextColor={colors.textTertiary}
-              value={search}
-              onChangeText={setSearch}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')}>
-                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          {/* Toggle ocultar zeros — ícone discreto ao lado da busca */}
-          <TouchableOpacity
-            style={[
-              styles.hideZeroButton,
-              { 
-                backgroundColor: hideZero ? `${colors.primary}15` : colors.surface,
-                borderColor: hideZero ? colors.primary : colors.border,
-              }
-            ]}
-            onPress={() => setHideZero(prev => !prev)}
-            activeOpacity={0.7}
-          >
-            <Ionicons 
-              name={hideZero ? "eye-off-outline" : "eye-outline"} 
-              size={16} 
-              color={hideZero ? colors.primary : colors.textTertiary} 
-            />
-            <Text style={[
-              styles.hideZeroLabel,
-              { color: hideZero ? colors.primary : colors.textTertiary }
-            ]}>
-              0
-            </Text>
-          </TouchableOpacity>
+        {/* Search Bar */}
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Buscar por nome ou símbolo..."
+            placeholderTextColor={colors.textTertiary}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Exchange Filter */}
@@ -534,14 +506,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
   },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
   searchBar: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -549,42 +514,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     gap: 8,
+    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.regular,
     paddingVertical: 0,
-  },
-  hideZeroButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 2,
-    minHeight: 42,
-  },
-  hideZeroLabel: {
-    fontSize: 11,
-    fontWeight: fontWeights.bold,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  toggleLabel: {
-    fontSize: typography.caption,  // 14
-    fontWeight: fontWeights.medium,
   },
   exchangeFilterScroll: {
     marginBottom: 8,

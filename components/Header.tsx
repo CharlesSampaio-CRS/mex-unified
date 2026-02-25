@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from "react-native"
 import { useEffect, useRef, memo, useState } from "react"
-import Svg, { Path, Circle } from "react-native-svg"
+import Svg, { Path, Circle, Line } from "react-native-svg"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
@@ -92,6 +92,21 @@ const GridIcon = ({ color }: { color: string }) => (
   </Svg>
 )
 
+// Zero Icon — "0" normal (mostrar saldos zero)
+const ZeroIcon = ({ color }: { color: string }) => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="7" stroke={color} strokeWidth="2.5" />
+  </Svg>
+)
+
+// Zero Slash Icon — "0" com linha diagonal (ocultar saldos zero)
+const ZeroSlashIcon = ({ color }: { color: string }) => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="7" stroke={color} strokeWidth="2.5" />
+    <Line x1="6" y1="18" x2="18" y2="6" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+  </Svg>
+)
+
 interface HeaderProps {
   hideIcons?: boolean
   onNotificationsPress?: () => void
@@ -135,7 +150,7 @@ export const Header = memo(function Header({
 }: HeaderProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
-  const { valuesHidden, toggleValuesVisibility } = usePrivacy()
+  const { valuesHidden, toggleValuesVisibility, hideZeroBalances, toggleHideZeroBalances } = usePrivacy()
   const { user } = useAuth()
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
@@ -200,6 +215,20 @@ export const Header = memo(function Header({
             <EyeOffIcon color={colors.text} />
           ) : (
             <EyeIcon color={colors.text} />
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.iconButton, { 
+            backgroundColor: hideZeroBalances ? `${colors.primary}12` : colors.surface, 
+            borderColor: hideZeroBalances ? `${colors.primary}40` : colors.border 
+          }]}
+          onPress={toggleHideZeroBalances}
+        >
+          {hideZeroBalances ? (
+            <ZeroSlashIcon color={colors.primary} />
+          ) : (
+            <ZeroIcon color={colors.textSecondary} />
           )}
         </TouchableOpacity>
         
