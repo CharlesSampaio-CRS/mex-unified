@@ -385,7 +385,6 @@ export function TradeModal({
   }
 
   return (
-    <>
     <Modal
       visible={visible}
       animationType="slide"
@@ -660,100 +659,99 @@ export function TradeModal({
           </ScrollView>
         </View>
       </View>
-    </Modal>
 
-    {/* Modal de Confirmação de Ordem */}
-    <Modal
-      visible={confirmVisible}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={() => setConfirmVisible(false)}
-    >
-      <Pressable style={styles.overlay} onPress={() => setConfirmVisible(false)}>
-        <Pressable style={{ width: '90%', maxWidth: 400 }} onPress={(e) => e.stopPropagation()}>
-          <View style={[styles.confirmContainer, { backgroundColor: colors.card }]}>
-            {/* Header */}
-            <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
-              <Text style={{ fontSize: 28 }}>{isBuy ? '🟢' : '🔴'}</Text>
-              <Text style={[styles.confirmTitle, { color: colors.text }]}>
-                {'Confirmar Ordem'}
-              </Text>
-            </View>
+      {/* Modal de Confirmação de Ordem - DENTRO do modal principal */}
+      <Modal
+        visible={confirmVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setConfirmVisible(false)}
+      >
+        <Pressable style={styles.confirmOverlay} onPress={() => setConfirmVisible(false)}>
+          <Pressable style={{ width: '90%', maxWidth: 400 }} onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.confirmContainer, { backgroundColor: colors.card }]}>
+              {/* Header */}
+              <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
+                <Text style={{ fontSize: 28 }}>{isBuy ? '🟢' : '🔴'}</Text>
+                <Text style={[styles.confirmTitle, { color: colors.text }]}>
+                  {'Confirmar Ordem'}
+                </Text>
+              </View>
 
-            {/* Resumo */}
-            <View style={styles.confirmContent}>
-              <View style={styles.confirmRow}>
-                <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Par'}</Text>
-                <Text style={[styles.confirmValue, { color: colors.text }]}>
-                  {String(symbol.includes('/') ? symbol : `${symbol}/USDT`)}
-                </Text>
-              </View>
-              <View style={styles.confirmRow}>
-                <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Lado'}</Text>
-                <Text style={[styles.confirmValue, { color: isBuy ? '#10b981' : '#ef4444' }]}>
-                  {String(isBuy ? 'COMPRA' : 'VENDA')}
-                </Text>
-              </View>
-              <View style={styles.confirmRow}>
-                <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Tipo'}</Text>
-                <Text style={[styles.confirmValue, { color: colors.text }]}>
-                  {String(orderType.toUpperCase())}
-                </Text>
-              </View>
-              {orderType === 'limit' && (
+              {/* Resumo */}
+              <View style={styles.confirmContent}>
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Preço'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Par'}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
-                    {String(`$ ${parseFloat(price || '0') < 0.01 
-                      ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
-                      : apiService.formatUSD(parseFloat(price || '0'))}`)}
+                    {String(symbol.includes('/') ? symbol : `${symbol}/USDT`)}
                   </Text>
                 </View>
-              )}
-              <View style={styles.confirmRow}>
-                <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Quantidade'}</Text>
-                <Text style={[styles.confirmValue, { color: colors.text }]}>
-                  {String(`${parseFloat(amount || '0') < 1 
-                    ? parseFloat(amount || '0').toFixed(8).replace(/\.?0+$/, '') 
-                    : parseFloat(amount || '0').toFixed(4)} ${symbol.split('/')[0]}`)}
-                </Text>
+                <View style={styles.confirmRow}>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Lado'}</Text>
+                  <Text style={[styles.confirmValue, { color: isBuy ? '#10b981' : '#ef4444' }]}>
+                    {String(isBuy ? 'COMPRA' : 'VENDA')}
+                  </Text>
+                </View>
+                <View style={styles.confirmRow}>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Tipo'}</Text>
+                  <Text style={[styles.confirmValue, { color: colors.text }]}>
+                    {String(orderType.toUpperCase())}
+                  </Text>
+                </View>
+                {orderType === 'limit' && (
+                  <View style={styles.confirmRow}>
+                    <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Preço'}</Text>
+                    <Text style={[styles.confirmValue, { color: colors.text }]}>
+                      {String(`$ ${parseFloat(price || '0') < 0.01 
+                        ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
+                        : apiService.formatUSD(parseFloat(price || '0'))}`)}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.confirmRow}>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Quantidade'}</Text>
+                  <Text style={[styles.confirmValue, { color: colors.text }]}>
+                    {String(`${parseFloat(amount || '0') < 1 
+                      ? parseFloat(amount || '0').toFixed(8).replace(/\.?0+$/, '') 
+                      : parseFloat(amount || '0').toFixed(4)} ${symbol.split('/')[0]}`)}
+                  </Text>
+                </View>
+
+                {/* Separador */}
+                <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
+
+                <View style={styles.confirmRow}>
+                  <Text style={[styles.confirmLabelBold, { color: colors.text }]}>
+                    {String(isBuy ? 'Total a Pagar' : 'Total a Receber')}
+                  </Text>
+                  <Text style={[styles.confirmValueBold, { color: isBuy ? '#10b981' : '#ef4444' }]}>
+                    {String(`$ ${apiService.formatUSD(total)}`)}
+                  </Text>
+                </View>
               </View>
 
-              {/* Separador */}
-              <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
-
-              <View style={styles.confirmRow}>
-                <Text style={[styles.confirmLabelBold, { color: colors.text }]}>
-                  {String(isBuy ? 'Total a Pagar' : 'Total a Receber')}
-                </Text>
-                <Text style={[styles.confirmValueBold, { color: isBuy ? '#10b981' : '#ef4444' }]}>
-                  {String(`$ ${apiService.formatUSD(total)}`)}
-                </Text>
+              {/* Botões */}
+              <View style={styles.confirmFooter}>
+                <TouchableOpacity 
+                  style={[styles.confirmCancelBtn, { borderColor: colors.border }]} 
+                  onPress={() => setConfirmVisible(false)}
+                >
+                  <Text style={[styles.confirmCancelText, { color: colors.text }]}>{'Voltar'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.confirmOkBtn, { backgroundColor: isBuy ? '#10b981' : '#ef4444' }]} 
+                  onPress={executeOrder}
+                >
+                  <Text style={styles.confirmOkText}>
+                    {String(isBuy ? 'Confirmar Compra' : 'Confirmar Venda')}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
-
-            {/* Botões */}
-            <View style={styles.confirmFooter}>
-              <TouchableOpacity 
-                style={[styles.confirmCancelBtn, { borderColor: colors.border }]} 
-                onPress={() => setConfirmVisible(false)}
-              >
-                <Text style={[styles.confirmCancelText, { color: colors.text }]}>{'Voltar'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.confirmOkBtn, { backgroundColor: isBuy ? '#10b981' : '#ef4444' }]} 
-                onPress={executeOrder}
-              >
-                <Text style={styles.confirmOkText}>
-                  {String(isBuy ? 'Confirmar Compra' : 'Confirmar Venda')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </Modal>
     </Modal>
-    </>
   )
 }
 
