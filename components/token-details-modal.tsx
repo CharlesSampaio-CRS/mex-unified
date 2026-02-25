@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useBalance } from "@/contexts/BalanceContext"
 import { usePrivacy } from "@/contexts/PrivacyContext"
+import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 import { apiService } from "@/services/api"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { config } from "@/lib/config"
@@ -284,7 +285,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                 {tokenData && (
                   <>
                     <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                      {tokenData.exchange?.name || 'Exchange'}
+                      {capitalizeExchangeName(tokenData.exchange?.name || 'Exchange')}
                     </Text>
                     <Text style={[styles.modalPrice, { color: colors.primary }]}>
                       ${formatPrice(tokenData.price?.current || '0')}

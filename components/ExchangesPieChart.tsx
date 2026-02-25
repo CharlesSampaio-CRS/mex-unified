@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useBalance } from '../contexts/BalanceContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { typography, fontWeights } from '../lib/typography'
+import { capitalizeExchangeName } from '../lib/exchange-helpers'
 
 const BASE_CHART_SIZE = 120
 const MIN_CHART_SIZE = 80
@@ -128,9 +129,7 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
 
     // Criar dados com porcentagem
     const chartDataItems: ExchangeData[] = exchangesWithBalance.map((ex: any, index: number) => ({
-      name: (ex.name || ex.exchange)
-        ? (ex.name || ex.exchange).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
-        : '',
+      name: capitalizeExchangeName(ex.name || ex.exchange),
       value: parseFloat(ex.total_usd || 0),
       percentage: total > 0 ? (parseFloat(ex.total_usd || 0) / total) * 100 : 0,
       color: EXCHANGE_COLORS[index % EXCHANGE_COLORS.length],

@@ -4,6 +4,7 @@ import { OpenOrder } from '../types/orders'
 import { useAuth } from './AuthContext'
 import { useNotifications } from './NotificationsContext'
 import { useBalance } from './BalanceContext'
+import { capitalizeExchangeName } from '../lib/exchange-helpers'
 
 interface OrdersByExchange {
   exchangeId: string
@@ -84,7 +85,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         if (!order || !order.symbol) return;
         
         const exchangeId = order.exchange_id || order.exchange || 'unknown';
-        const exchangeName = order.exchange_name || order.exchange || exchangeId;
+        const exchangeName = capitalizeExchangeName(order.exchange_name || order.exchange || exchangeId);
         
         if (!groupedOrders.has(exchangeId)) {
           groupedOrders.set(exchangeId, {

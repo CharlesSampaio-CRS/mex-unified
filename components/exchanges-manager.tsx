@@ -17,6 +17,7 @@ import { TabBar } from "./TabBar"
 import { spacing, borderRadius, shadows } from "@/lib/layout"
 import Svg, { Path } from "react-native-svg"
 import { encryptExchangeCredentials } from "@/lib/encryption"
+import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 
 // Mapeamento dos logos locais das exchanges
 const exchangeLogos: Record<string, any> = {
@@ -137,7 +138,7 @@ const LinkedExchangeCard = memo(({
             )}
           </View>
           <Text style={[styles.itemSymbol, { color: colors.text }]} numberOfLines={1}>
-            {linkedExchange.name}
+            {capitalizeExchangeName(linkedExchange.name)}
           </Text>
         </View>
         
@@ -288,7 +289,7 @@ const AvailableExchangeCard = memo(({
             )}
           </View>
           <Text style={[styles.itemSymbol, { color: colors.text }]} numberOfLines={1}>
-            {exchange.nome || exchange.name || 'Unknown Exchange'}
+            {capitalizeExchangeName(exchange.nome || exchange.name || 'Unknown Exchange')}
           </Text>
         </View>
         
@@ -436,7 +437,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       // Mapear para o formato esperado pelo componente
       const mappedExchanges = linkedList.map((ex: any) => ({
         ...ex,
-        name: ex.exchange_name || ex.name,
+        name: capitalizeExchangeName(ex.exchange_name || ex.name),
         ccxt_id: ex.exchange_type || ex.ccxt_id,
         icon: ex.icon || ex.logo,
         status: ex.is_active ? 'active' : 'inactive',
@@ -1162,9 +1163,9 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                         e.stopPropagation()
                         if (exchange) {
                           if (isActive) {
-                            handleDisconnect(exchange.exchange_id, exchange.name)
+                            handleDisconnect(exchange.exchange_id, capitalizeExchangeName(exchange.name))
                           } else {
-                            toggleExchange(exchange.exchange_id, 'inactive', exchange.name)
+                            toggleExchange(exchange.exchange_id, 'inactive', capitalizeExchangeName(exchange.name))
                           }
                         }
                       }}
@@ -1188,7 +1189,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             name: exchange.name,
                             fullExchange: exchange
                           })
-                          handleDelete(exchange.exchange_id, exchange.name)
+                          handleDelete(exchange.exchange_id, capitalizeExchangeName(exchange.name))
                         }
                       }}
                     >
@@ -1252,7 +1253,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     })()}
                   </View>
                   <View>
-                    <Text style={[styles.modalExchangeName, { color: colors.text }]}>{selectedExchange.nome}</Text>
+                    <Text style={[styles.modalExchangeName, { color: colors.text }]}>{capitalizeExchangeName(selectedExchange.nome)}</Text>
                   </View>
                 </View>
 
@@ -1582,7 +1583,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                       </View>
                       <View style={styles.detailsHeaderText}>
                         <Text style={[styles.detailsExchangeName, { color: colors.text }]}>
-                          {detailsType === 'linked' ? detailsExchange.name : (detailsExchange.nome || detailsExchange.name || 'Unknown')}
+                          {capitalizeExchangeName(detailsType === 'linked' ? detailsExchange.name : (detailsExchange.nome || detailsExchange.name || 'Unknown'))}
                         </Text>
                       </View>
                     </View>
@@ -1609,7 +1610,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                                   Nome:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                  {detailsExchange.name}
+                                  {capitalizeExchangeName(detailsExchange.name)}
                                 </Text>
                               </View>
                               
@@ -1737,7 +1738,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                                   Nome:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                  {detailsExchange.nome || detailsExchange.name || 'N/A'}
+                                  {capitalizeExchangeName(detailsExchange.nome || detailsExchange.name || 'N/A')}
                                 </Text>
                               </View>
                               

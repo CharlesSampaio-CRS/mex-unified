@@ -23,6 +23,7 @@ import { typography, fontWeights } from "@/lib/typography"
 import { apiService } from "@/services/api"
 import { LinkedExchange } from "@/types/api"
 import { config } from "@/lib/config"
+import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 
 // Tipo para exchange no modal
 interface LocalExchange {
@@ -148,7 +149,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
         _id: ex.exchange_id,
         exchange_id: ex.exchange_id,
         exchange_type: ex.exchange_type,  // CCXT ID: binance, bybit, etc
-        name: ex.exchange_name,
+        name: capitalizeExchangeName(ex.exchange_name),
         ccxt_id: ex.exchange_type,
         is_active: ex.is_active,
       }))
@@ -262,10 +263,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       
       const strategyData = {
         name: `${token} - ${selectedTemplate}`,
-        description: `Estratégia ${selectedTemplate} para ${token} na ${exchange.name}`,
+        description: `Estratégia ${selectedTemplate} para ${token} na ${capitalizeExchangeName(exchange.name)}`,
         symbol: token,
         exchange_id: selectedExchange,
-        exchange_name: exchange.name,
+        exchange_name: capitalizeExchangeName(exchange.name),
         strategy_type: strategyTypeMap[selectedTemplate] || 'grid',
         config: {
           template: selectedTemplate,
@@ -304,7 +305,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       const exchangeId = e.exchange_id || e._id || ""
       return exchangeId === selectedExchange
     })
-    return exchange?.name || ""
+    return capitalizeExchangeName(exchange?.name || "")
   }
 
   return (
@@ -489,7 +490,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                           activeOpacity={0.7}
                         >
                           <Text style={[styles.exchangeName, { color: colors.text }]}>
-                            {exchange.name}
+                            {capitalizeExchangeName(exchange.name)}
                           </Text>
                           <Text
                             style={[

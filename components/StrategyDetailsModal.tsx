@@ -15,6 +15,7 @@ import Svg, { Path, Circle } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useBackendStrategies, Strategy } from '@/hooks/useBackendStrategies'
+import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 
 interface StrategyDetailsModalProps {
   visible: boolean
@@ -97,7 +98,7 @@ export function StrategyDetailsModal({
     }
 
     const strategyId = strategy.id || ''
-    const strategyName = `${strategy.symbol} - ${strategy.exchange_name || strategy.exchange_id || 'Exchange'}`
+    const strategyName = `${strategy.symbol} - ${capitalizeExchangeName(strategy.exchange_name || strategy.exchange_id || 'Exchange')}`
     const template = (strategy.config?.template) || 'simple'
     const templateNames: Record<string, string> = {
       simple: t('strategy.simple'),
@@ -173,7 +174,7 @@ export function StrategyDetailsModal({
                 </Text>
               </View>
               <Text style={[styles.infoValue, { color: colors.text }]}>
-                {strategy.exchange_name || strategy.exchange_id || 'N/A'}
+                {capitalizeExchangeName(strategy.exchange_name || strategy.exchange_id || 'N/A')}
               </Text>
             </View>
 

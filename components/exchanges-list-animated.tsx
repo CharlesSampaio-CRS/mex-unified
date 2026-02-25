@@ -4,6 +4,7 @@ import { useBalance } from "@/contexts/BalanceContext"
 import { useTheme } from "@/contexts/ThemeContext"
 import { apiService } from "@/services/api"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 
 // Mapeamento dos nomes das exchanges para os arquivos de imagem
 const exchangeLogos: Record<string, any> = {
@@ -41,7 +42,7 @@ function ExchangeItem({
   const balances = exchange.balances || exchange.tokens || {}
   const tokenCount = Object.keys(balances).length
   const balance = parseFloat(exchange.total_usd || '0')
-  const logoSource = exchangeLogos[exchange.name || exchange.exchange]
+  const logoSource = exchangeLogos[capitalizeExchangeName(exchange.name || exchange.exchange)]
   const tokens = Object.entries(balances)
 
   useEffect(() => {
@@ -83,7 +84,7 @@ function ExchangeItem({
               )}
             </View>
             <View>
-              <Text style={styles.exchangeName}>{exchange.name}</Text>
+              <Text style={styles.exchangeName}>{capitalizeExchangeName(exchange.name)}</Text>
               <Text style={styles.assetsCount}>
                 {tokenCount} {tokenCount === 1 ? t('exchanges.asset') : t('exchanges.assets')}
               </Text>

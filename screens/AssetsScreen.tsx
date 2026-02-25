@@ -13,7 +13,7 @@ import { Header } from '@/components/Header';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { TokenDetailsModal } from '@/components/token-details-modal';
 import { TradeModal } from '@/components/trade-modal';
-import { getExchangeBalances, getExchangeId, getExchangeName } from '@/lib/exchange-helpers';
+import { getExchangeBalances, getExchangeId, getExchangeName, capitalizeExchangeName } from '@/lib/exchange-helpers';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 
@@ -267,7 +267,7 @@ export function AssetsScreen({ navigation }: any) {
                   styles.exchangeFilterText,
                   { color: selectedExchange === exchange.id ? '#fff' : colors.textSecondary }
                 ]}>
-                  {exchange.name}
+                  {capitalizeExchangeName(exchange.name)}
                 </Text>
               </TouchableOpacity>
             ))}

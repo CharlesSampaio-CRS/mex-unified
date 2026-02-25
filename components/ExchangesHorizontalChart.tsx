@@ -7,6 +7,7 @@ import { usePrivacy } from '../contexts/PrivacyContext'
 import { typography, fontWeights } from '../lib/typography'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
+import { capitalizeExchangeName } from '../lib/exchange-helpers'
 
 // 🎨 Cores personalizadas por exchange (gradiente claro → escuro)
 const EXCHANGE_BRAND_COLORS: Record<string, { light: string; dark: string; name: string }> = {
@@ -171,7 +172,7 @@ const ExchangeBar = memo(({
               </View>
             )}
             <Text style={[styles.exchangeName, { color: colors.text }]}>
-              {exchange.name}
+              {capitalizeExchangeName(exchange.name)}
             </Text>
           </View>
           <View style={styles.barHeaderRight}>
@@ -262,18 +263,16 @@ export const ExchangesHorizontalChart = memo(function ExchangesHorizontalChart()
       const hasError = exchange.success === false
       const errorMsg = exchange.error || 'Failed to load'
 
-      // Pegar nome da exchange (igual ao PieChart)
-      const exchangeName = exchange.name || exchange.exchange || `Exchange ${index + 1}`
-      // Capitalizar apenas a primeira letra
-      const formattedName = exchangeName.charAt(0).toUpperCase() + exchangeName.slice(1).toLowerCase()
+      // Pegar nome da exchange (já capitalizado)
+      const exchangeName = capitalizeExchangeName(exchange.name || exchange.exchange || `Exchange ${index + 1}`)
 
       // 🎨 Buscar cores personalizadas da exchange
       const brandColors = EXCHANGE_BRAND_COLORS[exchangeName] || DEFAULT_GRADIENT
       const gradientColors: [string, string] = [brandColors.light, brandColors.dark]
 
       return {
-        name: formattedName,
-        originalName: exchangeName, // Manter nome original para buscar ícone
+        name: exchangeName,
+        originalName: exchangeName, // Manter nome para buscar ícone
         value: totalUSD,
         percentage: 0,
         color: brandColors.dark, // Cor escura como primária (para texto/borda)
