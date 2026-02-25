@@ -351,6 +351,9 @@ export function TradeModal({
           )
       
       if (result.success) {
+        // 🔍 DEBUG: Log do resultado para verificar estrutura
+        console.log('🔍 [TRADE-MODAL] Create order result:', JSON.stringify(result, null, 2))
+        
         // 1. Fecha modal imediatamente
         onClose();
         
@@ -374,9 +377,11 @@ export function TradeModal({
         
         // 3. ✅ INSERÇÃO OTIMISTA: Adiciona a ordem na lista IMEDIATAMENTE (só para limit)
         if (orderType === 'limit') {
+          // Backend serializa Order.id como "exchange_order_id" no JSON (serde rename)
+          const realOrderId = result.order?.exchange_order_id || result.order?.id || result.order_id || result.orderId || result.id || `temp_${Date.now()}`
           const newOrder = {
-            id: result.order_id || result.orderId || result.id || `temp_${Date.now()}`,
-            exchange_order_id: result.order_id || result.orderId || result.id,
+            id: realOrderId,
+            exchange_order_id: realOrderId,
             symbol: tradingPair,
             type: orderType as 'limit' | 'market',
             side: orderSide as 'buy' | 'sell',
