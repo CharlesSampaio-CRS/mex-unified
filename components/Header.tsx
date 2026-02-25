@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
+    borderWidth: 2,
     overflow: 'hidden',
   },
   avatarImage: {
@@ -342,8 +342,12 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: typography.caption,
-    fontWeight: fontWeights.semibold,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 0.5 },
+    textShadowRadius: 1,
   },
   iconButton: {
     width: 32,                  // Reduzido para mobile
