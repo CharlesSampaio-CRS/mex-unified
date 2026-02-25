@@ -208,17 +208,6 @@ export const Header = memo(function Header({
         pointerEvents={hideIcons ? "none" : "auto"}
       >
         <TouchableOpacity 
-          style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={toggleValuesVisibility}
-        >
-          {valuesHidden ? (
-            <EyeOffIcon color={colors.text} />
-          ) : (
-            <EyeIcon color={colors.text} />
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity 
           style={[styles.iconButton, { 
             backgroundColor: hideZeroBalances ? `${colors.primary}12` : colors.surface, 
             borderColor: hideZeroBalances ? `${colors.primary}40` : colors.border 
@@ -229,6 +218,17 @@ export const Header = memo(function Header({
             <ZeroSlashIcon color={colors.primary} />
           ) : (
             <ZeroIcon color={colors.textSecondary} />
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={toggleValuesVisibility}
+        >
+          {valuesHidden ? (
+            <EyeOffIcon color={colors.text} />
+          ) : (
+            <EyeIcon color={colors.text} />
           )}
         </TouchableOpacity>
         
