@@ -406,6 +406,218 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
             </View>
           </View>
           {/* Content */}
+          {step === 3 ? (
+            /* Step 3 usa View ao invés de ScrollView para evitar conflito com FlatList */
+            <View style={[styles.content, { paddingHorizontal: 20, paddingTop: 10 }]}>
+              {/* Step 3: Token Selection - renderizado fora do ScrollView */}
+              <View style={[styles.stepContent, { flex: 1 }]}>
+                {/* Summary compacto - só mostra quando não está buscando */}
+                {!tokenInputFocused && (
+                  <>
+                    <Text style={[styles.stepTitle, { color: colors.text }]}>
+                      {t("strategy.chooseToken")}
+                    </Text>
+                    <View style={[styles.summaryCard, { marginBottom: 16 }]}>
+                      <View style={styles.summaryRow}>
+                        <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                          Template:
+                        </Text>
+                        <Text style={[styles.summaryValue, { color: colors.text }]}>
+                          {t(TEMPLATES.find(t => t.id === selectedTemplate)?.nameKey || '')}
+                        </Text>
+                      </View>
+                      <View style={styles.summaryRow}>
+                        <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                          Exchange:
+                        </Text>
+                        <Text style={[styles.summaryValue, { color: colors.text }]}>
+                          {getSelectedExchangeName()}
+                        </Text>
+                      </View>
+                    </View>
+                  </>
+                )}
+
+                {/* Token selecionado - badge destacado */}
+                {token && !tokenInputFocused && (
+                  <TouchableOpacity
+                    style={[
+                      styles.selectedTokenCard,
+                      { backgroundColor: `${colors.primary}10`, borderColor: colors.primary },
+                    ]}
+                    onPress={() => {
+                      setToken("")
+                      setTokenSearchQuery("")
+                      setTokenInputFocused(true)
+                      setTimeout(() => tokenInputRef.current?.focus(), 100)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.selectedTokenCardContent}>
+                      <Text style={[styles.selectedTokenIcon]}>🪙</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.selectedTokenCardTitle, { color: colors.primary }]}>
+                          {token}
+                        </Text>
+                        <Text style={[styles.selectedTokenCardSub, { color: colors.textSecondary }]}>
+                          Toque para alterar
+                        </Text>
+                      </View>
+                      <Text style={{ color: colors.primary, fontSize: 18 }}>✓</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                {/* Busca + lista de tokens */}
+                {(!token || tokenInputFocused) && (
+                  <>
+                    {loadingTokens ? (
+                      <View style={styles.loadingContainer}>
+                        <AnimatedLogoIcon size={48} />
+                        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                          Carregando tokens...
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={{ flex: 1 }}>
+                        {/* Search input fixo */}
+                        <View style={styles.tokenSearchRow}>
+                          <View style={[
+                            styles.tokenSearchInputWrapper,
+                            {
+                              borderColor: tokenInputFocused ? colors.primary : colors.border,
+                              backgroundColor: colors.background,
+                            },
+                          ]}>
+                            <Text style={styles.tokenSearchIcon}>🔍</Text>
+                            <TextInput
+                              ref={tokenInputRef}
+                              style={[
+                                styles.tokenSearchField,
+                                { color: colors.text },
+                              ]}
+                              placeholder="Buscar token (ex: BTC, ETH, SOL...)"
+                              placeholderTextColor={colors.textSecondary}
+                              value={tokenSearchQuery}
+                              onChangeText={(text) => {
+                                setTokenSearchQuery(text)
+                              }}
+                              onFocus={() => {
+                                if (selectedExchange && tokens.length === 0) {
+                                  loadTokens()
+                                }
+                                setTokenInputFocused(true)
+                              }}
+                              onBlur={() => {
+                                // Não esconde a lista no blur - só esconde ao selecionar token
+                              }}
+                              autoCapitalize="characters"
+                              autoCorrect={false}
+                              returnKeyType="search"
+                            />
+                            {tokenSearchQuery.length > 0 && (
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setTokenSearchQuery("")
+                                  tokenInputRef.current?.focus()
+                                }}
+                                style={styles.tokenSearchClear}
+                              >
+                                <Text style={{ color: colors.textSecondary, fontSize: 18 }}>✕</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Contagem de resultados */}
+                        <View style={styles.tokenCountRow}>
+                          <Text style={[styles.tokenCountText, { color: colors.textSecondary }]}>
+                            {tokenSearchQuery
+                              ? `${filteredTokens.length} resultado${filteredTokens.length !== 1 ? 's' : ''}`
+                              : `${tokens.length} tokens disponíveis`
+                            }
+                          </Text>
+                          {tokenInputFocused && (
+                            <TouchableOpacity
+                              onPress={() => {
+                                Keyboard.dismiss()
+                                setTokenInputFocused(false)
+                              }}
+                            >
+                              <Text style={[styles.tokenDismissText, { color: colors.primary }]}>
+                                Fechar teclado
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+
+                        {/* Lista de tokens - FlatList com scroll próprio */}
+                        <FlatList
+                          data={filteredTokens}
+                          keyExtractor={(item) => item}
+                          keyboardShouldPersistTaps="always"
+                          style={[
+                            styles.tokenFlatList,
+                            {
+                              borderColor: colors.border,
+                              backgroundColor: colors.background,
+                              flex: 1,
+                              maxHeight: undefined,
+                            },
+                          ]}
+                          renderItem={({ item: tokenSymbol }) => (
+                            <TouchableOpacity
+                              style={[
+                                styles.tokenFlatListItem,
+                                { borderBottomColor: colors.border },
+                                token === tokenSymbol && { backgroundColor: `${colors.primary}12` },
+                              ]}
+                              onPress={() => {
+                                setToken(tokenSymbol)
+                                setTokenSearchQuery("")
+                                setTokenInputFocused(false)
+                                Keyboard.dismiss()
+                              }}
+                              activeOpacity={0.6}
+                            >
+                              <Text style={styles.tokenFlatListIcon}>🪙</Text>
+                              <Text
+                                style={[
+                                  styles.tokenFlatListText,
+                                  {
+                                    color: token === tokenSymbol ? colors.primary : colors.text,
+                                    fontWeight: token === tokenSymbol ? "600" : "400",
+                                  },
+                                ]}
+                              >
+                                {tokenSymbol}
+                              </Text>
+                              {token === tokenSymbol && (
+                                <Text style={{ color: colors.primary, fontSize: 16 }}>✓</Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
+                          ListEmptyComponent={
+                            <View style={styles.tokenEmptyList}>
+                              <Text style={[styles.tokenEmptyText, { color: colors.textSecondary }]}>
+                                {tokenSearchQuery
+                                  ? `Nenhum token encontrado para "${tokenSearchQuery}"`
+                                  : "Nenhum token disponível"
+                                }
+                              </Text>
+                            </View>
+                          }
+                          initialNumToRender={20}
+                          maxToRenderPerBatch={30}
+                          windowSize={5}
+                        />
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+            </View>
+          ) : (
           <ScrollView 
             style={styles.content}
             contentContainerStyle={styles.contentContainer}
@@ -516,215 +728,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                 )}
               </View>
             )}
-            {/* Step 3: Token Selection */}
-            {step === 3 && (
-              <View style={[styles.stepContent, { flex: 1 }]}>
-                {/* Summary compacto - só mostra quando não está buscando */}
-                {!tokenInputFocused && (
-                  <>
-                    <Text style={[styles.stepTitle, { color: colors.text }]}>
-                      {t("strategy.chooseToken")}
-                    </Text>
-                    <View style={[styles.summaryCard, { marginBottom: 16 }]}>
-                      <View style={styles.summaryRow}>
-                        <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                          Template:
-                        </Text>
-                        <Text style={[styles.summaryValue, { color: colors.text }]}>
-                          {t(TEMPLATES.find(t => t.id === selectedTemplate)?.nameKey || '')}
-                        </Text>
-                      </View>
-                      <View style={styles.summaryRow}>
-                        <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                          Exchange:
-                        </Text>
-                        <Text style={[styles.summaryValue, { color: colors.text }]}>
-                          {getSelectedExchangeName()}
-                        </Text>
-                      </View>
-                    </View>
-                  </>
-                )}
-
-                {/* Token selecionado - badge destacado */}
-                {token && !tokenInputFocused && (
-                  <TouchableOpacity
-                    style={[
-                      styles.selectedTokenCard,
-                      { backgroundColor: `${colors.primary}10`, borderColor: colors.primary },
-                    ]}
-                    onPress={() => {
-                      setToken("")
-                      setTokenSearchQuery("")
-                      setTokenInputFocused(true)
-                      setTimeout(() => tokenInputRef.current?.focus(), 100)
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.selectedTokenCardContent}>
-                      <Text style={[styles.selectedTokenIcon]}>🪙</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.selectedTokenCardTitle, { color: colors.primary }]}>
-                          {token}
-                        </Text>
-                        <Text style={[styles.selectedTokenCardSub, { color: colors.textSecondary }]}>
-                          Toque para alterar
-                        </Text>
-                      </View>
-                      <Text style={{ color: colors.primary, fontSize: 18 }}>✓</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-
-                {/* Busca + lista de tokens */}
-                {(!token || tokenInputFocused) && (
-                  <>
-                    {loadingTokens ? (
-                      <View style={styles.loadingContainer}>
-                        <AnimatedLogoIcon size={48} />
-                        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-                          Carregando tokens...
-                        </Text>
-                      </View>
-                    ) : (
-                      <View style={{ flex: 1 }}>
-                        {/* Search input fixo */}
-                        <View style={styles.tokenSearchRow}>
-                          <View style={[
-                            styles.tokenSearchInputWrapper,
-                            {
-                              borderColor: tokenInputFocused ? colors.primary : colors.border,
-                              backgroundColor: colors.background,
-                            },
-                          ]}>
-                            <Text style={styles.tokenSearchIcon}>🔍</Text>
-                            <TextInput
-                              ref={tokenInputRef}
-                              style={[
-                                styles.tokenSearchField,
-                                { color: colors.text },
-                              ]}
-                              placeholder="Buscar token (ex: BTC, ETH, SOL...)"
-                              placeholderTextColor={colors.textSecondary}
-                              value={tokenSearchQuery}
-                              onChangeText={(text) => {
-                                setTokenSearchQuery(text)
-                              }}
-                              onFocus={() => {
-                                if (selectedExchange && tokens.length === 0) {
-                                  loadTokens()
-                                }
-                                setTokenInputFocused(true)
-                              }}
-                              onBlur={() => {
-                                // Delay para permitir tap nos itens da lista
-                                setTimeout(() => setTokenInputFocused(false), 200)
-                              }}
-                              autoCapitalize="characters"
-                              autoCorrect={false}
-                              returnKeyType="search"
-                            />
-                            {tokenSearchQuery.length > 0 && (
-                              <TouchableOpacity
-                                onPress={() => {
-                                  setTokenSearchQuery("")
-                                  tokenInputRef.current?.focus()
-                                }}
-                                style={styles.tokenSearchClear}
-                              >
-                                <Text style={{ color: colors.textSecondary, fontSize: 18 }}>✕</Text>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        </View>
-
-                        {/* Contagem de resultados */}
-                        <View style={styles.tokenCountRow}>
-                          <Text style={[styles.tokenCountText, { color: colors.textSecondary }]}>
-                            {tokenSearchQuery
-                              ? `${filteredTokens.length} resultado${filteredTokens.length !== 1 ? 's' : ''}`
-                              : `${tokens.length} tokens disponíveis`
-                            }
-                          </Text>
-                          {tokenInputFocused && (
-                            <TouchableOpacity
-                              onPress={() => {
-                                Keyboard.dismiss()
-                                setTokenInputFocused(false)
-                              }}
-                            >
-                              <Text style={[styles.tokenDismissText, { color: colors.primary }]}>
-                                Fechar teclado
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-
-                        {/* Lista de tokens - FlatList para performance */}
-                        <FlatList
-                          data={filteredTokens}
-                          keyExtractor={(item) => item}
-                          keyboardShouldPersistTaps="handled"
-                          style={[
-                            styles.tokenFlatList,
-                            {
-                              borderColor: colors.border,
-                              backgroundColor: colors.background,
-                            },
-                          ]}
-                          renderItem={({ item: tokenSymbol }) => (
-                            <TouchableOpacity
-                              style={[
-                                styles.tokenFlatListItem,
-                                { borderBottomColor: colors.border },
-                                token === tokenSymbol && { backgroundColor: `${colors.primary}12` },
-                              ]}
-                              onPress={() => {
-                                setToken(tokenSymbol)
-                                setTokenSearchQuery("")
-                                setTokenInputFocused(false)
-                                Keyboard.dismiss()
-                              }}
-                              activeOpacity={0.6}
-                            >
-                              <Text style={styles.tokenFlatListIcon}>🪙</Text>
-                              <Text
-                                style={[
-                                  styles.tokenFlatListText,
-                                  {
-                                    color: token === tokenSymbol ? colors.primary : colors.text,
-                                    fontWeight: token === tokenSymbol ? "600" : "400",
-                                  },
-                                ]}
-                              >
-                                {tokenSymbol}
-                              </Text>
-                              {token === tokenSymbol && (
-                                <Text style={{ color: colors.primary, fontSize: 16 }}>✓</Text>
-                              )}
-                            </TouchableOpacity>
-                          )}
-                          ListEmptyComponent={
-                            <View style={styles.tokenEmptyList}>
-                              <Text style={[styles.tokenEmptyText, { color: colors.textSecondary }]}>
-                                {tokenSearchQuery
-                                  ? `Nenhum token encontrado para "${tokenSearchQuery}"`
-                                  : "Nenhum token disponível"
-                                }
-                              </Text>
-                            </View>
-                          }
-                          initialNumToRender={20}
-                          maxToRenderPerBatch={30}
-                          windowSize={5}
-                        />
-                      </View>
-                    )}
-                  </>
-                )}
-              </View>
-            )}
           </ScrollView>
+          )}
           {/* Footer */}
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
             {step > 1 && (
