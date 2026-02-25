@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from "react-native"
 import { useEffect, useRef, memo, useState } from "react"
+import { useNavigation } from "@react-navigation/native"
 import Svg, { Path, Circle, Line, Text as SvgText } from "react-native-svg"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
@@ -146,12 +147,14 @@ export const Header = memo(function Header({
   subtitle,
   selectedIcon,
   onIconSelect,
-  navigation
+  navigation: navigationProp
 }: HeaderProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { valuesHidden, toggleValuesVisibility } = usePrivacy()
   const { user } = useAuth()
+  const nav = useNavigation<any>()
+  const navigation = navigationProp || nav
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
   const [profileMenuVisible, setProfileMenuVisible] = useState(false)
