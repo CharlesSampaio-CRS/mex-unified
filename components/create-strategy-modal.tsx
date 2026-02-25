@@ -90,6 +90,23 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
   // Token search/filter state
   const [tokenSearchQuery, setTokenSearchQuery] = useState<string>("")
   const tokenInputRef = useRef<TextInput>(null)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+
+  // Detectar teclado aberto/fechado
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    )
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    )
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [])
 
   useEffect(() => {
     if (visible) {
@@ -334,7 +351,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                 <Text style={[styles.closeIcon, { color: colors.text }]}>✕</Text>
               </TouchableOpacity>
             </View>
-          {/* Steps Indicator */}
+          {/* Steps Indicator - esconde quando teclado aberto no step 3 */}
+          {!(step === 3 && keyboardVisible) && (
           <View style={styles.stepsContainer}>
             <View style={styles.stepItem}>
               <View
@@ -402,43 +420,41 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
               </Text>
             </View>
           </View>
+          )}
           {/* Content */}
           {step === 3 ? (
             /* Step 3: View simples (sem ScrollView) para FlatList funcionar */
-            <View style={[styles.content, { paddingHorizontal: 20, paddingTop: 10 }]}>
-              <Text style={[styles.stepTitle, { color: colors.text }]}>
-                {t("strategy.chooseToken")}
-              </Text>
-
-              {/* Resumo compacto */}
-              <View style={[styles.summaryCard, { marginBottom: 12, padding: 12, gap: 4 }]}>
-                <View style={styles.summaryRow}>
-                  <Text style={[styles.summaryLabel, { color: colors.textSecondary, fontSize: 13 }]}>
-                    Template:
+            <View style={[styles.content, { paddingHorizontal: 20, paddingTop: 8 }]}>
+              {/* Título + resumo — esconde quando teclado está aberto para dar espaço */}
+              {!keyboardVisible && (
+                <>
+                  <Text style={[styles.stepTitle, { color: colors.text, marginBottom: 10 }]}>
+                    {t("strategy.chooseToken")}
                   </Text>
-                  <Text style={[styles.summaryValue, { color: colors.text, fontSize: 13 }]}>
-                    {t(TEMPLATES.find(t => t.id === selectedTemplate)?.nameKey || '')}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={[styles.summaryLabel, { color: colors.textSecondary, fontSize: 13 }]}>
-                    Exchange:
-                  </Text>
-                  <Text style={[styles.summaryValue, { color: colors.text, fontSize: 13 }]}>
-                    {getSelectedExchangeName()}
-                  </Text>
-                </View>
-                {token ? (
-                  <View style={styles.summaryRow}>
-                    <Text style={[styles.summaryLabel, { color: colors.textSecondary, fontSize: 13 }]}>
-                      Token:
-                    </Text>
-                    <Text style={[styles.summaryValue, { color: colors.primary, fontSize: 13, fontWeight: '600' }]}>
-                      🪙 {token} ✓
-                    </Text>
+                  <View style={[styles.summaryCard, { marginBottom: 10, padding: 10, gap: 2 }]}>
+                    <View style={styles.summaryRow}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Template:</Text>
+                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: '500' }}>
+                        {t(TEMPLATES.find(t => t.id === selectedTemplate)?.nameKey || '')}
+                      </Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Exchange:</Text>
+                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: '500' }}>
+                        {getSelectedExchangeName()}
+                      </Text>
+                    </View>
+                    {token ? (
+                      <View style={styles.summaryRow}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Token:</Text>
+                        <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>
+                          {token} ✓
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
-                ) : null}
-              </View>
+                </>
+              )}
 
               {loadingTokens ? (
                 <View style={styles.loadingContainer}>
@@ -455,13 +471,19 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                     {
                       borderColor: colors.border,
                       backgroundColor: colors.background,
-                      marginBottom: 8,
+                      marginBottom: 6,
                     },
                   ]}>
-                    <Text style={styles.tokenSearchIcon}>🔍</Text>
+                    <Text style={{ fontSize: 16 }}>🔍</Text>
                     <TextInput
                       ref={tokenInputRef}
-                      style={[styles.tokenSearchField, { color: colors.text }]}
+                      style={[{
+                        flex: 1,
+                        fontSize: 17,
+                        fontWeight: '400',
+                        color: colors.text,
+                        paddingVertical: 0,
+                      }]}
                       placeholder="Buscar token (ex: BTC, ETH, SOL...)"
                       placeholderTextColor={colors.textSecondary}
                       value={tokenSearchQuery}
@@ -476,7 +498,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                           setTokenSearchQuery("")
                           tokenInputRef.current?.focus()
                         }}
-                        style={styles.tokenSearchClear}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
                         <Text style={{ color: colors.textSecondary, fontSize: 18 }}>✕</Text>
                       </TouchableOpacity>
@@ -484,7 +506,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                   </View>
 
                   {/* Contagem */}
-                  <Text style={[styles.tokenCountText, { color: colors.textSecondary, marginBottom: 8, paddingHorizontal: 4 }]}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 6, paddingHorizontal: 4 }}>
                     {tokenSearchQuery
                       ? `${filteredTokens.length} resultado${filteredTokens.length !== 1 ? 's' : ''}`
                       : `${tokens.length} tokens disponíveis`
@@ -497,24 +519,25 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                     keyExtractor={(item) => item}
                     keyboardShouldPersistTaps="always"
                     keyboardDismissMode="on-drag"
-                    style={[
-                      {
-                        flex: 1,
-                        borderWidth: 1,
-                        borderRadius: 14,
-                        borderColor: colors.border,
-                        backgroundColor: colors.background,
-                      },
-                    ]}
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderRadius: 12,
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                    }}
+                    contentContainerStyle={{ paddingVertical: 4 }}
                     renderItem={({ item: tokenSymbol }) => {
                       const isSelected = token === tokenSymbol
                       return (
                         <TouchableOpacity
-                          style={[
-                            styles.tokenFlatListItem,
-                            { borderBottomColor: colors.border },
-                            isSelected && { backgroundColor: `${colors.primary}15` },
-                          ]}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 14,
+                            paddingHorizontal: 16,
+                            backgroundColor: isSelected ? `${colors.primary}12` : 'transparent',
+                          }}
                           onPress={() => {
                             setToken(tokenSymbol)
                             setTokenSearchQuery("")
@@ -522,27 +545,30 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                           }}
                           activeOpacity={0.5}
                         >
-                          <Text style={styles.tokenFlatListIcon}>🪙</Text>
+                          <Text style={{ fontSize: 17, marginRight: 12 }}>🪙</Text>
                           <Text
-                            style={[
-                              styles.tokenFlatListText,
-                              {
-                                color: isSelected ? colors.primary : colors.text,
-                                fontWeight: isSelected ? "600" : "400",
-                              },
-                            ]}
+                            style={{
+                              flex: 1,
+                              fontSize: 17,
+                              fontWeight: isSelected ? '600' : '400',
+                              color: isSelected ? colors.primary : colors.text,
+                              letterSpacing: 0.3,
+                            }}
                           >
                             {tokenSymbol}
                           </Text>
                           {isSelected && (
-                            <Text style={{ color: colors.primary, fontSize: 16 }}>✓</Text>
+                            <Text style={{ color: colors.primary, fontSize: 18, fontWeight: '600' }}>✓</Text>
                           )}
                         </TouchableOpacity>
                       )
                     }}
+                    ItemSeparatorComponent={() => (
+                      <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: 0.4 }} />
+                    )}
                     ListEmptyComponent={
-                      <View style={styles.tokenEmptyList}>
-                        <Text style={[styles.tokenEmptyText, { color: colors.textSecondary }]}>
+                      <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center' }}>
                           {tokenSearchQuery
                             ? `Nenhum token encontrado para "${tokenSearchQuery}"`
                             : "Nenhum token disponível"
@@ -554,8 +580,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                     maxToRenderPerBatch={30}
                     windowSize={7}
                     getItemLayout={(_, index) => ({
-                      length: 50,
-                      offset: 50 * index,
+                      length: 49,
+                      offset: 49 * index,
                       index,
                     })}
                   />
@@ -675,7 +701,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
             )}
           </ScrollView>
           )}
-          {/* Footer */}
+          {/* Footer - esconde quando teclado aberto no step 3 */}
+          {!(step === 3 && keyboardVisible) && (
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
             {step > 1 && (
               <TouchableOpacity
@@ -725,6 +752,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
               </TouchableOpacity>
             )}
           </View>
+          )}
         </View>
         </SafeAreaView>
       </KeyboardAvoidingView>
