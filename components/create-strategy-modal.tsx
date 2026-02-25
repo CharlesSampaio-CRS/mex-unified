@@ -27,6 +27,8 @@ import { apiService } from "@/services/api"
 import { LinkedExchange } from "@/types/api"
 import { config } from "@/lib/config"
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
+import { useNotifications } from "@/contexts/NotificationsContext"
+import { notify } from "@/services/notify"
 
 // Tipo para exchange no modal
 interface LocalExchange {
@@ -71,6 +73,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
   const { t } = useLanguage()
   const { data: balanceData, loading: balanceLoading } = useBalance()
   const { createStrategy } = useBackendStrategies(false) // Não auto-load
+  const { addNotification } = useNotifications()
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
   const [exchanges, setExchanges] = useState<LocalExchange[]>([])
@@ -308,14 +311,30 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       
       const strategyId = createdStrategy.id || ""
       
+      // 🔔 Notificação: Estratégia criada
+      notify.strategyCreated(addNotification, {
+        name: strategyData.name,
+        symbol: token,
+        exchange: capitalizeExchangeName(exchange.name),
+        template: selectedTemplate,
+        strategyId,
+      })
+      
       // Aguarda um pouco para o modal fechar antes de recarregar
       setTimeout(() => {
-        Alert.alert(t("common.success"), `${t("success.strategyCreated")}\n\nToken: ${token}`)
         onSuccess(strategyId)
       }, 300)
     } catch (error: any) {
       console.error("❌ Error creating strategy:", error)
       setLoading(false)
+      
+      // 🔔 Notificação: Erro ao criar
+      notify.strategyError(addNotification, {
+        name: `${token} - ${selectedTemplate}`,
+        action: 'criar',
+        error: error.message || 'Erro desconhecido',
+      })
+      
       Alert.alert(t("common.error"), error.message || t("error.createStrategy"))
     }
   }

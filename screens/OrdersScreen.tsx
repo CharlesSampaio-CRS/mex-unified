@@ -9,6 +9,7 @@ import { usePrivacy } from '@/contexts/PrivacyContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
+import { notify } from '@/services/notify';
 import { Header } from '@/components/Header';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { OrderDetailsModal } from '@/components/order-details-modal';
@@ -214,12 +215,12 @@ export function OrdersScreen({ navigation }: any) {
       
       // 🔔 NOTIFICAÇÃO: Ordem cancelada com sucesso
       const isBuy = order.side === 'buy';
-      addNotification({
-        type: 'warning',
-        title: '🗑️ Ordem Cancelada',
-        message: `${order.type?.toUpperCase() || 'LIMIT'} ${isBuy ? 'compra' : 'venda'} de ${Number(order.amount || 0) < 1 ? Number(order.amount || 0).toFixed(8).replace(/\.?0+$/, '') : Number(order.amount || 0).toFixed(4)} ${(order.symbol || '').split('/')[0]} cancelada`,
-        icon: '🗑️',
-        data: { action: 'order_cancelled', symbol: order.symbol, side: order.side, orderId: exchangeOrderId }
+      notify.orderCancelled(addNotification, {
+        symbol: order.symbol,
+        side: order.side || 'buy',
+        amount: Number(order.amount || 0),
+        type: order.type,
+        orderId: exchangeOrderId,
       });
       
       // Remove do set de cancelamento
@@ -238,12 +239,11 @@ export function OrdersScreen({ navigation }: any) {
       }, 2000);
     } catch (error: any) {
       console.error('Erro ao cancelar ordem:', error);
-      addNotification({
-        type: 'error',
-        title: '❌ Erro ao Cancelar',
-        message: `Falha ao cancelar ordem de ${(order.symbol || '').split('/')[0]}: ${error.message || 'Erro desconhecido'}`,
-        icon: '⚠️',
-        data: { action: 'cancel_error', symbol: order.symbol, orderId: exchangeOrderId, error: error.message }
+      notify.orderError(addNotification, {
+        symbol: order.symbol || '',
+        action: 'Cancelar Ordem',
+        error: error.message || 'Erro desconhecido',
+        orderId: exchangeOrderId,
       });
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);

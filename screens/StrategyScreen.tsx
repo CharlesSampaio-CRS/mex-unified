@@ -6,6 +6,7 @@ import { useLanguage } from "../contexts/LanguageContext"
 import { useAuth } from "../contexts/AuthContext"
 import { useNotifications } from "../contexts/NotificationsContext"
 import { useBackendStrategies, Strategy } from "../hooks/useBackendStrategies"
+import { notify } from "../services/notify"
 import { CreateStrategyModal } from "../components/create-strategy-modal"
 import { StrategyDetailsModal } from "@/components/StrategyDetailsModal"
 import { Header } from "../components/Header"
@@ -28,7 +29,7 @@ export function StrategyScreen({ navigation }: any) {
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
-  const { unreadCount } = useNotifications()
+  const { unreadCount, addNotification } = useNotifications()
   const { 
     strategies,
     loading,
@@ -105,6 +106,7 @@ export function StrategyScreen({ navigation }: any) {
 
   const confirmToggle = useCallback(async () => {
     const id = toggleStrategyId
+    const name = toggleStrategyName
     const newIsActive = toggleStrategyNewStatus
     
     setConfirmToggleModalVisible(false)
@@ -118,12 +120,24 @@ export function StrategyScreen({ navigation }: any) {
       
       await toggleActive(id, newIsActive)
       
+      // 🔔 Notificação: Ativada ou Pausada
+      if (newIsActive) {
+        notify.strategyActivated(addNotification, { name, strategyId: id })
+      } else {
+        notify.strategyPaused(addNotification, { name, strategyId: id })
+      }
+      
       console.log('✅ Strategy updated in MongoDB')
     } catch (error) {
       console.error("❌ Error toggling strategy:", error)
-      alert(`Erro ao alterar estratégia: ${error instanceof Error ? error.message : error}`)
+      notify.strategyError(addNotification, {
+        name,
+        action: newIsActive ? 'ativar' : 'pausar',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        strategyId: id,
+      })
     }
-  }, [toggleStrategyId, toggleStrategyNewStatus, toggleActive])
+  }, [toggleStrategyId, toggleStrategyName, toggleStrategyNewStatus, toggleActive, addNotification])
 
   const deleteStrategyHandler = useCallback(async (id: string, name: string) => {
     setConfirmStrategyId(id)
@@ -145,12 +159,20 @@ export function StrategyScreen({ navigation }: any) {
       // Deleta via hook (atualiza estado automaticamente)
       await deleteStrategyFromBackend(id)
       
+      // 🔔 Notificação: Estratégia removida
+      notify.strategyDeleted(addNotification, { name, strategyId: id })
+      
       console.log('✅ Strategy deleted from MongoDB')
     } catch (error: any) {
       console.error("❌ Error deleting strategy:", error)
-      alert(`Erro ao deletar estratégia: ${error.message || error}`)
+      notify.strategyError(addNotification, {
+        name,
+        action: 'excluir',
+        error: error.message || 'Erro desconhecido',
+        strategyId: id,
+      })
     }
-  }, [confirmStrategyId, confirmStrategyName, deleteStrategyFromBackend])
+  }, [confirmStrategyId, confirmStrategyName, deleteStrategyFromBackend, addNotification])
 
   const handleNewStrategy = useCallback(() => {
     setCreateModalVisible(true)

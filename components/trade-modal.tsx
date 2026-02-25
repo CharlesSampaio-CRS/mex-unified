@@ -8,6 +8,7 @@ import { useOrders } from '@/contexts/OrdersContext'
 import { useBalance } from '@/contexts/BalanceContext'
 import { typography, fontWeights } from '@/lib/typography'
 import { apiService } from '@/services/api'
+import { notify } from '@/services/notify'
 import { AnimatedLogoIcon } from '@/components/AnimatedLogoIcon'
 
 interface TradeModalProps {
@@ -359,20 +360,13 @@ export function TradeModal({
         
         // 2. 🔔 NOTIFICAÇÃO: Ordem criada com sucesso
         const tradingSymbol = tradingPair.split('/')[0]
-        addNotification({
-          type: 'success',
-          title: isBuy ? '✅ Ordem de Compra Criada' : '✅ Ordem de Venda Criada',
-          message: `${orderType!.toUpperCase()} ${isBuy ? 'compra' : 'venda'} de ${amountVal < 1 ? amountVal.toFixed(8).replace(/\.?0+$/, '') : amountVal.toFixed(4)} ${tradingSymbol}${orderType === 'limit' ? ` a $${priceVal < 0.01 ? priceVal.toFixed(10).replace(/\.?0+$/, '') : priceVal.toFixed(2)}` : ' (mercado)'}`,
-          icon: isBuy ? '🟢' : '🔴',
-          data: { 
-            action: 'order_created',
-            symbol: tradingPair, 
-            side: orderSide, 
-            type: orderType, 
-            amount: amountVal, 
-            price: priceVal,
-            exchange: exchangeName 
-          }
+        notify.orderCreated(addNotification, {
+          symbol: tradingPair,
+          side: orderSide as 'buy' | 'sell',
+          amount: amountVal,
+          price: priceVal,
+          type: orderType!,
+          exchange: exchangeName,
         })
         
         // 3. ✅ INSERÇÃO OTIMISTA: Adiciona a ordem na lista IMEDIATAMENTE (só para limit)
@@ -411,23 +405,19 @@ export function TradeModal({
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
         setCreateOrderError(errorMsg);
-        addNotification({
-          type: 'error',
-          title: '❌ Erro ao Criar Ordem',
-          message: `Falha ao criar ordem ${orderSide} de ${symbol}: ${errorMsg}`,
-          icon: '⚠️',
-          data: { action: 'order_error', symbol, side: orderSide, type: orderType, exchange: exchangeName, error: errorMsg }
+        notify.orderError(addNotification, {
+          symbol,
+          action: 'Criar Ordem',
+          error: errorMsg,
         })
       }
     } catch (error: any) {
       const errorMsg = error.message || 'Não foi possível criar a ordem';
       setCreateOrderError(errorMsg);
-      addNotification({
-        type: 'error',
-        title: '❌ Erro ao Criar Ordem',
-        message: `Falha ao criar ordem ${orderSide} de ${symbol}: ${errorMsg}`,
-        icon: '⚠️',
-        data: { action: 'order_error', symbol, side: orderSide, type: orderType, exchange: exchangeName, error: errorMsg }
+      notify.orderError(addNotification, {
+        symbol,
+        action: 'Criar Ordem',
+        error: errorMsg,
       })
     } finally {
       setCreateOrderLoading(false);

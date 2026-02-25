@@ -8,6 +8,7 @@ import { useNotifications } from "../contexts/NotificationsContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
+import { notify } from "../services/notify"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
 interface OpenOrdersModalProps {
@@ -364,12 +365,13 @@ export function OpenOrdersModal({
         
         // 🔔 NOTIFICAÇÃO: Ordem cancelada com sucesso
         const isBuy = orderToCancel.side === 'buy'
-        addNotification({
-          type: 'warning',
-          title: '🗑️ Ordem Cancelada',
-          message: `${orderToCancel.type?.toUpperCase() || 'LIMIT'} ${isBuy ? 'compra' : 'venda'} de ${Number(orderToCancel.amount || 0) < 1 ? Number(orderToCancel.amount || 0).toFixed(8).replace(/\.?0+$/, '') : Number(orderToCancel.amount || 0).toFixed(4)} ${(orderToCancel.symbol || '').split('/')[0]} cancelada`,
-          icon: '🗑️',
-          data: { action: 'order_cancelled', symbol: orderToCancel.symbol, side: orderToCancel.side, exchange: exchangeName, orderId: exchangeOrderId }
+        notify.orderCancelled(addNotification, {
+          symbol: orderToCancel.symbol,
+          side: orderToCancel.side || 'buy',
+          amount: Number(orderToCancel.amount || 0),
+          type: orderToCancel.type,
+          orderId: exchangeOrderId,
+          exchange: exchangeName,
         })
         
         // ✅ FEEDBACK IMEDIATO: Fecha modais
@@ -396,12 +398,10 @@ export function OpenOrdersModal({
         const errorMsg = result.error || result.message || 'Erro ao cancelar ordem'
         setCancelError(errorMsg)
         setCancelLoading(false)
-        addNotification({
-          type: 'error',
-          title: '❌ Erro ao Cancelar',
-          message: `Falha ao cancelar ordem de ${(orderToCancel.symbol || '').split('/')[0]}: ${errorMsg}`,
-          icon: '⚠️',
-          data: { action: 'cancel_error', symbol: orderToCancel.symbol, exchange: exchangeName, error: errorMsg }
+        notify.orderError(addNotification, {
+          symbol: orderToCancel.symbol || '',
+          action: 'Cancelar Ordem',
+          error: errorMsg,
         })
         // Modal de confirmação fica aberto mostrando o erro
       }
@@ -424,12 +424,10 @@ export function OpenOrdersModal({
       setCancelError(errorMessage)
       setCancelLoading(false)
       setCancellingOrderId(null)
-      addNotification({
-        type: 'error',
-        title: '❌ Erro ao Cancelar',
-        message: `Falha ao cancelar ordem de ${(orderToCancel.symbol || '').split('/')[0]}: ${errorMessage}`,
-        icon: '⚠️',
-        data: { action: 'cancel_error', symbol: orderToCancel.symbol, exchange: exchangeName, error: errorMessage }
+      notify.orderError(addNotification, {
+        symbol: orderToCancel.symbol || '',
+        action: 'Cancelar Ordem',
+        error: errorMessage,
       })
       // Modal de confirmação fica aberto mostrando o erro
     }

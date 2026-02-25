@@ -5,6 +5,7 @@ import { typography, fontWeights } from "../lib/typography"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useNotifications } from "../contexts/NotificationsContext"
 import { ConfirmModal } from "./ConfirmModal"
+import { getNotificationCategory, getCategoryIcon, NOTIFICATION_CATEGORIES, NotificationCategory } from "../services/notify"
 
 interface NotificationsModalProps {
   visible: boolean
@@ -24,6 +25,31 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
   } = useNotifications()
 
   const [confirmDeleteAllVisible, setConfirmDeleteAllVisible] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<NotificationCategory>('all')
+
+  // Filtra notificações por categoria selecionada
+  const filteredNotifications = useMemo(() => {
+    if (selectedCategory === 'all') return notifications
+    return notifications.filter(n => getNotificationCategory(n.data) === selectedCategory)
+  }, [notifications, selectedCategory])
+
+  // Contagem por categoria (para badges)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: notifications.length }
+    notifications.forEach(n => {
+      const cat = getNotificationCategory(n.data)
+      counts[cat] = (counts[cat] || 0) + 1
+    })
+    return counts
+  }, [notifications])
+
+  const categoryLabels: Record<string, string> = {
+    all: 'Todas',
+    order: '📊 Ordens',
+    strategy: '🤖 Estratégias',
+    alert: '🔔 Alertas',
+    system: '⚙️ Sistema',
+  }
 
   const formatTimestamp = (date: Date) => {
     const now = new Date()
@@ -98,20 +124,70 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
               </View>
             </View>
 
+          {/* Category Filter Tabs */}
+          {notifications.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={[styles.categoryTabs, { borderBottomColor: colors.cardBorder }]}
+              contentContainerStyle={styles.categoryTabsContent}
+            >
+              {NOTIFICATION_CATEGORIES.map((cat) => {
+                const count = categoryCounts[cat] || 0
+                if (cat !== 'all' && count === 0) return null
+                const isActive = selectedCategory === cat
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.categoryTab,
+                      {
+                        backgroundColor: isActive ? `${colors.primary}15` : 'transparent',
+                        borderColor: isActive ? colors.primary : colors.border,
+                      }
+                    ]}
+                    onPress={() => setSelectedCategory(cat)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.categoryTabText,
+                      { color: isActive ? colors.primary : colors.textSecondary }
+                    ]}>
+                      {categoryLabels[cat] || cat}
+                    </Text>
+                    {count > 0 && (
+                      <View style={[
+                        styles.categoryBadge,
+                        { backgroundColor: isActive ? colors.primary : colors.border }
+                      ]}>
+                        <Text style={[
+                          styles.categoryBadgeText,
+                          { color: isActive ? '#fff' : colors.textSecondary }
+                        ]}>
+                          {count}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )
+              })}
+            </ScrollView>
+          )}
+
           {/* Notifications List */}
           <ScrollView style={styles.notificationsList} showsVerticalScrollIndicator={false}>
-            {notifications.length === 0 ? (
+            {filteredNotifications.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>🔔</Text>
+                <Text style={styles.emptyIcon}>{selectedCategory === 'all' ? '🔔' : getCategoryIcon(selectedCategory)}</Text>
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                  {t('notifications.empty')}
+                  {selectedCategory === 'all' ? t('notifications.empty') : `Nenhuma notificação de ${categoryLabels[selectedCategory] || selectedCategory}`}
                 </Text>
                 <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>
                   {t('notifications.emptyMessage')}
                 </Text>
               </View>
             ) : (
-              notifications.map((notification) => (
+              filteredNotifications.map((notification) => (
                 <TouchableOpacity
                   key={notification.id}
                   style={[
@@ -141,9 +217,16 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
                       {notification.message}
                     </Text>
                     <View style={styles.notificationFooter}>
-                      <Text style={[styles.notificationTime, { color: colors.textSecondary }]}>
-                        {formatTimestamp(notification.timestamp)}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={[styles.notificationTime, { color: colors.textSecondary }]}>
+                          {formatTimestamp(notification.timestamp)}
+                        </Text>
+                        <View style={[styles.categoryTag, { backgroundColor: colors.surfaceSecondary || `${colors.textSecondary}10` }]}>
+                          <Text style={[styles.categoryTagText, { color: colors.textSecondary }]}>
+                            {getCategoryIcon(getNotificationCategory(notification.data))} {categoryLabels[getNotificationCategory(notification.data)] || ''}
+                          </Text>
+                        </View>
+                      </View>
                       <TouchableOpacity
                         onPress={() => deleteNotification(notification.id)}
                         style={styles.deleteButton}
@@ -317,5 +400,51 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.light,
     textAlign: "center",
     lineHeight: 20,
+  },
+  // Category filter tabs
+  categoryTabs: {
+    maxHeight: 48,
+    borderBottomWidth: 0.5,
+  },
+  categoryTabsContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    alignItems: 'center',
+  },
+  categoryTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 6,
+  },
+  categoryTabText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  categoryBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingHorizontal: 5,
+  },
+  categoryBadgeText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  // Category tag on each notification
+  categoryTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  categoryTagText: {
+    fontSize: 10,
+    fontWeight: '400' as const,
   },
 })
