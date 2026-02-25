@@ -223,7 +223,7 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
                         </Text>
                         <View style={[styles.categoryTag, { backgroundColor: colors.surfaceSecondary || `${colors.textSecondary}10` }]}>
                           <Text style={[styles.categoryTagText, { color: colors.textSecondary }]}>
-                            {getCategoryIcon(getNotificationCategory(notification.data))} {categoryLabels[getNotificationCategory(notification.data)] || ''}
+                            {categoryLabels[getNotificationCategory(notification.data)] || 'Sistema'}
                           </Text>
                         </View>
                       </View>
