@@ -150,7 +150,7 @@ export const Header = memo(function Header({
 }: HeaderProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
-  const { valuesHidden, toggleValuesVisibility, hideZeroBalances, toggleHideZeroBalances } = usePrivacy()
+  const { valuesHidden, toggleValuesVisibility } = usePrivacy()
   const { user } = useAuth()
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
@@ -207,20 +207,6 @@ export const Header = memo(function Header({
         ]}
         pointerEvents={hideIcons ? "none" : "auto"}
       >
-        <TouchableOpacity 
-          style={[styles.iconButton, { 
-            backgroundColor: hideZeroBalances ? `${colors.primary}12` : colors.surface, 
-            borderColor: hideZeroBalances ? `${colors.primary}40` : colors.border 
-          }]}
-          onPress={toggleHideZeroBalances}
-        >
-          {hideZeroBalances ? (
-            <ZeroSlashIcon color={colors.primary} />
-          ) : (
-            <ZeroIcon color={colors.textSecondary} />
-          )}
-        </TouchableOpacity>
-
         <TouchableOpacity 
           style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={toggleValuesVisibility}

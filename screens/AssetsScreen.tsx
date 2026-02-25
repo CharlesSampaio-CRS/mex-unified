@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Text as SvgText, Line } from 'react-native-svg';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useBalance } from '@/contexts/BalanceContext';
 import { usePrivacy } from '@/contexts/PrivacyContext';
@@ -21,7 +22,7 @@ export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance();
-  const { hideValue, hideZeroBalances: hideZero } = usePrivacy();
+  const { hideValue, hideZeroBalances: hideZero, toggleHideZeroBalances } = usePrivacy();
   const { unreadCount } = useNotifications();
   const { refresh: refreshOrders } = useOrders();
   
@@ -274,11 +275,33 @@ export function AssetsScreen({ navigation }: any) {
           </ScrollView>
         )}
 
-        {/* Results Count */}
+        {/* Results Count + Hide Zero Toggle */}
         <View style={styles.resultsCount}>
           <Text style={[styles.resultsCountText, { color: colors.textSecondary }]}>
             {totals.totalAssets} {totals.totalAssets === 1 ? 'ativo encontrado' : 'ativos encontrados'}
           </Text>
+          <TouchableOpacity
+            style={[styles.zeroToggle, {
+              backgroundColor: hideZero ? `${colors.primary}12` : colors.surface,
+              borderColor: hideZero ? `${colors.primary}40` : colors.border,
+            }]}
+            onPress={toggleHideZeroBalances}
+            activeOpacity={0.7}
+          >
+            {hideZero ? (
+              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={colors.primary}>0</SvgText>
+                <Line x1="6" y1="18" x2="18" y2="6" stroke={colors.primary} strokeWidth="2.5" strokeLinecap="round" />
+              </Svg>
+            ) : (
+              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={colors.textSecondary}>0</SvgText>
+              </Svg>
+            )}
+            <Text style={[styles.zeroToggleText, { color: hideZero ? colors.primary : colors.textSecondary }]}>
+              {hideZero ? 'Zeros ocultos' : 'Mostrar zeros'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       
@@ -541,8 +564,24 @@ const styles = StyleSheet.create({
   },
   resultsCount: {
     paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   resultsCountText: {
+    fontSize: typography.micro,  // 12
+    fontWeight: fontWeights.medium,
+  },
+  zeroToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  zeroToggleText: {
     fontSize: typography.micro,  // 12
     fontWeight: fontWeights.medium,
   },
