@@ -442,9 +442,37 @@ function systemError(
 // 🏷️ CATEGORY HELPERS
 // ==========================================
 
-/** Extract category from notification data */
+/** Extract category from notification data (with smart fallback for legacy notifications) */
 export function getNotificationCategory(data?: Record<string, any>): string {
-  return data?.category || 'system'
+  if (data?.category) return data.category
+
+  // Fallback: infer category from action field (legacy notifications)
+  const action = data?.action || ''
+  if (
+    action.startsWith('order_') ||
+    action.startsWith('cancel_') ||
+    action === 'order_created' ||
+    action === 'order_cancelled' ||
+    action === 'order_filled' ||
+    action === 'order_error' ||
+    action === 'cancel_error'
+  ) {
+    return 'order'
+  }
+  if (
+    action.startsWith('strategy_')
+  ) {
+    return 'strategy'
+  }
+  if (
+    action.startsWith('alert_') ||
+    action.startsWith('token_') ||
+    action === 'custom_alert_triggered'
+  ) {
+    return 'alert'
+  }
+
+  return 'system'
 }
 
 /** Get category icon */
