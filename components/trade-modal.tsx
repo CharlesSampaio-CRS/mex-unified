@@ -54,6 +54,8 @@ export function TradeModal({
   // Estados para loading e erro da criação de ordem
   const [createOrderLoading, setCreateOrderLoading] = useState(false)
   const [createOrderError, setCreateOrderError] = useState<string | null>(null)
+  const [selectedPercent, setSelectedPercent] = useState<number | null>(null)
+  const [confirmVisible, setConfirmVisible] = useState(false)
 
   // Calcula diferença percentual entre preço digitado e preço de mercado
   const calculatePriceDifference = (): { percentage: number; isHigher: boolean } | null => {
@@ -239,6 +241,8 @@ export function TradeModal({
       // Limpa estados de erro
       setCreateOrderLoading(false)
       setCreateOrderError(null)
+      setSelectedPercent(null)
+      setConfirmVisible(false)
     }
   }, [visible, currentPrice])
 
@@ -247,6 +251,7 @@ export function TradeModal({
   const availableBalance = isBuy ? balance.usdt : balance.token
 
   const handlePercentage = (percentage: number) => {
+    setSelectedPercent(percentage)
     if (isBuy) {
       // Compra: usa % do saldo USDT
       // Para 100%, usa apenas 99.5% para deixar margem para taxas e arredondamentos
@@ -266,14 +271,10 @@ export function TradeModal({
   }
 
   const handleSubmit = async () => {
-    
-    
-    
     const amountNum = parseFloat(amount)
     const priceNum = parseFloat(price)
 
     if (!amountNum || amountNum <= 0) {
-      
       Alert.alert('Erro', 'Digite uma quantidade válida')
       return
     }
@@ -283,29 +284,34 @@ export function TradeModal({
       return
     }
 
-    // ❌ REMOVIDO: Validações de marketLimits (backend valida os limites mínimos)
-    // As exchanges retornam erro se a ordem não atender os requisitos mínimos
-
     // Adiciona tolerância de 0.1% para erros de arredondamento
     const tolerance = availableBalance * 0.001
     
     if (isBuy && total > (availableBalance + tolerance)) {
-      
       Alert.alert('Saldo Insuficiente', `Você precisa de $ ${apiService.formatUSD(total)} USDT`)
       return
     }
 
     if (!isBuy && amountNum > (availableBalance + tolerance)) {
-      
       Alert.alert('Saldo Insuficiente', `Você possui apenas ${availableBalance.toFixed(8)} ${symbol}`)
       return
     }
 
-    // ✅ CRIAR ORDEM DIRETO - SEM MODAL DE CONFIRMAÇÃO
     if (!user?.id) {
       Alert.alert('Erro', 'Usuário não autenticado')
       return
     }
+
+    // ✅ Abre modal de confirmação ao invés de enviar direto
+    setConfirmVisible(true)
+  }
+
+  // Executa a criação da ordem (após confirmação)
+  const executeOrder = async () => {
+    setConfirmVisible(false)
+
+    const amountNum = parseFloat(amount)
+    const priceNum = parseFloat(price)
 
     setCreateOrderLoading(true)
     setCreateOrderError(null)
@@ -379,6 +385,7 @@ export function TradeModal({
   }
 
   return (
+    <>
     <Modal
       visible={visible}
       animationType="slide"
@@ -546,7 +553,7 @@ export function TradeModal({
                   }
                 ]}
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(text) => { setAmount(text); setSelectedPercent(null) }}
                 keyboardType="decimal-pad"
                 placeholder="0.00000000"
                 placeholderTextColor={colors.textSecondary}
@@ -554,17 +561,32 @@ export function TradeModal({
 
               {/* Botões de Porcentagem */}
               <View style={styles.percentageButtons}>
-                {[25, 50, 75, 100].map((percent) => (
-                  <TouchableOpacity
-                    key={percent}
-                    style={[styles.percentageButton, { borderColor: colors.border }]}
-                    onPress={() => handlePercentage(percent)}
-                  >
-                    <Text style={[styles.percentageButtonText, { color: colors.primary }]}>
-                      {String(percent)}%
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {[25, 50, 75, 100].map((percent) => {
+                  const isSelected = selectedPercent === percent
+                  return (
+                    <TouchableOpacity
+                      key={percent}
+                      style={[
+                        styles.percentageButton,
+                        { 
+                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? `${colors.primary}20` : 'transparent',
+                        }
+                      ]}
+                      onPress={() => handlePercentage(percent)}
+                    >
+                      <Text style={[
+                        styles.percentageButtonText,
+                        { 
+                          color: isSelected ? colors.primary : colors.textSecondary,
+                          fontWeight: isSelected ? fontWeights.bold : fontWeights.medium,
+                        }
+                      ]}>
+                        {String(percent)}%
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
               </View>
               
               {/* Aviso sobre margem de segurança */}
@@ -639,6 +661,99 @@ export function TradeModal({
         </View>
       </View>
     </Modal>
+
+    {/* Modal de Confirmação de Ordem */}
+    <Modal
+      visible={confirmVisible}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={() => setConfirmVisible(false)}
+    >
+      <Pressable style={styles.overlay} onPress={() => setConfirmVisible(false)}>
+        <Pressable style={{ width: '90%', maxWidth: 400 }} onPress={(e) => e.stopPropagation()}>
+          <View style={[styles.confirmContainer, { backgroundColor: colors.card }]}>
+            {/* Header */}
+            <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
+              <Text style={{ fontSize: 28 }}>{isBuy ? '🟢' : '🔴'}</Text>
+              <Text style={[styles.confirmTitle, { color: colors.text }]}>
+                {'Confirmar Ordem'}
+              </Text>
+            </View>
+
+            {/* Resumo */}
+            <View style={styles.confirmContent}>
+              <View style={styles.confirmRow}>
+                <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Par'}</Text>
+                <Text style={[styles.confirmValue, { color: colors.text }]}>
+                  {String(symbol.includes('/') ? symbol : `${symbol}/USDT`)}
+                </Text>
+              </View>
+              <View style={styles.confirmRow}>
+                <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Lado'}</Text>
+                <Text style={[styles.confirmValue, { color: isBuy ? '#10b981' : '#ef4444' }]}>
+                  {String(isBuy ? 'COMPRA' : 'VENDA')}
+                </Text>
+              </View>
+              <View style={styles.confirmRow}>
+                <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Tipo'}</Text>
+                <Text style={[styles.confirmValue, { color: colors.text }]}>
+                  {String(orderType.toUpperCase())}
+                </Text>
+              </View>
+              {orderType === 'limit' && (
+                <View style={styles.confirmRow}>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Preço'}</Text>
+                  <Text style={[styles.confirmValue, { color: colors.text }]}>
+                    {String(`$ ${parseFloat(price || '0') < 0.01 
+                      ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
+                      : apiService.formatUSD(parseFloat(price || '0'))}`)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.confirmRow}>
+                <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Quantidade'}</Text>
+                <Text style={[styles.confirmValue, { color: colors.text }]}>
+                  {String(`${parseFloat(amount || '0') < 1 
+                    ? parseFloat(amount || '0').toFixed(8).replace(/\.?0+$/, '') 
+                    : parseFloat(amount || '0').toFixed(4)} ${symbol.split('/')[0]}`)}
+                </Text>
+              </View>
+
+              {/* Separador */}
+              <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
+
+              <View style={styles.confirmRow}>
+                <Text style={[styles.confirmLabelBold, { color: colors.text }]}>
+                  {String(isBuy ? 'Total a Pagar' : 'Total a Receber')}
+                </Text>
+                <Text style={[styles.confirmValueBold, { color: isBuy ? '#10b981' : '#ef4444' }]}>
+                  {String(`$ ${apiService.formatUSD(total)}`)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Botões */}
+            <View style={styles.confirmFooter}>
+              <TouchableOpacity 
+                style={[styles.confirmCancelBtn, { borderColor: colors.border }]} 
+                onPress={() => setConfirmVisible(false)}
+              >
+                <Text style={[styles.confirmCancelText, { color: colors.text }]}>{'Voltar'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.confirmOkBtn, { backgroundColor: isBuy ? '#10b981' : '#ef4444' }]} 
+                onPress={executeOrder}
+              >
+                <Text style={styles.confirmOkText}>
+                  {String(isBuy ? 'Confirmar Compra' : 'Confirmar Venda')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+    </>
   )
 }
 
@@ -844,78 +959,84 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   confirmContainer: {
-    borderRadius: 16,
+    borderRadius: 20,
     width: "100%",
     maxWidth: 400,
     elevation: 5,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    overflow: 'hidden',
   },
   confirmHeader: {
-    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    alignItems: "center",
   },
   confirmTitle: {
-    fontSize: typography.h3,
-    fontWeight: fontWeights.semibold,
+    fontSize: typography.h4,
+    fontWeight: fontWeights.bold,
   },
   confirmContent: {
     padding: 20,
-    gap: 16,
-  },
-  confirmMessage: {
-    fontSize: typography.body,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  confirmDetails: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
     gap: 12,
   },
-  confirmDetailRow: {
+  confirmRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  confirmTotalRow: {
-    paddingTop: 12,
-    marginTop: 4,
-    borderTopWidth: 1,
-  },
   confirmLabel: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
   },
   confirmValue: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.medium,
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
+  },
+  confirmLabelBold: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.bold,
+  },
+  confirmValueBold: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.bold,
+  },
+  confirmDivider: {
+    height: 1,
+    marginVertical: 4,
   },
   confirmFooter: {
     flexDirection: "row",
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     gap: 12,
   },
-  confirmButton: {
+  confirmCancelBtn: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmButtonCancel: {
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1,
+    alignItems: "center",
   },
-  confirmButtonConfirm: {
-    // backgroundColor definido inline
-  },
-  confirmButtonText: {
+  confirmCancelText: {
     fontSize: typography.body,
     fontWeight: fontWeights.semibold,
+  },
+  confirmOkBtn: {
+    flex: 1.5,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  confirmOkText: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.bold,
+    color: '#fff',
   },
   // Estilos para loading e erro
   loadingContainer: {

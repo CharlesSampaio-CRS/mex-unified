@@ -12,6 +12,7 @@ import { apiService } from '@/services/api';
 import { Header } from '@/components/Header';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { OrderDetailsModal } from '@/components/order-details-modal';
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { OpenOrder } from '@/types/orders';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
@@ -73,6 +74,8 @@ export function OrdersScreen({ navigation }: any) {
   const [orderDetailsVisible, setOrderDetailsVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OpenOrder | null>(null);
   const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set());
+  const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string } | null>(null);
 
   const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
   const onProfilePress = useCallback(() => navigation?.navigate('Settings', { initialTab: 'profile' }), [navigation]);
@@ -180,10 +183,22 @@ export function OrdersScreen({ navigation }: any) {
     setOrderDetailsVisible(true);
   }, []);
 
-  const handleCancelOrder = useCallback(async (order: OpenOrder, exchangeId: string) => {
+  // Abre modal de confirmação para cancelar
+  const handleCancelOrder = useCallback((order: OpenOrder, exchangeId: string) => {
     const orderId = String(order.id || '');
     if (cancellingOrderIds.has(orderId)) return;
+    setOrderToCancel({ order, exchangeId });
+    setCancelConfirmVisible(true);
+  }, [cancellingOrderIds]);
 
+  // Executa o cancelamento após confirmação
+  const executeCancelOrder = useCallback(async () => {
+    if (!orderToCancel) return;
+    const { order, exchangeId } = orderToCancel;
+    const orderId = String(order.id || '');
+
+    setCancelConfirmVisible(false);
+    setOrderToCancel(null);
     setCancellingOrderIds(prev => new Set(prev).add(orderId));
 
     try {
@@ -216,7 +231,7 @@ export function OrdersScreen({ navigation }: any) {
         return newSet;
       });
     }
-  }, [cancellingOrderIds, refresh, removeOrder, refreshBalance]);
+  }, [orderToCancel, refresh, removeOrder, refreshBalance]);
 
   // Renderiza order card
   const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string) => {
@@ -574,6 +589,22 @@ export function OrdersScreen({ navigation }: any) {
       <NotificationsModal 
         visible={notificationsModalVisible}
         onClose={() => setNotificationsModalVisible(false)}
+      />
+
+      {/* Modal de Confirmação de Cancelamento */}
+      <ConfirmModal
+        visible={cancelConfirmVisible}
+        onClose={() => { setCancelConfirmVisible(false); setOrderToCancel(null); }}
+        onConfirm={executeCancelOrder}
+        title="Cancelar Ordem"
+        message={orderToCancel 
+          ? `Tem certeza que deseja cancelar a ordem de ${orderToCancel.order.side === 'buy' ? 'compra' : 'venda'} de ${orderToCancel.order.symbol}?\n\nPreço: $${apiService.formatUSD(Number(orderToCancel.order.price) || 0)}\nQuantidade: ${apiService.formatTokenAmount(String(Number(orderToCancel.order.amount) || 0))}`
+          : ''
+        }
+        confirmText="Cancelar Ordem"
+        cancelText="Voltar"
+        confirmColor="#ef4444"
+        icon="⚠️"
       />
     </SafeAreaView>
   );
