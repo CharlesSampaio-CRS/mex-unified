@@ -142,9 +142,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: {
-    color: '#fff',
-    fontSize: typography.body,
-    fontWeight: fontWeights.bold,
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 0.5 },
+    textShadowRadius: 1,
   },
   userDetails: {
     flex: 1,
