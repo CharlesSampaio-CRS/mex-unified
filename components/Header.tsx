@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from "react-native"
 import { useEffect, useRef, memo, useState } from "react"
-import Svg, { Path, Circle, Line } from "react-native-svg"
+import Svg, { Path, Circle, Line, Text as SvgText } from "react-native-svg"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
@@ -95,14 +95,14 @@ const GridIcon = ({ color }: { color: string }) => (
 // Zero Icon — "0" normal (mostrar saldos zero)
 const ZeroIcon = ({ color }: { color: string }) => (
   <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="7" stroke={color} strokeWidth="2.5" />
+    <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={color}>0</SvgText>
   </Svg>
 )
 
 // Zero Slash Icon — "0" com linha diagonal (ocultar saldos zero)
 const ZeroSlashIcon = ({ color }: { color: string }) => (
   <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="7" stroke={color} strokeWidth="2.5" />
+    <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={color}>0</SvgText>
     <Line x1="6" y1="18" x2="18" y2="6" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
   </Svg>
 )
