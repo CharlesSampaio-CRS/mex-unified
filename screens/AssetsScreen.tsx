@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -212,35 +212,48 @@ export function AssetsScreen({ navigation }: any) {
       
       {/* Filters Section */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        {/* Search Bar */}
-        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Buscar por nome ou símbolo..."
-            placeholderTextColor={colors.textTertiary}
-            value={search}
-            onChangeText={setSearch}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Filter Options Row */}
-        <View style={styles.filterRow}>
-          {/* Hide Zero Balance Toggle */}
-          <View style={styles.toggleContainer}>
-            <Text style={[styles.toggleLabel, { color: colors.text }]}>Ocultar saldo zero</Text>
-            <Switch
-              value={hideZero}
-              onValueChange={setHideZero}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
-              thumbColor={hideZero ? colors.primary : colors.textTertiary}
+        {/* Search Bar + Hide Zero toggle inline */}
+        <View style={styles.searchRow}>
+          <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Buscar por nome ou símbolo..."
+              placeholderTextColor={colors.textTertiary}
+              value={search}
+              onChangeText={setSearch}
             />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
           </View>
+          
+          {/* Toggle ocultar zeros — ícone discreto ao lado da busca */}
+          <TouchableOpacity
+            style={[
+              styles.hideZeroButton,
+              { 
+                backgroundColor: hideZero ? `${colors.primary}15` : colors.surface,
+                borderColor: hideZero ? colors.primary : colors.border,
+              }
+            ]}
+            onPress={() => setHideZero(prev => !prev)}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name={hideZero ? "eye-off-outline" : "eye-outline"} 
+              size={16} 
+              color={hideZero ? colors.primary : colors.textTertiary} 
+            />
+            <Text style={[
+              styles.hideZeroLabel,
+              { color: hideZero ? colors.primary : colors.textTertiary }
+            ]}>
+              0
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Exchange Filter */}
@@ -521,7 +534,14 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -529,13 +549,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     gap: 8,
-    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
-    fontSize: typography.bodySmall,  // 15
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.regular,
     paddingVertical: 0,
+  },
+  hideZeroButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 2,
+    minHeight: 42,
+  },
+  hideZeroLabel: {
+    fontSize: 11,
+    fontWeight: fontWeights.bold,
   },
   filterRow: {
     flexDirection: 'row',
