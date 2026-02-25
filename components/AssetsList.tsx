@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Pressable, Modal, Animated, TextInput } from "react-native"
-import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Pressable, Modal, TextInput, Animated } from "react-native"
+import React, { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
@@ -15,12 +15,10 @@ import { SkeletonExchangeItem } from "./SkeletonLoaders"
 import { TokenDetailsModal } from "./token-details-modal"
 import { TradeModal } from "./trade-modal"
 import { CreateAlertModal } from "./create-price-alert-modal"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { getExchangeLogo } from "@/lib/exchange-logos"
 import { typography, fontWeights } from "@/lib/typography"
 import { useTokenMonitor } from "@/hooks/use-token-monitor"
 import { useOpenOrdersSync } from "@/hooks/useOpenOrdersSync"
-import { CompactAssetsList } from "./CompactAssetsList"
 import { getExchangeId, getExchangeName, getTotalUsd, getExchangeBalances } from "@/lib/exchange-helpers"
 
 // ❌ CACHE REMOVIDO - Sempre busca dados frescos
@@ -34,12 +32,59 @@ interface AssetsListProps {
   onRefreshOrders?: () => void  // Callback para atualizar ordens
 }
 
+// Sub-componente com animação piscante para tokens afetados por create/cancel
+function BlinkingAssetCard({ 
+  children, 
+  isAffected, 
+  style,
+  onPress
+}: { 
+  key?: string;
+  children: React.ReactNode; 
+  isAffected: boolean; 
+  style: any;
+  onPress: () => void;
+}) {
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isAffected) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnim, {
+            toValue: 0.4,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      blinkAnim.setValue(1);
+    }
+  }, [isAffected]);
+
+  return (
+    <Animated.View style={{ opacity: isAffected ? blinkAnim : 1 }}>
+      <TouchableOpacity style={style} onPress={onPress}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefreshOrders }: AssetsListProps) {
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const { data, loading, error, refresh: refreshBalance, refreshing } = useBalance()
-  const { refresh: refreshOrders } = useOrders()
+  const { refresh: refreshOrders, recentlyAffectedSymbols } = useOrders()
   const { hideValue, valuesHidden } = usePrivacy()
   const { addToken, removeToken, isWatching } = useWatchlist()
   const { getAlertsForToken } = useAlerts()
@@ -980,52 +1025,60 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           const exchangeTotalUSD = getTotalUsd(exchange)
 
           return (
-            <CompactAssetsList
-              key={getExchangeId(exchange)}
-              exchangeId={getExchangeId(exchange)}
-              exchangeName={getExchangeName(exchange)}
-              exchangeTotalUSD={exchangeTotalUSD}
-              assets={formattedAssets}
-              loading={refreshing}
-              hideValue={valuesHidden}
-              onToggleFavorite={(symbol) => handleToggleFavorite(symbol)}
-              onCreateAlert={(asset) => {
-                setSelectedTokenForAlert({
-                  symbol: asset.symbol,
-                  price: asset.priceUSD,
-                  exchangeId: asset.exchangeId,
-                  exchangeName: asset.exchangeName,
-                })
-                setAlertModalVisible(true)
-              }}
-              onTrade={(asset) => {
-                if (asset.isStablecoin) return
-                
-                setSelectedTrade({
-                  exchangeId: asset.exchangeId,
-                  exchangeName: asset.exchangeName,
-                  symbol: asset.symbol,
-                  currentPrice: asset.priceUSD,
-                  balance: { 
-                    token: asset.free,
-                    usdt: asset.usdtBalance
-                  }
-                })
-                setTradeModalVisible(true)
-              }}
-              onViewDetails={(asset) => {
-                setSelectedToken({
-                  exchangeId: asset.exchangeId,
-                  symbol: asset.symbol
-                })
-                setTokenModalVisible(true)
-              }}
-              getFavoriteState={(symbol) => isWatching(symbol)}
-              getAlertState={(symbol, exchangeId) => {
-                const tokenAlerts = getAlertsForToken(symbol, exchangeId)
-                return tokenAlerts.length > 0
-              }}
-            />
+            <View key={getExchangeId(exchange)} style={styles.exchangeSection}>
+              <View style={[styles.exchangeHeader, { backgroundColor: colors.card }]}>
+                <View style={styles.simpleExchangeTitleRow}>
+                  <Image 
+                    source={getExchangeLogo(getExchangeName(exchange))} 
+                    style={styles.simpleExchangeLogo}
+                    resizeMode="contain"
+                  />
+                  <Text style={[styles.simpleExchangeTitle, { color: colors.text }]}>
+                    {String(getExchangeName(exchange))}
+                  </Text>
+                </View>
+                <Text style={[styles.simpleExchangeTotal, { color: colors.text }]}>
+                  {String(valuesHidden ? '****' : apiService.formatUSD(exchangeTotalUSD))}
+                </Text>
+              </View>
+              
+              {formattedAssets.map((asset: any) => (
+                <BlinkingAssetCard
+                  key={asset.id}
+                  isAffected={recentlyAffectedSymbols.has(asset.symbol?.toUpperCase())}
+                  style={[styles.simpleAssetCard, { backgroundColor: colors.card }]}
+                  onPress={() => {
+                    setSelectedToken({
+                      exchangeId: asset.exchangeId,
+                      symbol: asset.symbol
+                    })
+                    setTokenModalVisible(true)
+                  }}
+                >
+                  <View style={styles.simpleAssetInfo}>
+                    <Text style={[styles.simpleAssetSymbol, { color: colors.text }]}>
+                      {String(asset.symbol)}
+                    </Text>
+                    <Text style={[styles.simpleAssetAmount, { color: colors.textSecondary }]}>
+                      {String(asset.amount)} {String(asset.symbol)}
+                    </Text>
+                  </View>
+                  <View style={styles.simpleAssetRight}>
+                    <Text style={[styles.simpleAssetValue, { color: colors.text }]}>
+                      {String(valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD))}
+                    </Text>
+                    {!asset.isStablecoin && asset.variation24h !== undefined && (
+                      <Text style={[
+                        styles.simpleAssetVariation,
+                        { color: asset.variation24h >= 0 ? colors.success : colors.danger }
+                      ]}>
+                        {String((asset.variation24h >= 0 ? '+' : '') + asset.variation24h.toFixed(2))}%
+                      </Text>
+                    )}
+                  </View>
+                </BlinkingAssetCard>
+              ))}
+            </View>
           )
         })}
       </View>
@@ -1123,20 +1176,16 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           symbol={selectedTrade.symbol}
           currentPrice={selectedTrade.currentPrice}
           balance={selectedTrade.balance}
-          onOrderCreated={async () => {
-            console.log('🎉 [AssetsList] Ordem criada com sucesso!')
-            
-            // 1. Atualiza a lista local de orders da exchange
-            await fetchOpenOrdersForExchange(selectedTrade.exchangeId)
-            
-            // 2. Atualiza o contexto global de orders (AllOpenOrdersList)
-            console.log('🔄 [AssetsList] Atualizando OrdersContext...')
-            await refreshOrders()
-            console.log('✅ [AssetsList] OrdersContext atualizado!')
+          onBalanceUpdate={() => {
+            console.log('🔄 [ASSETS-LIST] onBalanceUpdate chamado após criação de ordem')
+            refreshBalance();
           }}
-          onBalanceUpdate={async () => {
-            // Atualiza o balance/portfolio após criar ordem
-            await refreshBalance()
+          onOrderCreated={() => {
+            console.log('🔄 [ASSETS-LIST] onOrderCreated chamado após criação de ordem')
+            // 1. Atualiza o contexto global de ordens
+            refreshOrders();
+            // 2. Atualiza a contagem local de ordens para a exchange específica
+            fetchOpenOrdersForExchange(selectedTrade.exchangeId);
           }}
         />
       )}
@@ -2073,6 +2122,57 @@ const styles = StyleSheet.create({
     fontSize: typography.caption,
     fontWeight: fontWeights.medium,
     textAlign: 'center',
+  },
+  // Estilos para listagem inline de assets (simple)
+  simpleExchangeSection: {
+    marginBottom: 16,
+  },
+  simpleExchangeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  simpleExchangeLogo: {
+    width: 24,
+    height: 24,
+  },
+  simpleExchangeTitle: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.bold,
+  },
+  simpleExchangeTotal: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
+  },
+  simpleAssetCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    marginTop: 8,
+    borderRadius: 8,
+  },
+  simpleAssetInfo: {
+    flex: 1,
+  },
+  simpleAssetSymbol: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
+  },
+  simpleAssetAmount: {
+    fontSize: typography.caption,
+    marginTop: 2,
+  },
+  simpleAssetRight: {
+    alignItems: 'flex-end',
+  },
+  simpleAssetValue: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.medium,
+  },
+  simpleAssetVariation: {
+    fontSize: typography.caption,
+    marginTop: 2,
   },
 })
 

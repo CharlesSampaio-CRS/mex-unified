@@ -118,6 +118,47 @@ class ExchangeService {
       return 0
     }
   }
+
+  /**
+   * Busca uma exchange pelo ID (com credenciais)
+   * Usa apiService.getExchangeDetails que retorna credenciais criptografadas
+   */
+  async getExchangeById(exchangeId: string, userId?: string): Promise<UserExchange | null> {
+    try {
+      // Se não tem userId, tenta buscar sem credenciais
+      if (!userId) {
+        console.warn('⚠️ [ExchangeService] getExchangeById chamado sem userId')
+        return null
+      }
+      
+      // Usa getExchangeDetails que retorna credenciais criptografadas
+      const response = await apiService.getExchangeDetails(userId, exchangeId, false)
+      
+      if (!response || !response.success) {
+        return null
+      }
+      
+      // Converte para o formato UserExchange
+      const exchange: UserExchange = {
+        id: response.exchange.exchange_id || response.exchange._id,
+        user_id: response.exchange.user_id || userId,
+        exchange_type: response.exchange.exchange_type,
+        exchange_name: response.exchange.exchange_name,
+        api_key_encrypted: response.exchange.api_key_encrypted,
+        api_secret_encrypted: response.exchange.api_secret_encrypted,
+        api_passphrase_encrypted: response.exchange.api_passphrase_encrypted || null,
+        is_active: response.exchange.is_active ? 1 : 0,
+        last_sync_at: response.exchange.last_sync_at ? new Date(response.exchange.last_sync_at).getTime() : null,
+        created_at: response.exchange.created_at ? new Date(response.exchange.created_at).getTime() : Date.now(),
+        updated_at: response.exchange.updated_at ? new Date(response.exchange.updated_at).getTime() : Date.now(),
+      }
+      
+      return exchange
+    } catch (error) {
+      console.error('❌ [ExchangeService] Erro ao buscar exchange por ID:', error)
+      return null
+    }
+  }
 }
 
 // Singleton instance

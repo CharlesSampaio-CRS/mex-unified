@@ -54,6 +54,14 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   const onProfilePress = useCallback(() => {
     navigation?.navigate('Settings', { initialTab: 'profile' })
   }, [navigation])
+
+  const onAlertsPress = useCallback(() => {
+    navigation?.navigate('Favoritos')
+  }, [navigation])
+
+  const onSettingsPress = useCallback(() => {
+    navigation?.navigate('Settings')
+  }, [navigation])
   
   const onSnapshotSaved = useCallback(async () => {
     // Atualiza os snapshots do backend
@@ -108,7 +116,10 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
       <Header 
         onNotificationsPress={onNotificationsPress}
         onProfilePress={onProfilePress}
+        onAlertsPress={onAlertsPress}
+        onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
+        navigation={navigation}
       />
       {/* <View style={styles.testActions}>
         <TouchableOpacity

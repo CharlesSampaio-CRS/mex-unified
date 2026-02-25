@@ -7,18 +7,34 @@ import { useEffect, useRef, useState } from "react"
 import Svg, { Path, Rect, Circle } from "react-native-svg"
 
 // 🔥 ERROR HANDLER GLOBAL - Captura TODOS os erros não tratados
-if (__DEV__) {
-  const originalConsoleError = console.error
-  console.error = (...args) => {
-    originalConsoleError(...args)
-  }
-  
-  // Captura erros não tratados do JavaScript
-  ErrorUtils.setGlobalHandler((error, isFatal) => {
-    console.error('FATAL ERROR:', { error, isFatal, stack: error?.stack })
-    alert(`FATAL ERROR: ${error?.message}`)
-  })
-}
+// if (__DEV__) {
+//   const originalConsoleError = console.error
+//   console.error = (...args) => {
+//     // 🔍 Log detalhado para encontrar fonte do erro
+//     const errorMessage = args[0]
+//     if (typeof errorMessage === 'string' && errorMessage.includes('Text strings must be rendered')) {
+//       console.log('🔴 TEXT RENDER ERROR DETECTED!')
+//       console.log('🔴 Arguments:', JSON.stringify(args, null, 2))
+//       console.log('🔴 Component stack:', new Error().stack)
+//       
+//       // Tenta pegar o componentStack do React se disponível
+//       if (args[1] && typeof args[1] === 'object' && args[1].componentStack) {
+//         console.log('🔴 React Component Stack:', args[1].componentStack)
+//       }
+//     }
+//     originalConsoleError(...args)
+//   }
+//   
+//   // Captura erros não tratados do JavaScript
+//   ErrorUtils.setGlobalHandler((error, isFatal) => {
+//     console.error('FATAL ERROR:', { 
+//       message: error?.message,
+//       name: error?.name,
+//       isFatal, 
+//       stack: error?.stack 
+//     })
+//   })
+// }
 
 // Desabilitar warnings de desenvolvimento (mas manter erros)
 if (__DEV__) {
@@ -30,12 +46,26 @@ if (__DEV__) {
 }
 
 import { HomeScreen } from "./screens/HomeScreen"
+import { AssetsScreen } from "./screens/AssetsScreen"
+import { OrdersScreen } from "./screens/OrdersScreen"
 import { ExchangesScreen } from "./screens/ExchangesScreen"
 import { StrategyScreen } from "./screens/StrategyScreen"
 import { SettingsScreen } from "./screens/SettingsScreen"
 import { LoginScreen } from "./screens/LoginScreen"
 import { SignUpScreen } from "./screens/SignUpScreen"
 import { WatchlistManager } from "./components/WatchlistManager"
+import { StarScreen } from "./screens/StarScreen"
+import { HeartScreen } from "./screens/HeartScreen"
+import { FireScreen } from "./screens/FireScreen"
+import { LightningScreen } from "./screens/LightningScreen"
+import { RocketScreen } from "./screens/RocketScreen"
+import { TrophyScreen } from "./screens/TrophyScreen"
+import { ShieldScreen } from "./screens/ShieldScreen"
+import { CrownScreen } from "./screens/CrownScreen"
+import { DiamondScreen } from "./screens/DiamondScreen"
+import { TargetScreen } from "./screens/TargetScreen"
+import { FlagScreen } from "./screens/FlagScreen"
+import { ChartScreen } from "./screens/ChartScreen"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
 import { BalanceProvider, useBalance } from "./contexts/BalanceContext"
@@ -206,6 +236,22 @@ function MainTabs() {
           }}
         />
         <Tab.Screen
+          name="Assets"
+          component={AssetsScreen}
+          options={{
+            tabBarLabel: 'Assets',
+            tabBarIcon: ({ color }) => <WalletIcon color={color} />,
+          }}
+        />
+        <Tab.Screen
+          name="Orders"
+          component={OrdersScreen}
+          options={{
+            tabBarLabel: 'Orders',
+            tabBarIcon: ({ color }) => <OrdersIcon color={color} />,
+          }}
+        />
+        <Tab.Screen
           name="Exchanges"
           component={ExchangesScreen}
           options={{
@@ -225,16 +271,98 @@ function MainTabs() {
           name="Favoritos"
           component={WatchlistManager}
           options={{
-            tabBarLabel: 'Alertas',
-            tabBarIcon: ({ color }) => <NotificationsIcon color={color} />,
+            tabBarButton: () => null, // Oculta da navegação inferior
           }}
         />
         <Tab.Screen
           name="Settings"
           component={SettingsScreen}
           options={{
-            tabBarLabel: 'Config',
-            tabBarIcon: ({ color }) => <SettingsIcon color={color} />,
+            tabBarButton: () => null, // Oculta da navegação inferior
+          }}
+        />
+        <Tab.Screen
+          name="Star"
+          component={StarScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Heart"
+          component={HeartScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Fire"
+          component={FireScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Lightning"
+          component={LightningScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Rocket"
+          component={RocketScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Trophy"
+          component={TrophyScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Shield"
+          component={ShieldScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Crown"
+          component={CrownScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Diamond"
+          component={DiamondScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Target"
+          component={TargetScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Flag"
+          component={FlagScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Chart"
+          component={ChartScreen}
+          options={{
+            tabBarButton: () => null,
           }}
         />
       </Tab.Navigator>
@@ -324,6 +452,26 @@ const HomeIcon = ({ color }: { color: string }) => (
   </Svg>
 )
 
+const WalletIcon = ({ color }: { color: string }) => (
+  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M19 7H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <Path 
+      d="M3 9V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <Circle cx="16" cy="14" r="1.5" fill={color} />
+  </Svg>
+)
+
 const ExchangeIcon = ({ color }: { color: string }) => (
   <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <Path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" stroke={color} strokeWidth="1.8" />
@@ -339,6 +487,32 @@ const RobotIcon = ({ color }: { color: string }) => (
     <Path d="M12 3v5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     <Circle cx="12" cy="3" r="1" fill={color} />
     <Path d="M5 14h2M17 14h2" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </Svg>
+)
+
+const OrdersIcon = ({ color }: { color: string }) => (
+  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <Path 
+      d="M14 2v6h6" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <Path 
+      d="M9 13h6M9 17h6" 
+      stroke={color} 
+      strokeWidth="1.8" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
   </Svg>
 )
 

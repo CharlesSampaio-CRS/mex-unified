@@ -337,14 +337,14 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       backgroundColor: colors.background,
     },
     header: {
-      paddingTop: 40,
-      paddingBottom: 24,
-      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 32,
+      paddingHorizontal: 32,
       backgroundColor: colors.background,
     },
     logoContainer: {
       alignItems: 'center',
-      marginBottom: 12,
+      marginBottom: 20,
     },
     logo: {
       fontSize: 48,
@@ -492,7 +492,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       flexDirection: 'row',
       justifyContent: 'center',
       marginTop: 24,
-      paddingBottom: 32,
+      paddingBottom: 48,
     },
     signupText: {
       color: colors.textSecondary,
@@ -515,7 +515,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>

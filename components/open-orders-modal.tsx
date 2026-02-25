@@ -1,8 +1,9 @@
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator } from "react-native"
-import { useState, useEffect, useRef } from "react"
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator, Animated } from "react-native"
+import React, { useState, useEffect, useRef } from "react"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useBalance } from "../contexts/BalanceContext"
+import { useOrders } from "../contexts/OrdersContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
@@ -18,6 +19,49 @@ interface OpenOrdersModalProps {
   onOrderCancelled?: () => void  // Callback chamado após cancelamento de ordem
 }
 
+// Sub-componente com animação piscante para ordens sendo canceladas
+function BlinkingOrderItem({ 
+  children, 
+  isCancelling, 
+  style 
+}: { 
+  key?: string;
+  children: React.ReactNode; 
+  isCancelling: boolean; 
+  style: any; 
+}) {
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isCancelling) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnim, {
+            toValue: 0.3,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnim, {
+            toValue: 0.7,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      blinkAnim.setValue(1);
+    }
+  }, [isCancelling]);
+
+  return (
+    <Animated.View style={[style, { opacity: isCancelling ? blinkAnim : 1 }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export function OpenOrdersModal({ 
   visible, 
   onClose, 
@@ -30,6 +74,7 @@ export function OpenOrdersModal({
   const { colors } = useTheme()
   const { t, language } = useLanguage()
   const { refresh: refreshBalance } = useBalance()
+  const { removeOrder: removeOrderFromContext, refresh: refreshOrders, recentlyAddedIds } = useOrders()
   const [orders, setOrders] = useState<OpenOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -283,8 +328,12 @@ export function OpenOrdersModal({
       return
     }
     
+    // ✅ Usa exchange_order_id (ID real da exchange) para cancelar na API
+    const exchangeOrderId = orderToCancel.exchange_order_id || orderToCancel.id;
+    
     console.log('🔍 [OpenOrdersModal] Cancelando ordem:', { 
-      orderId: orderToCancel.id, 
+      orderId: orderToCancel.id,
+      exchangeOrderId,
       symbol: orderToCancel.symbol,
       side: orderToCancel.side
     })
@@ -295,10 +344,9 @@ export function OpenOrdersModal({
     
     try {
       const result = await apiService.cancelOrder(
-        userId,
-        orderToCancel.id,
         exchangeId,
-        orderToCancel.symbol
+        orderToCancel.symbol,
+        exchangeOrderId
       )
       
       const isSuccess = result.success === true || (!result.error && !result.success)
@@ -306,8 +354,11 @@ export function OpenOrdersModal({
       if (isSuccess) {
         console.log('✅ [OpenOrdersModal] Ordem cancelada com sucesso')
         
-        // ✅ REMOÇÃO OTIMISTA: Remove da lista IMEDIATAMENTE
+        // ✅ REMOÇÃO OTIMISTA: Remove da lista local IMEDIATAMENTE
         setOrders(prev => prev.filter(o => o.id !== orderToCancel.id))
+        
+        // ✅ REMOÇÃO OTIMISTA GLOBAL: Remove do contexto global de ordens
+        removeOrderFromContext(orderToCancel.id)
         
         // ✅ FEEDBACK IMEDIATO: Fecha modais
         setConfirmCancelVisible(false)
@@ -317,6 +368,11 @@ export function OpenOrdersModal({
         
         // Atualiza em background (silencioso)
         refreshBalance().catch(console.error)
+        
+        // Sincroniza com backend em background
+        setTimeout(() => {
+          refreshOrders().catch(console.error)
+        }, 2000)
         
         // Chama callback se existir
         if (onOrderCancelled) {
@@ -398,6 +454,16 @@ export function OpenOrdersModal({
           const failedOrderIds = new Set(result.failed_orders.map((fo: any) => fo.order_id || fo.orderId));
           setOrders(prev => prev.filter(order => failedOrderIds.has(order.id)));
           
+          // ✅ REMOÇÃO PARCIAL GLOBAL: Remove do contexto global as ordens canceladas
+          orders.forEach(order => {
+            if (!failedOrderIds.has(order.id)) {
+              removeOrderFromContext(order.id)
+            }
+          })
+          
+          // ✅ Atualiza balance/assets imediatamente (fundos parcialmente liberados)
+          refreshBalance().catch(console.error)
+          
           // NÃO fecha o modal para mostrar o erro
           return
         }
@@ -407,10 +473,23 @@ export function OpenOrdersModal({
         // ✅ REMOÇÃO OTIMISTA: Limpa TODAS as ordens imediatamente
         setOrders([])
         
+        // ✅ REMOÇÃO GLOBAL: Remove todas as ordens desta exchange do contexto global
+        orders.forEach(order => {
+          removeOrderFromContext(order.id)
+        })
+        
         // ✅ FEEDBACK IMEDIATO: Fecha modais
         setConfirmCancelAllVisible(false)
         onClose()
         setCancelAllLoading(false)
+        
+        // ✅ Atualiza balance/assets imediatamente (fundos liberados ao cancelar)
+        refreshBalance().catch(console.error)
+        
+        // Sincroniza com backend em background
+        setTimeout(() => {
+          refreshOrders().catch(console.error)
+        }, 2000)
         
         // Chama callback
         if (onOrderCancelled) {
@@ -632,15 +711,16 @@ export function OpenOrdersModal({
                 <View style={styles.ordersList}>
                   {orders.map((order) => {
                     const orderId = getOrderId(order);
-                    const isCancelling = cancellingOrderId === orderId;
+                    const isCancelling = cancellingOrderId === orderId || cancelAllLoading;
+                    const isRecentlyAdded = recentlyAddedIds.has(orderId);
+                    const isAnimating = isCancelling || isRecentlyAdded;
                     
-                    return (
-                    <View
+                    return (<BlinkingOrderItem
                       key={orderId}
+                      isCancelling={isAnimating}
                       style={[styles.orderItemCompact, { 
                         backgroundColor: colors.surface,
                         borderBottomColor: colors.border,
-                        opacity: isCancelling ? 0.5 : 1
                       }]}
                     >
                       {isCancelling && (
@@ -728,7 +808,7 @@ export function OpenOrdersModal({
                           </View>
                         </View>
                       </View>
-                    </View>
+                    </BlinkingOrderItem>
                   )})}
                 </View>
               )}

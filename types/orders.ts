@@ -2,7 +2,8 @@
 
 // Helper para pegar o ID da ordem (suporta ambos formatos)
 export function getOrderId(order: OpenOrder): string {
-  return order.exchange_order_id || order.id || '';
+  if (!order) return 'unknown';
+  return order.exchange_order_id || order.id || 'unknown';
 }
 
 export interface OpenOrder {

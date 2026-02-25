@@ -7,6 +7,7 @@ import { useLanguage } from "../contexts/LanguageContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
 import { LogoIcon } from "./LogoIcon"
+import { ProfileMenuModal } from "./ProfileMenuModal"
 import { IconSelectorModal } from "./IconSelectorModal"
 
 // Eye Icon (valores visíveis)
@@ -95,10 +96,14 @@ interface HeaderProps {
   hideIcons?: boolean
   onNotificationsPress?: () => void
   onProfilePress?: () => void
-  // onSearchPress removido - busca agora está dentro da lista de tokens
+  onAlertsPress?: () => void
+  onSettingsPress?: () => void
   unreadCount?: number
   title?: string
   subtitle?: string
+  selectedIcon?: string
+  onIconSelect?: (iconName: string) => void
+  navigation?: any
 }
 
 // User Icon (perfil)
@@ -119,10 +124,14 @@ export const Header = memo(function Header({
   hideIcons = false, 
   onNotificationsPress, 
   onProfilePress,
-  // onSearchPress removido - busca agora está dentro da lista de tokens
+  onAlertsPress,
+  onSettingsPress,
   unreadCount = 0,
   title,
-  subtitle
+  subtitle,
+  selectedIcon,
+  onIconSelect,
+  navigation
 }: HeaderProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
@@ -130,8 +139,8 @@ export const Header = memo(function Header({
   const { user } = useAuth()
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
+  const [profileMenuVisible, setProfileMenuVisible] = useState(false)
   const [iconSelectorVisible, setIconSelectorVisible] = useState(false)
-  const [selectedIcon, setSelectedIcon] = useState<string>('')
   
   // Gera as iniciais do usuário para o avatar
   const getUserInitials = () => {
@@ -194,15 +203,12 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
         
-        {/* Botão Grid - Seletor de Ícones */}
         <TouchableOpacity 
           style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => setIconSelectorVisible(true)}
         >
           <GridIcon color={colors.text} />
         </TouchableOpacity>
-        
-        {/* Botão de busca removido - agora está dentro da lista de tokens */}
         
         <TouchableOpacity 
           style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -218,10 +224,10 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
         
-        {/* User Avatar - Primeiro à direita */}
+        {/* User Avatar - Abre menu com Alertas e Config */}
         <TouchableOpacity 
           style={[styles.userAvatar, { backgroundColor: colors.primary, borderColor: colors.border }]}
-          onPress={onProfilePress}
+          onPress={() => setProfileMenuVisible(true)}
           activeOpacity={0.7}
         >
           {user?.avatar ? (
@@ -232,12 +238,27 @@ export const Header = memo(function Header({
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Modal de Seleção de Ícones */}
+      {/* Icon Selector Modal */}
       <IconSelectorModal
         visible={iconSelectorVisible}
         onClose={() => setIconSelectorVisible(false)}
-        onSelectIcon={setSelectedIcon}
         selectedIconId={selectedIcon}
+        onNavigate={(screenName) => {
+          setIconSelectorVisible(false)
+          navigation?.navigate(screenName)
+        }}
+      />
+
+      {/* Profile Menu Modal */}
+      <ProfileMenuModal
+        visible={profileMenuVisible}
+        onClose={() => setProfileMenuVisible(false)}
+        onAlertsPress={() => {
+          onAlertsPress?.();
+        }}
+        onSettingsPress={() => {
+          onSettingsPress?.();
+        }}
       />
     </View>
   )

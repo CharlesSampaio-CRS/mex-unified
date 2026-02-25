@@ -18,174 +18,231 @@ interface OrdersContextType {
   error: string | null
   totalOrders: number
   timestamp: number | null
+  recentlyAddedIds: Set<string>  // IDs de ordens recém-criadas (para animação)
+  recentlyAffectedSymbols: Set<string> // Símbolos de tokens afetados por create/cancel (para animação no Assets)
   refresh: () => Promise<void>
+  removeOrder: (orderId: string, symbol?: string) => void  // Remoção otimista imediata
+  addOrder: (order: OpenOrder, exchangeId: string, exchangeName: string) => void // Inserção otimista imediata
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
 
 export function OrdersProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
-  const { addNotification } = useNotifications()
-  const { refresh: refreshBalance, onBalanceLoaded } = useBalance()
-  const [ordersByExchange, setOrdersByExchange] = useState<OrdersByExchange[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [timestamp, setTimestamp] = useState<number | null>(null)
-  const hasFetchedInitialRef = useRef(false)
-  const shouldFetchAfterBalanceRef = useRef(false) // 🆕 Flag para indicar se deve buscar após balance carregar
-  
-  // 🔔 DETECÇÃO DE ORDENS EXECUTADAS: Armazena IDs das ordens abertas anteriores
-  const previousOrdersRef = useRef<Map<string, OpenOrder>>(new Map())
+  const { user } = useAuth();
+  const [ordersByExchange, setOrdersByExchange] = useState<OrdersByExchange[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [timestamp, setTimestamp] = useState<number | null>(null);
+  const [recentlyAddedIds, setRecentlyAddedIds] = useState<Set<string>>(new Set());
+  const [recentlyAffectedSymbols, setRecentlyAffectedSymbols] = useState<Set<string>>(new Set());
 
-  // 🎯 Detecta ordens que foram executadas (sumiram da lista)
-  const detectExecutedOrders = useCallback((currentOrders: OpenOrder[]) => {
-    // Cria Map com ordens atuais
-    const currentOrdersMap = new Map<string, OpenOrder>()
-    currentOrders.forEach(order => {
-      currentOrdersMap.set(order.id, order)
-    })
-    
-    // Verifica quais ordens sumiram (foram executadas/canceladas)
-    const removedOrders: OpenOrder[] = []
-    previousOrdersRef.current.forEach((previousOrder, orderId) => {
-      if (!currentOrdersMap.has(orderId)) {
-        removedOrders.push(previousOrder)
-      }
-    })
-    
-    // 🎯 IMPORTANTE: Não cria notificações aqui pois não sabemos se foi execução ou cancelamento
-    // A notificação de execução é criada pelo backend quando a ordem é executada
-    // A notificação de cancelamento é criada manualmente quando o usuário cancela
-    
-    // Atualiza o balance se houver ordens removidas
-    if (removedOrders.length > 0) {
-      refreshBalance().catch(err => {
-        console.error('❌ [OrdersContext] Erro ao atualizar balance:', err)
-      })
-    }
-    
-    // Atualiza referência com ordens atuais
-    previousOrdersRef.current = currentOrdersMap
-  }, [refreshBalance])
-
-  const fetchOrders = useCallback(async (forceRefresh = false) => {
+  const fetchOrders = useCallback(async (forceRefresh = false, silent = false) => {
     if (!user?.id) return
-
-    // ✅ ATIVA ESTADOS DE LOADING IMEDIATAMENTE (antes de qualquer await)
-    if (forceRefresh) {
-      setRefreshing(true)
-    } else {
-      setLoading(true)
+    
+    console.log('🟣 [ORDERS-CONTEXT] ========================================')
+    console.log('🟣 [ORDERS-CONTEXT] Iniciando busca de ordens')
+    console.log('🟣 [ORDERS-CONTEXT] ForceRefresh:', forceRefresh, 'Silent:', silent)
+    console.log('🟣 [ORDERS-CONTEXT] User ID:', user.id)
+    
+    if (!silent) {
+      if (forceRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
     }
     
-    setError(null)
+    setError(null);
 
     try {
-      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
-      console.log('📋 [OrdersContext] Buscando orders via endpoint seguro (MongoDB)...')
-      const response = await apiService.getOrdersSecure()
-            
-      if (!response || !response.success) {
-        setOrdersByExchange([])
-        setTimestamp(Date.now())
-        return
-      }
-            
-      const exchangesWithOrders = new Map<string, { id: string; name: string; orders: OpenOrder[] }>()
+      const startTime = Date.now()
+      console.log('🟣 [ORDERS-CONTEXT] Chamando getOrdersSecure...')
       
-      if (response.orders && response.orders.length > 0) {
-        response.orders.forEach((order: any) => {
-          const exchangeId = order.exchange_id || order.exchange || 'unknown'
-          const exchangeName = order.exchange_name || order.exchange || exchangeId
-          
-          if (!exchangesWithOrders.has(exchangeId)) {
-            exchangesWithOrders.set(exchangeId, {
-              id: exchangeId,
-              name: exchangeName,
-              orders: []
-            })
-          }
-          
-          exchangesWithOrders.get(exchangeId)!.orders.push(order)
-        })
+      const response = await apiService.getOrdersSecure();
+      
+      const apiTime = Date.now() - startTime
+      console.log(`🟣 [ORDERS-CONTEXT] Resposta recebida em ${apiTime}ms`)
+      console.log('🟣 [ORDERS-CONTEXT] Sucesso:', response?.success)
+      console.log('🟣 [ORDERS-CONTEXT] Total de ordens:', response?.orders?.length || 0)
+      
+      if (!response?.success || !response.orders) {
+        console.log('⚠️ [ORDERS-CONTEXT] Nenhuma ordem retornada')
+        setOrdersByExchange([]);
+        setTimestamp(Date.now());
+        console.log('🟣 [ORDERS-CONTEXT] ========================================')
+        return;
       }
       
-      const results: OrdersByExchange[] = Array.from(exchangesWithOrders.values()).map(ex => ({
+      // Agrupa orders por exchange
+      const groupedOrders = new Map<string, { id: string; name: string; orders: OpenOrder[] }>();
+      
+      response.orders.forEach((order: any) => {
+        // ✅ Validação: ignora orders sem dados essenciais
+        if (!order || !order.symbol) return;
+        
+        const exchangeId = order.exchange_id || order.exchange || 'unknown';
+        const exchangeName = order.exchange_name || order.exchange || exchangeId;
+        
+        if (!groupedOrders.has(exchangeId)) {
+          groupedOrders.set(exchangeId, {
+            id: exchangeId,
+            name: exchangeName,
+            orders: []
+          });
+        }
+        
+        // ✅ Garante ID único e preserva exchange_order_id
+        const orderWithId = {
+          ...order,
+          id: order.id || order.exchange_order_id || `${exchangeId}_${order.symbol}_${Date.now()}`,
+          exchange_order_id: order.exchange_order_id || order.id || undefined,
+        };
+        
+        groupedOrders.get(exchangeId)!.orders.push(orderWithId);
+      });
+      
+      const results: OrdersByExchange[] = Array.from(groupedOrders.values()).map(ex => ({
         exchangeId: ex.id,
         exchangeName: ex.name,
         orders: ex.orders,
-      }))
+      }));
       
-      // 🎯 DETECTA ORDENS EXECUTADAS: Compara com lista anterior
-      // Só detecta após a primeira carga (ignora carga inicial)
-      if (hasFetchedInitialRef.current && response.orders) {
-        detectExecutedOrders(response.orders)
-      }
+      console.log('🟣 [ORDERS-CONTEXT] Ordens agrupadas por exchange:')
+      results.forEach(ex => {
+        console.log(`  - ${ex.exchangeName}: ${ex.orders.length} ordens`)
+      })
       
-      setOrdersByExchange(results)
-      setTimestamp(Date.now())
-      
-      console.log(`✅ [OrdersContext] Orders carregadas: ${response.orders?.length || 0} total`)
+      setOrdersByExchange(results);
+      setTimestamp(Date.now());
+      console.log('✅ [ORDERS-CONTEXT] Ordens atualizadas com sucesso')
+      console.log('🟣 [ORDERS-CONTEXT] ========================================')
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch orders'
-      console.error('❌ [OrdersContext] Erro ao buscar orders:', errorMsg)
-      setError(errorMsg)
-      setOrdersByExchange([])
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch orders';
+      console.error('❌ [ORDERS-CONTEXT] Erro ao buscar ordens:', errorMsg)
+      console.error('❌ [ORDERS-CONTEXT] Stack:', err)
+      console.log('🟣 [ORDERS-CONTEXT] ========================================')
+      setError(errorMsg);
+      setOrdersByExchange([]);
     } finally {
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      // antes de desativar o loading/refreshing
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      setLoading(false)
-      setRefreshing(false)
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [user?.id, detectExecutedOrders])
+  }, [user?.id]);
 
   const refresh = useCallback(async () => {
-    await fetchOrders(true)
-  }, [fetchOrders])
+    await fetchOrders(true);
+  }, [fetchOrders]);
 
-  // 🆕 Registra callback para carregar orders SEMPRE que balance atualizar
-  useEffect(() => {
-    if (!user?.id) return
+  // Helper: Marca um símbolo como recém-afetado (animação piscante no Assets por 4s)
+  const markSymbolAffected = useCallback((symbol: string) => {
+    // Extrai o token base do par (ex: "BTC/USDT" → "BTC")
+    const baseToken = symbol.split('/')[0]?.toUpperCase() || symbol.toUpperCase()
+    console.log('✨ [ORDERS-CONTEXT] Marcando token como afetado:', baseToken)
+    setRecentlyAffectedSymbols(prev => new Set(prev).add(baseToken))
+    setTimeout(() => {
+      setRecentlyAffectedSymbols(prev => {
+        const next = new Set(prev)
+        next.delete(baseToken)
+        return next
+      })
+    }, 4000)
+  }, [])
+
+  // 🚀 Remoção otimista: Remove uma ordem da lista localmente sem esperar API
+  const removeOrder = useCallback((orderId: string, symbol?: string) => {
+    console.log('🗑️ [ORDERS-CONTEXT] Remoção otimista da ordem:', orderId)
     
-    console.log('📝 [OrdersContext] Registrando callback para carregar orders após balance...')
+    // Encontra o símbolo da ordem antes de remover (se não fornecido)
+    if (!symbol) {
+      for (const exchange of ordersByExchange) {
+        const order = exchange.orders.find(o => o.id === orderId)
+        if (order) {
+          symbol = order.symbol
+          break
+        }
+      }
+    }
     
-    onBalanceLoaded(() => {
-      console.log('🔔 [OrdersContext] Balance carregado/atualizado! Carregando orders...')
-      // 🔥 SEMPRE carrega orders quando balance atualiza (não só no primeiro)
-      const isFirstLoad = !hasFetchedInitialRef.current
-      hasFetchedInitialRef.current = true
+    setOrdersByExchange(prev => {
+      const updated = prev.map(exchange => ({
+        ...exchange,
+        orders: exchange.orders.filter(order => order.id !== orderId)
+      })).filter(exchange => exchange.orders.length > 0)
       
-      // Force refresh se não for primeira carga (balance periódico)
-      fetchOrders(!isFirstLoad)
+      console.log('🗑️ [ORDERS-CONTEXT] Ordens restantes:', updated.reduce((sum, ex) => sum + ex.orders.length, 0))
+      return updated
     })
-  }, [user?.id, onBalanceLoaded, fetchOrders])
+    setTimestamp(Date.now())
+    
+    // ✨ Marca o token como afetado para animação na lista de Assets
+    if (symbol) {
+      markSymbolAffected(symbol)
+    }
+  }, [ordersByExchange, markSymbolAffected])
 
-  // ❌ REMOVIDO: Carregamento imediato das orders (agora espera o balance carregar)
-  // useEffect(() => {
-  //   if (user?.id && !hasFetchedInitialRef.current) {
-  //     hasFetchedInitialRef.current = true
-  //     fetchOrders(false)
-  //   }
-  // }, [user?.id, fetchOrders])
+  // 🚀 Inserção otimista: Adiciona uma ordem na lista localmente sem esperar API
+  const addOrder = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
+    const orderId = String(order.id || `temp_${Date.now()}`)
+    console.log('➕ [ORDERS-CONTEXT] Inserção otimista da ordem:', orderId, order.symbol)
+    
+    setOrdersByExchange(prev => {
+      const existingExchange = prev.find(ex => ex.exchangeId === exchangeId)
+      
+      if (existingExchange) {
+        // Exchange já existe, adiciona a ordem
+        return prev.map(ex => 
+          ex.exchangeId === exchangeId
+            ? { ...ex, orders: [order, ...ex.orders] }
+            : ex
+        )
+      } else {
+        // Exchange nova, cria grupo
+        return [...prev, {
+          exchangeId,
+          exchangeName,
+          orders: [order]
+        }]
+      }
+    })
+    setTimestamp(Date.now())
+    
+    // ✨ Marca como recém-adicionado (animação piscante por 3s)
+    setRecentlyAddedIds(prev => new Set(prev).add(orderId))
+    setTimeout(() => {
+      setRecentlyAddedIds(prev => {
+        const next = new Set(prev)
+        next.delete(orderId)
+        return next
+      })
+    }, 3000)
+    
+    // ✨ Marca o token como afetado para animação na lista de Assets
+    if (order.symbol) {
+      markSymbolAffected(order.symbol)
+    }
+  }, [markSymbolAffected])
 
-  // ❌ REMOVIDO: AUTO-REFRESH independente de 3 minutos
-  // Agora orders são atualizadas automaticamente quando balance atualiza (via callback)
-  // O BalanceContext já tem auto-refresh de 3 minutos, então não precisa duplicar
-  // useEffect(() => {
-  //   if (!user?.id) return
-  //   let interval: ReturnType<typeof setInterval> | null = null
-  //   interval = setInterval(() => {
-  //     fetchOrders(true)
-  //   }, 3 * 60 * 1000)
-  //   return () => {
-  //     if (interval) clearInterval(interval)
-  //   }
-  // }, [user?.id, fetchOrders])
+  // Carrega orders imediatamente ao logar
+  useEffect(() => {
+    if (user?.id) {
+      fetchOrders(false);
+    }
+  }, [user?.id, fetchOrders]);
 
-  const totalOrders = ordersByExchange.reduce((sum, ex) => sum + ex.orders.length, 0)
+  // ⏰ Auto-refresh a cada 30s (silencioso, sem loading visual)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const interval = setInterval(() => {
+      console.log('⏰ [ORDERS-CONTEXT] Auto-refresh (30s)');
+      fetchOrders(true, true);
+    }, 30 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user?.id, fetchOrders]);
+
+  const totalOrders = ordersByExchange.reduce((sum, ex) => sum + ex.orders.length, 0);
 
   return (
     <OrdersContext.Provider
@@ -196,7 +253,11 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         error,
         totalOrders,
         timestamp,
+        recentlyAddedIds,
+        recentlyAffectedSymbols,
         refresh,
+        removeOrder,
+        addOrder,
       }}
     >
       {children}
