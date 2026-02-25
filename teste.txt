@@ -1,15 +1,2 @@
- LOG  ✅ Ordem criada com sucesso!
- LOG  🔄 Executando callbacks...
- LOG  ⚠️ onBalanceUpdate não definido
- LOG  🔄 Chamando onOrderCreated
- LOG  🟠 [BALANCE-CONTEXT] ========================================
- LOG  🟠 [BALANCE-CONTEXT] refresh() chamado
- LOG  🟠 [BALANCE-CONTEXT] Chamando fetchBalances(forceRefresh=true)...
- LOG  🔐 [BalanceContext] Lock adquirido, iniciando fetch...
- LOG  📡 [BalanceContext] Chamando apiService.getBalances()...
- LOG  ✅ Callbacks executados
- LOG  ✅ [BalanceContext] Resposta recebida: COM DADOS
- LOG  🧹 [BalanceContext] Finalizando fetchBalances, removendo loading...
- LOG  ✅ [BalanceContext] Loading removido, isFetching=false
- LOG  🟠 [BALANCE-CONTEXT] refresh() concluído em 6841ms
- LOG  🟠 [BALANCE-CONTEXT] ========================================
+ ERROR  ❌ Cancel Order Error: [Error: Failed to cancel order: BadRequest: mexc {"msg":"Unknown order id.","code":-2011}]
+ ERROR  Erro ao cancelar ordem: [Error: Failed to cancel order: BadRequest: mexc {"msg":"Unknown order id.","code":-2011}]
