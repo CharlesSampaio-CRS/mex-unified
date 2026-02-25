@@ -89,6 +89,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
   
   // Token search/filter state
   const [tokenSearchQuery, setTokenSearchQuery] = useState<string>("")
+  const [showTokenList, setShowTokenList] = useState(true)
   const tokenInputRef = useRef<TextInput>(null)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
 
@@ -121,6 +122,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       setShowCustomTokenInput(false)
       setTokenSearchResults([])
       setTokenSearchQuery("")
+      setShowTokenList(true)
     }
   }, [visible])
 
@@ -129,6 +131,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
     if (step === 3 && selectedExchange) {
       setToken("") // Clear token selection when exchange changes
       setTokenSearchQuery("") // Clear search
+      setShowTokenList(true)
       loadTokens()
     }
   }, [step, selectedExchange])
@@ -423,9 +426,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
           )}
           {/* Content */}
           {step === 3 ? (
-            /* Step 3: View simples (sem ScrollView) para FlatList funcionar */
             <View style={[styles.content, { paddingHorizontal: 20, paddingTop: 8 }]}>
-              {/* Título + resumo — esconde quando teclado está aberto para dar espaço */}
+              {/* Título + resumo — esconde quando teclado está aberto */}
               {!keyboardVisible && (
                 <>
                   <Text style={[styles.stepTitle, { color: colors.text, marginBottom: 10 }]}>
@@ -444,14 +446,6 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                         {getSelectedExchangeName()}
                       </Text>
                     </View>
-                    {token ? (
-                      <View style={styles.summaryRow}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Token:</Text>
-                        <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>
-                          {token} ✓
-                        </Text>
-                      </View>
-                    ) : null}
                   </View>
                 </>
               )}
@@ -463,7 +457,36 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                     Carregando tokens...
                   </Text>
                 </View>
+              ) : token && !showTokenList ? (
+                /* ── Token selecionado: card clean ── */
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowTokenList(true)
+                      setTokenSearchQuery("")
+                    }}
+                    activeOpacity={0.7}
+                    style={{
+                      borderWidth: 1.5,
+                      borderColor: colors.primary,
+                      borderRadius: 16,
+                      padding: 20,
+                      backgroundColor: `${colors.primary}08`,
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Text style={{ fontSize: 36 }}>🪙</Text>
+                    <Text style={{ fontSize: 24, fontWeight: '700', color: colors.primary, letterSpacing: 1 }}>
+                      {token}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
+                      Toque para alterar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
+                /* ── Lista de tokens: busca + FlatList ── */
                 <View style={{ flex: 1 }}>
                   {/* Campo de busca */}
                   <View style={[
@@ -477,13 +500,13 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                     <Text style={{ fontSize: 16 }}>🔍</Text>
                     <TextInput
                       ref={tokenInputRef}
-                      style={[{
+                      style={{
                         flex: 1,
                         fontSize: 17,
                         fontWeight: '400',
                         color: colors.text,
                         paddingVertical: 0,
-                      }]}
+                      }}
                       placeholder="Buscar token (ex: BTC, ETH, SOL...)"
                       placeholderTextColor={colors.textSecondary}
                       value={tokenSearchQuery}
@@ -513,7 +536,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                     }
                   </Text>
 
-                  {/* Lista de tokens */}
+                  {/* Lista */}
                   <FlatList
                     data={filteredTokens}
                     keyExtractor={(item) => item}
@@ -541,6 +564,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                           onPress={() => {
                             setToken(tokenSymbol)
                             setTokenSearchQuery("")
+                            setShowTokenList(false)
                             Keyboard.dismiss()
                           }}
                           activeOpacity={0.5}
