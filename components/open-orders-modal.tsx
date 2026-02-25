@@ -328,8 +328,12 @@ export function OpenOrdersModal({
       return
     }
     
+    // ✅ Usa exchange_order_id (ID real da exchange) para cancelar na API
+    const exchangeOrderId = orderToCancel.exchange_order_id || orderToCancel.id;
+    
     console.log('🔍 [OpenOrdersModal] Cancelando ordem:', { 
-      orderId: orderToCancel.id, 
+      orderId: orderToCancel.id,
+      exchangeOrderId,
       symbol: orderToCancel.symbol,
       side: orderToCancel.side
     })
@@ -342,7 +346,7 @@ export function OpenOrdersModal({
       const result = await apiService.cancelOrder(
         exchangeId,
         orderToCancel.symbol,
-        orderToCancel.id
+        exchangeOrderId
       )
       
       const isSuccess = result.success === true || (!result.error && !result.success)

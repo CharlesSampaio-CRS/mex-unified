@@ -92,10 +92,11 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
           });
         }
         
-        // ✅ Garante ID único
+        // ✅ Garante ID único e preserva exchange_order_id
         const orderWithId = {
           ...order,
-          id: order.id || order.exchange_order_id || `${exchangeId}_${order.symbol}_${Date.now()}`
+          id: order.id || order.exchange_order_id || `${exchangeId}_${order.symbol}_${Date.now()}`,
+          exchange_order_id: order.exchange_order_id || order.id || undefined,
         };
         
         groupedOrders.get(exchangeId)!.orders.push(orderWithId);

@@ -196,14 +196,17 @@ export function OrdersScreen({ navigation }: any) {
     if (!orderToCancel) return;
     const { order, exchangeId } = orderToCancel;
     const orderId = String(order.id || '');
+    // ✅ Usa exchange_order_id (ID real da exchange) para cancelar na API
+    const exchangeOrderId = String(order.exchange_order_id || order.id || '');
 
     setCancelConfirmVisible(false);
     setOrderToCancel(null);
     setCancellingOrderIds(prev => new Set(prev).add(orderId));
 
     try {
-      // Cancela ordem na API
-      await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, order.id);
+      // Cancela ordem na API usando o ID da exchange
+      console.log('🔍 [ORDERS-SCREEN] Cancelando ordem:', { orderId, exchangeOrderId, symbol: order.symbol, exchangeId });
+      await apiService.cancelOrderByExchangeId(exchangeId, order.symbol, exchangeOrderId);
       
       // ✅ REMOÇÃO OTIMISTA IMEDIATA: Remove da lista sem esperar refresh
       console.log('✅ [ORDERS-SCREEN] Ordem cancelada, removendo da lista:', orderId)
