@@ -90,24 +90,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('  - Refresh token:', hasRefreshToken ? 'SIM' : 'NÃO')
         console.log('  - Biometria habilitada:', hasBiometric === 'true')
         
-        // ✅ SESSÃO PERSISTENTE: Se tem tokens e user_data, tenta restaurar sessão
+        // ✅ SESSÃO PERSISTENTE: Se tem tokens e user_data, verifica como proceder
         if (hasUserData && (hasAccessToken || hasRefreshToken)) {
           console.log('🔐 Sessão encontrada - verificando validade...')
           
-          // Se biometria está habilitada, NÃO restaura automaticamente
-          // O usuário precisará usar FaceID/TouchID para desbloquear
           if (hasBiometric === 'true') {
+            // Biometria habilitada → aguarda desbloqueio local (FaceID/TouchID)
             console.log('🔒 Biometria ativa - aguardando desbloqueio local')
             // Mantém tokens salvos mas NÃO seta user (mostra tela de login com opção de biometria)
             setUser(null)
           } else {
-            // Sem biometria: tenta restaurar a sessão automaticamente
-            console.log('🔓 Sem biometria - restaurando sessão automaticamente...')
-            const valid = await tryRestoreSession()
-            if (!valid) {
-              console.log('⚠️ Sessão expirada - mostrando login')
-              setUser(null)
-            }
+            // Sem biometria → NÃO restaura automaticamente, exige login com senha
+            // Os tokens ficam salvos para caso o user faça login com email/senha corretos
+            console.log('🔒 Sem biometria - exigindo login com senha')
+            setUser(null)
           }
         } else {
           console.log('📭 Nenhuma sessão salva - mostrando login')
