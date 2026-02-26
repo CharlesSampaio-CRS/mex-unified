@@ -289,7 +289,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       }
       
       const strategyData = {
-        name: `${token} - ${selectedTemplate}`,
+        name: generateStrategyName(),
         description: `Estratégia ${selectedTemplate} para ${token} na ${capitalizeExchangeName(exchange.name)}`,
         symbol: token,
         exchange_id: selectedExchange,
@@ -330,7 +330,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       
       // 🔔 Notificação: Erro ao criar
       notify.strategyError(addNotification, {
-        name: `${token} - ${selectedTemplate}`,
+        name: generateStrategyName(),
         action: 'criar',
         error: error.message || 'Erro desconhecido',
       })
@@ -349,6 +349,13 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       return exchangeId === selectedExchange
     })
     return capitalizeExchangeName(exchange?.name || "")
+  }
+
+  // Gera nome da estratégia: Token_Exchange_timestamp
+  const generateStrategyName = () => {
+    const exchName = getSelectedExchangeName()
+    const ts = Math.floor(Date.now() / 1000)
+    return `${token}_${exchName}_${ts}`
   }
 
   return (
@@ -536,8 +543,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                       {/* Nome */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
                         <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Nome</Text>
-                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500', maxWidth: '60%', textAlign: 'right' }} numberOfLines={1}>
-                          {token} - {selectedTemplate}
+                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500', maxWidth: '65%', textAlign: 'right' }} numberOfLines={1}>
+                          {token}_{getSelectedExchangeName()}_{Math.floor(Date.now() / 1000)}
                         </Text>
                       </View>
                       <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
