@@ -12,8 +12,6 @@ import { StrategyDetailsModal } from "@/components/StrategyDetailsModal"
 import { Header } from "../components/Header"
 import { NotificationsModal } from "../components/NotificationsModal"
 import { LogoIcon } from "../components/LogoIcon"
-import { AnimatedLogoIcon } from "../components/AnimatedLogoIcon"
-import { TabBar } from "../components/TabBar"
 import { typography, fontWeights } from "../lib/typography"
 import { commonStyles, spacing, borderRadius, shadows } from "@/lib/layout"
 
@@ -40,7 +38,6 @@ export function StrategyScreen({ navigation, route }: any) {
     activeStrategies,
     inactiveStrategies 
   } = useBackendStrategies(true) // Auto-load
-  const [activeTab, setActiveTab] = useState<"strategies" | "executions">("strategies")
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
 
@@ -85,37 +82,6 @@ export function StrategyScreen({ navigation, route }: any) {
       backgroundColor: isDark ? 'rgba(96, 165, 250, 1)' : 'rgba(59, 130, 246, 1)',
     },
   }), [isDark])
-
-  /**
-   *  Execuções ficam vazias por enquanto
-   * TODO: Fase 7 - endpoint de execuções agregadas
-   */
-  const loadExecutions = useCallback(async () => {
-    // Execuções serão implementadas em fase futura
-  }, [])
-
-  // Aggregate executions from all strategies for the tab
-  const allExecutions = useMemo(() => {
-    return strategies
-      .filter(s => s.total_executions > 0)
-      .map(s => ({
-        strategyId: s.id,
-        strategyName: s.name,
-        symbol: s.symbol,
-        exchange: s.exchange_name,
-        totalExecs: s.total_executions,
-        totalPnl: s.total_pnl_usd,
-        status: s.status,
-        lastChecked: s.last_checked_at,
-        lastPrice: s.last_price,
-      }))
-      .sort((a, b) => (b.lastChecked || 0) - (a.lastChecked || 0));
-  }, [strategies]);
-
-  // Load executions on mount
-  useEffect(() => {
-    loadExecutions()
-  }, [loadExecutions])
 
   const toggleStrategyHandler = useCallback((id: string) => {
     const strategyToToggle = strategies.find(s => s.id === id)
@@ -292,20 +258,14 @@ export function StrategyScreen({ navigation, route }: any) {
   const strategiesCount = useMemo(() => strategies.length, [strategies.length])
   const hasStrategies = useMemo(() => strategiesCount > 0, [strategiesCount])
 
-  // 🔄 Refresh específico por aba - atualiza apenas o conteúdo da aba ativa
+  // 🔄 Refresh - atualiza estratégias do MongoDB
   const handleRefresh = useCallback(async () => {
     try {
-      if (activeTab === "strategies") {
-        // Aba Estratégias: recarrega estratégias do MongoDB
-        await loadStrategies()
-      } else {
-        // Aba Execuções: atualiza apenas execuções
-        await loadExecutions()
-      }
+      await loadStrategies()
     } catch (error) {
-      console.error(`❌ [StrategyScreen] Erro ao atualizar aba ${activeTab}:`, error)
+      console.error('❌ [StrategyScreen] Erro ao atualizar:', error)
     }
-  }, [activeTab, loadStrategies, loadExecutions])
+  }, [loadStrategies])
 
   // Handlers para o Header
   const onNotificationsPress = useCallback(() => {
@@ -322,13 +282,6 @@ export function StrategyScreen({ navigation, route }: any) {
         unreadCount={unreadCount}
       />
       
-      {/* Tabs - usando componente TabBar padronizado */}
-      <TabBar 
-        tabs={[t('strategy.strategies'), t('strategy.executions')]}
-        activeTab={activeTab === 'strategies' ? 0 : 1}
-        onTabChange={(index) => setActiveTab(index === 0 ? 'strategies' : 'executions')}
-      />
-      
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -342,10 +295,7 @@ export function StrategyScreen({ navigation, route }: any) {
           />
         }
       >
-        {/* Removido loading customizado - usa apenas o RefreshControl */}
-        {activeTab === 'strategies' ? (
-          // Aba de Estratégias
-          strategies.length === 0 ? (
+        {strategies.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('strategy.empty')}</Text>
               <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
@@ -546,85 +496,7 @@ export function StrategyScreen({ navigation, route }: any) {
             ))}
               </View>
             </>
-          )
-        ) : (
-          // Aba de Execuções — resumo por estratégia
-          allExecutions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                {t('strategy.executionsEmpty')}
-              </Text>
-              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-                {t('strategy.executionsEmptyDesc')}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.executionsList}>
-              {allExecutions.map((item) => (
-                <TouchableOpacity 
-                  key={item.strategyId}
-                  style={[styles.executionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  onPress={() => {
-                    setSelectedStrategyId(item.strategyId);
-                    setDetailsModalVisible(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.executionHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.executionName, { color: colors.text }]} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                      <Text style={[{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }]}>
-                        {item.exchange} · {item.symbol}
-                      </Text>
-                    </View>
-                    <View style={[
-                      styles.statusBadge, 
-                      { backgroundColor: getStatusColor(item.status).bg }
-                    ]}>
-                      <Text style={[styles.statusText, { color: getStatusColor(item.status).text }]}>
-                        {getStatusLabel(item.status)}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-                        {t('strategy.totalTrades') || 'Trades'}
-                      </Text>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 2 }}>
-                        {item.totalExecs}
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-                        {t('strategy.profitLoss') || 'P&L'}
-                      </Text>
-                      <Text style={{ 
-                        fontSize: 16, fontWeight: '600', marginTop: 2,
-                        color: item.totalPnl >= 0 ? colors.success : colors.danger 
-                      }}>
-                        {formatCurrency(item.totalPnl)}
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-                        {t('strategy.lastChecked') || 'Last'}
-                      </Text>
-                      <Text style={{ fontSize: 12, color: colors.text, marginTop: 2 }}>
-                        {item.lastChecked 
-                          ? new Date(item.lastChecked * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                          : '—'}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )
-        )}
+          )}
       </ScrollView>
 
       {/* Toggle Confirmation Modal */}
@@ -1036,48 +908,6 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 13,
     fontWeight: "600",
-  },
-  // Executions
-  executionsList: {
-    gap: spacing.cardGap, // Usando design token (16px)
-  },
-  executionCard: {
-    borderRadius: borderRadius.xl, // Aumentado para xl (20px) - mais moderno
-    padding: spacing.cardPaddingLarge, // Aumentado para 20px - mais espaçoso
-    gap: spacing.md, // Usando design token (12px)
-    ...shadows.md, // Sombra média para melhor destaque
-  },
-  executionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 4,
-  },
-  executionHeaderLeft: {
-    flex: 1,
-    gap: 8,
-  },
-  executionName: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  executionTypeBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  executionTypeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "capitalize",
-  },
-  executionDate: {
-    fontSize: 12,
-    fontWeight: "400",
-  },
-  executionInfo: {
-    gap: 8,
   },
   // Modals
   modalOverlay: {
