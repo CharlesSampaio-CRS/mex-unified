@@ -3,6 +3,7 @@ import { memo, useMemo, useState, useCallback } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useBalance } from '@/contexts/BalanceContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 import { getExchangeLogo } from '@/lib/exchange-logos'
 import { fontWeights } from '@/lib/typography'
@@ -25,6 +26,7 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
   const { colors } = useTheme()
   const { data } = useBalance()
   const { hideValue } = usePrivacy()
+  const { t } = useLanguage()
   const [expanded, setExpanded] = useState(false)
 
   const exchanges = useMemo(() => {
@@ -68,7 +70,7 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
         activeOpacity={0.6}
       >
         <Text style={[styles.headerLabel, { color: colors.textSecondary }]}>
-          {exchanges.length} exchange{exchanges.length > 1 ? 's' : ''}
+          {expanded ? t('home.exchangeHide') : t('home.exchangeDetails')}
         </Text>
 
         {/* Chevron */}
