@@ -1647,6 +1647,45 @@ export const apiService = {
   async toggleStrategy(id: string, is_active: boolean) {
     return this.put(`/strategies/${id}`, { is_active }, TIMEOUTS.FAST);
   },
+
+  // ==========================================
+  // 📋 STRATEGY TEMPLATES - MongoDB Backend
+  // ==========================================
+
+  /**
+   * Lista todos os templates (padrão + customizados do usuário)
+   */
+  async listStrategyTemplates() {
+    return this.get('/strategy-templates', TIMEOUTS.FAST);
+  },
+
+  /**
+   * Busca um template específico pelo ID
+   */
+  async getStrategyTemplate(id: string) {
+    return this.get(`/strategy-templates/${id}`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Cria novo template customizado
+   */
+  async createStrategyTemplate(data: any) {
+    return this.post('/strategy-templates', data, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Atualiza template customizado
+   */
+  async updateStrategyTemplate(id: string, data: any) {
+    return this.put(`/strategy-templates/${id}`, data, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Deleta template customizado
+   */
+  async deleteStrategyTemplate(id: string) {
+    return this.delete(`/strategy-templates/${id}`, TIMEOUTS.FAST);
+  },
 };
 
 // Export default para facilitar imports

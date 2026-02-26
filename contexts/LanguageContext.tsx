@@ -729,7 +729,7 @@ const translations = {
     'strategy.conservativeDesc': 'Maximum protection (2 TPs, trailing stop)',
     'strategy.aggressive': 'Aggressive',
     'strategy.aggressiveDesc': 'Maximum profit (3 TPs, active DCA)',
-    'strategy.templates': 'Strategy Templates',
+    'strategy.templates': 'Templates',
     'strategy.templatesSubtitle': 'Details of each standard strategy',
     'strategy.createNew': 'Create New Strategy',
     'strategy.riskLevel': 'Risk',

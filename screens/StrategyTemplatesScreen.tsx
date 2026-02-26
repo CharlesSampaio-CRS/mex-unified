@@ -1,220 +1,429 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
-import { memo, useState } from "react"
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
+import { memo, useState, useCallback } from "react"
 import { Header } from "../components/Header"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { typography, fontWeights } from "../lib/typography"
+import { apiService } from "../services/api"
+import { useFocusEffect } from "@react-navigation/native"
 
-/**
- * Detalhes completos de cada estratégia padrão
- */
-const STRATEGY_TEMPLATES = [
-  {
-    id: "simple",
-    nameKey: "strategy.simple",
-    icon: "📊",
-    type: "Grid Trading",
-    risk: { label: "Médio", color: "#f59e0b" },
-    summary: "Cria ordens de compra e venda em intervalos fixos de preço. Ideal para mercados laterais.",
-    configs: [
-      { label: "Tipo", value: "Grid Trading" },
-      { label: "Take Profit", value: "5%", detail: "1 nível — fecha 100% da posição" },
-      { label: "Stop Loss", value: "2%", detail: "Fecha posição se cair 2%" },
-      { label: "Grid Levels", value: "5", detail: "5 ordens espaçadas" },
-      { label: "Espaçamento", value: "0.5%", detail: "Entre cada nível do grid" },
-      { label: "Investimento mín.", value: "50 USDT" },
-      { label: "Modo", value: "Spot" },
-    ],
-    howItWorks: [
-      "1. Divide o range de preço em 5 níveis (grid)",
-      "2. Coloca ordens de compra abaixo do preço atual",
-      "3. Coloca ordens de venda acima do preço atual",
-      "4. Lucra com as oscilações entre os níveis",
-      "5. Stop Loss em 2% protege contra queda forte",
-      "6. Take Profit em 5% encerra quando atingir o alvo",
-    ],
-  },
-  {
-    id: "conservative",
-    nameKey: "strategy.conservative",
-    icon: "🛡️",
-    type: "DCA (Dollar Cost Averaging)",
-    risk: { label: "Baixo", color: "#10b981" },
-    summary: "Compra em parcelas para diluir o preço médio. Proteção máxima com 2 TPs + trailing stop.",
-    configs: [
-      { label: "Tipo", value: "Dollar Cost Averaging" },
-      { label: "Take Profit 1", value: "3%", detail: "Vende 50% da posição" },
-      { label: "Take Profit 2", value: "6%", detail: "Vende os 50% restantes" },
-      { label: "Stop Loss", value: "3%", detail: "Proteção contra queda" },
-      { label: "Trailing Stop", value: "1.5%", detail: "Protege lucros em alta" },
-      { label: "Intervalo DCA", value: "60 min", detail: "Compra a cada 60 min" },
-      { label: "Máx. DCA Orders", value: "3", detail: "Até 3 compras parciais" },
-      { label: "Investimento mín.", value: "100 USDT" },
-      { label: "Modo", value: "Spot" },
-    ],
-    howItWorks: [
-      "1. Primeira compra no preço atual",
-      "2. Se cair, compra mais a cada 60 min (até 3x)",
-      "3. Preço médio melhora a cada DCA",
-      "4. TP1 em +3%: vende metade, garante lucro",
-      "5. TP2 em +6%: vende o resto, lucro máximo",
-      "6. Trailing stop 1.5% acompanha o preço em alta",
-      "7. Stop loss 3% limita perda se não recuperar",
-    ],
-  },
-  {
-    id: "aggressive",
-    nameKey: "strategy.aggressive",
-    icon: "🚀",
-    type: "Trailing Stop + DCA",
-    risk: { label: "Alto", color: "#ef4444" },
-    summary: "Busca lucro máximo com 3 TPs progressivos, trailing stop agressivo e DCA ativo.",
-    configs: [
-      { label: "Tipo", value: "Trailing Stop + DCA" },
-      { label: "Take Profit 1", value: "5%", detail: "Vende 30% da posição" },
-      { label: "Take Profit 2", value: "10%", detail: "Vende 30% da posição" },
-      { label: "Take Profit 3", value: "20%", detail: "Vende 40% restantes" },
-      { label: "Stop Loss", value: "5%", detail: "Margem maior para volatilidade" },
-      { label: "Trailing Stop", value: "2%", detail: "Segue o preço em alta" },
-      { label: "DCA Ativo", value: "Sim", detail: "Compra nas quedas" },
-      { label: "Intervalo DCA", value: "30 min", detail: "Agressivo, a cada 30 min" },
-      { label: "Máx. DCA Orders", value: "5", detail: "Até 5 compras parciais" },
-      { label: "Investimento mín.", value: "200 USDT" },
-      { label: "Modo", value: "Spot" },
-    ],
-    howItWorks: [
-      "1. Compra inicial no preço atual",
-      "2. DCA agressivo: compra a cada 30 min se cair (até 5x)",
-      "3. TP1 em +5%: realiza 30%, garante parcial",
-      "4. TP2 em +10%: realiza mais 30%",
-      "5. TP3 em +20%: fecha 40% restantes — lucro máximo",
-      "6. Trailing stop 2% sobe junto com o preço",
-      "7. Stop loss 5% — margem ampla para swing",
-      "⚠️ Recomendado para traders experientes",
-    ],
-  },
+/** Tipo de um template vindo da API */
+interface TemplateConfig {
+  label: string
+  value: string
+  detail?: string
+}
+interface TemplateRisk {
+  label: string
+  color: string
+}
+interface StrategyTemplateItem {
+  id: string
+  user_id: string
+  name: string
+  icon: string
+  strategy_type: string
+  risk: TemplateRisk
+  summary: string
+  configs: TemplateConfig[]
+  how_it_works: string[]
+  is_default: boolean
+  created_at: number
+  updated_at: number
+}
+
+/** Opções de risco para o formulário */
+const RISK_OPTIONS: TemplateRisk[] = [
+  { label: "Baixo", color: "#10b981" },
+  { label: "Médio", color: "#f59e0b" },
+  { label: "Alto", color: "#ef4444" },
 ]
+
+const ICON_OPTIONS = ["📊", "🛡️", "🚀", "⚡", "🎯", "💎", "🔥", "📈", "🤖", "🧠"]
 
 export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ navigation }: any) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [templates, setTemplates] = useState<StrategyTemplateItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+
+  // ── Fetch templates da API ──
+  const fetchTemplates = useCallback(async () => {
+    try {
+      setLoading(true)
+      const res = await apiService.listStrategyTemplates()
+      if (res?.success && res.templates) {
+        setTemplates(res.templates)
+      }
+    } catch (e) {
+      console.error("❌ Erro ao carregar templates:", e)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Recarrega ao focar na tela
+  useFocusEffect(useCallback(() => { fetchTemplates() }, [fetchTemplates]))
 
   const toggle = (id: string) => setExpandedId(prev => (prev === id ? null : id))
+
+  const handleDelete = (tpl: StrategyTemplateItem) => {
+    if (tpl.is_default || tpl.id.startsWith("default_")) {
+      Alert.alert("Ação não permitida", "Templates padrão não podem ser excluídos.")
+      return
+    }
+    Alert.alert(
+      "Excluir template",
+      `Deseja excluir "${tpl.name}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir", style: "destructive",
+          onPress: async () => {
+            try {
+              await apiService.deleteStrategyTemplate(tpl.id)
+              fetchTemplates()
+            } catch (e) {
+              Alert.alert("Erro", "Não foi possível excluir o template.")
+            }
+          },
+        },
+      ]
+    )
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header title={t("strategy.templates")} subtitle={t("strategy.templatesSubtitle")} />
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
 
-        {/* ── Lista de templates padrão ── */}
-        {STRATEGY_TEMPLATES.map((tpl) => {
-          const isOpen = expandedId === tpl.id
-          return (
-            <TouchableOpacity
-              key={tpl.id}
-              activeOpacity={0.8}
-              onPress={() => toggle(tpl.id)}
-              style={[
-                styles.card,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-                isOpen && { borderColor: colors.primary, borderWidth: 1.5 },
-              ]}
-            >
-              {/* ── Header do card ── */}
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardIcon}>{tpl.icon}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardName, { color: colors.text }]}>{t(tpl.nameKey)}</Text>
-                  <Text style={[styles.cardType, { color: colors.textSecondary }]}>{tpl.type}</Text>
-                </View>
-                <View style={[styles.riskBadge, { backgroundColor: `${tpl.risk.color}15` }]}>
-                  <View style={[styles.riskDot, { backgroundColor: tpl.risk.color }]} />
-                  <Text style={[styles.riskLabel, { color: tpl.risk.color }]}>{tpl.risk.label}</Text>
-                </View>
-                <Text style={{ fontSize: 16, color: colors.textSecondary, marginLeft: 6 }}>
-                  {isOpen ? "▲" : "▼"}
-                </Text>
-              </View>
-
-              {/* ── Conteúdo expandido ── */}
-              {isOpen && (
-                <View style={[styles.cardBody, { borderTopColor: colors.border }]}>
-                  {/* Resumo */}
-                  <Text style={[styles.summary, { color: colors.textSecondary }]}>{tpl.summary}</Text>
-
-                  {/* Configurações */}
-                  <View style={[styles.configsBox, { backgroundColor: `${colors.primary}06`, borderColor: colors.border }]}>
-                    <Text style={[styles.configsTitle, { color: colors.primary }]}>
-                      ⚙️ {t("strategy.configs")}
-                    </Text>
-                    {tpl.configs.map((cfg, i) => (
-                      <View key={i}>
-                        <View style={styles.configRow}>
-                          <Text style={[styles.cfgLabel, { color: colors.textSecondary }]}>{cfg.label}</Text>
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
-                            <Text style={[styles.cfgValue, { color: colors.text }]}>{cfg.value}</Text>
-                            {cfg.detail && (
-                              <Text style={[styles.cfgDetail, { color: colors.textSecondary }]} numberOfLines={1}>
-                                {cfg.detail}
-                              </Text>
-                            )}
-                          </View>
+          {/* ── Lista de templates da API ── */}
+          {templates.map((tpl) => {
+            const isOpen = expandedId === tpl.id
+            const isCustom = !tpl.is_default && !tpl.id.startsWith("default_")
+            return (
+              <TouchableOpacity
+                key={tpl.id}
+                activeOpacity={0.8}
+                onPress={() => toggle(tpl.id)}
+                style={[
+                  styles.card,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  isOpen && { borderColor: colors.primary, borderWidth: 1.5 },
+                ]}
+              >
+                {/* ── Header do card ── */}
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardIcon}>{tpl.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Text style={[styles.cardName, { color: colors.text }]}>{tpl.name}</Text>
+                      {isCustom && (
+                        <View style={[styles.customBadge, { backgroundColor: `${colors.primary}20` }]}>
+                          <Text style={[styles.customBadgeText, { color: colors.primary }]}>Custom</Text>
                         </View>
-                        {i < tpl.configs.length - 1 && (
-                          <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.4 }} />
-                        )}
-                      </View>
-                    ))}
+                      )}
+                    </View>
+                    <Text style={[styles.cardType, { color: colors.textSecondary }]}>{tpl.strategy_type}</Text>
                   </View>
-
-                  {/* Como funciona */}
-                  <View style={[styles.howBox, { backgroundColor: `${colors.textSecondary}08`, borderColor: colors.border }]}>
-                    <Text style={[styles.howTitle, { color: colors.text }]}>📖 Como funciona</Text>
-                    {tpl.howItWorks.map((step, i) => (
-                      <Text key={i} style={[styles.howStep, { color: colors.textSecondary }]}>{step}</Text>
-                    ))}
+                  <View style={[styles.riskBadge, { backgroundColor: `${tpl.risk.color}15` }]}>
+                    <View style={[styles.riskDot, { backgroundColor: tpl.risk.color }]} />
+                    <Text style={[styles.riskLabel, { color: tpl.risk.color }]}>{tpl.risk.label}</Text>
                   </View>
-
-                  {/* Botão: Criar com este template → navega para Strategy e abre o modal */}
-                  <TouchableOpacity
-                    style={[styles.createBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => navigation?.navigate("Strategy", { openCreate: true, template: tpl.id })}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.createBtnText}>🚀 Criar com este template</Text>
-                  </TouchableOpacity>
+                  <Text style={{ fontSize: 16, color: colors.textSecondary, marginLeft: 6 }}>
+                    {isOpen ? "▲" : "▼"}
+                  </Text>
                 </View>
-              )}
-            </TouchableOpacity>
-          )
-        })}
 
-        {/* ── Botão: Criar Nova Estratégia ── */}
-        <TouchableOpacity
-          style={[styles.newCard, { borderColor: colors.primary }]}
-          onPress={() => navigation?.navigate("Strategy", { openCreate: true })}
-          activeOpacity={0.7}
-        >
-          <Text style={{ fontSize: 28 }}>➕</Text>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={[styles.newTitle, { color: colors.primary }]}>{t("strategy.createNew")}</Text>
-            <Text style={[styles.newSub, { color: colors.textSecondary }]}>
-              Escolha um template e configure sua estratégia
-            </Text>
-          </View>
-          <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
-        </TouchableOpacity>
+                {/* ── Conteúdo expandido ── */}
+                {isOpen && (
+                  <View style={[styles.cardBody, { borderTopColor: colors.border }]}>
+                    {/* Resumo */}
+                    <Text style={[styles.summary, { color: colors.textSecondary }]}>{tpl.summary}</Text>
 
-      </ScrollView>
+                    {/* Configurações */}
+                    <View style={[styles.configsBox, { backgroundColor: `${colors.primary}06`, borderColor: colors.border }]}>
+                      <Text style={[styles.configsTitle, { color: colors.primary }]}>
+                        ⚙️ {t("strategy.configs")}
+                      </Text>
+                      {tpl.configs.map((cfg, i) => (
+                        <View key={i}>
+                          <View style={styles.configRow}>
+                            <Text style={[styles.cfgLabel, { color: colors.textSecondary }]}>{cfg.label}</Text>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
+                              <Text style={[styles.cfgValue, { color: colors.text }]}>{cfg.value}</Text>
+                              {cfg.detail && (
+                                <Text style={[styles.cfgDetail, { color: colors.textSecondary }]} numberOfLines={1}>
+                                  {cfg.detail}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                          {i < tpl.configs.length - 1 && (
+                            <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.4 }} />
+                          )}
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Como funciona */}
+                    <View style={[styles.howBox, { backgroundColor: `${colors.textSecondary}08`, borderColor: colors.border }]}>
+                      <Text style={[styles.howTitle, { color: colors.text }]}>📖 Como funciona</Text>
+                      {tpl.how_it_works.map((step, i) => (
+                        <Text key={i} style={[styles.howStep, { color: colors.textSecondary }]}>{step}</Text>
+                      ))}
+                    </View>
+
+                    {/* Botões de ação */}
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      <TouchableOpacity
+                        style={[styles.createBtn, { backgroundColor: colors.primary, flex: 1 }]}
+                        onPress={() => navigation?.navigate("Strategy", { openCreate: true, template: tpl.id })}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.createBtnText}>🚀 Criar com este template</Text>
+                      </TouchableOpacity>
+                      {isCustom && (
+                        <TouchableOpacity
+                          style={[styles.createBtn, { backgroundColor: "#ef4444", paddingHorizontal: 16 }]}
+                          onPress={() => handleDelete(tpl)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.createBtnText}>🗑️</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )
+          })}
+
+          {/* ── Botão: Criar Novo Template ── */}
+          <TouchableOpacity
+            style={[styles.newCard, { borderColor: colors.primary }]}
+            onPress={() => setShowCreateModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 28 }}>➕</Text>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[styles.newTitle, { color: colors.primary }]}>Criar Novo Template</Text>
+              <Text style={[styles.newSub, { color: colors.textSecondary }]}>
+                Configure seu próprio template personalizado
+              </Text>
+            </View>
+            <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
+          </TouchableOpacity>
+
+        </ScrollView>
+      )}
+
+      {/* ── Modal Criar Template ── */}
+      <CreateTemplateModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => { setShowCreateModal(false); fetchTemplates() }}
+        colors={colors}
+      />
     </SafeAreaView>
   )
 })
 
+// ═══════════════════════════════════════════════
+// Modal para criar novo template customizado
+// ═══════════════════════════════════════════════
+function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
+  visible: boolean; onClose: () => void; onSuccess: () => void; colors: any
+}) {
+  const [name, setName] = useState("")
+  const [icon, setIcon] = useState("📊")
+  const [strategyType, setStrategyType] = useState("")
+  const [riskIdx, setRiskIdx] = useState(1) // Médio
+  const [summary, setSummary] = useState("")
+  const [configsText, setConfigsText] = useState("") // "label:value:detail" por linha
+  const [howText, setHowText] = useState("") // 1 step por linha
+  const [saving, setSaving] = useState(false)
+
+  const reset = () => {
+    setName(""); setIcon("📊"); setStrategyType(""); setRiskIdx(1)
+    setSummary(""); setConfigsText(""); setHowText("")
+  }
+
+  const handleSave = async () => {
+    if (!name.trim() || !strategyType.trim()) {
+      Alert.alert("Campos obrigatórios", "Preencha nome e tipo de estratégia.")
+      return
+    }
+
+    // Parse configs (formato: "Label:Valor:Detalhe opcional")
+    const configs = configsText.split("\n").filter(l => l.trim()).map(line => {
+      const parts = line.split(":")
+      return {
+        label: (parts[0] || "").trim(),
+        value: (parts[1] || "").trim(),
+        detail: parts[2]?.trim() || undefined,
+      }
+    }).filter(c => c.label && c.value)
+
+    const howSteps = howText.split("\n").filter(l => l.trim())
+
+    try {
+      setSaving(true)
+      const res = await apiService.createStrategyTemplate({
+        name: name.trim(),
+        icon,
+        strategy_type: strategyType.trim(),
+        risk: RISK_OPTIONS[riskIdx],
+        summary: summary.trim(),
+        configs,
+        how_it_works: howSteps,
+      })
+      if (res?.success) {
+        reset()
+        onSuccess()
+      } else {
+        Alert.alert("Erro", "Não foi possível criar o template.")
+      }
+    } catch (e) {
+      Alert.alert("Erro", "Falha ao salvar template.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <View style={[styles.modalOverlay]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>✨ Novo Template</Text>
+                <TouchableOpacity onPress={onClose}>
+                  <Text style={{ fontSize: 22, color: colors.textSecondary }}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Ícone */}
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Ícone</Text>
+              <View style={styles.iconRow}>
+                {ICON_OPTIONS.map(ic => (
+                  <TouchableOpacity
+                    key={ic}
+                    style={[styles.iconOption, icon === ic && { borderColor: colors.primary, borderWidth: 2 }]}
+                    onPress={() => setIcon(ic)}
+                  >
+                    <Text style={{ fontSize: 22 }}>{ic}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Nome */}
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nome *</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={name} onChangeText={setName}
+                placeholder="Ex: DCA Semanal" placeholderTextColor={colors.textSecondary}
+              />
+
+              {/* Tipo */}
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tipo de Estratégia *</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={strategyType} onChangeText={setStrategyType}
+                placeholder="Ex: Grid Trading, DCA, Scalping" placeholderTextColor={colors.textSecondary}
+              />
+
+              {/* Risco */}
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nível de Risco</Text>
+              <View style={styles.riskRow}>
+                {RISK_OPTIONS.map((r, i) => (
+                  <TouchableOpacity
+                    key={r.label}
+                    style={[
+                      styles.riskOption,
+                      { borderColor: r.color },
+                      riskIdx === i && { backgroundColor: `${r.color}20`, borderWidth: 2 },
+                    ]}
+                    onPress={() => setRiskIdx(i)}
+                  >
+                    <View style={[styles.riskDot, { backgroundColor: r.color }]} />
+                    <Text style={[styles.riskOptText, { color: r.color }]}>{r.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Resumo */}
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Resumo</Text>
+              <TextInput
+                style={[styles.input, styles.multiline, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={summary} onChangeText={setSummary}
+                placeholder="Breve descrição da estratégia..." placeholderTextColor={colors.textSecondary}
+                multiline numberOfLines={3}
+              />
+
+              {/* Configs */}
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Configurações</Text>
+              <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
+                Uma por linha: Label:Valor:Detalhe
+              </Text>
+              <TextInput
+                style={[styles.input, styles.multiline, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={configsText} onChangeText={setConfigsText}
+                placeholder={"Take Profit:5%:Fecha posição\nStop Loss:2%:Proteção"}
+                placeholderTextColor={colors.textSecondary}
+                multiline numberOfLines={5}
+              />
+
+              {/* Como funciona */}
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Como Funciona</Text>
+              <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
+                Um passo por linha
+              </Text>
+              <TextInput
+                style={[styles.input, styles.multiline, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={howText} onChangeText={setHowText}
+                placeholder={"1. Compra no preço atual\n2. Vende quando sobe 5%"}
+                placeholderTextColor={colors.textSecondary}
+                multiline numberOfLines={5}
+              />
+
+              {/* Botão Salvar */}
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.7}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.saveBtnText}>💾 Salvar Template</Text>
+                )}
+              </TouchableOpacity>
+
+            </ScrollView>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  )
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1, padding: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   // Card
   card: {
@@ -238,6 +447,17 @@ const styles = StyleSheet.create({
     fontSize: typography.caption,
     fontWeight: fontWeights.light,
     marginTop: 2,
+  },
+
+  // Custom badge
+  customBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  customBadgeText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.medium,
   },
 
   // Risk badge
@@ -334,7 +554,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
   },
 
-  // New strategy card
+  // New template card
   newCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -352,5 +572,95 @@ const styles = StyleSheet.create({
     fontSize: typography.caption,
     fontWeight: fontWeights.light,
     marginTop: 2,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    maxHeight: "90%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: typography.h3,
+    fontWeight: fontWeights.semibold,
+  },
+  fieldLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
+    marginBottom: 6,
+    marginTop: 14,
+  },
+  fieldHint: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.light,
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: typography.body,
+  },
+  multiline: {
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  iconRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 6,
+  },
+  iconOption: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  riskRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  riskOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 6,
+  },
+  riskOptText: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
+  },
+  saveBtn: {
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  saveBtnText: {
+    color: "#FFFFFF",
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
   },
 })
