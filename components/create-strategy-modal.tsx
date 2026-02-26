@@ -140,8 +140,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
     try {
       setLoadingTemplates(true)
       const res = await apiService.listStrategyTemplates()
-      if (res?.success && res.templates) {
-        setApiTemplates(res.templates)
+      // this.get() retorna { data: { success, templates } }
+      const body = res?.data ?? res
+      if (body?.success && body.templates) {
+        setApiTemplates(body.templates)
       }
     } catch (e) {
       console.error("❌ Erro ao carregar templates:", e)

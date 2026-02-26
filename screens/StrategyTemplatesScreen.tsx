@@ -54,8 +54,10 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
     try {
       setLoading(true)
       const res = await apiService.listStrategyTemplates()
-      if (res?.success && res.templates) {
-        setTemplates(res.templates)
+      // this.get() retorna { data: { success, templates } }
+      const body = res?.data ?? res
+      if (body?.success && body.templates) {
+        setTemplates(body.templates)
       }
     } catch (e) {
       console.error("❌ Erro ao carregar templates:", e)
@@ -286,7 +288,8 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
         configs,
         how_it_works: howSteps,
       })
-      if (res?.success) {
+      const body = res?.data ?? res
+      if (body?.success) {
         reset()
         onSuccess()
       } else {
