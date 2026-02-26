@@ -67,29 +67,6 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
         onPress={toggle}
         activeOpacity={0.6}
       >
-        {/* Ícones empilhados das exchanges */}
-        <View style={styles.stackedIcons}>
-          {exchanges.slice(0, 4).map((ex, i) => (
-            <View
-              key={ex.name}
-              style={[
-                styles.stackedIconWrap,
-                { marginLeft: i === 0 ? 0 : -6, zIndex: 10 - i },
-              ]}
-            >
-              {ex.logo ? (
-                <Image source={ex.logo} style={styles.stackedIcon} />
-              ) : (
-                <View style={[styles.stackedIconFallback, { backgroundColor: colors.border }]}>
-                  <Text style={[styles.stackedIconLetter, { color: colors.textSecondary }]}>
-                    {ex.name.charAt(0)}
-                  </Text>
-                </View>
-              )}
-            </View>
-          ))}
-        </View>
-
         <Text style={[styles.headerLabel, { color: colors.textSecondary }]}>
           {exchanges.length} exchange{exchanges.length > 1 ? 's' : ''}
         </Text>
