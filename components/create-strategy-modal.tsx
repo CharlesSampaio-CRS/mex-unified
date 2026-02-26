@@ -48,27 +48,6 @@ interface CreateStrategyModalProps {
   navigation?: any
 }
 
-const TEMPLATES = [
-  {
-    id: "simple",
-    nameKey: "strategy.simple",
-    descriptionKey: "strategy.simpleDesc",
-    icon: "📊",
-  },
-  {
-    id: "conservative",
-    nameKey: "strategy.conservative",
-    descriptionKey: "strategy.conservativeDesc",
-    icon: "🛡️",
-  },
-  {
-    id: "aggressive",
-    nameKey: "strategy.aggressive",
-    descriptionKey: "strategy.aggressiveDesc",
-    icon: "🚀",
-  },
-]
-
 export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navigation }: CreateStrategyModalProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
@@ -304,12 +283,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         throw new Error("Exchange não encontrada")
       }
       
-      // Mapeia template para tipo de estratégia (API ou fallback hardcoded)
-      const strategyTypeMap: Record<string, string> = {
-        simple: 'grid',
-        conservative: 'dca',
-        aggressive: 'trailing_stop'
-      }
+      // Template selecionado vem do MongoDB (via API)
       const tplInfo = getSelectedTemplate()
       
       const strategyData = {
@@ -318,9 +292,9 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         symbol: token,
         exchange_id: selectedExchange,
         exchange_name: capitalizeExchangeName(exchange.name),
-        strategy_type: strategyTypeMap[selectedTemplate] || tplInfo.type || 'grid',
+        strategy_type: tplInfo.type,
         config: {
-          template: selectedTemplate,
+          template_id: selectedTemplate,
           template_name: tplInfo.name,
           exchange_id: selectedExchange,
           created_via: 'modal'
@@ -383,12 +357,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
     return `${token}_${exchName}_${ts}`
   }
 
-  // Helper: busca o template selecionado (API ou hardcoded fallback)
+  // Helper: busca o template selecionado da API (MongoDB)
   const getSelectedTemplate = () => {
-    const fromApi = apiTemplates.find(t => t.id === selectedTemplate)
-    if (fromApi) return { name: fromApi.name, icon: fromApi.icon, type: fromApi.strategy_type }
-    const fromLocal = TEMPLATES.find(t => t.id === selectedTemplate)
-    if (fromLocal) return { name: t(fromLocal.nameKey), icon: fromLocal.icon, type: selectedTemplate }
+    const tpl = apiTemplates.find(t => t.id === selectedTemplate)
+    if (tpl) return { name: tpl.name, icon: tpl.icon, type: tpl.strategy_type }
     return { name: selectedTemplate, icon: "📊", type: selectedTemplate }
   }
 

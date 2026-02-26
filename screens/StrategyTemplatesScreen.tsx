@@ -72,7 +72,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
   const toggle = (id: string) => setExpandedId(prev => (prev === id ? null : id))
 
   const handleDelete = (tpl: StrategyTemplateItem) => {
-    if (tpl.is_default || tpl.id.startsWith("default_")) {
+    if (tpl.is_default) {
       Alert.alert("Ação não permitida", "Templates padrão não podem ser excluídos.")
       return
     }
@@ -110,7 +110,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
           {/* ── Lista de templates da API ── */}
           {templates.map((tpl) => {
             const isOpen = expandedId === tpl.id
-            const isCustom = !tpl.is_default && !tpl.id.startsWith("default_")
+            const isCustom = !tpl.is_default
             return (
               <TouchableOpacity
                 key={tpl.id}
