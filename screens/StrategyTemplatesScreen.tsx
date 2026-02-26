@@ -191,7 +191,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
                         onPress={() => navigation?.navigate("Strategy", { openCreate: true, template: tpl.id })}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.createBtnText}>🚀 Criar com este template</Text>
+                        <Text style={styles.createBtnText}>🚀 Usar template</Text>
                       </TouchableOpacity>
                       {isCustom && (
                         <TouchableOpacity
