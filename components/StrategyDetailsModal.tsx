@@ -15,14 +15,9 @@ import Svg, { Path, Circle } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { 
-  Strategy, 
   StrategyDetail, 
   StrategyStatus, 
-  StrategyExecution, 
-  StrategySignal,
-  StrategyStatsResponse,
-  PositionInfo
-} from '@/hooks/useBackendStrategies'
+  StrategyStatsResponse} from '@/hooks/useBackendStrategies'
 import { apiService } from '@/services/api'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 
@@ -38,7 +33,6 @@ interface StrategyDetailsModalProps {
 export function StrategyDetailsModal({
   visible,
   strategyId,
-  userId,
   onClose,
   onDelete,
   onToggleActive
