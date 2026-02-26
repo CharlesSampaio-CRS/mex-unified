@@ -13,9 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  Dimensions,
 } from "react-native"
-import { Picker } from "@react-native-picker/picker"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBalance } from "@/contexts/BalanceContext"
@@ -286,7 +284,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       // Template selecionado vem do MongoDB (via API)
       const tplInfo = getSelectedTemplate()
       
-      const strategyData = {
+      const strategyData: Parameters<typeof createStrategy>[0] = {
         name: generateStrategyName(),
         description: `Estratégia ${tplInfo.name} para ${token} na ${capitalizeExchangeName(exchange.name)}`,
         symbol: token,
@@ -294,10 +292,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         exchange_name: capitalizeExchangeName(exchange.name),
         strategy_type: tplInfo.type,
         config: {
-          template_id: selectedTemplate,
-          template_name: tplInfo.name,
-          exchange_id: selectedExchange,
-          created_via: 'modal'
+          take_profit_levels: [],
+          mode: 'template',
         },
       }
       

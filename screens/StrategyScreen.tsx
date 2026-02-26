@@ -5,7 +5,7 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useAuth } from "../contexts/AuthContext"
 import { useNotifications } from "../contexts/NotificationsContext"
-import { useBackendStrategies, Strategy } from "../hooks/useBackendStrategies"
+import { useBackendStrategies, Strategy, StrategyStatus } from "../hooks/useBackendStrategies"
 import { notify } from "../services/notify"
 import { CreateStrategyModal } from "../components/create-strategy-modal"
 import { StrategyDetailsModal } from "@/components/StrategyDetailsModal"
@@ -88,12 +88,29 @@ export function StrategyScreen({ navigation, route }: any) {
 
   /**
    *  Execuções ficam vazias por enquanto
-   * TODO: Implementar sistema de execuções local
+   * TODO: Fase 7 - endpoint de execuções agregadas
    */
   const loadExecutions = useCallback(async () => {
-    // Execuções serão implementadas depois
-    // Por enquanto, mantém vazio
+    // Execuções serão implementadas em fase futura
   }, [])
+
+  // Aggregate executions from all strategies for the tab
+  const allExecutions = useMemo(() => {
+    return strategies
+      .filter(s => s.total_executions > 0)
+      .map(s => ({
+        strategyId: s.id,
+        strategyName: s.name,
+        symbol: s.symbol,
+        exchange: s.exchange_name,
+        totalExecs: s.total_executions,
+        totalPnl: s.total_pnl_usd,
+        status: s.status,
+        lastChecked: s.last_checked_at,
+        lastPrice: s.last_price,
+      }))
+      .sort((a, b) => (b.lastChecked || 0) - (a.lastChecked || 0));
+  }, [strategies]);
 
   // Load executions on mount
   useEffect(() => {
@@ -197,10 +214,45 @@ export function StrategyScreen({ navigation, route }: any) {
   }, [loadStrategies])
 
   const formatCurrency = useCallback((value: number) => {
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "USD",
+    }).format(value)}`;
+  }, [])
+
+  const formatCurrencyAbs = useCallback((value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "USD",
-    }).format(value)
+    }).format(value);
+  }, [])
+
+  const getStatusLabel = useCallback((status: StrategyStatus): string => {
+    const labels: Record<StrategyStatus, string> = {
+      idle: t('strategy.statusIdle') || 'Idle',
+      monitoring: t('strategy.statusMonitoring') || 'Monitoring',
+      buy_pending: t('strategy.statusBuyPending') || 'Buy Pending',
+      in_position: t('strategy.statusInPosition') || 'In Position',
+      sell_pending: t('strategy.statusSellPending') || 'Sell Pending',
+      paused: t('strategy.inactive'),
+      completed: t('strategy.statusCompleted') || 'Completed',
+      error: t('strategy.statusError') || 'Error',
+    };
+    return labels[status] || status;
+  }, [t])
+
+  const getStatusColor = useCallback((status: StrategyStatus): string => {
+    switch (status) {
+      case 'monitoring': return '#3b82f6';
+      case 'in_position': return '#10b981';
+      case 'buy_pending':
+      case 'sell_pending': return '#f59e0b';
+      case 'completed': return '#8b5cf6';
+      case 'error': return '#ef4444';
+      case 'paused': return '#6b7280';
+      default: return '#6b7280';
+    }
   }, [])
 
   const formatDate = useCallback((date: Date) => {
@@ -339,25 +391,25 @@ export function StrategyScreen({ navigation, route }: any) {
                     </View>
                   </View>
                   
-                  {/* Badge de status ativo/inativo (clicável como toggle) */}
+                  {/* Badge de status operacional (Fase 5) */}
                   <TouchableOpacity
                     style={[
                       styles.statusBadge,
-                      { backgroundColor: strategy.is_active ? colors.successLight : colors.dangerLight }
+                      { backgroundColor: `${getStatusColor(strategy.status)}15` }
                     ]}
                     onPress={() => toggleStrategyHandler(strategy.id)}
                     activeOpacity={0.7}
                   >
                     <Text style={[
                       styles.statusText,
-                      { color: strategy.is_active ? colors.success : colors.danger }
+                      { color: getStatusColor(strategy.status) }
                     ]}>
-                      {strategy.is_active ? t('strategy.active') : t('strategy.inactive')}
+                      {getStatusLabel(strategy.status)}
                     </Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Detalhes (3 linhas) */}
+                {/* Detalhes (dados reais Fase 5) */}
                 <View style={styles.strategyDetails}>
                   <View style={styles.detailRow}>
                     <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
@@ -377,12 +429,23 @@ export function StrategyScreen({ navigation, route }: any) {
                     </Text>
                   </View>
                   
+                  {strategy.last_price != null && strategy.last_price > 0 && (
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                        {t('strategy.lastPrice') || 'Last Price'}:
+                      </Text>
+                      <Text style={[styles.detailValue, { color: colors.text }]}>
+                        {formatCurrencyAbs(strategy.last_price)}
+                      </Text>
+                    </View>
+                  )}
+
                   <View style={styles.detailRow}>
                     <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
                       {t('strategy.totalTrades') || 'Total Trades'}:
                     </Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>
-                      0
+                      {strategy.total_executions}
                     </Text>
                   </View>
                   
@@ -392,11 +455,25 @@ export function StrategyScreen({ navigation, route }: any) {
                     </Text>
                     <Text style={[
                       styles.detailValue, 
-                      { color: colors.success }
+                      { color: strategy.total_pnl_usd >= 0 ? colors.success : colors.danger }
                     ]}>
-                      $0.00
+                      {formatCurrency(strategy.total_pnl_usd)}
                     </Text>
                   </View>
+
+                  {strategy.position && (
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                        {t('strategy.unrealizedPnl') || 'Unrealized P&L'}:
+                      </Text>
+                      <Text style={[
+                        styles.detailValue, 
+                        { color: strategy.position.unrealized_pnl >= 0 ? colors.success : colors.danger }
+                      ]}>
+                        {formatCurrency(strategy.position.unrealized_pnl)} ({strategy.position.unrealized_pnl_percent >= 0 ? '+' : ''}{strategy.position.unrealized_pnl_percent.toFixed(2)}%)
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Botões de ação */}
@@ -444,15 +521,82 @@ export function StrategyScreen({ navigation, route }: any) {
             </>
           )
         ) : (
-          // Aba de Execuções
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {t('strategy.executionsEmpty')}
-            </Text>
-            <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              {t('strategy.executionsEmptyDesc')}
-            </Text>
-          </View>
+          // Aba de Execuções — resumo por estratégia
+          allExecutions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {t('strategy.executionsEmpty')}
+              </Text>
+              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+                {t('strategy.executionsEmptyDesc')}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.executionsList}>
+              {allExecutions.map((item) => (
+                <TouchableOpacity 
+                  key={item.strategyId}
+                  style={[styles.executionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => {
+                    setSelectedStrategyId(item.strategyId);
+                    setDetailsModalVisible(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.executionHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.executionName, { color: colors.text }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={[{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }]}>
+                        {item.exchange} · {item.symbol}
+                      </Text>
+                    </View>
+                    <View style={[
+                      styles.statusBadge, 
+                      { backgroundColor: getStatusColor(item.status).bg }
+                    ]}>
+                      <Text style={[styles.statusText, { color: getStatusColor(item.status).text }]}>
+                        {getStatusLabel(item.status)}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                    <View style={{ alignItems: 'center', flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                        {t('strategy.totalTrades') || 'Trades'}
+                      </Text>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 2 }}>
+                        {item.totalExecs}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'center', flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                        {t('strategy.profitLoss') || 'P&L'}
+                      </Text>
+                      <Text style={{ 
+                        fontSize: 16, fontWeight: '600', marginTop: 2,
+                        color: item.totalPnl >= 0 ? colors.success : colors.danger 
+                      }}>
+                        {formatCurrency(item.totalPnl)}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'center', flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                        {t('strategy.lastChecked') || 'Last'}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: colors.text, marginTop: 2 }}>
+                        {item.lastChecked 
+                          ? new Date(item.lastChecked * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : '—'}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )
         )}
       </ScrollView>
 

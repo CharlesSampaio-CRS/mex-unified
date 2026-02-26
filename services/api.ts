@@ -1648,6 +1648,48 @@ export const apiService = {
     return this.put(`/strategies/${id}`, { is_active }, TIMEOUTS.FAST);
   },
 
+  /**
+   * Ativa uma estratégia (status → monitoring)
+   */
+  async activateStrategy(id: string) {
+    return this.post(`/strategies/${id}/activate`, {}, TIMEOUTS.STANDARD);
+  },
+
+  /**
+   * Pausa uma estratégia (mantém posição)
+   */
+  async pauseStrategy(id: string) {
+    return this.post(`/strategies/${id}/pause`, {}, TIMEOUTS.STANDARD);
+  },
+
+  /**
+   * Busca estatísticas de uma estratégia
+   */
+  async getStrategyStats(id: string) {
+    return this.get(`/strategies/${id}/stats`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Busca execuções paginadas de uma estratégia
+   */
+  async getStrategyExecutions(id: string, page: number = 1, limit: number = 50) {
+    return this.get(`/strategies/${id}/executions?page=${page}&limit=${limit}`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Busca sinais paginados de uma estratégia
+   */
+  async getStrategySignals(id: string, page: number = 1, limit: number = 50) {
+    return this.get(`/strategies/${id}/signals?page=${page}&limit=${limit}`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Trigger manual de processamento de uma estratégia
+   */
+  async tickStrategy(id: string) {
+    return this.post(`/strategies/${id}/tick`, {}, TIMEOUTS.SLOW);
+  },
+
   // ==========================================
   // 📋 STRATEGY TEMPLATES - MongoDB Backend
   // ==========================================
