@@ -18,6 +18,7 @@ const AVAILABLE_ICONS = [
   { id: 'target', name: 'Target', icon: 'target', screen: 'Target' },
   { id: 'flag', name: 'Flag', icon: 'flag', screen: 'Flag' },
   { id: 'chart', name: 'Chart', icon: 'chart', screen: 'Chart' },
+  { id: 'robot', name: 'Strategies', icon: 'robot', screen: 'StrategyTemplates' },
   { id: 'bell', name: 'Alerts', icon: 'bell', screen: 'Favoritos' },
   { id: 'settings', name: 'Settings', icon: 'settings', screen: 'Settings' },
 ]
@@ -209,6 +210,17 @@ const SettingsIcon = ({ color }: { color: string }) => (
   </Svg>
 )
 
+const RobotIcon = ({ color }: { color: string }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Rect x="4" y="8" width="16" height="12" rx="2" stroke={color} strokeWidth="2" />
+    <Path d="M12 2v6" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <Circle cx="9" cy="14" r="1.5" fill={color} />
+    <Circle cx="15" cy="14" r="1.5" fill={color} />
+    <Path d="M9 17.5h6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <Path d="M2 13v2M22 13v2" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+)
+
 const iconComponents: Record<string, React.FC<{ color: string }>> = {
   star: StarIcon,
   heart: HeartIcon,
@@ -222,6 +234,7 @@ const iconComponents: Record<string, React.FC<{ color: string }>> = {
   target: TargetIcon,
   flag: FlagIcon,
   chart: ChartIcon,
+  robot: RobotIcon,
   bell: BellIcon,
   settings: SettingsIcon,
 }

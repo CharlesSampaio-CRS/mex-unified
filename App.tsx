@@ -66,6 +66,7 @@ import { DiamondScreen } from "./screens/DiamondScreen"
 import { TargetScreen } from "./screens/TargetScreen"
 import { FlagScreen } from "./screens/FlagScreen"
 import { ChartScreen } from "./screens/ChartScreen"
+import { StrategyTemplatesScreen } from "./screens/StrategyTemplatesScreen"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
 import { BalanceProvider, useBalance } from "./contexts/BalanceContext"
@@ -361,6 +362,13 @@ function MainTabs() {
         <Tab.Screen
           name="Chart"
           component={ChartScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="StrategyTemplates"
+          component={StrategyTemplatesScreen}
           options={{
             tabBarButton: () => null,
           }}

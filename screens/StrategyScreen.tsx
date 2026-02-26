@@ -25,7 +25,7 @@ import { commonStyles, spacing, borderRadius, shadows } from "@/lib/layout"
  * - Multi-device: mesmos dados em todos os dispositivos
  */
 
-export function StrategyScreen({ navigation }: any) {
+export function StrategyScreen({ navigation, route }: any) {
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
@@ -43,6 +43,15 @@ export function StrategyScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<"strategies" | "executions">("strategies")
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
+
+  // Abre modal de criação se vier da tela de templates
+  useEffect(() => {
+    if (route?.params?.openCreate) {
+      setCreateModalVisible(true)
+      // Limpa o param para não reabrir ao voltar
+      navigation?.setParams({ openCreate: undefined, template: undefined })
+    }
+  }, [route?.params?.openCreate])
 
   // Modal de confirmação de exclusão
   const [confirmDeleteModalVisible, setConfirmDeleteModalVisible] = useState(false)
