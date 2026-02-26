@@ -52,7 +52,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const { data: balanceData, loading: balanceLoading } = useBalance()
   const { createStrategy } = useBackendStrategies(false) // Não auto-load
   const { addNotification } = useNotifications()
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [loading, setLoading] = useState(false)
   const [exchanges, setExchanges] = useState<LocalExchange[]>([])
   const [loadingExchanges, setLoadingExchanges] = useState(false)
@@ -73,6 +73,17 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const [showTokenList, setShowTokenList] = useState(true)
   const tokenInputRef = useRef<TextInput>(null)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
+
+  // ── Config state (Step 4) ──
+  const [minInvestment, setMinInvestment] = useState<string>("")
+  const [slEnabled, setSlEnabled] = useState(true)
+  const [slPercent, setSlPercent] = useState<string>("3.0")
+  const [trailingEnabled, setTrailingEnabled] = useState(true)
+  const [trailingDistance, setTrailingDistance] = useState<string>("2.5")
+  const [tpLevels, setTpLevels] = useState<{ percent: string; sell_percent: string }[]>([
+    { percent: "5.0", sell_percent: "50" },
+    { percent: "10.0", sell_percent: "100" },
+  ])
 
   // Templates da API
   const [apiTemplates, setApiTemplates] = useState<any[]>([])
@@ -109,6 +120,16 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       setTokenSearchResults([])
       setTokenSearchQuery("")
       setShowTokenList(true)
+      // Reset config
+      setMinInvestment("")
+      setSlEnabled(true)
+      setSlPercent("3.0")
+      setTrailingEnabled(true)
+      setTrailingDistance("2.5")
+      setTpLevels([
+        { percent: "5.0", sell_percent: "50" },
+        { percent: "10.0", sell_percent: "100" },
+      ])
     }
   }, [visible])
 
@@ -272,6 +293,12 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       return
     }
 
+    const investmentValue = parseFloat(minInvestment)
+    if (!investmentValue || investmentValue <= 0) {
+      Alert.alert(t("common.attention"), t("strategy.configRequired"))
+      return
+    }
+
     try {
       setLoading(true)
       
@@ -286,6 +313,29 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       
       // token contém o pair completo (ex: "SOL/USDT") — extrair base para exibição
       const tokenBase = token.includes('/') ? token.split('/')[0] : token
+
+      // ── Montar config completa ──
+      const takeProfitLevels = tpLevels
+        .filter(tp => parseFloat(tp.percent) > 0 && parseFloat(tp.sell_percent) > 0)
+        .map(tp => ({
+          percent: parseFloat(tp.percent),
+          sell_percent: parseFloat(tp.sell_percent),
+          executed: false,
+        }))
+
+      const stopLossConfig = slEnabled ? {
+        enabled: true,
+        percent: parseFloat(slPercent) || 3.0,
+        trailing: trailingEnabled,
+        trailing_distance: trailingEnabled ? (parseFloat(trailingDistance) || 2.5) : undefined,
+      } : undefined
+
+      const strategyConfig = {
+        take_profit_levels: takeProfitLevels,
+        stop_loss: stopLossConfig,
+        min_investment: investmentValue,
+        mode: 'spot',
+      }
       
       const strategyData: Parameters<typeof createStrategy>[0] = {
         name: generateStrategyName(),
@@ -294,13 +344,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         exchange_id: selectedExchange,
         exchange_name: capitalizeExchangeName(exchange.name),
         strategy_type: tplInfo.type,
-        config: {
-          take_profit_levels: [],
-          mode: 'template',
-        },
+        config: strategyConfig,
       }
       
-      console.log('💾 Saving strategy to MongoDB:', strategyData)
+      console.log('💾 Saving strategy to MongoDB:', JSON.stringify(strategyData, null, 2))
       const createdStrategy = await createStrategy(strategyData)
 
       // Fecha o modal e limpa o loading antes de chamar onSuccess
@@ -339,7 +386,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
   const canProceedToStep2 = selectedTemplate !== ""
   const canProceedToStep3 = selectedExchange !== ""
-  const canCreate = token.trim() !== ""
+  const canProceedToStep4 = token.trim() !== ""
+  const canCreate = parseFloat(minInvestment) > 0
 
   const getSelectedExchangeName = () => {
     const exchange = exchanges.find(e => {
@@ -362,7 +410,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const getSelectedTemplate = () => {
     const tpl = apiTemplates.find(t => t.id === selectedTemplate)
     if (tpl) return { name: tpl.name, icon: tpl.icon, type: tpl.strategy_type }
-    return { name: selectedTemplate, icon: "📊", type: selectedTemplate }
+    // Fallback: usa "swing_trade" como tipo seguro (nunca enviar o ID como type)
+    return { name: selectedTemplate, icon: "📊", type: "swing_trade" }
   }
 
   return (
@@ -387,8 +436,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 <Text style={[styles.closeIcon, { color: colors.text }]}>✕</Text>
               </TouchableOpacity>
             </View>
-          {/* Steps Indicator - esconde quando teclado aberto no step 3 */}
-          {!(step === 3 && keyboardVisible) && (
+          {/* Steps Indicator - esconde quando teclado aberto no step 3/4 */}
+          {!((step === 3 || step === 4) && keyboardVisible) && (
           <View style={styles.stepsContainer}>
             <View style={styles.stepItem}>
               <View
@@ -455,6 +504,28 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 {t("strategy.labelToken")}
               </Text>
             </View>
+            <View style={[styles.stepLine, { backgroundColor: colors.border }]} />
+            <View style={styles.stepItem}>
+              <View
+                style={[
+                  styles.stepCircle,
+                  { borderColor: step >= 4 ? colors.primary : colors.border },
+                  step >= 4 && { backgroundColor: colors.primary },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.stepNumber,
+                    { color: step >= 4 ? colors.primaryText : colors.textSecondary },
+                  ]}
+                >
+                  4
+                </Text>
+              </View>
+              <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
+                {t("strategy.labelConfig")}
+              </Text>
+            </View>
           </View>
           )}
           {/* Content */}
@@ -491,8 +562,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                   </Text>
                 </View>
               ) : token && !showTokenList ? (
-                /* ── Token selecionado: resumo completo da estratégia ── */
-                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                /* ── Token selecionado: card compacto ── */
+                <View style={{ flex: 1, justifyContent: 'center', paddingBottom: 40 }}>
                   {/* Card do token selecionado (toque para alterar) */}
                   <TouchableOpacity
                     onPress={() => {
@@ -523,107 +594,21 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                     <Text style={{ fontSize: 18, color: colors.textSecondary }}>✏️</Text>
                   </TouchableOpacity>
 
-                  {/* Resumo completo da estratégia */}
+                  {/* Info: avance para configurar */}
                   <View style={{
                     marginTop: 16,
-                    borderRadius: 14,
-                    borderWidth: 0.5,
-                    borderColor: colors.border,
-                    backgroundColor: colors.background,
-                    overflow: 'hidden',
-                  }}>
-                    {/* Header do resumo */}
-                    <View style={{
-                      backgroundColor: `${colors.primary}10`,
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                      borderBottomWidth: 0.5,
-                      borderBottomColor: colors.border,
-                    }}>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-                        📋 {t('strategy.summary')}
-                      </Text>
-                    </View>
-
-                    {/* Linhas de detalhe */}
-                    <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
-                      {/* Nome */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.name')}</Text>
-                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500', maxWidth: '65%', textAlign: 'right' }} numberOfLines={1}>
-                          {(token.includes('/') ? token.split('/')[0] : token)}_{getSelectedExchangeName()}_{Math.floor(Date.now() / 1000)}
-                        </Text>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Template */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.template')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text style={{ fontSize: 16 }}>
-                            {getSelectedTemplate().icon}
-                          </Text>
-                          <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
-                            {getSelectedTemplate().name}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Exchange */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.exchange')}</Text>
-                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
-                          {getSelectedExchangeName()}
-                        </Text>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Tipo de Estratégia */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.strategyType')}</Text>
-                        <Text style={{ fontSize: 14, color: colors.primary, fontWeight: '500' }}>
-                          {getSelectedTemplate().type}
-                        </Text>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Par de Trading */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.tradingPair')}</Text>
-                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '600' }}>
-                          {token}
-                        </Text>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Status */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.status')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' }} />
-                          <Text style={{ fontSize: 14, color: '#10b981', fontWeight: '500' }}>
-                            {t('strategy.active')}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Descrição */}
-                  <View style={{
-                    marginTop: 12,
                     padding: 14,
                     borderRadius: 12,
-                    backgroundColor: `${colors.textSecondary}08`,
+                    backgroundColor: `${colors.primary}08`,
                     borderWidth: 0.5,
-                    borderColor: colors.border,
+                    borderColor: colors.primary + '30',
+                    alignItems: 'center',
                   }}>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20, fontStyle: 'italic' }}>
-                      {`Estratégia ${getSelectedTemplate().name} para ${token.includes('/') ? token.split('/')[0] : token} na ${getSelectedExchangeName()}`}
+                    <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '500', textAlign: 'center' }}>
+                      ✅ Token selecionado! Avance para configurar investimento, stop loss e take profit.
                     </Text>
                   </View>
-                </ScrollView>
+                </View>
               ) : (
                 /* ── Lista de tokens: busca + FlatList ── */
                 <View style={{ flex: 1 }}>
@@ -751,6 +736,325 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 </View>
               )}
             </View>
+          ) : step === 4 ? (
+          /* ══════════ Step 4: Configuração ══════════ */
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={[styles.contentContainer, { paddingBottom: 40 }]}
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.stepContent}>
+              <Text style={[styles.stepTitle, { color: colors.text }]}>
+                {t("strategy.configTitle")}
+              </Text>
+              <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                {t("strategy.configDescription")}
+              </Text>
+
+              {/* ── Investimento (USDT) ── */}
+              <View style={{ marginBottom: 24 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 8 }}>
+                  💰 {t("strategy.minInvestment")}
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: minInvestment ? colors.primary : colors.border,
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: colors.text,
+                    backgroundColor: colors.background,
+                  }}
+                  placeholder={t("strategy.minInvestmentPlaceholder")}
+                  placeholderTextColor={colors.textSecondary}
+                  value={minInvestment}
+                  onChangeText={(text) => setMinInvestment(text.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                />
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, fontStyle: 'italic' }}>
+                  {t("strategy.minInvestmentHint")}
+                </Text>
+              </View>
+
+              {/* ── Stop Loss ── */}
+              <View style={{
+                marginBottom: 24,
+                borderWidth: 1,
+                borderColor: slEnabled ? '#ef4444' + '40' : colors.border,
+                borderRadius: 14,
+                padding: 16,
+                backgroundColor: slEnabled ? '#ef4444' + '08' : 'transparent',
+              }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: slEnabled ? 16 : 0 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>
+                    🛡️ {t("strategy.stopLoss")}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setSlEnabled(!slEnabled)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      paddingVertical: 4,
+                      paddingHorizontal: 12,
+                      borderRadius: 20,
+                      backgroundColor: slEnabled ? '#ef4444' + '20' : colors.border + '40',
+                    }}
+                  >
+                    <View style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      borderWidth: 2,
+                      borderColor: slEnabled ? '#ef4444' : colors.textSecondary,
+                      backgroundColor: slEnabled ? '#ef4444' : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      {slEnabled && <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>✓</Text>}
+                    </View>
+                    <Text style={{ fontSize: 13, color: slEnabled ? '#ef4444' : colors.textSecondary, fontWeight: '500' }}>
+                      {slEnabled ? 'ON' : 'OFF'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {slEnabled && (
+                  <>
+                    {/* SL Percent */}
+                    <View style={{ marginBottom: 14 }}>
+                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 6 }}>
+                        {t("strategy.stopLossPercent")}
+                      </Text>
+                      <TextInput
+                        style={{
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          paddingVertical: 12,
+                          fontSize: 16,
+                          color: colors.text,
+                          backgroundColor: colors.background,
+                        }}
+                        placeholder={t("strategy.stopLossPercentPlaceholder")}
+                        placeholderTextColor={colors.textSecondary}
+                        value={slPercent}
+                        onChangeText={(text) => setSlPercent(text.replace(/[^0-9.]/g, ''))}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+
+                    {/* Trailing Toggle */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: trailingEnabled ? 14 : 0 }}>
+                      <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                        {t("strategy.trailing")}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setTrailingEnabled(!trailingEnabled)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          paddingVertical: 4,
+                          paddingHorizontal: 10,
+                          borderRadius: 16,
+                          backgroundColor: trailingEnabled ? colors.primary + '20' : colors.border + '40',
+                        }}
+                      >
+                        <View style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          borderWidth: 2,
+                          borderColor: trailingEnabled ? colors.primary : colors.textSecondary,
+                          backgroundColor: trailingEnabled ? colors.primary : 'transparent',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          {trailingEnabled && <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>✓</Text>}
+                        </View>
+                        <Text style={{ fontSize: 12, color: trailingEnabled ? colors.primary : colors.textSecondary, fontWeight: '500' }}>
+                          {trailingEnabled ? 'ON' : 'OFF'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Trailing Distance */}
+                    {trailingEnabled && (
+                      <View>
+                        <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 6 }}>
+                          {t("strategy.trailingDistance")}
+                        </Text>
+                        <TextInput
+                          style={{
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            borderRadius: 10,
+                            paddingHorizontal: 14,
+                            paddingVertical: 12,
+                            fontSize: 16,
+                            color: colors.text,
+                            backgroundColor: colors.background,
+                          }}
+                          placeholder={t("strategy.trailingDistancePlaceholder")}
+                          placeholderTextColor={colors.textSecondary}
+                          value={trailingDistance}
+                          onChangeText={(text) => setTrailingDistance(text.replace(/[^0-9.]/g, ''))}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+
+              {/* ── Take Profit ── */}
+              <View style={{
+                marginBottom: 24,
+                borderWidth: 1,
+                borderColor: '#10b981' + '40',
+                borderRadius: 14,
+                padding: 16,
+                backgroundColor: '#10b981' + '08',
+              }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 16 }}>
+                  🎯 {t("strategy.takeProfit")}
+                </Text>
+
+                {tpLevels.map((tp, index) => (
+                  <View key={index} style={{
+                    marginBottom: 14,
+                    padding: 12,
+                    borderRadius: 10,
+                    backgroundColor: colors.background,
+                    borderWidth: 0.5,
+                    borderColor: colors.border,
+                  }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
+                        {t("strategy.tpLevel").replace('{n}', String(index + 1))}
+                      </Text>
+                      {tpLevels.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => setTpLevels(prev => prev.filter((_, i) => i !== index))}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Text style={{ fontSize: 12, color: '#ef4444', fontWeight: '500' }}>
+                            {t("strategy.removeTpLevel")}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 4 }}>
+                          {t("strategy.tpPercent")}
+                        </Text>
+                        <TextInput
+                          style={{
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            borderRadius: 8,
+                            paddingHorizontal: 12,
+                            paddingVertical: 10,
+                            fontSize: 15,
+                            color: colors.text,
+                            backgroundColor: colors.card,
+                          }}
+                          placeholder={t("strategy.tpPercentPlaceholder")}
+                          placeholderTextColor={colors.textSecondary}
+                          value={tp.percent}
+                          onChangeText={(text) => {
+                            const newLevels = [...tpLevels]
+                            newLevels[index] = { ...newLevels[index], percent: text.replace(/[^0-9.]/g, '') }
+                            setTpLevels(newLevels)
+                          }}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 4 }}>
+                          {t("strategy.tpSellPercent")}
+                        </Text>
+                        <TextInput
+                          style={{
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            borderRadius: 8,
+                            paddingHorizontal: 12,
+                            paddingVertical: 10,
+                            fontSize: 15,
+                            color: colors.text,
+                            backgroundColor: colors.card,
+                          }}
+                          placeholder={t("strategy.tpSellPercentPlaceholder")}
+                          placeholderTextColor={colors.textSecondary}
+                          value={tp.sell_percent}
+                          onChangeText={(text) => {
+                            const newLevels = [...tpLevels]
+                            newLevels[index] = { ...newLevels[index], sell_percent: text.replace(/[^0-9.]/g, '') }
+                            setTpLevels(newLevels)
+                          }}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                    </View>
+                  </View>
+                ))}
+
+                {tpLevels.length < 5 && (
+                  <TouchableOpacity
+                    onPress={() => setTpLevels(prev => [...prev, { percent: "", sell_percent: "" }])}
+                    style={{
+                      paddingVertical: 10,
+                      alignItems: 'center',
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: colors.primary + '40',
+                      borderStyle: 'dashed' as any,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '500' }}>
+                      {t("strategy.addTpLevel")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* ── Resumo rápido ── */}
+              <View style={{
+                padding: 14,
+                borderRadius: 12,
+                backgroundColor: `${colors.primary}10`,
+                borderWidth: 0.5,
+                borderColor: colors.primary + '30',
+              }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: 8 }}>
+                  📋 {t('strategy.summary')}
+                </Text>
+                <View style={{ gap: 4 }}>
+                  <Text style={{ fontSize: 12, color: colors.text }}>
+                    • {token.includes('/') ? token.split('/')[0] : token} — {getSelectedExchangeName()} — {getSelectedTemplate().type}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.text }}>
+                    • {t('strategy.minInvestment')}: {minInvestment ? `$${minInvestment}` : '—'}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.text }}>
+                    • {t('strategy.stopLoss')}: {slEnabled ? `${slPercent}%${trailingEnabled ? ` (trailing ${trailingDistance}%)` : ''}` : 'OFF'}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.text }}>
+                    • {t('strategy.takeProfit')}: {tpLevels.filter(tp => parseFloat(tp.percent) > 0).map((tp, i) => `${tp.percent}%→${tp.sell_percent}%`).join(', ') || '—'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
           ) : (
           <ScrollView 
             style={styles.content}
@@ -896,37 +1200,37 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
             )}
           </ScrollView>
           )}
-          {/* Footer - esconde quando teclado aberto no step 3 */}
-          {!(step === 3 && keyboardVisible) && (
+          {/* Footer - esconde quando teclado aberto no step 3/4 */}
+          {!((step === 3 || step === 4) && keyboardVisible) && (
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
             {step > 1 && (
               <TouchableOpacity
                 style={[styles.button, styles.buttonSecondary, { borderColor: colors.border }]}
-                onPress={() => setStep((prev) => (prev - 1) as 1 | 2 | 3)}
+                onPress={() => setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4)}
                 disabled={loading}
               >
                 <Text style={[styles.buttonText, { color: colors.text }]}>{t("common.back")}</Text>
               </TouchableOpacity>
             )}
-            {step < 3 ? (
+            {step < 4 ? (
               <TouchableOpacity
                 style={[
                   styles.button,
                   styles.buttonPrimary,
                   { backgroundColor: colors.primary },
-                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3)
+                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3) || (step === 3 && !canProceedToStep4)
                     ? { opacity: 0.5 }
                     : {},
                 ]}
                 onPress={() => {
-                  const nextStep = (step + 1) as 1 | 2 | 3
+                  const nextStep = (step + 1) as 1 | 2 | 3 | 4
                   setStep(nextStep)
                 }}
                 disabled={
-                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3)
+                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3) || (step === 3 && !canProceedToStep4)
                 }
               >
-                <Text style={styles.buttonTextPrimary}>{step === 3 ? t("common.create") : t("common.next")}</Text>
+                <Text style={styles.buttonTextPrimary}>{t("common.next")}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
