@@ -79,8 +79,6 @@ export function OrdersScreen({ navigation }: any) {
   const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string } | null>(null);
 
   const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
-  const onProfilePress = useCallback(() => navigation?.navigate('Settings', { initialTab: 'profile' }), [navigation]);
-  const onSettingsPress = useCallback(() => navigation?.navigate('Settings'), [navigation]);
 
   // 💰 Mapa de preços atuais dos tokens (para calcular PnL)
   const tokenPrices = useMemo(() => {
@@ -458,8 +456,6 @@ export function OrdersScreen({ navigation }: any) {
         title="Orders"
         subtitle={`${String(totals.count)} ${totals.count === 1 ? 'order' : 'orders'} • ${String(hideValue(`$${apiService.formatUSD(totals.value)}`))}`}
         onNotificationsPress={onNotificationsPress}
-        onProfilePress={onProfilePress}
-        onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
         navigation={navigation}
       />

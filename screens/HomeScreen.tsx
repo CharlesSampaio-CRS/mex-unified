@@ -51,18 +51,6 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   //   setSearchModalVisible(true)
   // }, [])
 
-  const onProfilePress = useCallback(() => {
-    navigation?.navigate('Settings', { initialTab: 'profile' })
-  }, [navigation])
-
-  const onAlertsPress = useCallback(() => {
-    navigation?.navigate('Favoritos')
-  }, [navigation])
-
-  const onSettingsPress = useCallback(() => {
-    navigation?.navigate('Settings')
-  }, [navigation])
-  
   const onSnapshotSaved = useCallback(async () => {
     // Atualiza os snapshots do backend
     await refreshPnl()
@@ -115,9 +103,6 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header 
         onNotificationsPress={onNotificationsPress}
-        onProfilePress={onProfilePress}
-        onAlertsPress={onAlertsPress}
-        onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
         navigation={navigation}
       />

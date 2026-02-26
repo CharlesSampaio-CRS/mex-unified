@@ -1,14 +1,13 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from "react-native"
 import { useEffect, useRef, memo, useState } from "react"
 import { useNavigation } from "@react-navigation/native"
-import Svg, { Path, Circle, Line, Text as SvgText } from "react-native-svg"
+import Svg, { Path, Circle } from "react-native-svg"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
 import { LogoIcon } from "./LogoIcon"
-import { ProfileMenuModal } from "./ProfileMenuModal"
 import { IconSelectorModal } from "./IconSelectorModal"
 
 // Eye Icon (valores visíveis)
@@ -93,27 +92,9 @@ const GridIcon = ({ color }: { color: string }) => (
   </Svg>
 )
 
-// Zero Icon — "0" normal (mostrar saldos zero)
-const ZeroIcon = ({ color }: { color: string }) => (
-  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={color}>0</SvgText>
-  </Svg>
-)
-
-// Zero Slash Icon — "0" com linha diagonal (ocultar saldos zero)
-const ZeroSlashIcon = ({ color }: { color: string }) => (
-  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={color}>0</SvgText>
-    <Line x1="6" y1="18" x2="18" y2="6" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
-  </Svg>
-)
-
 interface HeaderProps {
   hideIcons?: boolean
   onNotificationsPress?: () => void
-  onProfilePress?: () => void
-  onAlertsPress?: () => void
-  onSettingsPress?: () => void
   unreadCount?: number
   title?: string
   subtitle?: string
@@ -139,9 +120,6 @@ const UserIcon = ({ color }: { color: string }) => (
 export const Header = memo(function Header({ 
   hideIcons = false, 
   onNotificationsPress, 
-  onProfilePress,
-  onAlertsPress,
-  onSettingsPress,
   unreadCount = 0,
   title,
   subtitle,
@@ -157,7 +135,6 @@ export const Header = memo(function Header({
   const navigation = navigationProp || nav
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
-  const [profileMenuVisible, setProfileMenuVisible] = useState(false)
   const [iconSelectorVisible, setIconSelectorVisible] = useState(false)
   
   // Gera as iniciais do usuário para o avatar
@@ -242,10 +219,10 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
         
-        {/* User Avatar - Abre menu com Alertas e Config */}
+        {/* User Avatar - Abre perfil direto */}
         <TouchableOpacity 
           style={[styles.userAvatar, { backgroundColor: colors.primary, borderColor: colors.border }]}
-          onPress={() => setProfileMenuVisible(true)}
+          onPress={() => navigation?.navigate('Settings', { tab: 'profile' })}
           activeOpacity={0.7}
         >
           {user?.avatar ? (
@@ -263,19 +240,12 @@ export const Header = memo(function Header({
         selectedIconId={selectedIcon}
         onNavigate={(screenName) => {
           setIconSelectorVisible(false)
-          navigation?.navigate(screenName)
-        }}
-      />
-
-      {/* Profile Menu Modal */}
-      <ProfileMenuModal
-        visible={profileMenuVisible}
-        onClose={() => setProfileMenuVisible(false)}
-        onAlertsPress={() => {
-          onAlertsPress?.();
-        }}
-        onSettingsPress={() => {
-          onSettingsPress?.();
+          // Settings icon navega com tab: system
+          if (screenName === 'Settings') {
+            navigation?.navigate('Settings', { tab: 'system' })
+          } else {
+            navigation?.navigate(screenName)
+          }
         }}
       />
     </View>

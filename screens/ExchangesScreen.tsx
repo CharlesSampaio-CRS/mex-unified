@@ -63,10 +63,6 @@ export function ExchangesScreen({ route, navigation }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
-  const onProfilePress = useCallback(() => {
-    navigation?.navigate('Settings', { initialTab: 'profile' })
-  }, [navigation])
-
   const subtitle = activeTab === 'linked' 
     ? `${linkedCount} ${linkedCount === 1 ? t('exchanges.connectedSingular') : t('exchanges.connectedPlural')}`
     : `${availableCount} ${availableCount === 1 ? t('exchanges.availableSingular') : t('exchanges.availablePlural')}`
@@ -77,7 +73,6 @@ export function ExchangesScreen({ route, navigation }: any) {
         title={t('exchanges.title')}
         subtitle={subtitle}
         onNotificationsPress={onNotificationsPress}
-        onProfilePress={onProfilePress}
         unreadCount={unreadCount}
       />
       <View style={styles.content}>

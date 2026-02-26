@@ -251,10 +251,6 @@ export function StrategyScreen({ navigation }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
-  const onProfilePress = useCallback(() => {
-    navigation?.navigate('Settings', { initialTab: 'profile' })
-  }, [navigation])
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header padronizado com título customizado */}
@@ -262,7 +258,6 @@ export function StrategyScreen({ navigation }: any) {
         title={t('strategy.title')}
         subtitle={`${strategiesCount} ${strategiesCount === 1 ? t('strategy.strategy') : t('strategy.strategies')}`}
         onNotificationsPress={onNotificationsPress}
-        onProfilePress={onProfilePress}
         unreadCount={unreadCount}
       />
       
