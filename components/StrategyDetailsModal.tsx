@@ -52,6 +52,9 @@ export function StrategyDetailsModal({
   const [ticking, setTicking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'executions' | 'signals'>('overview')
+  const [tickResult, setTickResult] = useState<{ success: boolean; error?: string; price?: number; signals_count?: number; executions_count?: number; new_status?: string } | null>(null)
+  const [expandedError, setExpandedError] = useState(false)
+  const [expandedTickResult, setExpandedTickResult] = useState(false)
 
   useEffect(() => {
     if (visible && strategyId) {
@@ -62,6 +65,9 @@ export function StrategyDetailsModal({
       setError(null)
       setLoading(false)
       setActiveTab('overview')
+      setTickResult(null)
+      setExpandedError(false)
+      setExpandedTickResult(false)
     }
   }, [visible, strategyId])
 
@@ -106,10 +112,39 @@ export function StrategyDetailsModal({
     if (!strategyId || ticking) return
     try {
       setTicking(true)
-      await apiService.tickStrategy(strategyId)
+      setTickResult(null)
+      setExpandedTickResult(false)
+      
+      const response = await apiService.tickStrategy(strategyId)
+      const tick = response?.data?.tick
+      
+      if (tick) {
+        const tickInfo = {
+          success: !tick.error,
+          error: tick.error || undefined,
+          price: tick.price || 0,
+          signals_count: tick.signals_count || 0,
+          executions_count: tick.executions_count || 0,
+          new_status: tick.new_status || undefined,
+        }
+        setTickResult(tickInfo)
+        // Auto-expand if there's an error
+        if (tick.error) {
+          setExpandedTickResult(true)
+        }
+        console.log('⚡ [Tick result]', tickInfo)
+      }
+
+      // Refresh strategy data
       await fetchStrategy(strategyId)
     } catch (err: any) {
       console.error('❌ [StrategyDetails] Tick failed:', err)
+      const errorMsg = err?.response?.data?.error || err?.message || 'Unknown error'
+      setTickResult({
+        success: false,
+        error: `Request failed: ${errorMsg}`,
+      })
+      setExpandedTickResult(true)
     } finally {
       setTicking(false)
     }
@@ -596,6 +631,79 @@ export function StrategyDetailsModal({
           {activeTab === 'overview' && (
             <>
               {renderStatusHeader()}
+
+              {/* ── Tick Result Banner (expandível) ── */}
+              {tickResult && (
+                <TouchableOpacity
+                  style={[styles.tickResultBanner, {
+                    backgroundColor: tickResult.success ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                    borderColor: tickResult.success ? '#10b981' : '#ef4444',
+                  }]}
+                  onPress={() => setExpandedTickResult(!expandedTickResult)}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                      <Text style={{ fontSize: 16 }}>{tickResult.success ? '✅' : '❌'}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: tickResult.success ? '#10b981' : '#ef4444' }}>
+                        {tickResult.success ? 'Tick executado com sucesso' : 'Tick com erro'}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>{expandedTickResult ? '▲' : '▼'}</Text>
+                  </View>
+                  {expandedTickResult && (
+                    <View style={{ marginTop: 10, gap: 4 }}>
+                      {tickResult.price != null && tickResult.price > 0 && (
+                        <Text style={{ fontSize: 12, color: colors.text }}>💰 Price: {formatCurrencyAbs(tickResult.price)}</Text>
+                      )}
+                      {tickResult.signals_count != null && (
+                        <Text style={{ fontSize: 12, color: colors.text }}>📡 Signals: {tickResult.signals_count}</Text>
+                      )}
+                      {tickResult.executions_count != null && (
+                        <Text style={{ fontSize: 12, color: colors.text }}>⚡ Executions: {tickResult.executions_count}</Text>
+                      )}
+                      {tickResult.new_status && (
+                        <Text style={{ fontSize: 12, color: colors.text }}>🔄 New Status: {tickResult.new_status}</Text>
+                      )}
+                      {tickResult.error && (
+                        <View style={{ marginTop: 6, padding: 10, backgroundColor: 'rgba(239, 68, 68, 0.06)', borderRadius: 8 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#ef4444', marginBottom: 4 }}>ERROR DETAILS:</Text>
+                          <Text style={{ fontSize: 12, color: '#ef4444', lineHeight: 18 }} selectable>{tickResult.error}</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )}
+
+              {/* ── Error Message da estratégia (expandível) ── */}
+              {strategy.error_message && !tickResult && (
+                <TouchableOpacity
+                  style={[styles.tickResultBanner, {
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    borderColor: '#ef4444',
+                  }]}
+                  onPress={() => setExpandedError(!expandedError)}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                      <Text style={{ fontSize: 16 }}>⚠️</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: '#ef4444' }} numberOfLines={expandedError ? undefined : 1}>
+                        {expandedError ? 'Erro na última execução' : strategy.error_message}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>{expandedError ? '▲' : '▼'}</Text>
+                  </View>
+                  {expandedError && (
+                    <View style={{ marginTop: 10, padding: 10, backgroundColor: 'rgba(239, 68, 68, 0.06)', borderRadius: 8 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#ef4444', marginBottom: 4 }}>ERROR DETAILS:</Text>
+                      <Text style={{ fontSize: 12, color: '#ef4444', lineHeight: 18 }} selectable>{strategy.error_message}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )}
+
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('strategy.name')}</Text>
                 <Text style={[styles.strategyName, { color: colors.text }]}>{strategy.name}</Text>
@@ -816,6 +924,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     marginTop: 20,
+  },
+  tickResultBanner: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   statusBadge: {
     flexDirection: 'row',

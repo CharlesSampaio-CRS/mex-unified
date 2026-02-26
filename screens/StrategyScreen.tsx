@@ -476,6 +476,33 @@ export function StrategyScreen({ navigation, route }: any) {
                   )}
                 </View>
 
+                {/* Error message compacto (se houver) */}
+                {strategy.error_message && (
+                  <TouchableOpacity
+                    style={{
+                      marginTop: 8,
+                      padding: 10,
+                      backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(239, 68, 68, 0.2)',
+                    }}
+                    onPress={() => {
+                      setSelectedStrategyId(strategy.id)
+                      setDetailsModalVisible(true)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 12 }}>⚠️</Text>
+                      <Text style={{ fontSize: 11, color: '#ef4444', flex: 1 }} numberOfLines={2}>
+                        {strategy.error_message}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: colors.textSecondary }}>▶</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
                 {/* Botões de ação */}
                 <View style={styles.actionButtons}>
                   {/* Botão Ver Detalhes */}
