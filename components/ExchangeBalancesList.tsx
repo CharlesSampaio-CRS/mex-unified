@@ -121,30 +121,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 4,
   },
-  stackedIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stackedIconWrap: {
-    borderRadius: 9,
-    overflow: 'hidden',
-  },
-  stackedIcon: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-  },
-  stackedIconFallback: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stackedIconLetter: {
-    fontSize: 8,
-    fontWeight: fontWeights.semibold,
-  },
   headerLabel: {
     flex: 1,
     fontSize: 11,
