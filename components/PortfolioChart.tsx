@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
 import { apiService } from '@/services/api'
 import { typography, fontWeights } from '@/lib/typography'
+import { ExchangesList } from './ExchangesList'
 
 const CHART_WIDTH = 320 // Largura fixa para não ajustar ao redimensionar
 const CHART_HEIGHT = 140  // Reduzido de 160 para 140 (mais compacto)
@@ -385,6 +386,9 @@ export const PortfolioChart = memo(function PortfolioChart({
           )}
         </Svg>
       </View>
+
+      {/* Lista de exchanges como componente separado */}
+      <ExchangesList />
     </View>
   )
 })
