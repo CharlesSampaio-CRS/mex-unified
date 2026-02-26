@@ -195,7 +195,7 @@ const LinkedExchangeCard = memo(({
         </View>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            País de Origem:
+            {t('exchanges.country')}:
           </Text>
           <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
             {linkedExchange.country || linkedExchange.pais_de_origem || 'N/A'}
@@ -316,7 +316,7 @@ const AvailableExchangeCard = memo(({
           </View>
         )}
         <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>País de Origem:</Text>
+          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('exchanges.country')}:</Text>
           <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
             {exchange.pais_de_origem || 'N/A'}
           </Text>
@@ -1260,14 +1260,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                 {/* Formulário */}
                 <View style={styles.form}>
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: colors.text }]}>API Key *</Text>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t('exchanges.apiKey')} *</Text>
                     <View style={styles.inputWithButtons}>
                       <TextInput
                         style={[styles.inputWithQR, themedStyles.input]}
                         value={apiKey}
                         onChangeText={setApiKey}
                         placeholderTextColor={colors.textSecondary}
-                        placeholder="Digite sua API Key"
+                        placeholder={t('exchanges.enterApiKey')}
                         autoCapitalize="none"
                         autoCorrect={false}
                         secureTextEntry={true}
@@ -1287,13 +1287,13 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: colors.text }]}>API Secret *</Text>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t('exchanges.apiSecret')} *</Text>
                     <View style={styles.inputWithButtons}>
                       <TextInput
                         style={[styles.inputWithQR, themedStyles.input]}
                         value={apiSecret}
                         onChangeText={setApiSecret}
-                        placeholder="Digite seu API Secret"
+                        placeholder={t('exchanges.enterApiSecret')}
                         placeholderTextColor={colors.textSecondary}
                         secureTextEntry={true}
                         autoCapitalize="none"
@@ -1315,13 +1315,13 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
 
                   {selectedExchange.requires_passphrase && (
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>Passphrase *</Text>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('exchanges.passphrase')} *</Text>
                       <View style={styles.inputWithButtons}>
                         <TextInput
                           style={[styles.inputWithQR, themedStyles.input]}
                           value={passphrase}
                           onChangeText={setPassphrase}
-                          placeholder="Digite sua Passphrase"
+                          placeholder={t('exchanges.enterPassphrase')}
                           placeholderTextColor={colors.textSecondary}
                           secureTextEntry={true}
                           autoCapitalize="none"
@@ -1591,14 +1591,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     {/* Informações */}
                     <View style={styles.detailsSection}>
                       <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>
-                         Informações Gerais
+                         {t('exchanges.generalInfo')}
                       </Text>
                       
                       {loadingDetails ? (
                         <View style={styles.detailsLoadingContainer}>
                           <AnimatedLogoIcon size={32} />
                           <Text style={[styles.detailsLoadingText, { color: colors.textSecondary }]}>
-                            Carregando detalhes...
+                            {t('exchanges.loadingDetails')}
                           </Text>
                         </View>
                       ) : (
@@ -1616,7 +1616,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Exchange ID:
+                                  {t('exchanges.exchangeId')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]} numberOfLines={1}>
                                   {detailsExchange.exchange_id}
@@ -1626,7 +1626,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsFullData?.ccxt_id && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    CCXT ID:
+                                    {t('exchanges.ccxtId')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {detailsFullData.ccxt_id}
@@ -1658,7 +1658,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Conectada em:
+                                  {t('exchanges.connectedAt')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                   {new Date(detailsExchange.linked_at).toLocaleDateString('pt-BR', {
@@ -1674,7 +1674,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.updated_at && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Última atualização:
+                                    {t('exchanges.lastUpdate')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {new Date(detailsExchange.updated_at).toLocaleDateString('pt-BR', {
@@ -1691,7 +1691,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.reconnected_at && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Reconectada em:
+                                    {t('exchanges.reconnectedAt')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.success }]}>
                                     {new Date(detailsExchange.reconnected_at).toLocaleDateString('pt-BR', {
@@ -1708,7 +1708,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.disconnected_at && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Desconectada em:
+                                    {t('exchanges.disconnectedAt')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.danger }]}>
                                     {new Date(detailsExchange.disconnected_at).toLocaleDateString('pt-BR', {
@@ -1744,7 +1744,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Exchange ID:
+                                  {t('exchanges.exchangeId')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]} numberOfLines={1}>
                                   {detailsExchange._id}
@@ -1754,7 +1754,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsFullData?.ccxt_id && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    CCXT ID:
+                                    {t('exchanges.ccxtId')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {detailsFullData.ccxt_id}

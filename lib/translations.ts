@@ -20,7 +20,7 @@ export const translations = {
     
     // Home Screen
     'home.title': 'CryptoHub',
-    'home.subtitle': 'Tokens unificadas',
+    'home.subtitle': 'Tokens unificados',
     'home.portfolio': 'Total',
     'home.last24h': 'últimas 24h',
     'home.performance': 'Desempenho',
