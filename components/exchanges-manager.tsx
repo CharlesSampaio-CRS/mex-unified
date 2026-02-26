@@ -726,7 +726,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         setApiKey(parsed.apiKey.trim())
         setApiSecret(parsed.secretKey.trim())
         if (parsed.passphrase) setPassphrase(parsed.passphrase.trim())
-        Alert.alert('✅ Sucesso!', 'API Key e Secret carregados do QR Code!')
+        Alert.alert(t('exchanges.qrSuccess'), t('exchanges.qrLoaded'))
         setQrScannerVisible(false)
         setCurrentScanField(null)
         return
@@ -738,7 +738,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         setApiKey(parsed.api_key.trim())
         setApiSecret(parsed.api_secret.trim())
         if (parsed.passphrase) setPassphrase(parsed.passphrase.trim())
-        Alert.alert('✅ Sucesso!', 'API Key e Secret carregados do QR Code!')
+        Alert.alert(t('exchanges.qrSuccess'), t('exchanges.qrLoaded'))
         setQrScannerVisible(false)
         setCurrentScanField(null)
         return
@@ -764,7 +764,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         if (detectedSecret) loadedFields.push('API Secret')
         if (detectedPassphrase) loadedFields.push('Passphrase')
         
-        Alert.alert('✅ Sucesso!', `${loadedFields.join(', ')} carregados do QR Code!`)
+        Alert.alert(t('exchanges.qrSuccess'), t('exchanges.qrFieldsLoaded').replace('{fields}', loadedFields.join(', ')))
         setQrScannerVisible(false)
         setCurrentScanField(null)
         return
@@ -814,7 +814,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
           if (secretFound) loaded.push('API Secret')
           if (passphraseFound) loaded.push('Passphrase')
           
-          Alert.alert('✅ Sucesso!', `${loaded.join(', ')} extraídos do QR Code!`)
+          Alert.alert(t('exchanges.qrSuccess'), t('exchanges.qrFieldsExtracted').replace('{fields}', loaded.join(', ')))
           setQrScannerVisible(false)
           setCurrentScanField(null)
           return
@@ -883,7 +883,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         console.error('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
         Alert.alert(
           t('common.error'),
-          'Não foi possível conectar a exchange. Tente novamente.'
+          t('exchanges.connectError')
         )
         setConnecting(false)
         return
@@ -1461,7 +1461,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
               {/* Header */}
               <View style={[styles.confirmModalHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.confirmModalTitle, { color: colors.text }]}>
-                  {confirmAction === 'delete' ? '⚠️ Confirmar Exclusão' : '⚠️ Confirmar Desconexão'}
+                  {confirmAction === 'delete' ? t('exchanges.confirmDelete') : t('exchanges.confirmDisconnect')}
                 </Text>
                 <TouchableOpacity onPress={() => setConfirmModalVisible(false)} style={styles.confirmModalCloseButton}>
                   <Text style={[styles.confirmModalCloseIcon, { color: colors.text }]}>✕</Text>
@@ -1607,7 +1607,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             <>
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Nome:
+                                  {t('exchanges.name')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                   {capitalizeExchangeName(detailsExchange.name)}
@@ -1637,7 +1637,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {(detailsExchange.country || detailsFullData?.pais_de_origem) && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    País:
+                                    {t('exchanges.country')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {detailsExchange.country || detailsFullData?.pais_de_origem || 'N/A'}
@@ -1648,7 +1648,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {(detailsExchange.url || detailsFullData?.url) && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Website:
+                                    {t('exchanges.website')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.primary }]} numberOfLines={1}>
                                     {detailsExchange.url || detailsFullData?.url}
@@ -1724,10 +1724,10 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Status:
+                                  {t('exchanges.status')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                  {detailsExchange.status === 'active' ? 'Ativa ✓' : 'Inativa ✗'}
+                                  {detailsExchange.status === 'active' ? t('exchanges.active') : t('exchanges.inactive')}
                                 </Text>
                               </View>
                             </>
@@ -1735,7 +1735,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             <>
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Nome:
+                                  {t('exchanges.name')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                   {capitalizeExchangeName(detailsExchange.nome || detailsExchange.name || 'N/A')}
@@ -1765,7 +1765,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.pais_de_origem && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    País de Origem:
+                                    {t('exchanges.country')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {detailsExchange.pais_de_origem}
@@ -1776,7 +1776,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.url && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Website:
+                                    {t('exchanges.website')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.primary }]} numberOfLines={1}>
                                     {detailsExchange.url}
@@ -1786,10 +1786,10 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Requer Passphrase:
+                                  {t('exchanges.requiresPassphrase')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: detailsExchange.requires_passphrase ? colors.primary : colors.textSecondary }]}>
-                                  {detailsExchange.requires_passphrase ? 'Sim ✓' : 'Não'}
+                                  {detailsExchange.requires_passphrase ? t('common.yes') + ' ✓' : t('common.no')}
                                 </Text>
                               </View>
                             </>
@@ -1802,7 +1802,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     {detailsType === 'available' && (
                       <View style={styles.detailsSection}>
                         <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>
-                          ⚡ Recursos
+                          {t('exchanges.resources')}
                         </Text>
                         <View style={[styles.detailsFeatureBox, { backgroundColor: colors.surfaceSecondary }]}>
                           <Text style={[styles.detailsFeatureText, { color: colors.text }]}>
@@ -1832,7 +1832,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             {detailsFullData.fees.trading.maker !== undefined && detailsFullData.fees.trading.maker !== null && (
                               <View style={styles.detailsFeeRow}>
                                 <Text style={[styles.detailsFeeLabel, { color: colors.textSecondary }]}>
-                                  • Maker:
+                                  • {t('exchanges.maker')}:
                                 </Text>
                                 <Text style={[styles.detailsFeeValue, { color: colors.text }]}>
                                   {typeof detailsFullData.fees.trading.maker === 'number'
@@ -1845,7 +1845,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             {detailsFullData.fees.trading.taker !== undefined && detailsFullData.fees.trading.taker !== null && (
                               <View style={styles.detailsFeeRow}>
                                 <Text style={[styles.detailsFeeLabel, { color: colors.textSecondary }]}>
-                                  • Taker:
+                                  • {t('exchanges.taker')}:
                                 </Text>
                                 <Text style={[styles.detailsFeeValue, { color: colors.text }]}>
                                   {typeof detailsFullData.fees.trading.taker === 'number'
@@ -1886,7 +1886,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             {detailsFullData.fees.funding.withdraw !== undefined && detailsFullData.fees.funding.withdraw !== null && (
                               <View style={styles.detailsFeeRow}>
                                 <Text style={[styles.detailsFeeLabel, { color: colors.textSecondary }]}>
-                                  • Retirada:
+                                  • {t('exchanges.withdraw')}:
                                 </Text>
                                 <Text style={[styles.detailsFeeValue, { color: colors.text }]}>
                                   {typeof detailsFullData.fees.funding.withdraw === 'object' 
@@ -1901,7 +1901,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             {detailsFullData.fees.funding.deposit !== undefined && detailsFullData.fees.funding.deposit !== null && (
                               <View style={styles.detailsFeeRow}>
                                 <Text style={[styles.detailsFeeLabel, { color: colors.textSecondary }]}>
-                                  • Depósito:
+                                  • {t('exchanges.deposit')}:
                                 </Text>
                                 <Text style={[styles.detailsFeeValue, { color: colors.text }]}>
                                   {typeof detailsFullData.fees.funding.deposit === 'object' 
@@ -1919,7 +1919,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                         {detailsFullData.fees && !detailsFullData.fees.trading && !detailsFullData.fees.funding && (
                           <View style={[styles.detailsFeesBox, { backgroundColor: colors.surfaceSecondary }]}>
                             <Text style={[styles.detailsFeatureText, { color: colors.text }]}>
-                              Estrutura de taxas disponível na exchange
+                              {t('exchanges.feeStructure')}
                             </Text>
                           </View>
                         )}
@@ -1930,7 +1930,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     {detailsFullData?.markets && Object.keys(detailsFullData.markets).length > 0 && (
                       <View style={styles.detailsSection}>
                         <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>
-                          📈 Mercados Disponíveis
+                          {t('exchanges.availableMarkets')}
                         </Text>
                         <View style={[styles.detailsMarketsBox, { backgroundColor: colors.surfaceSecondary }]}>
                           <Text style={[styles.detailsMarketsCount, { color: colors.text }]}>

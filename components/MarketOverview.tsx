@@ -37,7 +37,7 @@ export const MarketOverview: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
-  const [updateTimeText, setUpdateTimeText] = useState<string>('Carregando...');
+  const [updateTimeText, setUpdateTimeText] = useState<string>(t('common.loading'));
   const [selectedToken, setSelectedToken] = useState<MarketToken | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [chartData, setChartData] = useState<{ values_usd: number[]; timestamps: string[] } | null>(null);
@@ -120,7 +120,7 @@ export const MarketOverview: React.FC = () => {
       }
       
       if (!lastUpdateTime) {
-        setUpdateTimeText('Carregando...');
+        setUpdateTimeText(t('common.loading'));
         return;
       }
 
@@ -129,7 +129,7 @@ export const MarketOverview: React.FC = () => {
       const minutes = lastUpdateTime.getMinutes().toString().padStart(2, '0');
       const seconds = lastUpdateTime.getSeconds().toString().padStart(2, '0');
       
-      setUpdateTimeText(`Atualizado às ${hours}:${minutes}:${seconds}`);
+      setUpdateTimeText(t('common.updatedAt').replace('{time}', `${hours}:${minutes}:${seconds}`));
     };
 
     updateTimeDisplay();

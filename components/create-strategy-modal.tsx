@@ -732,8 +732,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                       <View style={{ paddingVertical: 32, alignItems: 'center' }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center' }}>
                           {tokenSearchQuery
-                            ? `Nenhum token encontrado para "${tokenSearchQuery}"`
-                            : "Nenhum token disponível"
+                            ? t('strategy.noTokenFound').replace('{query}', tokenSearchQuery)
+                            : t('strategy.noTokenAvailable')
                           }
                         </Text>
                       </View>
