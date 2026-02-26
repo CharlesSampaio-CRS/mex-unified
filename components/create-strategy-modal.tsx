@@ -75,7 +75,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const { data: balanceData, loading: balanceLoading } = useBalance()
   const { createStrategy } = useBackendStrategies(false) // Não auto-load
   const { addNotification } = useNotifications()
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
   const [exchanges, setExchanges] = useState<LocalExchange[]>([])
   const [loadingExchanges, setLoadingExchanges] = useState(false)
@@ -100,12 +100,6 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   // Templates da API
   const [apiTemplates, setApiTemplates] = useState<any[]>([])
   const [loadingTemplates, setLoadingTemplates] = useState(false)
-
-  // Step 4 — Configurações da estratégia
-  const [priceBase, setPriceBase] = useState<string>("")
-  const [takeProfit, setTakeProfit] = useState<string>("")
-  const [stopLoss, setStopLoss] = useState<string>("")
-  const [sellCascade, setSellCascade] = useState<string>("")
 
   // Detectar teclado aberto/fechado
   useEffect(() => {
@@ -138,10 +132,6 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       setTokenSearchResults([])
       setTokenSearchQuery("")
       setShowTokenList(true)
-      setPriceBase("")
-      setTakeProfit("")
-      setStopLoss("")
-      setSellCascade("")
     }
   }, [visible])
 
@@ -302,11 +292,6 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const handleCreateStrategy = async () => {
     if (!selectedTemplate || !selectedExchange || !token.trim()) {
       Alert.alert(t("common.attention"), t("error.fillAllFields"))
-      return
-    }
-
-    if (!priceBase.trim() || !takeProfit.trim() || !stopLoss.trim()) {
-      Alert.alert(t("common.attention"), "Preencha Price Base, Take Profit e Stop Loss.")
       return
     }
 
