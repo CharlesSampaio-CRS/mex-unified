@@ -226,21 +226,21 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       console.log(`✅ Received ${data.tokens?.length || 0} tokens from MongoDB cache`)
       
       if (data && Array.isArray(data.tokens)) {
-        // Extrai símbolos dos tokens
-        const tokenSymbols = data.tokens.map((token: any) => {
-          // Se for string, retorna direto
+        // Extrai PARES completos dos tokens (ex: SOL/USDT) — CCXT precisa do pair, não só do symbol
+        const tokenPairs = data.tokens.map((token: any) => {
+          // Se for string, retorna direto (pode já ser um pair)
           if (typeof token === 'string') {
             return token
           }
-          // Se for objeto, pega o campo symbol ou base
+          // Se for objeto, pega o campo pair (ex: "SOL/USDT") — é o que o CCXT espera
           if (token && typeof token === 'object') {
-            return token.symbol || token.base || null
+            return token.pair || token.symbol || token.base || null
           }
           return null
-        }).filter((symbol: any): symbol is string => symbol !== null)
+        }).filter((pair: any): pair is string => pair !== null)
         
         // Remove duplicatas e ordena
-        const uniqueTokens = [...new Set<string>(tokenSymbols)].sort()
+        const uniqueTokens = [...new Set<string>(tokenPairs)].sort()
         
         if (uniqueTokens.length > 0) {
           console.log(`✅ Setting ${uniqueTokens.length} unique tokens`)
@@ -284,10 +284,13 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       // Template selecionado vem do MongoDB (via API)
       const tplInfo = getSelectedTemplate()
       
+      // token contém o pair completo (ex: "SOL/USDT") — extrair base para exibição
+      const tokenBase = token.includes('/') ? token.split('/')[0] : token
+      
       const strategyData: Parameters<typeof createStrategy>[0] = {
         name: generateStrategyName(),
-        description: `Estratégia ${tplInfo.name} para ${token} na ${capitalizeExchangeName(exchange.name)}`,
-        symbol: token,
+        description: `Estratégia ${tplInfo.name} para ${tokenBase} na ${capitalizeExchangeName(exchange.name)}`,
+        symbol: token,  // pair completo: "SOL/USDT" (é o que o CCXT precisa)
         exchange_id: selectedExchange,
         exchange_name: capitalizeExchangeName(exchange.name),
         strategy_type: tplInfo.type,
@@ -309,7 +312,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       // 🔔 Notificação: Estratégia criada
       notify.strategyCreated(addNotification, {
         name: strategyData.name,
-        symbol: token,
+        symbol: tokenBase,
         exchange: capitalizeExchangeName(exchange.name),
         template: selectedTemplate,
         strategyId,
@@ -350,7 +353,9 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const generateStrategyName = () => {
     const exchName = getSelectedExchangeName()
     const ts = Math.floor(Date.now() / 1000)
-    return `${token}_${exchName}_${ts}`
+    // Usar só o base do pair (SOL de SOL/USDT) para o nome ficar limpo
+    const base = token.includes('/') ? token.split('/')[0] : token
+    return `${base}_${exchName}_${ts}`
   }
 
   // Helper: busca o template selecionado da API (MongoDB)
@@ -546,7 +551,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
                         <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.name')}</Text>
                         <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500', maxWidth: '65%', textAlign: 'right' }} numberOfLines={1}>
-                          {token}_{getSelectedExchangeName()}_{Math.floor(Date.now() / 1000)}
+                          {(token.includes('/') ? token.split('/')[0] : token)}_{getSelectedExchangeName()}_{Math.floor(Date.now() / 1000)}
                         </Text>
                       </View>
                       <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
@@ -587,7 +592,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
                         <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.tradingPair')}</Text>
                         <Text style={{ fontSize: 14, color: colors.text, fontWeight: '600' }}>
-                          {token}/USDT
+                          {token}
                         </Text>
                       </View>
                       <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
@@ -615,7 +620,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                     borderColor: colors.border,
                   }}>
                     <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20, fontStyle: 'italic' }}>
-                      {`Estratégia ${getSelectedTemplate().name} para ${token} na ${getSelectedExchangeName()}`}
+                      {`Estratégia ${getSelectedTemplate().name} para ${token.includes('/') ? token.split('/')[0] : token} na ${getSelectedExchangeName()}`}
                     </Text>
                   </View>
                 </ScrollView>
