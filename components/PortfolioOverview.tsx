@@ -277,11 +277,6 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
       end={{ x: 1, y: 1 }}
       style={[styles.container, { borderColor: colors.border }]}
     >
-        <View style={styles.headerRow}>
-          <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
-            {formatLastUpdated()}
-          </Text>
-        </View>
 
         <View style={styles.valueSection}>
           <View style={styles.valueContainer}>
