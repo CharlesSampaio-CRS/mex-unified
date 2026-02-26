@@ -45,6 +45,7 @@ interface CreateStrategyModalProps {
   onClose: () => void
   onSuccess: (strategyId: string) => void
   userId: string
+  navigation?: any
 }
 
 const TEMPLATES = [
@@ -68,7 +69,7 @@ const TEMPLATES = [
   },
 ]
 
-export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: CreateStrategyModalProps) {
+export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navigation }: CreateStrategyModalProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { data: balanceData, loading: balanceLoading } = useBalance()
@@ -96,6 +97,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
   const tokenInputRef = useRef<TextInput>(null)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
 
+  // Templates da API
+  const [apiTemplates, setApiTemplates] = useState<any[]>([])
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+
   // Detectar teclado aberto/fechado
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -115,6 +120,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
   useEffect(() => {
     if (visible) {
       loadExchanges()
+      loadApiTemplates()
     } else {
       // Reset form when modal closes
       setStep(1)
@@ -128,6 +134,21 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
       setShowTokenList(true)
     }
   }, [visible])
+
+  // Carrega templates da API
+  const loadApiTemplates = async () => {
+    try {
+      setLoadingTemplates(true)
+      const res = await apiService.listStrategyTemplates()
+      if (res?.success && res.templates) {
+        setApiTemplates(res.templates)
+      }
+    } catch (e) {
+      console.error("❌ Erro ao carregar templates:", e)
+    } finally {
+      setLoadingTemplates(false)
+    }
+  }
 
   // Load tokens when reaching step 3
   useEffect(() => {
@@ -281,22 +302,24 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
         throw new Error("Exchange não encontrada")
       }
       
-      // Mapeia template para tipo de estratégia
+      // Mapeia template para tipo de estratégia (API ou fallback hardcoded)
       const strategyTypeMap: Record<string, string> = {
         simple: 'grid',
         conservative: 'dca',
         aggressive: 'trailing_stop'
       }
+      const tplInfo = getSelectedTemplate()
       
       const strategyData = {
         name: generateStrategyName(),
-        description: `Estratégia ${selectedTemplate} para ${token} na ${capitalizeExchangeName(exchange.name)}`,
+        description: `Estratégia ${tplInfo.name} para ${token} na ${capitalizeExchangeName(exchange.name)}`,
         symbol: token,
         exchange_id: selectedExchange,
         exchange_name: capitalizeExchangeName(exchange.name),
-        strategy_type: strategyTypeMap[selectedTemplate] || 'grid',
+        strategy_type: strategyTypeMap[selectedTemplate] || tplInfo.type || 'grid',
         config: {
           template: selectedTemplate,
+          template_name: tplInfo.name,
           exchange_id: selectedExchange,
           created_via: 'modal'
         },
@@ -356,6 +379,15 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
     const exchName = getSelectedExchangeName()
     const ts = Math.floor(Date.now() / 1000)
     return `${token}_${exchName}_${ts}`
+  }
+
+  // Helper: busca o template selecionado (API ou hardcoded fallback)
+  const getSelectedTemplate = () => {
+    const fromApi = apiTemplates.find(t => t.id === selectedTemplate)
+    if (fromApi) return { name: fromApi.name, icon: fromApi.icon, type: fromApi.strategy_type }
+    const fromLocal = TEMPLATES.find(t => t.id === selectedTemplate)
+    if (fromLocal) return { name: t(fromLocal.nameKey), icon: fromLocal.icon, type: selectedTemplate }
+    return { name: selectedTemplate, icon: "📊", type: selectedTemplate }
   }
 
   return (
@@ -463,7 +495,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                     <View style={styles.summaryRow}>
                       <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Template:</Text>
                       <Text style={{ color: colors.text, fontSize: 13, fontWeight: '500' }}>
-                        {t(TEMPLATES.find(t => t.id === selectedTemplate)?.nameKey || '')}
+                        {getSelectedTemplate().name}
                       </Text>
                     </View>
                     <View style={styles.summaryRow}>
@@ -554,10 +586,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                         <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Template</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <Text style={{ fontSize: 16 }}>
-                            {TEMPLATES.find(tp => tp.id === selectedTemplate)?.icon || '📊'}
+                            {getSelectedTemplate().icon}
                           </Text>
                           <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
-                            {t(TEMPLATES.find(tp => tp.id === selectedTemplate)?.nameKey || '')}
+                            {getSelectedTemplate().name}
                           </Text>
                         </View>
                       </View>
@@ -576,7 +608,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
                         <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Tipo</Text>
                         <Text style={{ fontSize: 14, color: colors.primary, fontWeight: '500' }}>
-                          {selectedTemplate === 'simple' ? 'Grid' : selectedTemplate === 'conservative' ? 'DCA' : 'Trailing Stop'}
+                          {getSelectedTemplate().type}
                         </Text>
                       </View>
                       <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
@@ -613,7 +645,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                     borderColor: colors.border,
                   }}>
                     <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20, fontStyle: 'italic' }}>
-                      {`Estratégia ${selectedTemplate} para ${token} na ${getSelectedExchangeName()}`}
+                      {`Estratégia ${getSelectedTemplate().name} para ${token} na ${getSelectedExchangeName()}`}
                     </Text>
                   </View>
                 </ScrollView>
@@ -750,7 +782,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={true}
           >
-            {/* Step 1: Template Selection */}
+            {/* Step 1: Template Selection - da API */}
             {step === 1 && (
               <View style={styles.stepContent}>
                 <Text style={[styles.stepTitle, { color: colors.text }]}>
@@ -760,33 +792,65 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId }: Cre
                   {t("strategy.selectTemplate")}
                 </Text>
 
-                <View style={styles.templatesList}>
-                  {TEMPLATES.map((template) => (
+                {loadingTemplates ? (
+                  <View style={styles.loadingContainer}>
+                    <AnimatedLogoIcon size={48} />
+                  </View>
+                ) : (
+                  <View style={styles.templatesList}>
+                    {apiTemplates.map((tpl) => (
+                      <TouchableOpacity
+                        key={tpl.id}
+                        style={[
+                          styles.templateCard,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          selectedTemplate === tpl.id && {
+                            borderColor: colors.primary,
+                            borderWidth: 2,
+                          },
+                        ]}
+                        onPress={() => setSelectedTemplate(tpl.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.templateIcon}>{tpl.icon}</Text>
+                        <Text style={[styles.templateName, { color: colors.text }]}>
+                          {tpl.name}
+                        </Text>
+                        <Text style={[styles.templateDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                          {tpl.summary || tpl.strategy_type}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+
+                    {/* Botão: Criar novo template → navega para StrategyTemplates */}
                     <TouchableOpacity
-                      key={template.id}
                       style={[
                         styles.templateCard,
-                        { backgroundColor: colors.background, borderColor: colors.border },
-                        selectedTemplate === template.id && {
+                        {
+                          backgroundColor: 'transparent',
                           borderColor: colors.primary,
-                          borderWidth: 2,
+                          borderWidth: 1.5,
+                          borderStyle: 'dashed' as any,
                         },
                       ]}
                       onPress={() => {
-                        setSelectedTemplate(template.id)
+                        onClose()
+                        setTimeout(() => {
+                          navigation?.navigate("StrategyTemplates")
+                        }, 300)
                       }}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.templateIcon}>{template.icon}</Text>
-                      <Text style={[styles.templateName, { color: colors.text }]}>
-                        {t(template.nameKey)}
+                      <Text style={styles.templateIcon}>➕</Text>
+                      <Text style={[styles.templateName, { color: colors.primary }]}>
+                        Criar Novo Template
                       </Text>
                       <Text style={[styles.templateDescription, { color: colors.textSecondary }]}>
-                        {t(template.descriptionKey)}
+                        Personalize seu próprio template
                       </Text>
                     </TouchableOpacity>
-                  ))}
-                </View>
+                  </View>
+                )}
               </View>
             )}
             {/* Step 2: Exchange Selection */}

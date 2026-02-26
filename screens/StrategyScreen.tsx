@@ -548,6 +548,7 @@ export function StrategyScreen({ navigation, route }: any) {
         onClose={() => setCreateModalVisible(false)}
         onSuccess={handleStrategyCreated}
         userId={user?.id || ''}
+        navigation={navigation}
       />
 
       {/* Strategy Details Modal */}
