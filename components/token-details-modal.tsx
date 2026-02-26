@@ -323,13 +323,13 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                   <View style={[styles.section, { backgroundColor: colors.primary + '10', borderBottomColor: colors.cardBorder }]}>
                     <View style={styles.userTotalContainer}>
                       <View style={styles.userTotalRow}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>Quantidade Total</Text>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('tokenDetails.totalQuantity')}</Text>
                         <Text style={[styles.value, { color: colors.text, fontWeight: '600' }]}>
                           {hideValue(apiService.formatTokenAmount(userTotalAmount.toString()))}
                         </Text>
                       </View>
                       <View style={styles.userTotalRow}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>Valor Total (USD)</Text>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('tokenDetails.totalValueUsd')}</Text>
                         <Text style={[styles.value, { color: colors.primary, fontWeight: '700', fontSize: 16 }]}>
                           {hideValue(`$${apiService.formatUSD(userTotalValue)}`)}
                         </Text>

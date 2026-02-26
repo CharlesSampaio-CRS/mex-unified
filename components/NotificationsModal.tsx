@@ -251,10 +251,10 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
           await clearAll();
           setConfirmDeleteAllVisible(false);
         }}
-        title="Limpar Notificações"
-        message={`Tem certeza que deseja remover todas as ${notifications.length} notificações?`}
-        confirmText="Limpar Todas"
-        cancelText="Cancelar"
+        title={t('notifications.clearAll')}
+        message={t('notifications.clearAllConfirm').replace('{count}', String(notifications.length))}
+        confirmText={t('notifications.clearAllButton')}
+        cancelText={t('common.cancel')}
         confirmColor="#ef4444"
         icon="🗑️"
       />

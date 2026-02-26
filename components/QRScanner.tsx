@@ -78,7 +78,7 @@ export function QRScanner({ visible, onClose, onScan, title }: QRScannerProps) {
       <Modal visible={visible} transparent animationType="fade">
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: colors.text }]}>
-            Solicitando permissão da câmera...
+            {t('qr.requestingPermission')}
           </Text>
         </View>
       </Modal>
@@ -91,10 +91,10 @@ export function QRScanner({ visible, onClose, onScan, title }: QRScannerProps) {
         <View style={styles.loadingContainer}>
           <View style={[styles.errorContainer, { backgroundColor: colors.card }]}>
             <Text style={[styles.errorTitle, { color: colors.text }]}>
-              Sem acesso à câmera
+              {t('qr.noAccess')}
             </Text>
             <Text style={[styles.errorText, { color: colors.textSecondary }]}>
-              Para escanear QR codes, você precisa permitir o acesso à câmera nas configurações do dispositivo.
+              {t('qr.noAccessDesc')}
             </Text>
             <TouchableOpacity
               style={[styles.closeButton, { backgroundColor: colors.primary }]}

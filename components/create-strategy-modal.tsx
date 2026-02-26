@@ -486,7 +486,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 <View style={styles.loadingContainer}>
                   <AnimatedLogoIcon size={48} />
                   <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-                    Carregando tokens...
+                    {t('common.loadingTokens')}
                   </Text>
                 </View>
               ) : token && !showTokenList ? (
@@ -516,7 +516,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                         {token}
                       </Text>
                       <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                        Toque para alterar
+                        {t('strategy.tapToChange')}
                       </Text>
                     </View>
                     <Text style={{ fontSize: 18, color: colors.textSecondary }}>✏️</Text>
@@ -540,7 +540,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                       borderBottomColor: colors.border,
                     }}>
                       <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-                        📋 Resumo da Estratégia
+                        📋 {t('strategy.summary')}
                       </Text>
                     </View>
 
@@ -548,7 +548,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                     <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
                       {/* Nome */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Nome</Text>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.name')}</Text>
                         <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500', maxWidth: '65%', textAlign: 'right' }} numberOfLines={1}>
                           {token}_{getSelectedExchangeName()}_{Math.floor(Date.now() / 1000)}
                         </Text>
@@ -557,7 +557,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
                       {/* Template */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Template</Text>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.template')}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <Text style={{ fontSize: 16 }}>
                             {getSelectedTemplate().icon}
@@ -571,7 +571,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
                       {/* Exchange */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Exchange</Text>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.exchange')}</Text>
                         <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
                           {getSelectedExchangeName()}
                         </Text>
@@ -580,7 +580,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
                       {/* Tipo de Estratégia */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Tipo</Text>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.strategyType')}</Text>
                         <Text style={{ fontSize: 14, color: colors.primary, fontWeight: '500' }}>
                           {getSelectedTemplate().type}
                         </Text>
@@ -589,7 +589,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
                       {/* Par de Trading */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Par</Text>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.tradingPair')}</Text>
                         <Text style={{ fontSize: 14, color: colors.text, fontWeight: '600' }}>
                           {token}/USDT
                         </Text>
@@ -598,11 +598,11 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
                       {/* Status */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>Status</Text>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.status')}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' }} />
                           <Text style={{ fontSize: 14, color: '#10b981', fontWeight: '500' }}>
-                            Ativa
+                            {t('strategy.active')}
                           </Text>
                         </View>
                       </View>
@@ -645,7 +645,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                         color: colors.text,
                         paddingVertical: 0,
                       }}
-                      placeholder="Buscar token (ex: BTC, ETH, SOL...)"
+                      placeholder={t('strategy.searchToken')}
                       placeholderTextColor={colors.textSecondary}
                       value={tokenSearchQuery}
                       onChangeText={setTokenSearchQuery}
@@ -817,10 +817,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                     >
                       <Text style={styles.templateIcon}>➕</Text>
                       <Text style={[styles.templateName, { color: colors.primary }]}>
-                        Criar Novo Template
+                        {t('strategy.newTemplate')}
                       </Text>
                       <Text style={[styles.templateDescription, { color: colors.textSecondary }]}>
-                        Personalize seu próprio template
+                        {t('strategy.customTemplate')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -844,10 +844,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                   <View style={styles.emptyState}>
                     <Text style={styles.emptyIcon}>📭</Text>
                     <Text style={[styles.emptyText, { color: colors.text }]}>
-                      Nenhuma exchange conectada
+                      {t('strategy.noExchanges')}
                     </Text>
                     <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
-                      Conecte uma exchange na aba "Exchanges"
+                      {t('strategy.connectExchange')}
                     </Text>
                   </View>
                 ) : (
@@ -884,7 +884,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                               },
                             ]}
                           >
-                            ● Conectada
+                            ● {t('strategy.connected')}
                           </Text>
                         </TouchableOpacity>
                       )
@@ -941,7 +941,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 {loading ? (
                   <AnimatedLogoIcon size={24} />
                 ) : (
-                  <Text style={styles.buttonTextPrimary}>Criar Estratégia</Text>
+                  <Text style={styles.buttonTextPrimary}>{t('strategy.createNew')}</Text>
                 )}
               </TouchableOpacity>
             )}

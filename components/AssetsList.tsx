@@ -860,7 +860,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               <View style={styles.searchingContainer}>
                 <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={[styles.searchingText, { color: colors.textSecondary }]}>
-                  Buscando {searchQuery.toUpperCase()} nas exchanges...
+                  {t('assets.searchingExchanges').replace('{query}', searchQuery.toUpperCase())}
                 </Text>
               </View>
             ) : externalSearchResult.found ? (
@@ -871,7 +871,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                       {externalSearchResult.symbol}
                     </Text>
                     <Text style={[styles.tokenFoundExchange, { color: colors.textSecondary }]}>
-                      Disponível na {externalSearchResult.exchangeName}
+                      {t('assets.availableOn').replace('{exchange}', externalSearchResult.exchangeName)}
                     </Text>
                   </View>
                   {externalSearchResult.price > 0 && (
@@ -895,7 +895,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                   }}
                 >
                   <Text style={[styles.tokenFoundButtonText, { color: '#FFFFFF' }]}>
-                    Ver Detalhes
+                    {t('common.viewDetails')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -903,10 +903,10 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               <View style={styles.tokenNotFoundContainer}>
                 <Ionicons name="search-outline" size={24} color={colors.textTertiary} />
                 <Text style={[styles.tokenNotFoundText, { color: colors.textSecondary }]}>
-                  Token {externalSearchResult.symbol} não encontrado
+                  {t('assets.tokenNotFound').replace('{symbol}', externalSearchResult.symbol)}
                 </Text>
                 <Text style={[styles.tokenNotFoundSubtext, { color: colors.textTertiary }]}>
-                  Não foi possível localizar este token nas exchanges conectadas ou APIs externas.
+                  {t('assets.tokenNotFoundDesc')}
                 </Text>
               </View>
             )}

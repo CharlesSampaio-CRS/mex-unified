@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { PortfolioOverview } from '../PortfolioOverview';
 import { MarketOverview } from '../MarketOverview';
 import { TopGainersLosers } from '../TopGainersLosers';
@@ -20,6 +21,7 @@ export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({
   isUpdating = false 
 }) => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   
   return (
     <View style={{ gap: 24 }}>
@@ -28,7 +30,7 @@ export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({
         <View style={[styles.updatingBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="refresh" size={16} color={colors.primary} />
           <Text style={[styles.updatingText, { color: colors.primary }]}>
-            Atualizando dados...
+            {t('common.updatingData')}
           </Text>
         </View>
       )}

@@ -291,10 +291,10 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
                 {selectedData.hasError ? (
                   <>
                     <Text style={[styles.centerValue, { color: '#EF4444', fontSize: 16 }]}>
-                      ⚠️ Erro
+                      {t('chart.error')}
                     </Text>
                     <Text style={[styles.centerPercentage, { color: colors.textSecondary, fontSize: 10, textAlign: 'center' }]} numberOfLines={2}>
-                      Falha ao buscar saldo
+                      {t('chart.fetchError')}
                     </Text>
                   </>
                 ) : (

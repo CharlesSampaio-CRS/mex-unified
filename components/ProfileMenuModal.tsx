@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { typography, fontWeights } from '@/lib/typography';
 
 interface ProfileMenuModalProps {
@@ -20,6 +21,7 @@ export const ProfileMenuModal: React.FC<ProfileMenuModalProps> = ({
 }) => {
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const handleAlertsPress = () => {
     onAlertsPress();
@@ -73,10 +75,10 @@ export const ProfileMenuModal: React.FC<ProfileMenuModalProps> = ({
               </View>
               <View style={styles.menuItemContent}>
                 <Text style={[styles.menuItemTitle, { color: colors.text }]}>
-                  Alertas
+                  {t('profileMenu.alerts')}
                 </Text>
                 <Text style={[styles.menuItemDescription, { color: colors.textTertiary }]}>
-                  Notificações e avisos
+                  {t('notifications.desc')}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
@@ -92,10 +94,10 @@ export const ProfileMenuModal: React.FC<ProfileMenuModalProps> = ({
               </View>
               <View style={styles.menuItemContent}>
                 <Text style={[styles.menuItemTitle, { color: colors.text }]}>
-                  Configurações
+                  {t('profileMenu.settings')}
                 </Text>
                 <Text style={[styles.menuItemDescription, { color: colors.textTertiary }]}>
-                  Preferências e conta
+                  {t('profileMenu.settingsDesc')}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />

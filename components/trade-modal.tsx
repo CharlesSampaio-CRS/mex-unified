@@ -767,33 +767,33 @@ export function TradeModal({
               <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
                 <Text style={{ fontSize: 28 }}>{isBuy ? '🟢' : '🔴'}</Text>
                 <Text style={[styles.confirmTitle, { color: colors.text }]}>
-                  {'Confirmar Ordem'}
+                  {t('trade.confirmOrder')}
                 </Text>
               </View>
 
               {/* Resumo */}
               <View style={styles.confirmContent}>
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Par'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.pair')}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
                     {String(symbol.includes('/') ? symbol : `${symbol}/USDT`)}
                   </Text>
                 </View>
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Lado'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.side')}</Text>
                   <Text style={[styles.confirmValue, { color: isBuy ? '#10b981' : '#ef4444' }]}>
-                    {String(isBuy ? 'COMPRA' : 'VENDA')}
+                    {String(isBuy ? t('trade.buy') : t('trade.sell'))}
                   </Text>
                 </View>
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Tipo'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.type')}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
                     {String((orderType || '').toUpperCase())}
                   </Text>
                 </View>
                 {orderType === 'limit' && (
                   <View style={styles.confirmRow}>
-                    <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Preço'}</Text>
+                    <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.price')}</Text>
                     <Text style={[styles.confirmValue, { color: colors.text }]}>
                       {String(`$ ${parseFloat(price || '0') < 0.01 
                         ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
@@ -802,7 +802,7 @@ export function TradeModal({
                   </View>
                 )}
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Quantidade'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.quantity')}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
                     {String(`${parseFloat(amount || '0') < 1 
                       ? parseFloat(amount || '0').toFixed(8).replace(/\.?0+$/, '') 
@@ -815,7 +815,7 @@ export function TradeModal({
 
                 <View style={styles.confirmRow}>
                   <Text style={[styles.confirmLabelBold, { color: colors.text }]}>
-                    {String(isBuy ? 'Total a Pagar' : 'Total a Receber')}
+                    {String(isBuy ? t('trade.totalToPay') : t('trade.totalToReceive'))}
                   </Text>
                   <Text style={[styles.confirmValueBold, { color: isBuy ? '#10b981' : '#ef4444' }]}>
                     {String(`$ ${apiService.formatUSD(total)}`)}
@@ -829,14 +829,14 @@ export function TradeModal({
                   style={[styles.confirmCancelBtn, { borderColor: colors.border }]} 
                   onPress={() => setConfirmVisible(false)}
                 >
-                  <Text style={[styles.confirmCancelText, { color: colors.text }]}>{'Voltar'}</Text>
+                  <Text style={[styles.confirmCancelText, { color: colors.text }]}>{t('common.back')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[styles.confirmOkBtn, { backgroundColor: isBuy ? '#10b981' : '#ef4444' }]} 
                   onPress={executeOrder}
                 >
                   <Text style={styles.confirmOkText}>
-                    {String(isBuy ? 'Confirmar Compra' : 'Confirmar Venda')}
+                    {String(isBuy ? t('trade.confirmBuy') : t('trade.confirmSell'))}
                   </Text>
                 </TouchableOpacity>
               </View>

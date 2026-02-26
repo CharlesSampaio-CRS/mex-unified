@@ -223,7 +223,7 @@ export const MarketOverview: React.FC = () => {
             style={[styles.retryButton, { backgroundColor: colors.primary }]}
             onPress={handleRefresh}
           >
-            <Text style={styles.retryButtonText}>Tentar novamente</Text>
+            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -354,9 +354,9 @@ export const MarketOverview: React.FC = () => {
                     ) : (
                       <View style={styles.chartLoading}>
                         <Text style={[styles.errorText, { color: colors.textSecondary, textAlign: 'center' }]}>
-                          ⚠️ Gráfico não disponível{'\n'}
+                          ⚠️ {t('market.chartUnavailable')}{'\n'}
                           <Text style={{ fontSize: 11 }}>
-                            Pode ser um problema temporário da API
+                            {t('market.apiTemporary')}
                           </Text>
                         </Text>
                       </View>
@@ -366,7 +366,7 @@ export const MarketOverview: React.FC = () => {
                   {/* Preço Atual */}
                   <View style={styles.detailSection}>
                     <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      Preço Atual
+                      {t('market.currentPrice')}
                     </Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>
                       {formatPrice(selectedToken.price)}
@@ -376,7 +376,7 @@ export const MarketOverview: React.FC = () => {
                   {/* Variação 24h */}
                   <View style={styles.detailSection}>
                     <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      Variação 24h
+                      {t('market.change24h')}
                     </Text>
                     <View style={styles.detailRow}>
                       <Text style={[

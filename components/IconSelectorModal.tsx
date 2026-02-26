@@ -3,6 +3,7 @@ import { memo } from "react"
 import Svg, { Path, Circle, Rect, Polygon } from "react-native-svg"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
+import { useLanguage } from "../contexts/LanguageContext"
 
 // Grid de ícones disponíveis - todos agora são de navegação
 const AVAILABLE_ICONS = [
@@ -253,6 +254,7 @@ export const IconSelectorModal = memo(function IconSelectorModal({
   selectedIconId,
 }: IconSelectorModalProps) {
   const { colors } = useTheme()
+  const { t } = useLanguage()
 
   const handleIconPress = (item: typeof AVAILABLE_ICONS[0]) => {
     // Navega para a tela correspondente
@@ -274,7 +276,7 @@ export const IconSelectorModal = memo(function IconSelectorModal({
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Select Icon
+              {t('iconSelector.title')}
             </Text>
             <TouchableOpacity onPress={onClose}>
               <Text style={[styles.closeButton, { color: colors.textSecondary }]}>✕</Text>

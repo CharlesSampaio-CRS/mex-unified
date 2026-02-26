@@ -12,6 +12,7 @@ import { useBalance } from "@/contexts/BalanceContext"
 import { usePrivacy } from "@/contexts/PrivacyContext"
 import { useAlerts } from "@/contexts/AlertsContext"
 import { useOrders } from "@/contexts/OrdersContext"
+import { useLanguage } from "@/contexts/LanguageContext"
 import { apiService } from "@/services/api"
 import { CreateAlertModal } from "./create-price-alert-modal"
 import { TokenDetailsModal } from "./token-details-modal"
@@ -36,6 +37,7 @@ export function WatchlistFavorites() {
   const { hideValue } = usePrivacy()
   const { getAlertsForToken } = useAlerts()
   const { refresh: refreshOrders } = useOrders()
+  const { t } = useLanguage()
   
   const [refreshing, setRefreshing] = useState(false)
   const [alertModalVisible, setAlertModalVisible] = useState(false)
@@ -208,17 +210,17 @@ export function WatchlistFavorites() {
       {loading && favoriteSections.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-            Carregando...
+            {t('common.loading')}
           </Text>
         </View>
       ) : favoriteSections.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="star-outline" size={64} color={colors.textTertiary} />
           <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
-            Nenhum favorito ainda
+            {t('watchlist.noFavorites')}
           </Text>
           <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-            Marque tokens como favoritos clicando na estrela (⭐) na lista de assets
+            {t('watchlist.noFavoritesDesc')}
           </Text>
         </View>
       ) : (
@@ -297,7 +299,7 @@ export function WatchlistFavorites() {
                     <View style={[styles.noBalanceTag, { backgroundColor: colors.background }]}>
                       <Ionicons name="information-circle-outline" size={12} color={colors.textTertiary} />
                       <Text style={[styles.noBalanceText, { color: colors.textSecondary }]}>
-                        Sem saldo
+                        {t('watchlist.noBalance')}
                       </Text>
                     </View>
                   )
@@ -319,11 +321,11 @@ export function WatchlistFavorites() {
                       value: hideValue(apiService.formatTokenAmount(item.amount.toString()))
                     },
                     {
-                      label: 'Preço',
+                      label: t('watchlist.price'),
                       value: hideValue(`$${apiService.formatUSD(item.priceUSD)}`)
                     },
                     {
-                      label: 'Valor Total',
+                      label: t('watchlist.totalValue'),
                       value: hideValue(`$${apiService.formatUSD(item.valueUSD)}`),
                       bold: true
                     }
@@ -333,18 +335,18 @@ export function WatchlistFavorites() {
                 // Show minimal info for tokens without balance
                 return [
                   {
-                    label: 'Status',
-                    value: 'Favorito sem saldo'
+                    label: t('watchlist.status'),
+                    value: t('watchlist.favoriteNoBalance')
                   },
                   {
-                    label: 'Info',
-                    value: 'Token aguardando consulta de preço'
+                    label: t('watchlist.info'),
+                    value: t('watchlist.awaitingPrice')
                   }
                 ]
               },
               buttons: {
                 primary: {
-                  label: 'Ver Detalhes',
+                  label: t('watchlist.viewDetails'),
                   visible: (item) => item.valueUSD > 0 && !!item.exchangeId, // 🆕 Só mostra se tiver saldo
                   onPress: (item) => {
                     if (item.valueUSD > 0 && item.exchangeId) {
@@ -357,7 +359,7 @@ export function WatchlistFavorites() {
                   }
                 },
                 secondary: {
-                  label: 'Negociar',
+                  label: t('watchlist.trade'),
                   visible: (item) => item.valueUSD > 0 && !!item.exchangeId, // 🆕 Só mostra se tiver saldo
                   onPress: (item) => {
                     if (item.valueUSD > 0 && item.exchangeId) {

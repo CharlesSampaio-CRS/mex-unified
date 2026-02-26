@@ -285,7 +285,7 @@ export function StrategyDetailsModal({
                 </View>
                 <View style={styles.actionContent}>
                   <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>
-                    Proteção ativada
+                    {t('strategy.protectionEnabled')}
                   </Text>
                   <Text style={[styles.actionValue, { color: colors.text }]}>
                     -{strategy.config.rules.stop_loss.percent}%
