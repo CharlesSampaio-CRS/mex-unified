@@ -251,7 +251,7 @@ const translations = {
     'exchanges.connectError': 'Não foi possível conectar a corretora',
     'exchanges.disconnectError': 'Não foi possível desconectar a corretora',
     'exchanges.deleteError': 'Não foi possível deletar a corretora',
-    'exchanges.connectedAt': 'Conectada em:',
+    'exchanges.connectedAt': 'Conectada em',
     'exchanges.viewDetails': 'Ver Detalhes',
     'exchanges.active': 'ATIVA',
     'exchanges.inactive': 'INATIVA',
@@ -419,6 +419,17 @@ const translations = {
     'orders.cancelFailed': 'Não foi possível cancelar',
     'orders.errorCode': 'Código',
     'orders.cancelOrder': 'Cancelar Ordem',
+    'orders.errorDetails': 'Detalhes do Erro',
+    'orders.fullResponse': 'Resposta completa:',
+    'orders.cancelConfirm': 'Deseja realmente cancelar esta ordem {side}?',
+    'orders.cancelBuy': 'de compra',
+    'orders.cancelSell': 'de venda',
+    'orders.cancelOrderError': 'Erro ao cancelar ordem',
+    'orders.unknownCancelError': 'Erro desconhecido ao cancelar ordem',
+    'orders.timeoutError': 'Timeout: A exchange não respondeu a tempo',
+    'orders.networkError': 'Erro de rede: Verifique sua conexão',
+    'orders.message': 'Mensagem:',
+    'orders.code': 'Código:',
     
     // Trade
     'trade.tooltip': 'Negociar',
@@ -432,7 +443,7 @@ const translations = {
     // Exchanges tooltips and misc
     // 'exchanges.requiresPassphrase' movido para cima (linha 170)
     
-    'exchanges.status': 'Status:',
+    'exchanges.status': 'Status',
     'exchanges.activate': 'Ativar',
     'exchanges.hidden': 'ocultas',
     'exchanges.moreAssets': 'mais',
@@ -502,6 +513,17 @@ const translations = {
     'common.ok': 'OK',
     'common.next': 'Próximo',
     'common.create': 'Criar',
+    'common.viewDetails': 'Ver Detalhes',
+    'common.updatingData': 'Atualizando dados...',
+    'common.loadingTokens': 'Carregando tokens...',
+    'common.updated': 'Atualizado:',
+    'common.search': 'Buscar',
+    'common.noResults': 'Nenhum resultado',
+    'common.delete': 'Excluir',
+    'common.remove': 'Remover',
+    'common.retry': 'Tentar novamente',
+    'common.showMore': 'Ver mais',
+    'common.showLess': 'Ver menos',
     
     // Error Messages
     'error.cameraAccess': 'Não foi possível acessar a câmera',
@@ -635,6 +657,118 @@ const translations = {
     
     // Profile
     'profile.logoutError': 'Não foi possível realizar o logout',
+
+    // Trade (extras)
+    'trade.confirmOrder': 'Confirmar Ordem',
+    'trade.pair': 'Par',
+    'trade.side': 'Lado',
+    'trade.type': 'Tipo',
+    'trade.price': 'Preço',
+    'trade.quantity': 'Quantidade',
+    'trade.totalToPay': 'Total a Pagar',
+    'trade.totalToReceive': 'Total a Receber',
+    'trade.createStrategy': 'Criar Estratégia',
+
+    // Watchlist
+    'watchlist.noFavorites': 'Nenhum favorito ainda',
+    'watchlist.noFavoritesDesc': 'Marque tokens como favoritos clicando na estrela (⭐) na lista de assets',
+    'watchlist.noBalance': 'Sem saldo',
+    'watchlist.price': 'Preço',
+    'watchlist.totalValue': 'Valor Total',
+    'watchlist.viewDetails': 'Ver Detalhes',
+    'watchlist.trade': 'Negociar',
+    'watchlist.favoriteNoBalance': 'Favorito sem saldo',
+    'watchlist.awaitingPrice': 'Token aguardando consulta de preço',
+    'watchlist.status': 'Status',
+    'watchlist.info': 'Info',
+
+    // Alerts (simplificados)
+    'alerts.title': 'Alertas',
+    'alerts.createAlert': 'Criar Alerta de Preço',
+    'alerts.alertType': 'Tipo de Alerta',
+    'alerts.absolutePrice': 'Preço Absoluto',
+    'alerts.percentage': 'Porcentagem',
+    'alerts.condition': 'Condição',
+    'alerts.above': 'Acima de',
+    'alerts.below': 'Abaixo de',
+    'alerts.crossesUp': 'Cruza acima',
+    'alerts.crossesDown': 'Cruza abaixo',
+    'alerts.targetPrice': 'Preço Alvo',
+    'alerts.percentageLabel': 'Porcentagem',
+    'alerts.frequency': 'Frequência',
+    'alerts.once': 'Uma vez',
+    'alerts.always': 'Sempre',
+    'alerts.daily': 'Diário',
+    'alerts.customMessage': 'Mensagem Personalizada',
+    'alerts.previewAlert': 'Preview do Alerta:',
+    'alerts.frequencyLabel': 'Frequência:',
+    'alerts.createButton': 'Criar Alerta',
+    'alerts.noAlerts': 'Nenhum alerta configurado',
+    'alerts.noAlertsDesc': 'Crie seu primeiro alerta de preço para receber notificações',
+    'alerts.loadingAlerts': 'Carregando alertas...',
+    'alerts.removeAlert': 'Remover Alerta',
+    'alerts.triggered': 'Disparado',
+    'alerts.currentPrice': 'Preço atual:',
+
+    // Notifications (extras)
+    'notifications.clearAll': 'Limpar Notificações',
+    'notifications.clearAllConfirm': 'Tem certeza que deseja remover todas as {count} notificações?',
+    'notifications.clearAllButton': 'Limpar Todas',
+    'notifications.desc': 'Notificações e avisos',
+
+    // Strategy (extras)
+    'strategy.newTemplate': 'Criar Novo Template',
+    'strategy.customTemplate': 'Personalize seu próprio template',
+    'strategy.noExchanges': 'Nenhuma exchange conectada',
+    'strategy.connectExchange': 'Conecte uma exchange na aba "Exchanges"',
+    'strategy.tapToChange': 'Toque para alterar',
+    'strategy.summary': 'Resumo da Estratégia',
+    'strategy.connected': 'Conectada',
+    'strategy.protectionEnabled': 'Proteção ativada',
+    'strategy.searchToken': 'Buscar token (ex: BTC, ETH, SOL...)',
+    'strategy.results': '{count} resultado{plural}',
+    'strategy.tokensAvailable': '{count} tokens disponíveis',
+    'strategy.noTokenFound': 'Nenhum token encontrado para "{query}"',
+    'strategy.noTokenAvailable': 'Nenhum token disponível',
+
+    // Market
+    'market.currentPrice': 'Preço Atual',
+    'market.change24h': 'Variação 24h',
+    'market.chartUnavailable': 'Gráfico não disponível',
+    'market.apiTemporary': 'Pode ser um problema temporário da API',
+
+    // Assets
+    'assets.availableOn': 'Disponível na {exchange}',
+    'assets.searchingExchanges': 'Buscando {query} nas exchanges...',
+    'assets.tokenNotFound': 'Token {symbol} não encontrado',
+    'assets.tokenNotFoundDesc': 'Não foi possível localizar este token nas exchanges conectadas ou APIs externas.',
+    'assets.noTokenInExchange': 'Nenhum token nesta exchange',
+
+    // Token Details
+    'tokenDetails.totalQuantity': 'Quantidade Total',
+    'tokenDetails.totalValueUsd': 'Valor Total (USD)',
+
+    // Pie Chart
+    'chart.error': '⚠️ Erro',
+    'chart.fetchError': 'Falha ao buscar saldo',
+
+    // Profile Menu
+    'profileMenu.alerts': 'Alertas',
+    'profileMenu.settings': 'Configurações',
+    'profileMenu.settingsDesc': 'Preferências e conta',
+
+    // Icon Selector
+    'iconSelector.title': 'Selecionar Ícone',
+
+    // QR Scanner
+    'qr.requestingPermission': 'Solicitando permissão da câmera...',
+    'qr.noAccess': 'Sem acesso à câmera',
+    'qr.noAccessDesc': 'Para escanear QR codes, você precisa permitir o acesso à câmera nas configurações do dispositivo.',
+
+    // GenericItemList
+    'genericList.noTokenInExchange': 'Nenhum token nesta exchange',
+    'genericList.item': 'item',
+    'genericList.items': 'itens',
   },
   'en-US': {
     // Navigation
@@ -877,14 +1011,14 @@ const translations = {
     'exchanges.connectError': 'Could not connect the exchange',
     'exchanges.disconnectError': 'Could not disconnect the exchange',
     'exchanges.deleteError': 'Could not delete the exchange',
-    'exchanges.connectedAt': 'Connected at:',
+    'exchanges.connectedAt': 'Connected at',
     'exchanges.viewDetails': 'View Details',
     'exchanges.active': 'ACTIVE',
     'exchanges.inactive': 'INACTIVE',
     'exchanges.alreadyConnected': 'Exchange already connected',
     'exchanges.readyToConnect': 'Ready to connect',
     'exchanges.requiresPassphrase': 'Requires additional passphrase',
-    'exchanges.status': 'Status:',
+    'exchanges.status': 'Status',
     'exchanges.activate': 'Activate',
     'exchanges.hidden': 'hidden',
     'exchanges.moreAssets': 'more',
@@ -893,6 +1027,37 @@ const translations = {
     'exchanges.deactivateConfirm': 'Are you sure you want to deactivate the exchange',
     'exchanges.activateWarning': 'It will be available for use in strategies.',
     'exchanges.deactivateWarning': 'It will no longer be used by strategies.',
+    'exchanges.country': 'Country',
+    'exchanges.generalInfo': 'General Information',
+    'exchanges.loadingDetails': 'Loading details...',
+    'exchanges.exchangeId': 'Exchange ID',
+    'exchanges.ccxtId': 'CCXT ID',
+    'exchanges.lastUpdate': 'Last update',
+    'exchanges.reconnectedAt': 'Reconnected at',
+    'exchanges.disconnectedAt': 'Disconnected at',
+    'exchanges.feeStructure': 'Fee structure available on the exchange',
+    'exchanges.name': 'Name',
+    'exchanges.website': 'Website',
+    'exchanges.resources': '⚡ Resources',
+    'exchanges.availableMarkets': '📈 Available Markets',
+    'exchanges.tradingFees': 'Trading Fees',
+    'exchanges.fundingFees': 'Funding Fees',
+    'exchanges.maker': 'Maker',
+    'exchanges.taker': 'Taker',
+    'exchanges.deposit': 'Deposit',
+    'exchanges.withdraw': 'Withdrawal',
+    'exchanges.confirmDelete': '⚠️ Confirm Deletion',
+    'exchanges.confirmDisconnect': '⚠️ Confirm Disconnect',
+    'exchanges.qrSuccess': '✅ Success!',
+    'exchanges.qrLoaded': 'API Key and Secret loaded from QR Code!',
+    'exchanges.qrFieldsLoaded': '{fields} loaded from QR Code!',
+    'exchanges.qrFieldsExtracted': '{fields} extracted from QR Code!',
+    'exchanges.apiKey': 'API Key',
+    'exchanges.apiSecret': 'API Secret',
+    'exchanges.passphrase': 'Passphrase',
+    'exchanges.enterApiKey': 'Enter your API Key',
+    'exchanges.enterApiSecret': 'Enter your API Secret',
+    'exchanges.enterPassphrase': 'Enter your Passphrase',
     
     // Orders
     'orders.badge': 'Orders',
@@ -1023,6 +1188,17 @@ const translations = {
     'orders.cancelFailed': 'Could not cancel',
     'orders.errorCode': 'Code',
     'orders.cancelOrder': 'Cancel Order',
+    'orders.errorDetails': 'Error Details',
+    'orders.fullResponse': 'Full response:',
+    'orders.cancelConfirm': 'Do you really want to cancel this {side} order?',
+    'orders.cancelBuy': 'buy',
+    'orders.cancelSell': 'sell',
+    'orders.cancelOrderError': 'Error cancelling order',
+    'orders.unknownCancelError': 'Unknown error cancelling order',
+    'orders.timeoutError': 'Timeout: Exchange did not respond in time',
+    'orders.networkError': 'Network error: Check your connection',
+    'orders.message': 'Message:',
+    'orders.code': 'Code:',
     
     // Trade
     'trade.tooltip': 'Trade',
@@ -1096,6 +1272,17 @@ const translations = {
     'common.ok': 'OK',
     'common.next': 'Next',
     'common.create': 'Create',
+    'common.viewDetails': 'View Details',
+    'common.updatingData': 'Updating data...',
+    'common.loadingTokens': 'Loading tokens...',
+    'common.updated': 'Updated:',
+    'common.search': 'Search',
+    'common.noResults': 'No results',
+    'common.delete': 'Delete',
+    'common.remove': 'Remove',
+    'common.retry': 'Retry',
+    'common.showMore': 'Show more',
+    'common.showLess': 'Show less',
     
     // Error Messages
     'error.cameraAccess': 'Could not access the camera',
@@ -1226,6 +1413,118 @@ const translations = {
     
     // Profile
     'profile.logoutError': 'Could not complete logout',
+
+    // Trade (extras)
+    'trade.confirmOrder': 'Confirm Order',
+    'trade.pair': 'Pair',
+    'trade.side': 'Side',
+    'trade.type': 'Type',
+    'trade.price': 'Price',
+    'trade.quantity': 'Quantity',
+    'trade.totalToPay': 'Total to Pay',
+    'trade.totalToReceive': 'Total to Receive',
+    'trade.createStrategy': 'Create Strategy',
+
+    // Watchlist
+    'watchlist.noFavorites': 'No favorites yet',
+    'watchlist.noFavoritesDesc': 'Mark tokens as favorites by tapping the star (⭐) in the assets list',
+    'watchlist.noBalance': 'No balance',
+    'watchlist.price': 'Price',
+    'watchlist.totalValue': 'Total Value',
+    'watchlist.viewDetails': 'View Details',
+    'watchlist.trade': 'Trade',
+    'watchlist.favoriteNoBalance': 'Favorite without balance',
+    'watchlist.awaitingPrice': 'Token awaiting price query',
+    'watchlist.status': 'Status',
+    'watchlist.info': 'Info',
+
+    // Alerts (simplified)
+    'alerts.title': 'Alerts',
+    'alerts.createAlert': 'Create Price Alert',
+    'alerts.alertType': 'Alert Type',
+    'alerts.absolutePrice': 'Absolute Price',
+    'alerts.percentage': 'Percentage',
+    'alerts.condition': 'Condition',
+    'alerts.above': 'Above',
+    'alerts.below': 'Below',
+    'alerts.crossesUp': 'Crosses above',
+    'alerts.crossesDown': 'Crosses below',
+    'alerts.targetPrice': 'Target Price',
+    'alerts.percentageLabel': 'Percentage',
+    'alerts.frequency': 'Frequency',
+    'alerts.once': 'Once',
+    'alerts.always': 'Always',
+    'alerts.daily': 'Daily',
+    'alerts.customMessage': 'Custom Message',
+    'alerts.previewAlert': 'Alert Preview:',
+    'alerts.frequencyLabel': 'Frequency:',
+    'alerts.createButton': 'Create Alert',
+    'alerts.noAlerts': 'No alerts configured',
+    'alerts.noAlertsDesc': 'Create your first price alert to receive notifications',
+    'alerts.loadingAlerts': 'Loading alerts...',
+    'alerts.removeAlert': 'Remove Alert',
+    'alerts.triggered': 'Triggered',
+    'alerts.currentPrice': 'Current price:',
+
+    // Notifications (extras)
+    'notifications.clearAll': 'Clear Notifications',
+    'notifications.clearAllConfirm': 'Are you sure you want to remove all {count} notifications?',
+    'notifications.clearAllButton': 'Clear All',
+    'notifications.desc': 'Notifications and alerts',
+
+    // Strategy (extras)
+    'strategy.newTemplate': 'Create New Template',
+    'strategy.customTemplate': 'Customize your own template',
+    'strategy.noExchanges': 'No exchanges connected',
+    'strategy.connectExchange': 'Connect an exchange in the "Exchanges" tab',
+    'strategy.tapToChange': 'Tap to change',
+    'strategy.summary': 'Strategy Summary',
+    'strategy.connected': 'Connected',
+    'strategy.protectionEnabled': 'Protection enabled',
+    'strategy.searchToken': 'Search token (e.g. BTC, ETH, SOL...)',
+    'strategy.results': '{count} result{plural}',
+    'strategy.tokensAvailable': '{count} tokens available',
+    'strategy.noTokenFound': 'No token found for "{query}"',
+    'strategy.noTokenAvailable': 'No token available',
+
+    // Market
+    'market.currentPrice': 'Current Price',
+    'market.change24h': '24h Change',
+    'market.chartUnavailable': 'Chart unavailable',
+    'market.apiTemporary': 'This may be a temporary API issue',
+
+    // Assets
+    'assets.availableOn': 'Available on {exchange}',
+    'assets.searchingExchanges': 'Searching {query} on exchanges...',
+    'assets.tokenNotFound': 'Token {symbol} not found',
+    'assets.tokenNotFoundDesc': 'Could not find this token on connected exchanges or external APIs.',
+    'assets.noTokenInExchange': 'No tokens in this exchange',
+
+    // Token Details
+    'tokenDetails.totalQuantity': 'Total Quantity',
+    'tokenDetails.totalValueUsd': 'Total Value (USD)',
+
+    // Pie Chart
+    'chart.error': '⚠️ Error',
+    'chart.fetchError': 'Failed to fetch balance',
+
+    // Profile Menu
+    'profileMenu.alerts': 'Alerts',
+    'profileMenu.settings': 'Settings',
+    'profileMenu.settingsDesc': 'Preferences and account',
+
+    // Icon Selector
+    'iconSelector.title': 'Select Icon',
+
+    // QR Scanner
+    'qr.requestingPermission': 'Requesting camera permission...',
+    'qr.noAccess': 'No camera access',
+    'qr.noAccessDesc': 'To scan QR codes, you need to allow camera access in your device settings.',
+
+    // GenericItemList
+    'genericList.noTokenInExchange': 'No tokens in this exchange',
+    'genericList.item': 'item',
+    'genericList.items': 'items',
   }
 }
 
