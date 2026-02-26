@@ -305,7 +305,7 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
         </View>
 
         {/* Saldos por Exchange */}
-        <ExchangeBalancesList />
+        <ExchangeBalancesList usdToBrlRate={usdToBrlRate} />
 
         {/* PNL Cards - Diário e Período separados */}
         <View style={styles.pnlCardsRow}>

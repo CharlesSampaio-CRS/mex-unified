@@ -1,21 +1,31 @@
-import { View, Text, StyleSheet, Image } from 'react-native'
-import { memo, useMemo } from 'react'
+import { View, Text, StyleSheet, Image, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native'
+import { memo, useMemo, useState, useCallback } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useBalance } from '@/contexts/BalanceContext'
 import { usePrivacy } from '@/contexts/PrivacyContext'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 import { getExchangeLogo } from '@/lib/exchange-logos'
-import { apiService } from '@/services/api'
 import { fontWeights } from '@/lib/typography'
 
+// Habilita LayoutAnimation no Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true)
+}
+
+interface ExchangeBalancesListProps {
+  usdToBrlRate?: number | null
+}
+
 /**
- * ExchangeBalancesList — Linhas ultra-clean dos saldos por exchange.
- * Sem header, sem bordas, sem botões. Apenas ícone · nome · valor.
+ * ExchangeBalancesList — Inicia comprimido, expande ao tocar.
+ * Header discreto com ícones empilhados + chevron.
+ * Expandido: ícone · nome · USD · BRL por exchange.
  */
-export const ExchangeBalancesList = memo(function ExchangeBalancesList() {
+export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBrlRate }: ExchangeBalancesListProps) {
   const { colors } = useTheme()
   const { data } = useBalance()
   const { hideValue } = usePrivacy()
+  const [expanded, setExpanded] = useState(false)
 
   const exchanges = useMemo(() => {
     if (!data?.exchanges || data.exchanges.length === 0) return []
@@ -30,35 +40,95 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList() {
       .sort((a, b) => b.value - a.value)
   }, [data])
 
+  const toggle = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+    setExpanded(prev => !prev)
+  }, [])
+
   if (exchanges.length === 0) return null
 
-  const fmt = (v: number) => {
-    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`
-    if (v >= 10_000) return `${(v / 1_000).toFixed(1)}K`
-    return apiService.formatUSD(v)
+  const fmtUsd = (v: number) => {
+    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`
+    if (v >= 100_000) return `$${(v / 1_000).toFixed(1)}K`
+    return `$${v.toFixed(2)}`
+  }
+
+  const fmtBrl = (v: number) => {
+    if (v >= 1_000_000) return `R$${(v / 1_000_000).toFixed(2)}M`
+    if (v >= 100_000) return `R$${(v / 1_000).toFixed(1)}K`
+    return `R$${v.toFixed(2)}`
   }
 
   return (
     <View style={styles.container}>
-      {exchanges.map((ex) => (
-        <View key={ex.name} style={styles.row}>
-          {ex.logo ? (
-            <Image source={ex.logo} style={styles.icon} />
-          ) : (
-            <View style={[styles.iconFallback, { backgroundColor: colors.border }]}>
-              <Text style={[styles.iconLetter, { color: colors.textSecondary }]}>
-                {ex.name.charAt(0)}
-              </Text>
+      {/* Header comprimido — sempre visível */}
+      <TouchableOpacity
+        style={styles.header}
+        onPress={toggle}
+        activeOpacity={0.6}
+      >
+        {/* Ícones empilhados das exchanges */}
+        <View style={styles.stackedIcons}>
+          {exchanges.slice(0, 4).map((ex, i) => (
+            <View
+              key={ex.name}
+              style={[
+                styles.stackedIconWrap,
+                { marginLeft: i === 0 ? 0 : -6, zIndex: 10 - i },
+              ]}
+            >
+              {ex.logo ? (
+                <Image source={ex.logo} style={styles.stackedIcon} />
+              ) : (
+                <View style={[styles.stackedIconFallback, { backgroundColor: colors.border }]}>
+                  <Text style={[styles.stackedIconLetter, { color: colors.textSecondary }]}>
+                    {ex.name.charAt(0)}
+                  </Text>
+                </View>
+              )}
             </View>
-          )}
-          <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
-            {ex.name}
-          </Text>
-          <Text style={[styles.value, { color: colors.text }]}>
-            {hideValue(`$${fmt(ex.value)}`)}
-          </Text>
+          ))}
         </View>
-      ))}
+
+        <Text style={[styles.headerLabel, { color: colors.textSecondary }]}>
+          {exchanges.length} exchange{exchanges.length > 1 ? 's' : ''}
+        </Text>
+
+        {/* Chevron */}
+        <Text style={[styles.chevron, { color: colors.textTertiary }]}>
+          {expanded ? '▴' : '▾'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Lista expandida */}
+      {expanded && (
+        <View style={styles.list}>
+          {exchanges.map((ex) => (
+            <View key={ex.name} style={styles.row}>
+              {ex.logo ? (
+                <Image source={ex.logo} style={styles.icon} />
+              ) : (
+                <View style={[styles.iconFallback, { backgroundColor: colors.border }]}>
+                  <Text style={[styles.iconLetter, { color: colors.textSecondary }]}>
+                    {ex.name.charAt(0)}
+                  </Text>
+                </View>
+              )}
+              <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
+                {ex.name}
+              </Text>
+              <Text style={[styles.valueUsd, { color: colors.text }]}>
+                {hideValue(fmtUsd(ex.value))}
+              </Text>
+              {usdToBrlRate ? (
+                <Text style={[styles.valueBrl, { color: colors.textSecondary }]}>
+                  {hideValue(fmtBrl(ex.value * usdToBrlRate))}
+                </Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   )
 })
@@ -66,6 +136,51 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList() {
 const styles = StyleSheet.create({
   container: {
     marginTop: 6,
+  },
+  // Header comprimido
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  stackedIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stackedIconWrap: {
+    borderRadius: 9,
+    overflow: 'hidden',
+  },
+  stackedIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  stackedIconFallback: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stackedIconLetter: {
+    fontSize: 8,
+    fontWeight: fontWeights.semibold,
+  },
+  headerLabel: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: fontWeights.regular,
+    opacity: 0.45,
+  },
+  chevron: {
+    fontSize: 11,
+    opacity: 0.35,
+  },
+  // Lista expandida
+  list: {
+    marginTop: 4,
     gap: 4,
   },
   row: {
@@ -97,9 +212,16 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.regular,
     opacity: 0.5,
   },
-  value: {
+  valueUsd: {
     fontSize: 11,
     fontWeight: fontWeights.light,
     opacity: 0.7,
+  },
+  valueBrl: {
+    fontSize: 10,
+    fontWeight: fontWeights.light,
+    opacity: 0.4,
+    minWidth: 58,
+    textAlign: 'right',
   },
 })
