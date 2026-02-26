@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { AnimatedLogoIcon } from './AnimatedLogoIcon';
 import { GradientCard } from './GradientCard';
 
@@ -69,6 +70,7 @@ export function GenericItemList<T extends GenericItem>({
   emptyMessage = 'Nenhum item encontrado'
 }: GenericItemListProps<T>) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
 
   // Calcula total de itens
   const totalItems = sections.reduce((sum, section) => sum + section.items.length, 0);
@@ -101,12 +103,12 @@ export function GenericItemList<T extends GenericItem>({
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <AnimatedLogoIcon size={16} />
                   <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
-                    Carregando...
+                    {t('common.loading')}
                   </Text>
                 </View>
               ) : (
                 <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
-                  {section.items.length} {section.items.length === 1 ? 'item' : 'itens'}
+                  {section.items.length} {section.items.length === 1 ? t('genericList.item') : t('genericList.items')}
                 </Text>
               )}
             </View>
@@ -116,14 +118,14 @@ export function GenericItemList<T extends GenericItem>({
               <View style={[styles.loadingContainer, { backgroundColor: colors.surface }]}>
                 <AnimatedLogoIcon size={24} />
                 <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-                  Carregando...
+                  {t('common.loading')}
                 </Text>
               </View>
             ) : section.items.length === 0 ? (
               /* Exchange sem tokens */
               <View style={[styles.emptySection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
-                  Nenhum token nesta exchange
+                  {t('genericList.noTokenInExchange')}
                 </Text>
               </View>
             ) : (

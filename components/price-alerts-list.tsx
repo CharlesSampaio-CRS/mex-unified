@@ -203,24 +203,24 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
       {loading && alerts.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-              Carregando alertas...
+              {t('alerts.loadingAlerts')}
             </Text>
           </View>
         ) : filteredAlerts.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="notifications-off-outline" size={48} color={colors.textTertiary} />
             <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
-              Nenhum alerta configurado
+              {t('alerts.noAlerts')}
             </Text>
             <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-              Crie seu primeiro alerta de preço para receber notificações
+              {t('alerts.noAlertsDesc')}
             </Text>
             <TouchableOpacity
               style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
               onPress={() => setCreateModalVisible(true)}
             >
               <Text style={[styles.emptyStateButtonText, { color: '#FFFFFF' }]}>
-                Criar Alerta
+                {t('alerts.createButton')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -367,10 +367,10 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
           setAlertToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Remover Alerta"
-        message={`Tem certeza que deseja remover o alerta de ${alertToDelete?.symbol}?`}
-        confirmText="Remover"
-        cancelText="Cancelar"
+        title={t('alerts.removeAlert')}
+        message={`${t('common.confirm')}? ${alertToDelete?.symbol}`}
+        confirmText={t('common.remove')}
+        cancelText={t('common.cancel')}
         confirmColor="#ef4444"
         icon="🗑️"
       />

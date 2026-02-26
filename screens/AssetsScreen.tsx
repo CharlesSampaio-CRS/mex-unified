@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Text as SvgText, Line } from 'react-native-svg';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useBalance } from '@/contexts/BalanceContext';
 import { usePrivacy } from '@/contexts/PrivacyContext';
@@ -13,7 +14,7 @@ import { Header } from '@/components/Header';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { TokenDetailsModal } from '@/components/token-details-modal';
 import { TradeModal } from '@/components/trade-modal';
-import { getExchangeBalances, getExchangeId, getExchangeName } from '@/lib/exchange-helpers';
+import { getExchangeBalances, getExchangeId, getExchangeName, capitalizeExchangeName } from '@/lib/exchange-helpers';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 
@@ -21,13 +22,12 @@ export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance();
-  const { hideValue } = usePrivacy();
+  const { hideValue, hideZeroBalances: hideZero, toggleHideZeroBalances } = usePrivacy();
   const { unreadCount } = useNotifications();
   const { refresh: refreshOrders } = useOrders();
   
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  const [hideZero, setHideZero] = useState(false);
   const [selectedExchange, setSelectedExchange] = useState<string>('All');
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [tokenModalVisible, setTokenModalVisible] = useState(false);
@@ -44,14 +44,6 @@ export function AssetsScreen({ navigation }: any) {
   const onNotificationsPress = useCallback(() => {
     setNotificationsModalVisible(true);
   }, []);
-
-  const onProfilePress = useCallback(() => {
-    navigation?.navigate('Settings', { initialTab: 'profile' });
-  }, [navigation]);
-
-  const onSettingsPress = useCallback(() => {
-    navigation?.navigate('Settings');
-  }, [navigation]);
 
   // Refresh
   const handleRefresh = useCallback(async () => {
@@ -204,8 +196,6 @@ export function AssetsScreen({ navigation }: any) {
         title="Assets"
         subtitle={`${String(globalTotals.totalAssets)} ${String(globalTotals.totalAssets === 1 ? 'asset' : 'assets')} • ${String(hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`))}`}
         onNotificationsPress={onNotificationsPress}
-        onProfilePress={onProfilePress}
-        onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
         navigation={navigation}
       />
@@ -227,20 +217,6 @@ export function AssetsScreen({ navigation }: any) {
               <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
-        </View>
-
-        {/* Filter Options Row */}
-        <View style={styles.filterRow}>
-          {/* Hide Zero Balance Toggle */}
-          <View style={styles.toggleContainer}>
-            <Text style={[styles.toggleLabel, { color: colors.text }]}>Ocultar saldo zero</Text>
-            <Switch
-              value={hideZero}
-              onValueChange={setHideZero}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
-              thumbColor={hideZero ? colors.primary : colors.textTertiary}
-            />
-          </View>
         </View>
 
         {/* Exchange Filter */}
@@ -282,18 +258,40 @@ export function AssetsScreen({ navigation }: any) {
                   styles.exchangeFilterText,
                   { color: selectedExchange === exchange.id ? '#fff' : colors.textSecondary }
                 ]}>
-                  {exchange.name}
+                  {capitalizeExchangeName(exchange.name)}
                 </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         )}
 
-        {/* Results Count */}
+        {/* Results Count + Hide Zero Toggle */}
         <View style={styles.resultsCount}>
           <Text style={[styles.resultsCountText, { color: colors.textSecondary }]}>
             {totals.totalAssets} {totals.totalAssets === 1 ? 'ativo encontrado' : 'ativos encontrados'}
           </Text>
+          <TouchableOpacity
+            style={[styles.zeroToggle, {
+              backgroundColor: hideZero ? `${colors.primary}12` : colors.surface,
+              borderColor: hideZero ? `${colors.primary}40` : colors.border,
+            }]}
+            onPress={toggleHideZeroBalances}
+            activeOpacity={0.7}
+          >
+            {hideZero ? (
+              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={colors.primary}>0</SvgText>
+                <Line x1="6" y1="18" x2="18" y2="6" stroke={colors.primary} strokeWidth="2.5" strokeLinecap="round" />
+              </Svg>
+            ) : (
+              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={colors.textSecondary}>0</SvgText>
+              </Svg>
+            )}
+            <Text style={[styles.zeroToggleText, { color: hideZero ? colors.primary : colors.textSecondary }]}>
+              {hideZero ? 'Zeros ocultos' : 'Mostrar zeros'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       
@@ -533,24 +531,9 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: typography.bodySmall,  // 15
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.regular,
     paddingVertical: 0,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  toggleLabel: {
-    fontSize: typography.caption,  // 14
-    fontWeight: fontWeights.medium,
   },
   exchangeFilterScroll: {
     marginBottom: 8,
@@ -571,8 +554,24 @@ const styles = StyleSheet.create({
   },
   resultsCount: {
     paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   resultsCountText: {
+    fontSize: typography.micro,  // 12
+    fontWeight: fontWeights.medium,
+  },
+  zeroToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  zeroToggleText: {
     fontSize: typography.micro,  // 12
     fontWeight: fontWeights.medium,
   },

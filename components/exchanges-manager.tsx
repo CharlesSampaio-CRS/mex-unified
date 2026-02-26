@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, Clipboard, SafeAreaView, RefreshControl } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, RefreshControl } from "react-native"
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
 import { apiService } from "@/services/api"
 import { exchangeService } from "@/services/exchange-service"
@@ -17,6 +17,7 @@ import { TabBar } from "./TabBar"
 import { spacing, borderRadius, shadows } from "@/lib/layout"
 import Svg, { Path } from "react-native-svg"
 import { encryptExchangeCredentials } from "@/lib/encryption"
+import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 
 // Mapeamento dos logos locais das exchanges
 const exchangeLogos: Record<string, any> = {
@@ -137,7 +138,7 @@ const LinkedExchangeCard = memo(({
             )}
           </View>
           <Text style={[styles.itemSymbol, { color: colors.text }]} numberOfLines={1}>
-            {linkedExchange.name}
+            {capitalizeExchangeName(linkedExchange.name)}
           </Text>
         </View>
         
@@ -194,7 +195,7 @@ const LinkedExchangeCard = memo(({
         </View>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            País de Origem:
+            {t('exchanges.country')}:
           </Text>
           <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
             {linkedExchange.country || linkedExchange.pais_de_origem || 'N/A'}
@@ -288,7 +289,7 @@ const AvailableExchangeCard = memo(({
             )}
           </View>
           <Text style={[styles.itemSymbol, { color: colors.text }]} numberOfLines={1}>
-            {exchange.nome || exchange.name || 'Unknown Exchange'}
+            {capitalizeExchangeName(exchange.nome || exchange.name || 'Unknown Exchange')}
           </Text>
         </View>
         
@@ -315,7 +316,7 @@ const AvailableExchangeCard = memo(({
           </View>
         )}
         <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>País de Origem:</Text>
+          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('exchanges.country')}:</Text>
           <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
             {exchange.pais_de_origem || 'N/A'}
           </Text>
@@ -398,11 +399,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [qrScannerVisible, setQrScannerVisible] = useState(false)
   const [currentScanField, setCurrentScanField] = useState<'apiKey' | 'apiSecret' | 'passphrase' | null>(null)
   
-  // 👁️ Estados para mostrar/ocultar credenciais
-  const [showApiKey, setShowApiKey] = useState(false)
-  const [showApiSecret, setShowApiSecret] = useState(false)
-  const [showPassphrase, setShowPassphrase] = useState(false)
-  
   // Modal de confirmação (delete/disconnect)
   const [confirmModalVisible, setConfirmModalVisible] = useState(false)
   const [confirmAction, setConfirmAction] = useState<'delete' | 'disconnect' | null>(null)
@@ -441,7 +437,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       // Mapear para o formato esperado pelo componente
       const mappedExchanges = linkedList.map((ex: any) => ({
         ...ex,
-        name: ex.exchange_name || ex.name,
+        name: capitalizeExchangeName(ex.exchange_name || ex.name),
         ccxt_id: ex.exchange_type || ex.ccxt_id,
         icon: ex.icon || ex.logo,
         status: ex.is_active ? 'active' : 'inactive',
@@ -730,7 +726,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         setApiKey(parsed.apiKey.trim())
         setApiSecret(parsed.secretKey.trim())
         if (parsed.passphrase) setPassphrase(parsed.passphrase.trim())
-        Alert.alert('✅ Sucesso!', 'API Key e Secret carregados do QR Code!')
+        Alert.alert(t('exchanges.qrSuccess'), t('exchanges.qrLoaded'))
         setQrScannerVisible(false)
         setCurrentScanField(null)
         return
@@ -742,7 +738,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         setApiKey(parsed.api_key.trim())
         setApiSecret(parsed.api_secret.trim())
         if (parsed.passphrase) setPassphrase(parsed.passphrase.trim())
-        Alert.alert('✅ Sucesso!', 'API Key e Secret carregados do QR Code!')
+        Alert.alert(t('exchanges.qrSuccess'), t('exchanges.qrLoaded'))
         setQrScannerVisible(false)
         setCurrentScanField(null)
         return
@@ -768,7 +764,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         if (detectedSecret) loadedFields.push('API Secret')
         if (detectedPassphrase) loadedFields.push('Passphrase')
         
-        Alert.alert('✅ Sucesso!', `${loadedFields.join(', ')} carregados do QR Code!`)
+        Alert.alert(t('exchanges.qrSuccess'), t('exchanges.qrFieldsLoaded').replace('{fields}', loadedFields.join(', ')))
         setQrScannerVisible(false)
         setCurrentScanField(null)
         return
@@ -818,7 +814,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
           if (secretFound) loaded.push('API Secret')
           if (passphraseFound) loaded.push('Passphrase')
           
-          Alert.alert('✅ Sucesso!', `${loaded.join(', ')} extraídos do QR Code!`)
+          Alert.alert(t('exchanges.qrSuccess'), t('exchanges.qrFieldsExtracted').replace('{fields}', loaded.join(', ')))
           setQrScannerVisible(false)
           setCurrentScanField(null)
           return
@@ -841,23 +837,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     setQrScannerVisible(false)
     setCurrentScanField(null)
   }, [currentScanField])
-
-  const handlePasteFromClipboard = useCallback(async (field: 'apiKey' | 'apiSecret' | 'passphrase') => {
-    try {
-      const text = await Clipboard.getString()
-      if (text) {
-        if (field === 'apiKey') setApiKey(text.trim())
-        else if (field === 'apiSecret') setApiSecret(text.trim())
-        else if (field === 'passphrase') setPassphrase(text.trim())
-        
-        Alert.alert(`✅ ${t('success.pastedClipboard')}`, t('success.textPasted'))
-      } else {
-        Alert.alert(`⚠️ ${t('warning.emptyClipboard')}`, t('warning.noClipboardText'))
-      }
-    } catch (error) {
-      Alert.alert(t('common.error'), t('error.pasteClipboard'))
-    }
-  }, [t])
 
   const handleLinkExchange = useCallback(async () => {
     if (!selectedExchange) {
@@ -904,7 +883,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         console.error('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
         Alert.alert(
           t('common.error'),
-          'Não foi possível conectar a exchange. Tente novamente.'
+          t('exchanges.connectError')
         )
         setConnecting(false)
         return
@@ -1184,9 +1163,9 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                         e.stopPropagation()
                         if (exchange) {
                           if (isActive) {
-                            handleDisconnect(exchange.exchange_id, exchange.name)
+                            handleDisconnect(exchange.exchange_id, capitalizeExchangeName(exchange.name))
                           } else {
-                            toggleExchange(exchange.exchange_id, 'inactive', exchange.name)
+                            toggleExchange(exchange.exchange_id, 'inactive', capitalizeExchangeName(exchange.name))
                           }
                         }
                       }}
@@ -1210,7 +1189,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             name: exchange.name,
                             fullExchange: exchange
                           })
-                          handleDelete(exchange.exchange_id, exchange.name)
+                          handleDelete(exchange.exchange_id, capitalizeExchangeName(exchange.name))
                         }
                       }}
                     >
@@ -1274,59 +1253,31 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     })()}
                   </View>
                   <View>
-                    <Text style={[styles.modalExchangeName, { color: colors.text }]}>{selectedExchange.nome}</Text>
+                    <Text style={[styles.modalExchangeName, { color: colors.text }]}>{capitalizeExchangeName(selectedExchange.nome)}</Text>
                   </View>
                 </View>
 
                 {/* Formulário */}
                 <View style={styles.form}>
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: colors.text }]}>API Key *</Text>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t('exchanges.apiKey')} *</Text>
                     <View style={styles.inputWithButtons}>
                       <TextInput
-                        style={[styles.inputWithIcons, themedStyles.input]}
+                        style={[styles.inputWithQR, themedStyles.input]}
                         value={apiKey}
                         onChangeText={setApiKey}
                         placeholderTextColor={colors.textSecondary}
-                        placeholder="Digite sua API Key"
+                        placeholder={t('exchanges.enterApiKey')}
                         autoCapitalize="none"
                         autoCorrect={false}
-                        secureTextEntry={!showApiKey}
+                        secureTextEntry={true}
                       />
                       <View style={styles.inputActions}>
                         <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                          onPress={() => setShowApiKey(!showApiKey)}
-                        >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            {showApiKey ? (
-                              // Ícone de olho aberto
-                              <>
-                                <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </>
-                            ) : (
-                              // Ícone de olho fechado
-                              <>
-                                <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </>
-                            )}
-                          </Svg>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                          onPress={() => handlePasteFromClipboard('apiKey')}
-                        >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <Path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </Svg>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.primary }]}
+                          style={[styles.qrButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleOpenQRScanner('apiKey')}
                         >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                             <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
                           </Svg>
@@ -1336,52 +1287,24 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: colors.text }]}>API Secret *</Text>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t('exchanges.apiSecret')} *</Text>
                     <View style={styles.inputWithButtons}>
                       <TextInput
-                        style={[styles.inputWithIcons, themedStyles.input]}
+                        style={[styles.inputWithQR, themedStyles.input]}
                         value={apiSecret}
                         onChangeText={setApiSecret}
-                        placeholder="Digite seu API Secret"
+                        placeholder={t('exchanges.enterApiSecret')}
                         placeholderTextColor={colors.textSecondary}
-                        secureTextEntry={!showApiSecret}
+                        secureTextEntry={true}
                         autoCapitalize="none"
                         autoCorrect={false}
                       />
                       <View style={styles.inputActions}>
                         <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                          onPress={() => setShowApiSecret(!showApiSecret)}
-                        >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            {showApiSecret ? (
-                              // Ícone de olho aberto
-                              <>
-                                <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </>
-                            ) : (
-                              // Ícone de olho fechado
-                              <>
-                                <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </>
-                            )}
-                          </Svg>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                          onPress={() => handlePasteFromClipboard('apiSecret')}
-                        >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <Path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </Svg>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.primary }]}
+                          style={[styles.qrButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleOpenQRScanner('apiSecret')}
                         >
-                          <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                             <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
                           </Svg>
@@ -1392,52 +1315,24 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
 
                   {selectedExchange.requires_passphrase && (
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>Passphrase *</Text>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('exchanges.passphrase')} *</Text>
                       <View style={styles.inputWithButtons}>
                         <TextInput
-                          style={[styles.inputWithIcons, themedStyles.input]}
+                          style={[styles.inputWithQR, themedStyles.input]}
                           value={passphrase}
                           onChangeText={setPassphrase}
-                          placeholder="Digite sua Passphrase"
+                          placeholder={t('exchanges.enterPassphrase')}
                           placeholderTextColor={colors.textSecondary}
-                          secureTextEntry={!showPassphrase}
+                          secureTextEntry={true}
                           autoCapitalize="none"
                           autoCorrect={false}
                         />
                         <View style={styles.inputActions}>
                           <TouchableOpacity
-                            style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                            onPress={() => setShowPassphrase(!showPassphrase)}
-                          >
-                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              {showPassphrase ? (
-                                // Ícone de olho aberto
-                                <>
-                                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  <Path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </>
-                              ) : (
-                                // Ícone de olho fechado
-                                <>
-                                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  <Path d="M1 1l22 22" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </>
-                              )}
-                            </Svg>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.iconButton, { backgroundColor: colors.surfaceSecondary }]}
-                            onPress={() => handlePasteFromClipboard('passphrase')}
-                          >
-                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <Path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke={colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </Svg>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.iconButton, { backgroundColor: colors.primary }]}
+                            style={[styles.qrButton, { backgroundColor: colors.primary }]}
                             onPress={() => handleOpenQRScanner('passphrase')}
                           >
-                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                               <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
                             </Svg>
@@ -1566,7 +1461,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
               {/* Header */}
               <View style={[styles.confirmModalHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.confirmModalTitle, { color: colors.text }]}>
-                  {confirmAction === 'delete' ? '⚠️ Confirmar Exclusão' : '⚠️ Confirmar Desconexão'}
+                  {confirmAction === 'delete' ? t('exchanges.confirmDelete') : t('exchanges.confirmDisconnect')}
                 </Text>
                 <TouchableOpacity onPress={() => setConfirmModalVisible(false)} style={styles.confirmModalCloseButton}>
                   <Text style={[styles.confirmModalCloseIcon, { color: colors.text }]}>✕</Text>
@@ -1688,7 +1583,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                       </View>
                       <View style={styles.detailsHeaderText}>
                         <Text style={[styles.detailsExchangeName, { color: colors.text }]}>
-                          {detailsType === 'linked' ? detailsExchange.name : (detailsExchange.nome || detailsExchange.name || 'Unknown')}
+                          {capitalizeExchangeName(detailsType === 'linked' ? detailsExchange.name : (detailsExchange.nome || detailsExchange.name || 'Unknown'))}
                         </Text>
                       </View>
                     </View>
@@ -1696,14 +1591,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     {/* Informações */}
                     <View style={styles.detailsSection}>
                       <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>
-                         Informações Gerais
+                         {t('exchanges.generalInfo')}
                       </Text>
                       
                       {loadingDetails ? (
                         <View style={styles.detailsLoadingContainer}>
                           <AnimatedLogoIcon size={32} />
                           <Text style={[styles.detailsLoadingText, { color: colors.textSecondary }]}>
-                            Carregando detalhes...
+                            {t('exchanges.loadingDetails')}
                           </Text>
                         </View>
                       ) : (
@@ -1712,16 +1607,16 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             <>
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Nome:
+                                  {t('exchanges.name')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                  {detailsExchange.name}
+                                  {capitalizeExchangeName(detailsExchange.name)}
                                 </Text>
                               </View>
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Exchange ID:
+                                  {t('exchanges.exchangeId')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]} numberOfLines={1}>
                                   {detailsExchange.exchange_id}
@@ -1731,7 +1626,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsFullData?.ccxt_id && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    CCXT ID:
+                                    {t('exchanges.ccxtId')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {detailsFullData.ccxt_id}
@@ -1742,7 +1637,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {(detailsExchange.country || detailsFullData?.pais_de_origem) && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    País:
+                                    {t('exchanges.country')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {detailsExchange.country || detailsFullData?.pais_de_origem || 'N/A'}
@@ -1753,7 +1648,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {(detailsExchange.url || detailsFullData?.url) && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Website:
+                                    {t('exchanges.website')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.primary }]} numberOfLines={1}>
                                     {detailsExchange.url || detailsFullData?.url}
@@ -1763,7 +1658,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Conectada em:
+                                  {t('exchanges.connectedAt')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                   {new Date(detailsExchange.linked_at).toLocaleDateString('pt-BR', {
@@ -1779,7 +1674,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.updated_at && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Última atualização:
+                                    {t('exchanges.lastUpdate')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {new Date(detailsExchange.updated_at).toLocaleDateString('pt-BR', {
@@ -1796,7 +1691,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.reconnected_at && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Reconectada em:
+                                    {t('exchanges.reconnectedAt')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.success }]}>
                                     {new Date(detailsExchange.reconnected_at).toLocaleDateString('pt-BR', {
@@ -1813,7 +1708,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.disconnected_at && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Desconectada em:
+                                    {t('exchanges.disconnectedAt')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.danger }]}>
                                     {new Date(detailsExchange.disconnected_at).toLocaleDateString('pt-BR', {
@@ -1829,10 +1724,10 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Status:
+                                  {t('exchanges.status')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                  {detailsExchange.status === 'active' ? 'Ativa ✓' : 'Inativa ✗'}
+                                  {detailsExchange.status === 'active' ? t('exchanges.active') : t('exchanges.inactive')}
                                 </Text>
                               </View>
                             </>
@@ -1840,16 +1735,16 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             <>
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Nome:
+                                  {t('exchanges.name')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                  {detailsExchange.nome || detailsExchange.name || 'N/A'}
+                                  {capitalizeExchangeName(detailsExchange.nome || detailsExchange.name || 'N/A')}
                                 </Text>
                               </View>
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Exchange ID:
+                                  {t('exchanges.exchangeId')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]} numberOfLines={1}>
                                   {detailsExchange._id}
@@ -1859,7 +1754,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsFullData?.ccxt_id && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    CCXT ID:
+                                    {t('exchanges.ccxtId')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {detailsFullData.ccxt_id}
@@ -1870,7 +1765,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.pais_de_origem && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    País de Origem:
+                                    {t('exchanges.country')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
                                     {detailsExchange.pais_de_origem}
@@ -1881,7 +1776,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               {detailsExchange.url && (
                                 <View style={styles.detailsInfoRow}>
                                   <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                    Website:
+                                    {t('exchanges.website')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.primary }]} numberOfLines={1}>
                                     {detailsExchange.url}
@@ -1891,10 +1786,10 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               
                               <View style={styles.detailsInfoRow}>
                                 <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
-                                  Requer Passphrase:
+                                  {t('exchanges.requiresPassphrase')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: detailsExchange.requires_passphrase ? colors.primary : colors.textSecondary }]}>
-                                  {detailsExchange.requires_passphrase ? 'Sim ✓' : 'Não'}
+                                  {detailsExchange.requires_passphrase ? t('common.yes') + ' ✓' : t('common.no')}
                                 </Text>
                               </View>
                             </>
@@ -1907,7 +1802,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     {detailsType === 'available' && (
                       <View style={styles.detailsSection}>
                         <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>
-                          ⚡ Recursos
+                          {t('exchanges.resources')}
                         </Text>
                         <View style={[styles.detailsFeatureBox, { backgroundColor: colors.surfaceSecondary }]}>
                           <Text style={[styles.detailsFeatureText, { color: colors.text }]}>
@@ -1937,7 +1832,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             {detailsFullData.fees.trading.maker !== undefined && detailsFullData.fees.trading.maker !== null && (
                               <View style={styles.detailsFeeRow}>
                                 <Text style={[styles.detailsFeeLabel, { color: colors.textSecondary }]}>
-                                  • Maker:
+                                  • {t('exchanges.maker')}:
                                 </Text>
                                 <Text style={[styles.detailsFeeValue, { color: colors.text }]}>
                                   {typeof detailsFullData.fees.trading.maker === 'number'
@@ -1950,7 +1845,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             {detailsFullData.fees.trading.taker !== undefined && detailsFullData.fees.trading.taker !== null && (
                               <View style={styles.detailsFeeRow}>
                                 <Text style={[styles.detailsFeeLabel, { color: colors.textSecondary }]}>
-                                  • Taker:
+                                  • {t('exchanges.taker')}:
                                 </Text>
                                 <Text style={[styles.detailsFeeValue, { color: colors.text }]}>
                                   {typeof detailsFullData.fees.trading.taker === 'number'
@@ -1991,7 +1886,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             {detailsFullData.fees.funding.withdraw !== undefined && detailsFullData.fees.funding.withdraw !== null && (
                               <View style={styles.detailsFeeRow}>
                                 <Text style={[styles.detailsFeeLabel, { color: colors.textSecondary }]}>
-                                  • Retirada:
+                                  • {t('exchanges.withdraw')}:
                                 </Text>
                                 <Text style={[styles.detailsFeeValue, { color: colors.text }]}>
                                   {typeof detailsFullData.fees.funding.withdraw === 'object' 
@@ -2006,7 +1901,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             {detailsFullData.fees.funding.deposit !== undefined && detailsFullData.fees.funding.deposit !== null && (
                               <View style={styles.detailsFeeRow}>
                                 <Text style={[styles.detailsFeeLabel, { color: colors.textSecondary }]}>
-                                  • Depósito:
+                                  • {t('exchanges.deposit')}:
                                 </Text>
                                 <Text style={[styles.detailsFeeValue, { color: colors.text }]}>
                                   {typeof detailsFullData.fees.funding.deposit === 'object' 
@@ -2024,7 +1919,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                         {detailsFullData.fees && !detailsFullData.fees.trading && !detailsFullData.fees.funding && (
                           <View style={[styles.detailsFeesBox, { backgroundColor: colors.surfaceSecondary }]}>
                             <Text style={[styles.detailsFeatureText, { color: colors.text }]}>
-                              Estrutura de taxas disponível na exchange
+                              {t('exchanges.feeStructure')}
                             </Text>
                           </View>
                         )}
@@ -2035,7 +1930,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     {detailsFullData?.markets && Object.keys(detailsFullData.markets).length > 0 && (
                       <View style={styles.detailsSection}>
                         <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>
-                          📈 Mercados Disponíveis
+                          {t('exchanges.availableMarkets')}
                         </Text>
                         <View style={[styles.detailsMarketsBox, { backgroundColor: colors.surfaceSecondary }]}>
                           <Text style={[styles.detailsMarketsCount, { color: colors.text }]}>
@@ -2560,6 +2455,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     borderWidth: 1,
   },
+  inputWithQR: {
+    borderRadius: 8,
+    padding: 12,
+    paddingRight: 52,
+    fontSize: 14,
+    borderWidth: 1,
+  },
   inputActions: {
     position: 'absolute',
     right: 8,
@@ -2569,6 +2471,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrButton: {
     width: 36,
     height: 36,
     borderRadius: 8,

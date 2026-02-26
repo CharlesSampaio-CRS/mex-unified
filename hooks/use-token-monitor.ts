@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNotifications } from '../contexts/NotificationsContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAlerts } from '../contexts/AlertsContext'
+import { notify } from '../services/notify'
 
 // Função helper para formatar preços muito pequenos
 const formatPrice = (price: number): string => {
@@ -91,11 +92,10 @@ export function useTokenMonitor(tokens: TokenVariation[]) {
           // Monitorando quedas
           if (token.variation24h <= monitor.thresholdPercentage && !hasAlerted) {
             // Token caiu abaixo do threshold
-            addNotification({
-              type: 'warning',
-              title: `${token.symbol} em Queda`,
-              message: `${token.symbol} caiu ${Math.abs(token.variation24h).toFixed(2)}% nas últimas 24h. Preço: $${formatPrice(token.price)}`,
-              icon: '📉'
+            notify.tokenDrop(addNotification, {
+              symbol: token.symbol,
+              variation: token.variation24h,
+              price: formatPrice(token.price),
             })
             notifiedTokens.current.add(key)
           } else if (token.variation24h > monitor.thresholdPercentage && hasAlerted) {
@@ -106,11 +106,10 @@ export function useTokenMonitor(tokens: TokenVariation[]) {
           // Monitorando subidas
           if (token.variation24h >= monitor.thresholdPercentage && !hasAlerted) {
             // Token subiu acima do threshold
-            addNotification({
-              type: 'success',
-              title: `🚀 ${token.symbol} em Alta`,
-              message: `${token.symbol} subiu ${token.variation24h.toFixed(2)}% nas últimas 24h! Preço: $${formatPrice(token.price)}`,
-              icon: '📈'
+            notify.tokenRise(addNotification, {
+              symbol: token.symbol,
+              variation: token.variation24h,
+              price: formatPrice(token.price),
             })
             notifiedTokens.current.add(key)
           } else if (token.variation24h < monitor.thresholdPercentage && hasAlerted) {
@@ -123,12 +122,12 @@ export function useTokenMonitor(tokens: TokenVariation[]) {
         if (previousVariation !== undefined) {
           const variationDiff = Math.abs(token.variation24h - previousVariation)
           if (variationDiff >= 5) {
-            const direction = token.variation24h > previousVariation ? 'subiu' : 'caiu'
-            addNotification({
-              type: 'info',
-              title: `⚡ ${token.symbol} - Mudança Rápida`,
-              message: `${token.symbol} ${direction} rapidamente. Variação: ${token.variation24h > 0 ? '+' : ''}${token.variation24h.toFixed(2)}%. Preço: $${formatPrice(token.price)}`,
-              icon: '⚡'
+            const direction = token.variation24h > previousVariation ? 'up' : 'down'
+            notify.tokenSuddenChange(addNotification, {
+              symbol: token.symbol,
+              variation: token.variation24h,
+              price: formatPrice(token.price),
+              direction,
             })
           }
         }
@@ -199,7 +198,15 @@ export function useTokenMonitor(tokens: TokenVariation[]) {
             type: alertType,
             title: alertTitle,
             message: alertMessage,
-            icon: alertIcon
+            icon: alertIcon,
+            data: {
+              category: 'alert',
+              action: 'custom_alert_triggered',
+              symbol: token.symbol,
+              alertId: alert.id,
+              condition: alert.condition,
+              value: alert.value,
+            }
           })
           
           notifiedAlerts.current.add(alertKey)

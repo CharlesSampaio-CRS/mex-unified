@@ -44,8 +44,16 @@ export function SettingsScreen({ navigation, route }: any) {
     setAutoLoginEnabled
   } = useAuth()
   
-  // Estado da aba ativa
-  const [activeTab, setActiveTab] = useState<"profile" | "system">("profile")
+  // Estado da aba ativa — pode vir do route param
+  const initialTab = route?.params?.tab === 'system' ? 'system' : 'profile'
+  const [activeTab, setActiveTab] = useState<"profile" | "system">(initialTab)
+  
+  // Atualiza aba quando navegar de volta com novo param
+  useEffect(() => {
+    if (route?.params?.tab) {
+      setActiveTab(route.params.tab === 'system' ? 'system' : 'profile')
+    }
+  }, [route?.params?.tab])
   
   // Dados do usuário
   const userData = {
@@ -196,7 +204,6 @@ export function SettingsScreen({ navigation, route }: any) {
         title={t('settings.title')}
         subtitle={activeTab === "profile" ? t('profile.subtitle') : t('settings.subtitle')}
         onNotificationsPress={onNotificationsPress}
-        onProfilePress={undefined}
         unreadCount={unreadCount}
       />
 

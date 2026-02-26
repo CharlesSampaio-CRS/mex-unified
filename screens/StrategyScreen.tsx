@@ -5,14 +5,13 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useAuth } from "../contexts/AuthContext"
 import { useNotifications } from "../contexts/NotificationsContext"
-import { useBackendStrategies, Strategy } from "../hooks/useBackendStrategies"
+import { useBackendStrategies, Strategy, StrategyStatus } from "../hooks/useBackendStrategies"
+import { notify } from "../services/notify"
 import { CreateStrategyModal } from "../components/create-strategy-modal"
 import { StrategyDetailsModal } from "@/components/StrategyDetailsModal"
 import { Header } from "../components/Header"
 import { NotificationsModal } from "../components/NotificationsModal"
 import { LogoIcon } from "../components/LogoIcon"
-import { AnimatedLogoIcon } from "../components/AnimatedLogoIcon"
-import { TabBar } from "../components/TabBar"
 import { typography, fontWeights } from "../lib/typography"
 import { commonStyles, spacing, borderRadius, shadows } from "@/lib/layout"
 
@@ -24,11 +23,11 @@ import { commonStyles, spacing, borderRadius, shadows } from "@/lib/layout"
  * - Multi-device: mesmos dados em todos os dispositivos
  */
 
-export function StrategyScreen({ navigation }: any) {
+export function StrategyScreen({ navigation, route }: any) {
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
   const { user } = useAuth()
-  const { unreadCount } = useNotifications()
+  const { unreadCount, addNotification } = useNotifications()
   const { 
     strategies,
     loading,
@@ -39,9 +38,17 @@ export function StrategyScreen({ navigation }: any) {
     activeStrategies,
     inactiveStrategies 
   } = useBackendStrategies(true) // Auto-load
-  const [activeTab, setActiveTab] = useState<"strategies" | "executions">("strategies")
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
+
+  // Abre modal de criação se vier da tela de templates
+  useEffect(() => {
+    if (route?.params?.openCreate) {
+      setCreateModalVisible(true)
+      // Limpa o param para não reabrir ao voltar
+      navigation?.setParams({ openCreate: undefined, template: undefined })
+    }
+  }, [route?.params?.openCreate])
 
   // Modal de confirmação de exclusão
   const [confirmDeleteModalVisible, setConfirmDeleteModalVisible] = useState(false)
@@ -76,20 +83,6 @@ export function StrategyScreen({ navigation }: any) {
     },
   }), [isDark])
 
-  /**
-   *  Execuções ficam vazias por enquanto
-   * TODO: Implementar sistema de execuções local
-   */
-  const loadExecutions = useCallback(async () => {
-    // Execuções serão implementadas depois
-    // Por enquanto, mantém vazio
-  }, [])
-
-  // Load executions on mount
-  useEffect(() => {
-    loadExecutions()
-  }, [loadExecutions])
-
   const toggleStrategyHandler = useCallback((id: string) => {
     const strategyToToggle = strategies.find(s => s.id === id)
     if (!strategyToToggle) return
@@ -105,6 +98,7 @@ export function StrategyScreen({ navigation }: any) {
 
   const confirmToggle = useCallback(async () => {
     const id = toggleStrategyId
+    const name = toggleStrategyName
     const newIsActive = toggleStrategyNewStatus
     
     setConfirmToggleModalVisible(false)
@@ -118,12 +112,24 @@ export function StrategyScreen({ navigation }: any) {
       
       await toggleActive(id, newIsActive)
       
+      // 🔔 Notificação: Ativada ou Pausada
+      if (newIsActive) {
+        notify.strategyActivated(addNotification, { name, strategyId: id })
+      } else {
+        notify.strategyPaused(addNotification, { name, strategyId: id })
+      }
+      
       console.log('✅ Strategy updated in MongoDB')
     } catch (error) {
       console.error("❌ Error toggling strategy:", error)
-      alert(`Erro ao alterar estratégia: ${error instanceof Error ? error.message : error}`)
+      notify.strategyError(addNotification, {
+        name,
+        action: newIsActive ? 'ativar' : 'pausar',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        strategyId: id,
+      })
     }
-  }, [toggleStrategyId, toggleStrategyNewStatus, toggleActive])
+  }, [toggleStrategyId, toggleStrategyName, toggleStrategyNewStatus, toggleActive, addNotification])
 
   const deleteStrategyHandler = useCallback(async (id: string, name: string) => {
     setConfirmStrategyId(id)
@@ -145,12 +151,20 @@ export function StrategyScreen({ navigation }: any) {
       // Deleta via hook (atualiza estado automaticamente)
       await deleteStrategyFromBackend(id)
       
+      // 🔔 Notificação: Estratégia removida
+      notify.strategyDeleted(addNotification, { name, strategyId: id })
+      
       console.log('✅ Strategy deleted from MongoDB')
     } catch (error: any) {
       console.error("❌ Error deleting strategy:", error)
-      alert(`Erro ao deletar estratégia: ${error.message || error}`)
+      notify.strategyError(addNotification, {
+        name,
+        action: 'excluir',
+        error: error.message || 'Erro desconhecido',
+        strategyId: id,
+      })
     }
-  }, [confirmStrategyId, confirmStrategyName, deleteStrategyFromBackend])
+  }, [confirmStrategyId, confirmStrategyName, deleteStrategyFromBackend, addNotification])
 
   const handleNewStrategy = useCallback(() => {
     setCreateModalVisible(true)
@@ -166,10 +180,45 @@ export function StrategyScreen({ navigation }: any) {
   }, [loadStrategies])
 
   const formatCurrency = useCallback((value: number) => {
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "USD",
+    }).format(value)}`;
+  }, [])
+
+  const formatCurrencyAbs = useCallback((value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "USD",
-    }).format(value)
+    }).format(value);
+  }, [])
+
+  const getStatusLabel = useCallback((status: StrategyStatus): string => {
+    const labels: Record<StrategyStatus, string> = {
+      idle: t('strategy.statusIdle') || 'Idle',
+      monitoring: t('strategy.statusMonitoring') || 'Monitoring',
+      buy_pending: t('strategy.statusBuyPending') || 'Buy Pending',
+      in_position: t('strategy.statusInPosition') || 'In Position',
+      sell_pending: t('strategy.statusSellPending') || 'Sell Pending',
+      paused: t('strategy.inactive'),
+      completed: t('strategy.statusCompleted') || 'Completed',
+      error: t('strategy.statusError') || 'Error',
+    };
+    return labels[status] || status;
+  }, [t])
+
+  const getStatusColor = useCallback((status: StrategyStatus): string => {
+    switch (status) {
+      case 'monitoring': return '#3b82f6';
+      case 'in_position': return '#10b981';
+      case 'buy_pending':
+      case 'sell_pending': return '#f59e0b';
+      case 'completed': return '#8b5cf6';
+      case 'error': return '#ef4444';
+      case 'paused': return '#6b7280';
+      default: return '#6b7280';
+    }
   }, [])
 
   const formatDate = useCallback((date: Date) => {
@@ -209,29 +258,19 @@ export function StrategyScreen({ navigation }: any) {
   const strategiesCount = useMemo(() => strategies.length, [strategies.length])
   const hasStrategies = useMemo(() => strategiesCount > 0, [strategiesCount])
 
-  // 🔄 Refresh específico por aba - atualiza apenas o conteúdo da aba ativa
+  // 🔄 Refresh - atualiza estratégias do MongoDB
   const handleRefresh = useCallback(async () => {
     try {
-      if (activeTab === "strategies") {
-        // Aba Estratégias: recarrega estratégias do MongoDB
-        await loadStrategies()
-      } else {
-        // Aba Execuções: atualiza apenas execuções
-        await loadExecutions()
-      }
+      await loadStrategies()
     } catch (error) {
-      console.error(`❌ [StrategyScreen] Erro ao atualizar aba ${activeTab}:`, error)
+      console.error('❌ [StrategyScreen] Erro ao atualizar:', error)
     }
-  }, [activeTab, loadStrategies, loadExecutions])
+  }, [loadStrategies])
 
   // Handlers para o Header
   const onNotificationsPress = useCallback(() => {
     setNotificationsModalVisible(true)
   }, [])
-
-  const onProfilePress = useCallback(() => {
-    navigation?.navigate('Settings', { initialTab: 'profile' })
-  }, [navigation])
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -240,15 +279,7 @@ export function StrategyScreen({ navigation }: any) {
         title={t('strategy.title')}
         subtitle={`${strategiesCount} ${strategiesCount === 1 ? t('strategy.strategy') : t('strategy.strategies')}`}
         onNotificationsPress={onNotificationsPress}
-        onProfilePress={onProfilePress}
         unreadCount={unreadCount}
-      />
-      
-      {/* Tabs - usando componente TabBar padronizado */}
-      <TabBar 
-        tabs={[t('strategy.strategies'), t('strategy.executions')]}
-        activeTab={activeTab === 'strategies' ? 0 : 1}
-        onTabChange={(index) => setActiveTab(index === 0 ? 'strategies' : 'executions')}
       />
       
       <ScrollView
@@ -264,10 +295,7 @@ export function StrategyScreen({ navigation }: any) {
           />
         }
       >
-        {/* Removido loading customizado - usa apenas o RefreshControl */}
-        {activeTab === 'strategies' ? (
-          // Aba de Estratégias
-          strategies.length === 0 ? (
+        {strategies.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('strategy.empty')}</Text>
               <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
@@ -313,25 +341,25 @@ export function StrategyScreen({ navigation }: any) {
                     </View>
                   </View>
                   
-                  {/* Badge de status ativo/inativo (clicável como toggle) */}
+                  {/* Badge de status operacional (Fase 5) */}
                   <TouchableOpacity
                     style={[
                       styles.statusBadge,
-                      { backgroundColor: strategy.is_active ? colors.successLight : colors.dangerLight }
+                      { backgroundColor: `${getStatusColor(strategy.status)}15` }
                     ]}
                     onPress={() => toggleStrategyHandler(strategy.id)}
                     activeOpacity={0.7}
                   >
                     <Text style={[
                       styles.statusText,
-                      { color: strategy.is_active ? colors.success : colors.danger }
+                      { color: getStatusColor(strategy.status) }
                     ]}>
-                      {strategy.is_active ? t('strategy.active') : t('strategy.inactive')}
+                      {getStatusLabel(strategy.status)}
                     </Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Detalhes (3 linhas) */}
+                {/* Detalhes (dados reais Fase 5) */}
                 <View style={styles.strategyDetails}>
                   <View style={styles.detailRow}>
                     <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
@@ -351,12 +379,23 @@ export function StrategyScreen({ navigation }: any) {
                     </Text>
                   </View>
                   
+                  {strategy.last_price != null && strategy.last_price > 0 && (
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                        {t('strategy.lastPrice') || 'Last Price'}:
+                      </Text>
+                      <Text style={[styles.detailValue, { color: colors.text }]}>
+                        {formatCurrencyAbs(strategy.last_price)}
+                      </Text>
+                    </View>
+                  )}
+
                   <View style={styles.detailRow}>
                     <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
                       {t('strategy.totalTrades') || 'Total Trades'}:
                     </Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>
-                      0
+                      {strategy.total_executions}
                     </Text>
                   </View>
                   
@@ -366,12 +405,53 @@ export function StrategyScreen({ navigation }: any) {
                     </Text>
                     <Text style={[
                       styles.detailValue, 
-                      { color: colors.success }
+                      { color: strategy.total_pnl_usd >= 0 ? colors.success : colors.danger }
                     ]}>
-                      $0.00
+                      {formatCurrency(strategy.total_pnl_usd)}
                     </Text>
                   </View>
+
+                  {strategy.position && (
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                        {t('strategy.unrealizedPnl') || 'Unrealized P&L'}:
+                      </Text>
+                      <Text style={[
+                        styles.detailValue, 
+                        { color: strategy.position.unrealized_pnl >= 0 ? colors.success : colors.danger }
+                      ]}>
+                        {formatCurrency(strategy.position.unrealized_pnl)} ({strategy.position.unrealized_pnl_percent >= 0 ? '+' : ''}{strategy.position.unrealized_pnl_percent.toFixed(2)}%)
+                      </Text>
+                    </View>
+                  )}
                 </View>
+
+                {/* Error message compacto (se houver) */}
+                {strategy.error_message && (
+                  <TouchableOpacity
+                    style={{
+                      marginTop: 8,
+                      padding: 10,
+                      backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(239, 68, 68, 0.2)',
+                    }}
+                    onPress={() => {
+                      setSelectedStrategyId(strategy.id)
+                      setDetailsModalVisible(true)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 12 }}>⚠️</Text>
+                      <Text style={{ fontSize: 11, color: '#ef4444', flex: 1 }} numberOfLines={2}>
+                        {strategy.error_message}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: colors.textSecondary }}>▶</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
 
                 {/* Botões de ação */}
                 <View style={styles.actionButtons}>
@@ -416,18 +496,7 @@ export function StrategyScreen({ navigation }: any) {
             ))}
               </View>
             </>
-          )
-        ) : (
-          // Aba de Execuções
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {t('strategy.executionsEmpty')}
-            </Text>
-            <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              {t('strategy.executionsEmptyDesc')}
-            </Text>
-          </View>
-        )}
+          )}
       </ScrollView>
 
       {/* Toggle Confirmation Modal */}
@@ -522,6 +591,7 @@ export function StrategyScreen({ navigation }: any) {
         onClose={() => setCreateModalVisible(false)}
         onSuccess={handleStrategyCreated}
         userId={user?.id || ''}
+        navigation={navigation}
       />
 
       {/* Strategy Details Modal */}
@@ -838,48 +908,6 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 13,
     fontWeight: "600",
-  },
-  // Executions
-  executionsList: {
-    gap: spacing.cardGap, // Usando design token (16px)
-  },
-  executionCard: {
-    borderRadius: borderRadius.xl, // Aumentado para xl (20px) - mais moderno
-    padding: spacing.cardPaddingLarge, // Aumentado para 20px - mais espaçoso
-    gap: spacing.md, // Usando design token (12px)
-    ...shadows.md, // Sombra média para melhor destaque
-  },
-  executionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 4,
-  },
-  executionHeaderLeft: {
-    flex: 1,
-    gap: 8,
-  },
-  executionName: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  executionTypeBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  executionTypeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "capitalize",
-  },
-  executionDate: {
-    fontSize: 12,
-    fontWeight: "400",
-  },
-  executionInfo: {
-    gap: 8,
   },
   // Modals
   modalOverlay: {

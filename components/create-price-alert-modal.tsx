@@ -163,7 +163,7 @@ export function CreateAlertModal({
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <Text style={[styles.title, { color: colors.text }]}>
-              🔔 Criar Alerta de Preço
+              🔔 {t('alerts.createAlert')}
             </Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.text} />
@@ -178,7 +178,7 @@ export function CreateAlertModal({
               </Text>
               {currentPrice && (
                 <Text style={[styles.tokenPrice, { color: colors.textSecondary }]}>
-                  Preço atual: ${currentPrice.toFixed(2)}
+                  {t('alerts.currentPrice')} ${currentPrice.toFixed(2)}
                 </Text>
               )}
               {exchangeName && (
@@ -191,7 +191,7 @@ export function CreateAlertModal({
             {/* Tipo de Alerta */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Tipo de Alerta
+                {t('alerts.alertType')}
               </Text>
               <View style={styles.buttonGroup}>
                 <TouchableOpacity
@@ -211,7 +211,7 @@ export function CreateAlertModal({
                       { color: alertType === 'price' ? colors.primary : colors.text },
                     ]}
                   >
-                    💰 Preço Absoluto
+                    💰 {t('alerts.absolutePrice')}
                   </Text>
                 </TouchableOpacity>
 
@@ -232,7 +232,7 @@ export function CreateAlertModal({
                       { color: alertType === 'percentage' ? colors.primary : colors.text },
                     ]}
                   >
-                    📊 Porcentagem
+                    📊 {t('alerts.percentage')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -241,7 +241,7 @@ export function CreateAlertModal({
             {/* Condição */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Condição
+                {t('alerts.condition')}
               </Text>
               <View style={styles.buttonGroup}>
                 <TouchableOpacity
@@ -261,7 +261,7 @@ export function CreateAlertModal({
                       { color: condition === 'above' ? colors.primary : colors.text },
                     ]}
                   >
-                    🚀 Acima de
+                    🚀 {t('alerts.above')}
                   </Text>
                 </TouchableOpacity>
 
@@ -282,7 +282,7 @@ export function CreateAlertModal({
                       { color: condition === 'below' ? colors.primary : colors.text },
                     ]}
                   >
-                    📉 Abaixo de
+                    📉 {t('alerts.below')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -305,7 +305,7 @@ export function CreateAlertModal({
                       { color: condition === 'crosses_up' ? colors.primary : colors.text },
                     ]}
                   >
-                    ⬆️ Cruza acima
+                    ⬆️ {t('alerts.crossesUp')}
                   </Text>
                 </TouchableOpacity>
 
@@ -326,7 +326,7 @@ export function CreateAlertModal({
                       { color: condition === 'crosses_down' ? colors.primary : colors.text },
                     ]}
                   >
-                    ⬇️ Cruza abaixo
+                    ⬇️ {t('alerts.crossesDown')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -335,7 +335,7 @@ export function CreateAlertModal({
             {/* Valor */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {alertType === 'price' ? 'Preço Alvo' : 'Porcentagem'}
+                {alertType === 'price' ? t('alerts.targetPrice') : t('alerts.percentageLabel')}
               </Text>
               
               <TextInput
@@ -384,7 +384,7 @@ export function CreateAlertModal({
             {/* Frequência */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Frequência
+                {t('alerts.frequency')}
               </Text>
               <View style={styles.buttonGroup}>
                 <TouchableOpacity
@@ -404,7 +404,7 @@ export function CreateAlertModal({
                       { color: frequency === 'once' ? colors.primary : colors.text },
                     ]}
                   >
-                    1️⃣ Uma vez
+                    1️⃣ {t('alerts.once')}
                   </Text>
                 </TouchableOpacity>
 
@@ -425,7 +425,7 @@ export function CreateAlertModal({
                       { color: frequency === 'repeated' ? colors.primary : colors.text },
                     ]}
                   >
-                    🔁 Sempre
+                    🔁 {t('alerts.always')}
                   </Text>
                 </TouchableOpacity>
 
@@ -446,7 +446,7 @@ export function CreateAlertModal({
                       { color: frequency === 'daily' ? colors.primary : colors.text },
                     ]}
                   >
-                    📅 Diário
+                    📅 {t('alerts.daily')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -456,7 +456,7 @@ export function CreateAlertModal({
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Mensagem Personalizada
+                  {t('alerts.customMessage')}
                 </Text>
                 <Switch
                   value={useCustomMessage}
@@ -501,7 +501,7 @@ export function CreateAlertModal({
             {/* Preview */}
             <View style={[styles.preview, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
-                Preview do Alerta:
+                {t('alerts.previewAlert')}
               </Text>
               <Text style={[styles.previewText, { color: colors.text }]}>
                 {getAlertIcon(condition)} {symbol} {formatAlertCondition({
@@ -511,7 +511,7 @@ export function CreateAlertModal({
                 } as any)}
               </Text>
               <Text style={[styles.previewFrequency, { color: colors.textTertiary }]}>
-                Frequência: {getAlertFrequencyLabel(frequency)}
+                {t('alerts.frequencyLabel')} {getAlertFrequencyLabel(frequency)}
               </Text>
             </View>
           </ScrollView>
@@ -524,7 +524,7 @@ export function CreateAlertModal({
               disabled={loading}
             >
               <Text style={[styles.buttonText, { color: colors.text }]}>
-                Cancelar
+                {t('common.cancel')}
               </Text>
             </TouchableOpacity>
 
@@ -542,7 +542,7 @@ export function CreateAlertModal({
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
-                  Criar Alerta
+                  {t('alerts.createButton')}
                 </Text>
               )}
             </TouchableOpacity>

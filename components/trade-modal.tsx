@@ -8,6 +8,7 @@ import { useOrders } from '@/contexts/OrdersContext'
 import { useBalance } from '@/contexts/BalanceContext'
 import { typography, fontWeights } from '@/lib/typography'
 import { apiService } from '@/services/api'
+import { notify } from '@/services/notify'
 import { AnimatedLogoIcon } from '@/components/AnimatedLogoIcon'
 
 interface TradeModalProps {
@@ -46,8 +47,8 @@ export function TradeModal({
   const { addOrder, refresh: refreshOrders } = useOrders()
   const { refresh: refreshBalance } = useBalance()
   
-  const [orderSide, setOrderSide] = useState<OrderSide>('buy')
-  const [orderType, setOrderType] = useState<OrderType>('limit')
+  const [orderSide, setOrderSide] = useState<OrderSide | null>(null)
+  const [orderType, setOrderType] = useState<OrderType | null>(null)
   const [amount, setAmount] = useState('')
   const [price, setPrice] = useState(currentPrice < 0.01 ? currentPrice.toFixed(10).replace(/\.?0+$/, '') : currentPrice.toString())
   
@@ -230,11 +231,11 @@ export function TradeModal({
     }
   }, [currentPrice, orderType])
 
-  // Reset ao abrir modal
+  // Reset ao abrir modal — tudo desmarcado para UX progressiva
   useEffect(() => {
     if (visible) {
-      setOrderSide('buy')
-      setOrderType('limit')
+      setOrderSide(null)
+      setOrderType(null)
       setAmount('')
       setPrice(currentPrice < 0.01 ? currentPrice.toFixed(10).replace(/\.?0+$/, '') : currentPrice.toString())
       
@@ -248,9 +249,19 @@ export function TradeModal({
 
   const total = parseFloat(amount || '0') * parseFloat(price || '0')
   const isBuy = orderSide === 'buy'
-  const availableBalance = isBuy ? balance.usdt : balance.token
+  const availableBalance = isBuy ? balance.usdt : (orderSide === 'sell' ? balance.token : 0)
+
+  // ✅ UX Progressiva: controle de habilitação dos passos
+  const sideSelected = orderSide !== null
+  const typeSelected = orderType !== null
+  const amountNum = parseFloat(amount || '0')
+  const priceNum = parseFloat(price || '0')
+  const hasValidAmount = amountNum > 0
+  const hasValidPrice = orderType === 'market' || (orderType === 'limit' && priceNum > 0)
+  const isFormComplete = sideSelected && typeSelected && hasValidAmount && hasValidPrice && !createOrderLoading
 
   const handlePercentage = (percentage: number) => {
+    if (!orderSide || !orderType) return
     setSelectedPercent(percentage)
     if (isBuy) {
       // Compra: usa % do saldo USDT
@@ -271,15 +282,17 @@ export function TradeModal({
   }
 
   const handleSubmit = async () => {
-    const amountNum = parseFloat(amount)
-    const priceNum = parseFloat(price)
+    if (!orderSide || !orderType) return
+    
+    const amountVal = parseFloat(amount)
+    const priceVal = parseFloat(price)
 
-    if (!amountNum || amountNum <= 0) {
+    if (!amountVal || amountVal <= 0) {
       Alert.alert('Erro', 'Digite uma quantidade válida')
       return
     }
 
-    if (orderType === 'limit' && (!priceNum || priceNum <= 0)) {
+    if (orderType === 'limit' && (!priceVal || priceVal <= 0)) {
       Alert.alert('Erro', 'Digite um preço válido')
       return
     }
@@ -292,7 +305,7 @@ export function TradeModal({
       return
     }
 
-    if (!isBuy && amountNum > (availableBalance + tolerance)) {
+    if (!isBuy && amountVal > (availableBalance + tolerance)) {
       Alert.alert('Saldo Insuficiente', `Você possui apenas ${availableBalance.toFixed(8)} ${symbol}`)
       return
     }
@@ -308,10 +321,11 @@ export function TradeModal({
 
   // Executa a criação da ordem (após confirmação)
   const executeOrder = async () => {
+    if (!orderSide || !orderType) return
     setConfirmVisible(false)
 
-    const amountNum = parseFloat(amount)
-    const priceNum = parseFloat(price)
+    const amountVal = parseFloat(amount)
+    const priceVal = parseFloat(price)
 
     setCreateOrderLoading(true)
     setCreateOrderError(null)
@@ -324,35 +338,51 @@ export function TradeModal({
             user.id,
             exchangeId,
             tradingPair,
-            amountNum,
+            amountVal,
             orderType,
-            orderType === 'limit' ? priceNum : undefined
+            orderType === 'limit' ? priceVal : undefined
           )
         : await apiService.createSellOrder(
             user.id,
             exchangeId,
             tradingPair,
-            amountNum,
+            amountVal,
             orderType,
-            orderType === 'limit' ? priceNum : undefined
+            orderType === 'limit' ? priceVal : undefined
           )
       
       if (result.success) {
+        // 🔍 DEBUG: Log do resultado para verificar estrutura
+        console.log('🔍 [TRADE-MODAL] Create order result:', JSON.stringify(result, null, 2))
+        
         // 1. Fecha modal imediatamente
         onClose();
         
-        // 2. ✅ INSERÇÃO OTIMISTA: Adiciona a ordem na lista IMEDIATAMENTE (só para limit)
+        // 2. 🔔 NOTIFICAÇÃO: Ordem criada com sucesso
+        const tradingSymbol = tradingPair.split('/')[0]
+        notify.orderCreated(addNotification, {
+          symbol: tradingPair,
+          side: orderSide as 'buy' | 'sell',
+          amount: amountVal,
+          price: priceVal,
+          type: orderType!,
+          exchange: exchangeName,
+        })
+        
+        // 3. ✅ INSERÇÃO OTIMISTA: Adiciona a ordem na lista IMEDIATAMENTE (só para limit)
         if (orderType === 'limit') {
+          // Backend serializa Order.id como "exchange_order_id" no JSON (serde rename)
+          const realOrderId = result.order?.exchange_order_id || result.order?.id || result.order_id || result.orderId || result.id || `temp_${Date.now()}`
           const newOrder = {
-            id: result.order_id || result.orderId || result.id || `temp_${Date.now()}`,
-            exchange_order_id: result.order_id || result.orderId || result.id,
+            id: realOrderId,
+            exchange_order_id: realOrderId,
             symbol: tradingPair,
             type: orderType as 'limit' | 'market',
             side: orderSide as 'buy' | 'sell',
-            price: priceNum,
-            amount: amountNum,
+            price: priceVal,
+            amount: amountVal,
             filled: 0,
-            remaining: amountNum,
+            remaining: amountVal,
             status: 'open' as const,
             timestamp: Date.now(),
             datetime: new Date().toISOString(),
@@ -375,10 +405,20 @@ export function TradeModal({
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
         setCreateOrderError(errorMsg);
+        notify.orderError(addNotification, {
+          symbol,
+          action: 'Criar Ordem',
+          error: errorMsg,
+        })
       }
     } catch (error: any) {
       const errorMsg = error.message || 'Não foi possível criar a ordem';
       setCreateOrderError(errorMsg);
+      notify.orderError(addNotification, {
+        symbol,
+        action: 'Criar Ordem',
+        error: errorMsg,
+      })
     } finally {
       setCreateOrderLoading(false);
     }
@@ -409,64 +449,67 @@ export function TradeModal({
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Abas Comprar/Vender - Estilo suave */}
-            <View style={styles.tabs}>
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  isBuy && styles.tabActive,
-                  { 
-                    backgroundColor: isBuy ? '#10b98115' : colors.surface,
-                    borderColor: isBuy ? '#10b981' : colors.border
-                  }
-                ]}
-                onPress={() => setOrderSide('buy')}
-              >
-                <Text style={[
-                  styles.tabText,
-                  { color: isBuy ? '#10b981' : colors.textSecondary }
-                ]}>
-                  Comprar
-                </Text>
-              </TouchableOpacity>
+            {/* PASSO 1: Comprar/Vender — sempre habilitado, começa desmarcado */}
+            <View style={styles.section}>
+              <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>1. Selecione a operação</Text>
+              <View style={styles.tabs}>
+                <TouchableOpacity
+                  style={[
+                    styles.tab,
+                    { 
+                      backgroundColor: orderSide === 'buy' ? '#10b98115' : colors.surface,
+                      borderColor: orderSide === 'buy' ? '#10b981' : colors.border
+                    }
+                  ]}
+                  onPress={() => { setOrderSide('buy'); setAmount(''); setSelectedPercent(null); }}
+                >
+                  <Text style={[
+                    styles.tabText,
+                    { color: orderSide === 'buy' ? '#10b981' : colors.textSecondary }
+                  ]}>
+                    Comprar
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  !isBuy && styles.tabActive,
-                  { 
-                    backgroundColor: !isBuy ? '#ef444415' : colors.surface,
-                    borderColor: !isBuy ? '#ef4444' : colors.border
-                  }
-                ]}
-                onPress={() => {
-                  
-                  setOrderSide('sell')
-                }}
-              >
-                <Text style={[
-                  styles.tabText,
-                  { color: !isBuy ? '#ef4444' : colors.textSecondary }
-                ]}>
-                  Vender
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.tab,
+                    { 
+                      backgroundColor: orderSide === 'sell' ? '#ef444415' : colors.surface,
+                      borderColor: orderSide === 'sell' ? '#ef4444' : colors.border
+                    }
+                  ]}
+                  onPress={() => { setOrderSide('sell'); setAmount(''); setSelectedPercent(null); }}
+                >
+                  <Text style={[
+                    styles.tabText,
+                    { color: orderSide === 'sell' ? '#ef4444' : colors.textSecondary }
+                  ]}>
+                    Vender
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Tipo de Ordem */}
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>Tipo de Ordem</Text>
+            {/* PASSO 2: Tipo de Ordem — só habilita após selecionar lado */}
+            <View style={[styles.section, !sideSelected && styles.sectionDisabled]}>
+              <Text style={[styles.stepLabel, { color: sideSelected ? colors.textSecondary : colors.border }]}>
+                2. Tipo de ordem
+              </Text>
               <View style={styles.orderTypeButtons}>
                 <TouchableOpacity
                   style={[
                     styles.orderTypeButton,
                     orderType === 'limit' && styles.orderTypeButtonActive,
+                    !sideSelected && styles.buttonDisabled,
                     { 
                       backgroundColor: orderType === 'limit' ? colors.primary : colors.surface,
-                      borderColor: orderType === 'limit' ? colors.primary : colors.border
+                      borderColor: orderType === 'limit' ? colors.primary : colors.border,
+                      opacity: sideSelected ? 1 : 0.4,
                     }
                   ]}
                   onPress={() => setOrderType('limit')}
+                  disabled={!sideSelected}
                 >
                   <Text style={[
                     styles.orderTypeButtonText,
@@ -480,15 +523,18 @@ export function TradeModal({
                   style={[
                     styles.orderTypeButton,
                     orderType === 'market' && styles.orderTypeButtonActive,
+                    !sideSelected && styles.buttonDisabled,
                     { 
                       backgroundColor: orderType === 'market' ? colors.primary : colors.surface,
-                      borderColor: orderType === 'market' ? colors.primary : colors.border
+                      borderColor: orderType === 'market' ? colors.primary : colors.border,
+                      opacity: sideSelected ? 1 : 0.4,
                     }
                   ]}
                   onPress={() => {
                     setOrderType('market')
                     setPrice(currentPrice.toString())
                   }}
+                  disabled={!sideSelected}
                 >
                   <Text style={[
                     styles.orderTypeButtonText,
@@ -500,11 +546,13 @@ export function TradeModal({
               </View>
             </View>
 
-            {/* Preço */}
+            {/* PASSO 3: Preço (só para limit) e Quantidade — habilita após tipo selecionado */}
             {orderType === 'limit' && (
-              <View style={styles.section}>
+              <View style={[styles.section, !typeSelected && styles.sectionDisabled]}>
                 <View style={styles.labelRow}>
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.label, { color: colors.text }]}>Preço</Text>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.stepLabel, { color: typeSelected ? colors.textSecondary : colors.border }]}>
+                    3. Preço
+                  </Text>
                   {priceDifference && (
                     <Text style={[
                       styles.priceDifferenceText,
@@ -519,8 +567,9 @@ export function TradeModal({
                     styles.input,
                     { 
                       backgroundColor: colors.surface,
-                      color: colors.text,
-                      borderColor: colors.border
+                      color: typeSelected ? colors.text : colors.border,
+                      borderColor: colors.border,
+                      opacity: typeSelected ? 1 : 0.4,
                     }
                   ]}
                   value={price}
@@ -528,17 +577,18 @@ export function TradeModal({
                   keyboardType="decimal-pad"
                   placeholder="0.00"
                   placeholderTextColor={colors.textSecondary}
+                  editable={typeSelected}
                 />
               </View>
             )}
 
             {/* Quantidade */}
-            <View style={styles.section}>
+            <View style={[styles.section, !typeSelected && styles.sectionDisabled]}>
               <View style={styles.labelRow}>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.label, { color: colors.text }]}>
-                  Quantidade ({String(symbol)})
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.stepLabel, { color: typeSelected ? colors.textSecondary : colors.border }]}>
+                  {orderType === 'limit' ? '4' : '3'}. Quantidade ({String(symbol)})
                 </Text>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.balanceText, { color: colors.textSecondary }]}> 
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.balanceText, { color: typeSelected ? colors.textSecondary : colors.border }]}> 
                   Disponível: {String(availableBalance.toFixed(8))}
                 </Text>
               </View>
@@ -547,8 +597,9 @@ export function TradeModal({
                   styles.input,
                   { 
                     backgroundColor: colors.surface,
-                    color: colors.text,
-                    borderColor: colors.border
+                    color: typeSelected ? colors.text : colors.border,
+                    borderColor: colors.border,
+                    opacity: typeSelected ? 1 : 0.4,
                   }
                 ]}
                 value={amount}
@@ -556,6 +607,7 @@ export function TradeModal({
                 keyboardType="decimal-pad"
                 placeholder="0.00000000"
                 placeholderTextColor={colors.textSecondary}
+                editable={typeSelected}
               />
 
               {/* Botões de Porcentagem */}
@@ -570,9 +622,11 @@ export function TradeModal({
                         { 
                           borderColor: isSelected ? colors.primary : colors.border,
                           backgroundColor: isSelected ? `${colors.primary}20` : 'transparent',
+                          opacity: typeSelected ? 1 : 0.4,
                         }
                       ]}
                       onPress={() => handlePercentage(percent)}
+                      disabled={!typeSelected}
                     >
                       <Text style={[
                         styles.percentageButtonText,
@@ -589,73 +643,112 @@ export function TradeModal({
               </View>
               
               {/* Aviso sobre margem de segurança */}
-              <Text style={[styles.safetyMarginText, { color: colors.textSecondary }]}>
-                💡 100% usa 99.5% do saldo (margem para taxas)
-              </Text>
-            </View>
-
-            {/* Preview do Total */}
-            <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={styles.previewRow}>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
-                  Total {isBuy ? 'a Pagar' : 'a Receber'}
+              {typeSelected && (
+                <Text style={[styles.safetyMarginText, { color: colors.textSecondary }]}>
+                  💡 100% usa 99.5% do saldo (margem para taxas)
                 </Text>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
-                  $ {apiService.formatUSD(total)}
-                </Text>
-              </View>
-              
-              {orderType === 'limit' && (
-                <>
-                  <View style={styles.previewRow}>
-                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
-                      Preço
-                    </Text>
-                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
-                      {parseFloat(price || '0') < 0.01 
-                        ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
-                        : apiService.formatUSD(parseFloat(price || '0'))}
-                    </Text>
-                  </View>
-                  <View style={styles.previewRow}>
-                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
-                      Quantidade
-                    </Text>
-                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
-                      {String((() => {
-                        const qty = parseFloat(amount || '0')
-                        if (qty === 0) return '0.00'
-                        if (qty >= 1000000) return `${(qty / 1000000).toFixed(2)}Mi`
-                        if (qty >= 1000) return `${(qty / 1000).toFixed(2)}K`
-                        if (qty < 1) return qty.toFixed(8).replace(/\.?0+$/, '')
-                        return qty.toFixed(2)
-                      })())} {String(symbol.toUpperCase())}
-                    </Text>
-                  </View>
-                </>
               )}
             </View>
 
-            {/* Botão Confirmar - Estilo suave */}
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                { 
-                  backgroundColor: isBuy ? '#10b98120' : '#ef444420',
-                  borderColor: isBuy ? '#10b981' : '#ef4444',
-                },
-                createOrderLoading && styles.submitButtonDisabled
-              ]}
-              onPress={handleSubmit}
-              disabled={createOrderLoading}
-            >
-              <Text style={[
-                styles.submitButtonText,
-                { color: isBuy ? '#10b981' : '#ef4444' }
-              ]}>
-                {String(createOrderLoading ? 'Criando ordem...' : `${isBuy ? 'Comprar' : 'Vender'} ${symbol}`)}
-              </Text>
-            </TouchableOpacity>
+            {/* Preview do Total — só mostra quando tem dados */}
+            {typeSelected && (
+              <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={styles.previewRow}>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
+                    Total {isBuy ? 'a Pagar' : 'a Receber'}
+                  </Text>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
+                    $ {apiService.formatUSD(total)}
+                  </Text>
+                </View>
+                
+                {orderType === 'limit' && (
+                  <>
+                    <View style={styles.previewRow}>
+                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
+                        Preço
+                      </Text>
+                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
+                        {parseFloat(price || '0') < 0.01 
+                          ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
+                          : apiService.formatUSD(parseFloat(price || '0'))}
+                      </Text>
+                    </View>
+                    <View style={styles.previewRow}>
+                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
+                        Quantidade
+                      </Text>
+                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
+                        {String((() => {
+                          const qty = parseFloat(amount || '0')
+                          if (qty === 0) return '0.00'
+                          if (qty >= 1000000) return `${(qty / 1000000).toFixed(2)}Mi`
+                          if (qty >= 1000) return `${(qty / 1000).toFixed(2)}K`
+                          if (qty < 1) return qty.toFixed(8).replace(/\.?0+$/, '')
+                          return qty.toFixed(2)
+                        })())} {String(symbol.toUpperCase())}
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+
+            {/* Botão Enviar — só habilita quando tudo preenchido */}
+            {(() => {
+              const sideColor = isBuy ? '#10b981' : (orderSide === 'sell' ? '#ef4444' : colors.border)
+              const buttonLabel = createOrderLoading 
+                ? 'Criando ordem...' 
+                : !sideSelected 
+                  ? 'Selecione Comprar ou Vender'
+                  : !typeSelected 
+                    ? 'Selecione Limit ou Market'
+                    : !hasValidAmount 
+                      ? 'Informe a quantidade'
+                      : `${isBuy ? 'Comprar' : 'Vender'} ${symbol}`
+              
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    { 
+                      backgroundColor: isFormComplete ? (isBuy ? '#10b98120' : '#ef444420') : `${colors.border}15`,
+                      borderColor: isFormComplete ? sideColor : colors.border,
+                    },
+                    !isFormComplete && styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={!isFormComplete}
+                >
+                  <Text style={[
+                    styles.submitButtonText,
+                    { color: isFormComplete ? sideColor : colors.textSecondary }
+                  ]}>
+                    {String(buttonLabel)}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })()}
+
+            {/* Erro de criação */}
+            {createOrderError && (
+              <View style={styles.errorContainerClean}>
+                <Text style={[styles.errorMessageText, { color: '#ef4444' }]}>
+                  {(() => {
+                    const parsed = parseErrorResponse(createOrderError)
+                    return parsed.message
+                  })()}
+                </Text>
+                {(() => {
+                  const parsed = parseErrorResponse(createOrderError)
+                  return parsed.code ? (
+                    <Text style={[styles.errorCodeText, { color: colors.textSecondary }]}>
+                      Código: {parsed.code}
+                    </Text>
+                  ) : null
+                })()}
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -674,33 +767,33 @@ export function TradeModal({
               <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
                 <Text style={{ fontSize: 28 }}>{isBuy ? '🟢' : '🔴'}</Text>
                 <Text style={[styles.confirmTitle, { color: colors.text }]}>
-                  {'Confirmar Ordem'}
+                  {t('trade.confirmOrder')}
                 </Text>
               </View>
 
               {/* Resumo */}
               <View style={styles.confirmContent}>
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Par'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.pair')}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
                     {String(symbol.includes('/') ? symbol : `${symbol}/USDT`)}
                   </Text>
                 </View>
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Lado'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.side')}</Text>
                   <Text style={[styles.confirmValue, { color: isBuy ? '#10b981' : '#ef4444' }]}>
-                    {String(isBuy ? 'COMPRA' : 'VENDA')}
+                    {String(isBuy ? t('trade.buy') : t('trade.sell'))}
                   </Text>
                 </View>
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Tipo'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.type')}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
-                    {String(orderType.toUpperCase())}
+                    {String((orderType || '').toUpperCase())}
                   </Text>
                 </View>
                 {orderType === 'limit' && (
                   <View style={styles.confirmRow}>
-                    <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Preço'}</Text>
+                    <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.price')}</Text>
                     <Text style={[styles.confirmValue, { color: colors.text }]}>
                       {String(`$ ${parseFloat(price || '0') < 0.01 
                         ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
@@ -709,7 +802,7 @@ export function TradeModal({
                   </View>
                 )}
                 <View style={styles.confirmRow}>
-                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{'Quantidade'}</Text>
+                  <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.quantity')}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
                     {String(`${parseFloat(amount || '0') < 1 
                       ? parseFloat(amount || '0').toFixed(8).replace(/\.?0+$/, '') 
@@ -722,7 +815,7 @@ export function TradeModal({
 
                 <View style={styles.confirmRow}>
                   <Text style={[styles.confirmLabelBold, { color: colors.text }]}>
-                    {String(isBuy ? 'Total a Pagar' : 'Total a Receber')}
+                    {String(isBuy ? t('trade.totalToPay') : t('trade.totalToReceive'))}
                   </Text>
                   <Text style={[styles.confirmValueBold, { color: isBuy ? '#10b981' : '#ef4444' }]}>
                     {String(`$ ${apiService.formatUSD(total)}`)}
@@ -736,14 +829,14 @@ export function TradeModal({
                   style={[styles.confirmCancelBtn, { borderColor: colors.border }]} 
                   onPress={() => setConfirmVisible(false)}
                 >
-                  <Text style={[styles.confirmCancelText, { color: colors.text }]}>{'Voltar'}</Text>
+                  <Text style={[styles.confirmCancelText, { color: colors.text }]}>{t('common.back')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[styles.confirmOkBtn, { backgroundColor: isBuy ? '#10b981' : '#ef4444' }]} 
                   onPress={executeOrder}
                 >
                   <Text style={styles.confirmOkText}>
-                    {String(isBuy ? 'Confirmar Compra' : 'Confirmar Venda')}
+                    {String(isBuy ? t('trade.confirmBuy') : t('trade.confirmSell'))}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -801,23 +894,35 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 24,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12, // 14→12
-    borderRadius: 10, // 12→10
+    paddingVertical: 12,
+    borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48, // 52→48
+    minHeight: 48,
   },
   tabActive: {
     // Applied via backgroundColor
   },
   tabText: {
     fontSize: typography.h4,
-    fontWeight: fontWeights.medium, // bold→medium
+    fontWeight: fontWeights.medium,
+  },
+  stepLabel: {
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
+    marginBottom: 10,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  sectionDisabled: {
+    opacity: 0.4,
+  },
+  buttonDisabled: {
+    // opacity controlled inline
   },
   section: {
     marginBottom: 24,

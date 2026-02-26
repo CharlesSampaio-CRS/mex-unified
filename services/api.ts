@@ -1614,6 +1614,13 @@ export const apiService = {
   },
 
   /**
+   * Busca uma estratégia específica pelo ID
+   */
+  async getStrategy(id: string) {
+    return this.get(`/strategies/${id}`, TIMEOUTS.FAST);
+  },
+
+  /**
    * Cria nova estratégia
    */
   async createStrategy(data: any) {
@@ -1639,6 +1646,87 @@ export const apiService = {
    */
   async toggleStrategy(id: string, is_active: boolean) {
     return this.put(`/strategies/${id}`, { is_active }, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Ativa uma estratégia (status → monitoring)
+   */
+  async activateStrategy(id: string) {
+    return this.post(`/strategies/${id}/activate`, {}, TIMEOUTS.STANDARD);
+  },
+
+  /**
+   * Pausa uma estratégia (mantém posição)
+   */
+  async pauseStrategy(id: string) {
+    return this.post(`/strategies/${id}/pause`, {}, TIMEOUTS.STANDARD);
+  },
+
+  /**
+   * Busca estatísticas de uma estratégia
+   */
+  async getStrategyStats(id: string) {
+    return this.get(`/strategies/${id}/stats`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Busca execuções paginadas de uma estratégia
+   */
+  async getStrategyExecutions(id: string, page: number = 1, limit: number = 50) {
+    return this.get(`/strategies/${id}/executions?page=${page}&limit=${limit}`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Busca sinais paginados de uma estratégia
+   */
+  async getStrategySignals(id: string, page: number = 1, limit: number = 50) {
+    return this.get(`/strategies/${id}/signals?page=${page}&limit=${limit}`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Trigger manual de processamento de uma estratégia
+   */
+  async tickStrategy(id: string) {
+    return this.post(`/strategies/${id}/tick`, {}, TIMEOUTS.SLOW);
+  },
+
+  // ==========================================
+  // 📋 STRATEGY TEMPLATES - MongoDB Backend
+  // ==========================================
+
+  /**
+   * Lista todos os templates (padrão + customizados do usuário)
+   */
+  async listStrategyTemplates() {
+    return this.get('/strategy-templates', TIMEOUTS.FAST);
+  },
+
+  /**
+   * Busca um template específico pelo ID
+   */
+  async getStrategyTemplate(id: string) {
+    return this.get(`/strategy-templates/${id}`, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Cria novo template customizado
+   */
+  async createStrategyTemplate(data: any) {
+    return this.post('/strategy-templates', data, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Atualiza template customizado
+   */
+  async updateStrategyTemplate(id: string, data: any) {
+    return this.put(`/strategy-templates/${id}`, data, TIMEOUTS.FAST);
+  },
+
+  /**
+   * Deleta template customizado
+   */
+  async deleteStrategyTemplate(id: string) {
+    return this.delete(`/strategy-templates/${id}`, TIMEOUTS.FAST);
   },
 };
 

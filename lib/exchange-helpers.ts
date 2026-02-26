@@ -5,6 +5,34 @@
 import { Exchange, Balance, Token } from '@/types/api'
 
 /**
+ * Capitaliza o nome da exchange: "binance" → "Binance", "gate.io" → "Gate.io"
+ * Usado em TODOS os pontos de exibição do app.
+ */
+export function capitalizeExchangeName(name: string): string {
+  if (!name) return 'Unknown'
+  // Nomes especiais que não seguem capitalização padrão
+  const specialNames: Record<string, string> = {
+    'okx': 'OKX',
+    'mexc': 'MEXC',
+    'htx': 'HTX',
+    'gate.io': 'Gate.io',
+    'gateio': 'Gate.io',
+    'kucoin': 'KuCoin',
+    'coinex': 'CoinEx',
+    'bitget': 'Bitget',
+    'bybit': 'Bybit',
+    'binance': 'Binance',
+    'coinbase': 'Coinbase',
+    'kraken': 'Kraken',
+    'novadax': 'NovaDAX',
+  }
+  const lower = name.toLowerCase().trim()
+  if (specialNames[lower]) return specialNames[lower]
+  // Fallback: capitalize primeira letra de cada palavra
+  return lower.replace(/\b\w/g, c => c.toUpperCase())
+}
+
+/**
  * Obtém o ID da exchange de forma segura
  */
 export function getExchangeId(exchange: Exchange): string {
@@ -12,10 +40,11 @@ export function getExchangeId(exchange: Exchange): string {
 }
 
 /**
- * Obtém o nome da exchange de forma segura
+ * Obtém o nome da exchange de forma segura (já capitalizado)
  */
 export function getExchangeName(exchange: Exchange): string {
-  return exchange.name || exchange.exchange || exchange.exchange_id || 'Unknown'
+  const raw = exchange.name || exchange.exchange || exchange.exchange_id || 'Unknown'
+  return capitalizeExchangeName(raw)
 }
 
 /**

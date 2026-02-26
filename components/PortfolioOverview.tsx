@@ -12,6 +12,7 @@ import { SkeletonPortfolioOverview } from "./SkeletonLoaders"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { PortfolioChart } from "./PortfolioChart"
 import { ExchangesPieChart } from "./ExchangesPieChart"
+import { ExchangeBalancesList } from "./ExchangeBalancesList"
 import { GradientCard } from "./GradientCard"
 import { typography, fontWeights } from "@/lib/typography"
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion"
@@ -276,11 +277,6 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
       end={{ x: 1, y: 1 }}
       style={[styles.container, { borderColor: colors.border }]}
     >
-        <View style={styles.headerRow}>
-          <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
-            {formatLastUpdated()}
-          </Text>
-        </View>
 
         <View style={styles.valueSection}>
           <View style={styles.valueContainer}>
@@ -302,6 +298,9 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
             </View>
           )}
         </View>
+
+        {/* Saldos por Exchange */}
+        <ExchangeBalancesList usdToBrlRate={usdToBrlRate} />
 
         {/* PNL Cards - Diário e Período separados */}
         <View style={styles.pnlCardsRow}>

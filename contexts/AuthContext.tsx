@@ -42,6 +42,9 @@ interface AuthContextType {
   isBiometricEnabled: boolean
   isAutoLoginEnabled: boolean
   setAutoLoginEnabled: (enabled: boolean) => Promise<void>
+
+  // 🆕 Fetch com refresh automático em 401
+  authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -75,28 +78,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await checkBiometricAvailability()
         await checkBiometricEnabled()
         
-        // 🔄 Verifica se existe sessão salva e biometria habilitada
-        const hasBiometric = await secureStorage.getItemAsync('biometric_enabled')
+        // 🔄 Verifica se existe sessão salva (tokens + user_data)
         const hasUserData = await secureStorage.getItemAsync('user_data')
+        const hasAccessToken = await secureStorage.getItemAsync('access_token')
+        const hasRefreshToken = await secureStorage.getItemAsync('refresh_token')
+        const hasBiometric = await secureStorage.getItemAsync('biometric_enabled')
         
         console.log('🔍 Verificando sessão salva...')
-        console.log('  - Biometria habilitada:', hasBiometric === 'true')
         console.log('  - Dados de usuário:', hasUserData ? 'SIM' : 'NÃO')
+        console.log('  - Access token:', hasAccessToken ? 'SIM' : 'NÃO')
+        console.log('  - Refresh token:', hasRefreshToken ? 'SIM' : 'NÃO')
+        console.log('  - Biometria habilitada:', hasBiometric === 'true')
         
-        // ⚠️ Limpa apenas os tokens de sessão (não os dados do usuário)
-        // Mantém: user_data, user_id, user_email, user_name, biometric_enabled
-        // Remove: access_token, refresh_token (serão renovados no próximo login)
-        console.log('🧹 Limpando apenas tokens de sessão...')
-        await secureStorage.deleteItemAsync('access_token')
-        await secureStorage.deleteItemAsync('refresh_token')
-        
-        console.log('✅ Tokens de sessão limpos - usuário pode usar biometria para relogar')
-        
-        // Não carrega usuário automaticamente - sempre mostra tela de login
-        // Mas mantém os dados salvos para que o FaceID funcione
-        setUser(null)
+        // ✅ SESSÃO PERSISTENTE: Se tem tokens e user_data, verifica como proceder
+        if (hasUserData && (hasAccessToken || hasRefreshToken)) {
+          console.log('🔐 Sessão encontrada - verificando validade...')
+          
+          if (hasBiometric === 'true') {
+            // Biometria habilitada → aguarda desbloqueio local (FaceID/TouchID)
+            console.log('🔒 Biometria ativa - aguardando desbloqueio local')
+            // Mantém tokens salvos mas NÃO seta user (mostra tela de login com opção de biometria)
+            setUser(null)
+          } else {
+            // Sem biometria → NÃO restaura automaticamente, exige login com senha
+            // Os tokens ficam salvos para caso o user faça login com email/senha corretos
+            console.log('🔒 Sem biometria - exigindo login com senha')
+            setUser(null)
+          }
+        } else {
+          console.log('📭 Nenhuma sessão salva - mostrando login')
+          setUser(null)
+        }
       } catch (error) {
         console.error('❌ Erro ao inicializar autenticação:', error)
+        setUser(null)
       } finally {
         // Sempre marca como não loading após inicialização
         console.log('✅ Inicialização completa')
@@ -224,6 +239,158 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  // ==================== TOKEN REFRESH & SESSION MANAGEMENT ====================
+  
+  /**
+   * Tenta renovar o access_token usando o refresh_token salvo.
+   * Retorna o novo access_token ou null se falhou.
+   */
+  const tryRefreshToken = async (): Promise<string | null> => {
+    try {
+      const refreshToken = await secureStorage.getItemAsync('refresh_token')
+      if (!refreshToken) {
+        console.log('❌ Sem refresh token salvo')
+        return null
+      }
+      
+      console.log('🔄 Renovando access token via refresh token...')
+      const response = await fetch(`${config.kongBaseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      })
+      
+      if (!response.ok) {
+        console.error(`❌ Refresh falhou: ${response.status}`)
+        // Refresh token expirou (30 dias) - limpa tudo
+        await secureStorage.deleteItemAsync('access_token')
+        await secureStorage.deleteItemAsync('refresh_token')
+        return null
+      }
+      
+      const data = await response.json()
+      const newAccessToken = data.token || data.access_token
+      
+      if (newAccessToken) {
+        await secureStorage.setItemAsync('access_token', newAccessToken)
+        console.log('✅ Access token renovado com sucesso')
+      }
+      if (data.refresh_token) {
+        await secureStorage.setItemAsync('refresh_token', data.refresh_token)
+        console.log('✅ Refresh token também renovado')
+      }
+      
+      return newAccessToken || null
+    } catch (error) {
+      console.error('❌ Erro ao renovar token:', error)
+      return null
+    }
+  }
+
+  /**
+   * Tenta restaurar a sessão salva (usado no startup sem biometria).
+   * 1. Verifica se access_token é válido → usa direto
+   * 2. Se expirou, tenta refresh → novo access_token
+   * 3. Se tudo falhou → retorna false (precisa login completo)
+   */
+  const tryRestoreSession = async (): Promise<boolean> => {
+    try {
+      const userData = await secureStorage.getItemAsync('user_data')
+      if (!userData) return false
+      
+      const parsedUser = JSON.parse(userData)
+      
+      // Tenta com access_token existente
+      let accessToken = await secureStorage.getItemAsync('access_token')
+      
+      if (accessToken) {
+        // Verifica se ainda é válido
+        try {
+          const response = await fetch(`${config.kongBaseUrl}/auth/verify`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.valid) {
+              console.log('✅ Access token válido - sessão restaurada')
+              setHasValidToken(true)
+              setIsLoadingData(true)
+              setUser(parsedUser)
+              return true
+            }
+          }
+        } catch (e) {
+          console.log('⚠️ Erro ao verificar token, tentando refresh...')
+        }
+      }
+      
+      // Access token inválido/expirado → tenta refresh
+      const newToken = await tryRefreshToken()
+      if (newToken) {
+        console.log('✅ Sessão restaurada via refresh token')
+        setHasValidToken(true)
+        setIsLoadingData(true)
+        setUser(parsedUser)
+        return true
+      }
+      
+      // Tudo falhou - limpa sessão
+      console.log('❌ Não foi possível restaurar sessão')
+      await secureStorage.deleteItemAsync('access_token')
+      await secureStorage.deleteItemAsync('refresh_token')
+      return false
+    } catch (error) {
+      console.error('❌ Erro ao restaurar sessão:', error)
+      return false
+    }
+  }
+
+  /**
+   * Fetch com retry automático em 401.
+   * Se receber 401, tenta refresh token e repete a request.
+   * Se refresh também falhar → logout.
+   * 
+   * USO: Substituir fetch() por authenticatedFetch() em todas as chamadas API.
+   */
+  const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const accessToken = await secureStorage.getItemAsync('access_token')
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+      ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+    }
+    
+    const response = await fetch(url, { ...options, headers })
+    
+    // Se 401, tenta refresh e retry UMA vez
+    if (response.status === 401) {
+      console.log('⚠️ 401 recebido - tentando refresh automático...')
+      const newToken = await tryRefreshToken()
+      
+      if (newToken) {
+        // Retry com novo token
+        const retryHeaders = {
+          ...headers,
+          'Authorization': `Bearer ${newToken}`,
+        }
+        return fetch(url, { ...options, headers: retryHeaders })
+      } else {
+        // Refresh falhou → sessão expirou → logout
+        console.log('❌ Refresh falhou - fazendo logout automático')
+        await logout()
+        return response
+      }
+    }
+    
+    return response
+  }
+
   // Função desabilitada - sistema sempre inicia no login
   // Pode ser reativada no futuro para implementar "lembrar-me"
   const loadUser = async () => {
@@ -323,6 +490,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Salva dados do usuário
       await secureStorage.setItemAsync('user_id', data.user.id)
+      await secureStorage.setItemAsync('user_email', data.user.email)
       
       const user: User = {
         id: data.user.id,
@@ -363,72 +531,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Define isLoadingData ANTES de autenticar para evitar flash
       setIsLoadingData(true)
       
+      // 🔐 BIOMETRIA = DESBLOQUEIO LOCAL (não chama servidor!)
+      // Apenas verifica que o dono do celular está presente
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Faça login com biometria',
+        promptMessage: 'Desbloqueie para acessar',
         cancelLabel: 'Cancelar',
         disableDeviceFallback: false,
       })
 
       if (result.success) {
-        // 🔐 FaceID autenticou com sucesso!
-        console.log('✅ Biometria autenticada com sucesso')
+        // ✅ FaceID/TouchID autenticou com sucesso!
+        // Agora usa os tokens JÁ SALVOS no SecureStore
+        console.log('✅ Biometria OK - desbloqueio local aprovado')
         
         // Busca dados do usuário salvos
         const userData = await secureStorage.getItemAsync('user_data')
-        const userId = await secureStorage.getItemAsync('user_id')
-        const userEmail = await secureStorage.getItemAsync('user_email')
         
-        if (!userData || !userId || !userEmail) {
+        if (!userData) {
           console.error('❌ Dados do usuário não encontrados')
           setIsLoadingData(false)
-          throw new Error('User data not found. Please login again.')
+          throw new Error('Dados do usuário não encontrados. Faça login novamente.')
         }
         
         const parsedUser = JSON.parse(userData)
-        console.log('📧 Fazendo login para:', userEmail)
+        console.log('� Restaurando sessão para:', parsedUser.email || parsedUser.name)
         
-        // 🔄 Busca novos tokens do backend
-        // Se for usuário Google/Apple, usa refresh token ou reautentica
-        // Se for email/senha, precisa fazer login normal
+        // Tenta restaurar sessão (access token ou refresh)
+        // Funciona com QUALQUER authProvider: email, google, apple
+        const restored = await tryRestoreSession()
         
-        if (parsedUser.authProvider === 'google' || parsedUser.authProvider === 'apple') {
-          // Tenta usar refresh token se existir
-          const refreshToken = await secureStorage.getItemAsync('refresh_token')
-          
-          if (refreshToken) {
-            console.log('🔄 Renovando token com refresh token...')
-            const response = await fetch(`${config.kongBaseUrl}/auth/refresh`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refresh_token: refreshToken })
-            })
-            
-            if (response.ok) {
-              const data = await response.json()
-              await secureStorage.setItemAsync('access_token', data.access_token)
-              if (data.refresh_token) {
-                await secureStorage.setItemAsync('refresh_token', data.refresh_token)
-              }
-              
-              console.log('✅ Token renovado com sucesso')
-              setUser(parsedUser)
-              return
-            }
-          }
-          
-          // Se refresh falhou, reautentica com OAuth
-          console.log('⚠️ Refresh token inválido, redirecionando para OAuth...')
-          if (parsedUser.authProvider === 'google') {
-            await loginWithGoogle()
-          } else {
-            await loginWithApple()
-          }
-        } else {
-          // Para email/senha, não podemos fazer login automático (não temos a senha)
-          console.error('❌ Login com biometria não suportado para email/senha sem refresh token')
-          setIsLoadingData(false)
-          throw new Error('Para usar biometria, faça login com Google ou Apple')
+        if (restored) {
+          console.log('✅ Sessão restaurada com sucesso via biometria')
+          // setUser já foi chamado dentro de tryRestoreSession
+          return
         }
+        
+        // Se refresh token também expirou (>30 dias), precisa login completo
+        console.log('⚠️ Sessão expirada (refresh token vencido) - precisa login completo')
+        setIsLoadingData(false)
+        throw new Error('Sua sessão expirou. Faça login novamente.')
         
         // O loading será desativado pelo App.tsx quando os dados estiverem prontos
       } else {
@@ -781,6 +922,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Salva dados do usuário
       await secureStorage.setItemAsync('user_id', data.user.id)
+      await secureStorage.setItemAsync('user_email', data.user.email)
 
       const user: User = {
         id: data.user.id,
@@ -1010,6 +1152,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     enableBiometric,
     disableBiometric,
     setAutoLoginEnabled,
+    authenticatedFetch,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

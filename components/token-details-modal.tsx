@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useBalance } from "@/contexts/BalanceContext"
 import { usePrivacy } from "@/contexts/PrivacyContext"
+import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 import { apiService } from "@/services/api"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { config } from "@/lib/config"
@@ -284,7 +285,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                 {tokenData && (
                   <>
                     <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                      {tokenData.exchange?.name || 'Exchange'}
+                      {capitalizeExchangeName(tokenData.exchange?.name || 'Exchange')}
                     </Text>
                     <Text style={[styles.modalPrice, { color: colors.primary }]}>
                       ${formatPrice(tokenData.price?.current || '0')}
@@ -322,13 +323,13 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                   <View style={[styles.section, { backgroundColor: colors.primary + '10', borderBottomColor: colors.cardBorder }]}>
                     <View style={styles.userTotalContainer}>
                       <View style={styles.userTotalRow}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>Quantidade Total</Text>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('tokenDetails.totalQuantity')}</Text>
                         <Text style={[styles.value, { color: colors.text, fontWeight: '600' }]}>
                           {hideValue(apiService.formatTokenAmount(userTotalAmount.toString()))}
                         </Text>
                       </View>
                       <View style={styles.userTotalRow}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>Valor Total (USD)</Text>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('tokenDetails.totalValueUsd')}</Text>
                         <Text style={[styles.value, { color: colors.primary, fontWeight: '700', fontSize: 16 }]}>
                           {hideValue(`$${apiService.formatUSD(userTotalValue)}`)}
                         </Text>
@@ -413,7 +414,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                 {/* Última Atualização */}
                 <View style={[styles.section, { marginBottom: 20, borderBottomWidth: 0 }]}>
                   <Text style={[styles.lastUpdate, { color: colors.textSecondary }]}>
-                    Atualizado: {formatDateTime(tokenData.timestamp || Date.now())}
+                    {t('common.updated')} {formatDateTime(tokenData.timestamp || Date.now())}
                   </Text>
                 </View>
               </ScrollView>

@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from "react-native"
 import { useEffect, useRef, memo, useState } from "react"
+import { useNavigation } from "@react-navigation/native"
 import Svg, { Path, Circle } from "react-native-svg"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
@@ -7,7 +8,6 @@ import { useLanguage } from "../contexts/LanguageContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
 import { LogoIcon } from "./LogoIcon"
-import { ProfileMenuModal } from "./ProfileMenuModal"
 import { IconSelectorModal } from "./IconSelectorModal"
 
 // Eye Icon (valores visíveis)
@@ -95,9 +95,6 @@ const GridIcon = ({ color }: { color: string }) => (
 interface HeaderProps {
   hideIcons?: boolean
   onNotificationsPress?: () => void
-  onProfilePress?: () => void
-  onAlertsPress?: () => void
-  onSettingsPress?: () => void
   unreadCount?: number
   title?: string
   subtitle?: string
@@ -123,23 +120,21 @@ const UserIcon = ({ color }: { color: string }) => (
 export const Header = memo(function Header({ 
   hideIcons = false, 
   onNotificationsPress, 
-  onProfilePress,
-  onAlertsPress,
-  onSettingsPress,
   unreadCount = 0,
   title,
   subtitle,
   selectedIcon,
   onIconSelect,
-  navigation
+  navigation: navigationProp
 }: HeaderProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { valuesHidden, toggleValuesVisibility } = usePrivacy()
   const { user } = useAuth()
+  const nav = useNavigation<any>()
+  const navigation = navigationProp || nav
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
-  const [profileMenuVisible, setProfileMenuVisible] = useState(false)
   const [iconSelectorVisible, setIconSelectorVisible] = useState(false)
   
   // Gera as iniciais do usuário para o avatar
@@ -224,10 +219,10 @@ export const Header = memo(function Header({
           )}
         </TouchableOpacity>
         
-        {/* User Avatar - Abre menu com Alertas e Config */}
+        {/* User Avatar - Abre perfil direto */}
         <TouchableOpacity 
           style={[styles.userAvatar, { backgroundColor: colors.primary, borderColor: colors.border }]}
-          onPress={() => setProfileMenuVisible(true)}
+          onPress={() => navigation?.navigate('Settings', { tab: 'profile' })}
           activeOpacity={0.7}
         >
           {user?.avatar ? (
@@ -245,19 +240,12 @@ export const Header = memo(function Header({
         selectedIconId={selectedIcon}
         onNavigate={(screenName) => {
           setIconSelectorVisible(false)
-          navigation?.navigate(screenName)
-        }}
-      />
-
-      {/* Profile Menu Modal */}
-      <ProfileMenuModal
-        visible={profileMenuVisible}
-        onClose={() => setProfileMenuVisible(false)}
-        onAlertsPress={() => {
-          onAlertsPress?.();
-        }}
-        onSettingsPress={() => {
-          onSettingsPress?.();
+          // Settings icon navega com tab: system
+          if (screenName === 'Settings') {
+            navigation?.navigate('Settings', { tab: 'system' })
+          } else {
+            navigation?.navigate(screenName)
+          }
         }}
       />
     </View>
@@ -303,7 +291,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
+    borderWidth: 2,
     overflow: 'hidden',
   },
   avatarImage: {
@@ -313,8 +301,12 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: typography.caption,
-    fontWeight: fontWeights.semibold,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 0.5 },
+    textShadowRadius: 1,
   },
   iconButton: {
     width: 32,                  // Reduzido para mobile

@@ -4,9 +4,11 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useBalance } from "../contexts/BalanceContext"
 import { useOrders } from "../contexts/OrdersContext"
+import { useNotifications } from "../contexts/NotificationsContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
+import { notify } from "../services/notify"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
 interface OpenOrdersModalProps {
@@ -75,6 +77,7 @@ export function OpenOrdersModal({
   const { t, language } = useLanguage()
   const { refresh: refreshBalance } = useBalance()
   const { removeOrder: removeOrderFromContext, refresh: refreshOrders, recentlyAddedIds } = useOrders()
+  const { addNotification } = useNotifications()
   const [orders, setOrders] = useState<OpenOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -360,6 +363,17 @@ export function OpenOrdersModal({
         // ✅ REMOÇÃO OTIMISTA GLOBAL: Remove do contexto global de ordens
         removeOrderFromContext(orderToCancel.id)
         
+        // 🔔 NOTIFICAÇÃO: Ordem cancelada com sucesso
+        const isBuy = orderToCancel.side === 'buy'
+        notify.orderCancelled(addNotification, {
+          symbol: orderToCancel.symbol,
+          side: orderToCancel.side || 'buy',
+          amount: Number(orderToCancel.amount || 0),
+          type: orderToCancel.type,
+          orderId: exchangeOrderId,
+          exchange: exchangeName,
+        })
+        
         // ✅ FEEDBACK IMEDIATO: Fecha modais
         setConfirmCancelVisible(false)
         onClose()
@@ -381,9 +395,14 @@ export function OpenOrdersModal({
       } else {
         // ❌ API retornou success=false (erro lógico)
         console.error('❌ [OpenOrdersModal] API retornou success=false:', result)
-        const errorMsg = result.error || result.message || 'Erro ao cancelar ordem'
+        const errorMsg = result.error || result.message || t('orders.cancelOrderError')
         setCancelError(errorMsg)
         setCancelLoading(false)
+        notify.orderError(addNotification, {
+          symbol: orderToCancel.symbol || '',
+          action: t('orders.cancelOrder'),
+          error: errorMsg,
+        })
         // Modal de confirmação fica aberto mostrando o erro
       }
     } catch (error: any) {
@@ -392,19 +411,24 @@ export function OpenOrdersModal({
       console.error('❌ [OpenOrdersModal] Stack:', error.stack)
       
       // Mensagem de erro mais específica
-      let errorMessage = 'Erro desconhecido ao cancelar ordem'
+      let errorMessage = t('orders.unknownCancelError')
       if (error.message) {
         // Se a mensagem já vem da API (erro HTTP 400/500), usa ela
         errorMessage = error.message
       } else if (error.toString().includes('timeout')) {
-        errorMessage = 'Timeout: A exchange não respondeu a tempo'
+        errorMessage = t('orders.timeoutError')
       } else if (error.toString().includes('network')) {
-        errorMessage = 'Erro de rede: Verifique sua conexão'
+        errorMessage = t('orders.networkError')
       }
       
       setCancelError(errorMessage)
       setCancelLoading(false)
       setCancellingOrderId(null)
+      notify.orderError(addNotification, {
+        symbol: orderToCancel.symbol || '',
+        action: t('orders.cancelOrder'),
+        error: errorMessage,
+      })
       // Modal de confirmação fica aberto mostrando o erro
     }
   }
@@ -882,7 +906,7 @@ export function OpenOrdersModal({
                 {!cancelLoading && !cancelError && (
                   <>
                     <Text style={[styles.confirmMessage, { color: colors.textSecondary }]}>
-                      {orderToCancel && `Deseja realmente cancelar esta ordem ${orderToCancel.side === 'buy' ? 'de compra' : 'de venda'}?`}
+                      {orderToCancel && `${t('orders.cancelConfirm').replace('{side}', orderToCancel.side === 'buy' ? t('orders.cancelBuy') : t('orders.cancelSell'))}`}
                     </Text>
                     
                     {orderToCancel && (
@@ -1104,7 +1128,7 @@ export function OpenOrdersModal({
               {/* Header */}
               <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.confirmTitle, { color: colors.text }]}>
-                  Detalhes do Erro
+                  {t('orders.errorDetails')}
                 </Text>
               </View>
 
@@ -1118,7 +1142,7 @@ export function OpenOrdersModal({
                         {errorInfo.code && (
                           <View style={styles.errorInfoRow}>
                             <Text style={[styles.errorInfoLabel, { color: colors.textSecondary }]}>
-                              Código:
+                              {t('orders.code')}
                             </Text>
                             <Text style={[styles.errorInfoValue, { color: colors.text }]}>
                               {errorInfo.code}
@@ -1128,7 +1152,7 @@ export function OpenOrdersModal({
                         
                         <View style={styles.errorInfoRow}>
                           <Text style={[styles.errorInfoLabel, { color: colors.textSecondary }]}>
-                            Mensagem:
+                            {t('orders.message')}
                           </Text>
                           <Text style={[styles.errorInfoValue, { color: colors.text }]}>
                             {errorInfo.message}
@@ -1139,7 +1163,7 @@ export function OpenOrdersModal({
                           <>
                             <View style={[styles.errorDivider, { backgroundColor: colors.border }]} />
                             <Text style={[styles.errorRawLabel, { color: colors.textSecondary }]}>
-                              Resposta completa:
+                              {t('orders.fullResponse')}
                             </Text>
                             <Text style={[styles.errorDetailText, { 
                               color: colors.textSecondary,
@@ -1162,7 +1186,7 @@ export function OpenOrdersModal({
                   style={[styles.confirmButton, styles.confirmButtonConfirm, { backgroundColor: colors.primary }]}
                 >
                   <Text style={[styles.confirmButtonText, { color: '#fff' }]}>
-                    Fechar
+                    {t('common.close')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1190,7 +1214,7 @@ export function OpenOrdersModal({
               {/* Header */}
               <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.confirmTitle, { color: colors.text }]}>
-                  Detalhes do Erro
+                  {t('orders.errorDetails')}
                 </Text>
               </View>
 
@@ -1204,7 +1228,7 @@ export function OpenOrdersModal({
                         {errorInfo.code && (
                           <View style={styles.errorInfoRow}>
                             <Text style={[styles.errorInfoLabel, { color: colors.textSecondary }]}>
-                              Código:
+                              {t('orders.code')}
                             </Text>
                             <Text style={[styles.errorInfoValue, { color: colors.text }]}>
                               {errorInfo.code}
@@ -1214,7 +1238,7 @@ export function OpenOrdersModal({
                         
                         <View style={styles.errorInfoRow}>
                           <Text style={[styles.errorInfoLabel, { color: colors.textSecondary }]}>
-                            Mensagem:
+                            {t('orders.message')}
                           </Text>
                           <Text style={[styles.errorInfoValue, { color: colors.text }]}>
                             {errorInfo.message}
@@ -1225,7 +1249,7 @@ export function OpenOrdersModal({
                           <>
                             <View style={[styles.errorDivider, { backgroundColor: colors.border }]} />
                             <Text style={[styles.errorRawLabel, { color: colors.textSecondary }]}>
-                              Resposta completa:
+                              {t('orders.fullResponse')}
                             </Text>
                             <Text style={[styles.errorDetailText, { 
                               color: colors.textSecondary,
@@ -1248,7 +1272,7 @@ export function OpenOrdersModal({
                   style={[styles.confirmButton, styles.confirmButtonConfirm, { backgroundColor: colors.primary }]}
                 >
                   <Text style={[styles.confirmButtonText, { color: '#fff' }]}>
-                    Fechar
+                    {t('common.close')}
                   </Text>
                 </TouchableOpacity>
               </View>

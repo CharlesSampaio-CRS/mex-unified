@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useBalance } from '../contexts/BalanceContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
+import { capitalizeExchangeName } from '../lib/exchange-helpers';
 
 interface TokenWithChange {
   symbol: string;
@@ -66,7 +67,7 @@ export const TopGainersLosers: React.FC = () => {
           price: valueUsd / amount,
           change: change24h,
           value_usd: valueUsd,
-          exchange: exchange.name || exchange.exchange || 'Unknown',
+          exchange: capitalizeExchangeName(exchange.name || exchange.exchange || 'Unknown'),
         });
       });
     });

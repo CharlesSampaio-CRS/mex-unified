@@ -85,10 +85,9 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
   const { user } = useAuth()
   const { data, loading, error, refresh: refreshBalance, refreshing } = useBalance()
   const { refresh: refreshOrders, recentlyAffectedSymbols } = useOrders()
-  const { hideValue, valuesHidden } = usePrivacy()
+  const { hideValue, valuesHidden, hideZeroBalances: hideZeroBalanceExchanges, toggleHideZeroBalances: toggleZeroBalanceExchanges } = usePrivacy()
   const { addToken, removeToken, isWatching } = useWatchlist()
   const { getAlertsForToken } = useAlerts()
-  const [hideZeroBalanceExchanges, setHideZeroBalanceExchanges] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   
   // Estados para busca inteligente na exchange
@@ -432,10 +431,6 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
   useEffect(() => {
     (window as any).__exchangesListRefreshOrdersForExchange = refreshSingleExchangeOrders
   }, [refreshSingleExchangeOrders])
-
-  const toggleZeroBalanceExchanges = useCallback(() => {
-    setHideZeroBalanceExchanges(prev => !prev)
-  }, [])
 
   // �️ Mapeamento de nomes comuns para símbolos corretos
   const tokenNameToSymbol: Record<string, string> = {
@@ -865,7 +860,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               <View style={styles.searchingContainer}>
                 <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={[styles.searchingText, { color: colors.textSecondary }]}>
-                  Buscando {searchQuery.toUpperCase()} nas exchanges...
+                  {t('assets.searchingExchanges').replace('{query}', searchQuery.toUpperCase())}
                 </Text>
               </View>
             ) : externalSearchResult.found ? (
@@ -876,7 +871,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                       {externalSearchResult.symbol}
                     </Text>
                     <Text style={[styles.tokenFoundExchange, { color: colors.textSecondary }]}>
-                      Disponível na {externalSearchResult.exchangeName}
+                      {t('assets.availableOn').replace('{exchange}', externalSearchResult.exchangeName)}
                     </Text>
                   </View>
                   {externalSearchResult.price > 0 && (
@@ -900,7 +895,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                   }}
                 >
                   <Text style={[styles.tokenFoundButtonText, { color: '#FFFFFF' }]}>
-                    Ver Detalhes
+                    {t('common.viewDetails')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -908,10 +903,10 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               <View style={styles.tokenNotFoundContainer}>
                 <Ionicons name="search-outline" size={24} color={colors.textTertiary} />
                 <Text style={[styles.tokenNotFoundText, { color: colors.textSecondary }]}>
-                  Token {externalSearchResult.symbol} não encontrado
+                  {t('assets.tokenNotFound').replace('{symbol}', externalSearchResult.symbol)}
                 </Text>
                 <Text style={[styles.tokenNotFoundSubtext, { color: colors.textTertiary }]}>
-                  Não foi possível localizar este token nas exchanges conectadas ou APIs externas.
+                  {t('assets.tokenNotFoundDesc')}
                 </Text>
               </View>
             )}

@@ -9,6 +9,7 @@ import { usePrivacy } from '@/contexts/PrivacyContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
+import { notify } from '@/services/notify';
 import { Header } from '@/components/Header';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { OrderDetailsModal } from '@/components/order-details-modal';
@@ -66,7 +67,7 @@ export function OrdersScreen({ navigation }: any) {
   const { ordersByExchange, loading, refreshing, refresh, removeOrder, recentlyAddedIds } = useOrders();
   const { data: balanceData, refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, addNotification } = useNotifications();
   
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState<'All' | 'buy' | 'sell'>('All');
@@ -78,8 +79,6 @@ export function OrdersScreen({ navigation }: any) {
   const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string } | null>(null);
 
   const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
-  const onProfilePress = useCallback(() => navigation?.navigate('Settings', { initialTab: 'profile' }), [navigation]);
-  const onSettingsPress = useCallback(() => navigation?.navigate('Settings'), [navigation]);
 
   // 💰 Mapa de preços atuais dos tokens (para calcular PnL)
   const tokenPrices = useMemo(() => {
@@ -212,6 +211,16 @@ export function OrdersScreen({ navigation }: any) {
       console.log('✅ [ORDERS-SCREEN] Ordem cancelada, removendo da lista:', orderId)
       removeOrder(orderId);
       
+      // 🔔 NOTIFICAÇÃO: Ordem cancelada com sucesso
+      const isBuy = order.side === 'buy';
+      notify.orderCancelled(addNotification, {
+        symbol: order.symbol,
+        side: order.side || 'buy',
+        amount: Number(order.amount || 0),
+        type: order.type,
+        orderId: exchangeOrderId,
+      });
+      
       // Remove do set de cancelamento
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);
@@ -226,15 +235,21 @@ export function OrdersScreen({ navigation }: any) {
       setTimeout(() => {
         refresh();
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao cancelar ordem:', error);
+      notify.orderError(addNotification, {
+        symbol: order.symbol || '',
+        action: 'Cancelar Ordem',
+        error: error.message || 'Erro desconhecido',
+        orderId: exchangeOrderId,
+      });
       setCancellingOrderIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(orderId);
         return newSet;
       });
     }
-  }, [orderToCancel, refresh, removeOrder, refreshBalance]);
+  }, [orderToCancel, refresh, removeOrder, refreshBalance, addNotification]);
 
   // Renderiza order card
   const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string) => {
@@ -441,8 +456,6 @@ export function OrdersScreen({ navigation }: any) {
         title="Orders"
         subtitle={`${String(totals.count)} ${totals.count === 1 ? 'order' : 'orders'} • ${String(hideValue(`$${apiService.formatUSD(totals.value)}`))}`}
         onNotificationsPress={onNotificationsPress}
-        onProfilePress={onProfilePress}
-        onSettingsPress={onSettingsPress}
         unreadCount={unreadCount}
         navigation={navigation}
       />
