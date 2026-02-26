@@ -250,13 +250,19 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
   const [strategyType, setStrategyType] = useState("")
   const [riskIdx, setRiskIdx] = useState(1) // Médio
   const [summary, setSummary] = useState("")
-  const [configsText, setConfigsText] = useState("") // "label:value:detail" por linha
   const [howText, setHowText] = useState("") // 1 step por linha
   const [saving, setSaving] = useState(false)
 
+  // Campos de configuração individuais
+  const [priceBase, setPriceBase] = useState("")
+  const [takeProfit, setTakeProfit] = useState("")
+  const [stopLoss, setStopLoss] = useState("")
+  const [sellCascade, setSellCascade] = useState("")
+
   const reset = () => {
     setName(""); setIcon("📊"); setStrategyType(""); setRiskIdx(1)
-    setSummary(""); setConfigsText(""); setHowText("")
+    setSummary(""); setHowText("")
+    setPriceBase(""); setTakeProfit(""); setStopLoss(""); setSellCascade("")
   }
 
   const handleSave = async () => {
@@ -265,15 +271,20 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
       return
     }
 
-    // Parse configs (formato: "Label:Valor:Detalhe opcional")
-    const configs = configsText.split("\n").filter(l => l.trim()).map(line => {
-      const parts = line.split(":")
-      return {
-        label: (parts[0] || "").trim(),
-        value: (parts[1] || "").trim(),
-        detail: parts[2]?.trim() || undefined,
-      }
-    }).filter(c => c.label && c.value)
+    // Monta configs a partir dos campos individuais
+    const configs: { label: string; value: string; detail?: string }[] = []
+    if (priceBase.trim()) {
+      configs.push({ label: "Price Base", value: `${priceBase.trim()} USDT`, detail: "Preço de referência" })
+    }
+    if (takeProfit.trim()) {
+      configs.push({ label: "Take Profit", value: `${takeProfit.trim()}%`, detail: "Percentual de lucro alvo" })
+    }
+    if (stopLoss.trim()) {
+      configs.push({ label: "Stop Loss", value: `${stopLoss.trim()}%`, detail: "Perda máxima permitida" })
+    }
+    if (sellCascade.trim()) {
+      configs.push({ label: "Sell Cascade", value: `${sellCascade.trim()}%`, detail: "Venda em níveis progressivos" })
+    }
 
     const howSteps = howText.split("\n").filter(l => l.trim())
 
@@ -375,21 +386,47 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
                 multiline numberOfLines={3}
               />
 
-              {/* Configs */}
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Configurações</Text>
-              <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
-                Uma por linha: Label:Valor:Detalhe
-              </Text>
+              {/* ── Configurações (inputs separados) ── */}
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 18 }]}>⚙️ Configurações</Text>
+
+              {/* Price Base */}
+              <Text style={[styles.cfgInputLabel, { color: colors.text }]}>💰 Price Base (USDT)</Text>
               <TextInput
-                style={[styles.input, styles.multiline, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={configsText} onChangeText={setConfigsText}
-                placeholder={"Take Profit:5%:Fecha posição\nStop Loss:2%:Proteção"}
-                placeholderTextColor={colors.textSecondary}
-                multiline numberOfLines={5}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={priceBase} onChangeText={setPriceBase}
+                placeholder="Ex: 95000.00" placeholderTextColor={colors.textSecondary}
+                keyboardType="decimal-pad"
+              />
+
+              {/* Take Profit */}
+              <Text style={[styles.cfgInputLabel, { color: colors.text }]}>🎯 Take Profit (%)</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={takeProfit} onChangeText={setTakeProfit}
+                placeholder="Ex: 5.0" placeholderTextColor={colors.textSecondary}
+                keyboardType="decimal-pad"
+              />
+
+              {/* Stop Loss */}
+              <Text style={[styles.cfgInputLabel, { color: colors.text }]}>🛑 Stop Loss (%)</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={stopLoss} onChangeText={setStopLoss}
+                placeholder="Ex: 2.0" placeholderTextColor={colors.textSecondary}
+                keyboardType="decimal-pad"
+              />
+
+              {/* Sell Cascade */}
+              <Text style={[styles.cfgInputLabel, { color: colors.text }]}>📉 Sell Cascade (%)</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={sellCascade} onChangeText={setSellCascade}
+                placeholder="Ex: 1.5 (opcional)" placeholderTextColor={colors.textSecondary}
+                keyboardType="decimal-pad"
               />
 
               {/* Como funciona */}
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Como Funciona</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 18 }]}>Como Funciona</Text>
               <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
                 Um passo por linha
               </Text>
@@ -665,5 +702,13 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: typography.body,
     fontWeight: fontWeights.semibold,
+  },
+
+  // Config inputs label
+  cfgInputLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.semibold,
+    marginTop: 12,
+    marginBottom: 6,
   },
 })

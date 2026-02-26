@@ -323,11 +323,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           template: selectedTemplate,
           template_name: tplInfo.name,
           exchange_id: selectedExchange,
-          created_via: 'modal',
-          price_base: parseFloat(priceBase) || 0,
-          take_profit: parseFloat(takeProfit) || 0,
-          stop_loss: parseFloat(stopLoss) || 0,
-          sell_cascade: sellCascade.trim() ? parseFloat(sellCascade) : null,
+          created_via: 'modal'
         },
       }
       
@@ -370,8 +366,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
   const canProceedToStep2 = selectedTemplate !== ""
   const canProceedToStep3 = selectedExchange !== ""
-  const canProceedToStep4 = token.trim() !== ""
-  const canCreate = priceBase.trim() !== "" && takeProfit.trim() !== "" && stopLoss.trim() !== ""
+  const canCreate = token.trim() !== ""
 
   const getSelectedExchangeName = () => {
     const exchange = exchanges.find(e => {
@@ -419,8 +414,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 <Text style={[styles.closeIcon, { color: colors.text }]}>✕</Text>
               </TouchableOpacity>
             </View>
-          {/* Steps Indicator - esconde quando teclado aberto no step 3+ */}
-          {!((step === 3 || step === 4) && keyboardVisible) && (
+          {/* Steps Indicator - esconde quando teclado aberto no step 3 */}
+          {!(step === 3 && keyboardVisible) && (
           <View style={styles.stepsContainer}>
             <View style={styles.stepItem}>
               <View
@@ -487,33 +482,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 {t("strategy.labelToken")}
               </Text>
             </View>
-            <View style={[styles.stepLine, { backgroundColor: colors.border }]} />
-            <View style={styles.stepItem}>
-              <View
-                style={[
-                  styles.stepCircle,
-                  { borderColor: step >= 4 ? colors.primary : colors.border },
-                  step >= 4 && { backgroundColor: colors.primary },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.stepNumber,
-                    { color: step >= 4 ? colors.primaryText : colors.textSecondary },
-                  ]}
-                >
-                  4
-                </Text>
-              </View>
-              <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
-                Config
-              </Text>
-            </View>
           </View>
           )}
           {/* Content */}
-          {step === 3 || step === 4 ? (
-            step === 3 ? (
+          {step === 3 ? (
             <View style={[styles.content, { paddingHorizontal: 20, paddingTop: 8 }]}>
               {/* Título + resumo — esconde quando teclado está aberto */}
               {!keyboardVisible && (
@@ -807,112 +779,6 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
               )}
             </View>
           ) : (
-            /* ── Step 4: Configurações da Estratégia ── */
-            <ScrollView style={[styles.content, { paddingHorizontal: 20, paddingTop: 8 }]} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
-              <Text style={[styles.stepTitle, { color: colors.text, marginBottom: 6 }]}>
-                ⚙️ Configurações
-              </Text>
-              <Text style={[styles.stepDescription, { color: colors.textSecondary, marginBottom: 16 }]}>
-                Defina os parâmetros da sua estratégia
-              </Text>
-
-              {/* Resumo da seleção até agora */}
-              <View style={[styles.summaryCard, { marginBottom: 18, padding: 12, gap: 4 }]}>
-                <View style={styles.summaryRow}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Template:</Text>
-                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: '500' }}>
-                    {getSelectedTemplate().name}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Exchange:</Text>
-                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: '500' }}>
-                    {getSelectedExchangeName()}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Token:</Text>
-                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: '500' }}>
-                    {token}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Price Base */}
-              <View style={styles.configFieldGroup}>
-                <Text style={[styles.configFieldLabel, { color: colors.text }]}>
-                  💰 Price Base (USDT)
-                </Text>
-                <Text style={[styles.configFieldHint, { color: colors.textSecondary }]}>
-                  Preço de referência para a estratégia
-                </Text>
-                <TextInput
-                  style={[styles.configInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={priceBase}
-                  onChangeText={setPriceBase}
-                  placeholder="Ex: 95000.00"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-
-              {/* Take Profit */}
-              <View style={styles.configFieldGroup}>
-                <Text style={[styles.configFieldLabel, { color: colors.text }]}>
-                  🎯 Take Profit (%)
-                </Text>
-                <Text style={[styles.configFieldHint, { color: colors.textSecondary }]}>
-                  Percentual de lucro para encerrar a posição
-                </Text>
-                <TextInput
-                  style={[styles.configInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={takeProfit}
-                  onChangeText={setTakeProfit}
-                  placeholder="Ex: 5.0"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-
-              {/* Stop Loss */}
-              <View style={styles.configFieldGroup}>
-                <Text style={[styles.configFieldLabel, { color: colors.text }]}>
-                  🛑 Stop Loss (%)
-                </Text>
-                <Text style={[styles.configFieldHint, { color: colors.textSecondary }]}>
-                  Percentual de perda máxima para proteger o capital
-                </Text>
-                <TextInput
-                  style={[styles.configInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={stopLoss}
-                  onChangeText={setStopLoss}
-                  placeholder="Ex: 2.0"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-
-              {/* Sell Cascade */}
-              <View style={styles.configFieldGroup}>
-                <Text style={[styles.configFieldLabel, { color: colors.text }]}>
-                  📉 Sell Cascade (%)
-                </Text>
-                <Text style={[styles.configFieldHint, { color: colors.textSecondary }]}>
-                  Venda em cascata — divide a saída em níveis progressivos
-                </Text>
-                <TextInput
-                  style={[styles.configInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={sellCascade}
-                  onChangeText={setSellCascade}
-                  placeholder="Ex: 1.5 (opcional)"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-
-            </ScrollView>
-          )
-          ) : (
           <ScrollView 
             style={styles.content}
             contentContainerStyle={styles.contentContainer}
@@ -1057,37 +923,37 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
             )}
           </ScrollView>
           )}
-          {/* Footer - esconde quando teclado aberto no step 3+ */}
-          {!((step === 3 || step === 4) && keyboardVisible) && (
+          {/* Footer - esconde quando teclado aberto no step 3 */}
+          {!(step === 3 && keyboardVisible) && (
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
             {step > 1 && (
               <TouchableOpacity
                 style={[styles.button, styles.buttonSecondary, { borderColor: colors.border }]}
-                onPress={() => setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4)}
+                onPress={() => setStep((prev) => (prev - 1) as 1 | 2 | 3)}
                 disabled={loading}
               >
                 <Text style={[styles.buttonText, { color: colors.text }]}>{t("common.back")}</Text>
               </TouchableOpacity>
             )}
-            {step < 4 ? (
+            {step < 3 ? (
               <TouchableOpacity
                 style={[
                   styles.button,
                   styles.buttonPrimary,
                   { backgroundColor: colors.primary },
-                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3) || (step === 3 && !canProceedToStep4)
+                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3)
                     ? { opacity: 0.5 }
                     : {},
                 ]}
                 onPress={() => {
-                  const nextStep = (step + 1) as 1 | 2 | 3 | 4
+                  const nextStep = (step + 1) as 1 | 2 | 3
                   setStep(nextStep)
                 }}
                 disabled={
-                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3) || (step === 3 && !canProceedToStep4)
+                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3)
                 }
               >
-                <Text style={styles.buttonTextPrimary}>{t("common.next")}</Text>
+                <Text style={styles.buttonTextPrimary}>{step === 3 ? t("common.create") : t("common.next")}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -1666,28 +1532,5 @@ const styles = StyleSheet.create({
   selectedTokenText: {
     fontSize: 13,
     fontWeight: "500",
-  },
-
-  // ── Step 4: Config Fields ──
-  configFieldGroup: {
-    marginBottom: 18,
-  },
-  configFieldLabel: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-    marginBottom: 4,
-  },
-  configFieldHint: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.light,
-    marginBottom: 8,
-  },
-  configInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: typography.h4,
-    fontWeight: fontWeights.medium,
   },
 })
