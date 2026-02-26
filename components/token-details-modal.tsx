@@ -414,7 +414,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                 {/* Última Atualização */}
                 <View style={[styles.section, { marginBottom: 20, borderBottomWidth: 0 }]}>
                   <Text style={[styles.lastUpdate, { color: colors.textSecondary }]}>
-                    Atualizado: {formatDateTime(tokenData.timestamp || Date.now())}
+                    {t('common.updated')} {formatDateTime(tokenData.timestamp || Date.now())}
                   </Text>
                 </View>
               </ScrollView>
