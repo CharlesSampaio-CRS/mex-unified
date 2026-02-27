@@ -320,7 +320,7 @@ export const translations = {
     
     // Profile
     'profile.title': 'Perfil',
-    'profile.subtitle': 'Suas informações pessoais',
+    'profile.subtitle': 'Perfil',
     'profile.logout': 'Sair',
     'profile.logoutConfirm': 'Tem certeza que deseja sair?',
     'profile.logoutError': 'Erro ao sair',
