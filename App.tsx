@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
 import { ActivityIndicator, View, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
-import { SafeAreaView } from "react-native-safe-area-context"
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context"
 import Svg, { Path, Rect, Circle } from "react-native-svg"
 
 // 🔥 ERROR HANDLER GLOBAL - Captura TODOS os erros não tratados
@@ -451,31 +451,33 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <PrivacyProvider>
-            <HeaderProvider>
-              <NotificationsProvider>
-                <AlertsProvider>
-                  <WatchlistProvider>
-                    <BalanceProvider>
-                      <CacheInvalidationProvider>
-                        <OrdersProvider>
-                          <LayoutProvider>
-                            <AppNavigator />
-                          </LayoutProvider>
-                        </OrdersProvider>
-                      </CacheInvalidationProvider>
-                    </BalanceProvider>
-                  </WatchlistProvider>
-                </AlertsProvider>
-              </NotificationsProvider>
-            </HeaderProvider>
-          </PrivacyProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </LanguageProvider>
+    <SafeAreaProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <PrivacyProvider>
+              <HeaderProvider>
+                <NotificationsProvider>
+                  <AlertsProvider>
+                    <WatchlistProvider>
+                      <BalanceProvider>
+                        <CacheInvalidationProvider>
+                          <OrdersProvider>
+                            <LayoutProvider>
+                              <AppNavigator />
+                            </LayoutProvider>
+                          </OrdersProvider>
+                        </CacheInvalidationProvider>
+                      </BalanceProvider>
+                    </WatchlistProvider>
+                  </AlertsProvider>
+                </NotificationsProvider>
+              </HeaderProvider>
+            </PrivacyProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </LanguageProvider>
+    </SafeAreaProvider>
   )
 }
 
