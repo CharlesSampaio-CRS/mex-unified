@@ -7,6 +7,7 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
+import { useHeaderConfig } from "../contexts/HeaderContext"
 import { LogoIcon } from "./LogoIcon"
 import { IconSelectorModal } from "./IconSelectorModal"
 
@@ -93,6 +94,8 @@ const GridIcon = ({ color }: { color: string }) => (
 )
 
 interface HeaderProps {
+  /** Se true, usa HeaderContext (modo global no MainTabs). Se false/undefined, usa props diretas (modo legado). */
+  global?: boolean
   hideIcons?: boolean
   onNotificationsPress?: () => void
   unreadCount?: number
@@ -118,13 +121,14 @@ const UserIcon = ({ color }: { color: string }) => (
 )
 
 export const Header = memo(function Header({ 
-  hideIcons = false, 
-  onNotificationsPress, 
-  unreadCount = 0,
-  title,
-  subtitle,
-  selectedIcon,
-  onIconSelect,
+  global = false,
+  hideIcons: hideIconsProp = false, 
+  onNotificationsPress: onNotificationsProp, 
+  unreadCount: unreadCountProp = 0,
+  title: titleProp,
+  subtitle: subtitleProp,
+  selectedIcon: selectedIconProp,
+  onIconSelect: onIconSelectProp,
   navigation: navigationProp
 }: HeaderProps) {
   const { colors } = useTheme()
@@ -136,6 +140,17 @@ export const Header = memo(function Header({
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
   const [iconSelectorVisible, setIconSelectorVisible] = useState(false)
+
+  // Se global, lê do HeaderContext; senão, usa props diretas
+  const { config: headerConfig, titleOpacity } = useHeaderConfig()
+  
+  const title = global ? (headerConfig.title || 'MeX') : (titleProp || 'MeX')
+  const subtitle = global ? (headerConfig.subtitle || t('home.subtitle')) : (subtitleProp || t('home.subtitle'))
+  const onNotificationsPress = global ? headerConfig.onNotificationsPress : onNotificationsProp
+  const unreadCount = global ? (headerConfig.unreadCount ?? 0) : (unreadCountProp ?? 0)
+  const hideIcons = global ? (headerConfig.hideIcons ?? false) : hideIconsProp
+  const selectedIcon = global ? headerConfig.selectedIcon : selectedIconProp
+  const onIconSelect = global ? headerConfig.onIconSelect : onIconSelectProp
   
   // Gera as iniciais do usuário para o avatar
   const getUserInitials = () => {
@@ -167,14 +182,14 @@ export const Header = memo(function Header({
     <View style={[styles.header, { backgroundColor: colors.background }]}>
       <View style={styles.headerContent}>
         <LogoIcon size={24} />
-        <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {title || 'MeX'}
+        <Animated.View style={[styles.headerText, global ? { opacity: titleOpacity } : undefined]}>
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            {title}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {subtitle || t('home.subtitle')}
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+            {subtitle}
           </Text>
-        </View>
+        </Animated.View>
       </View>
 
       <Animated.View 

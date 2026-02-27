@@ -9,7 +9,7 @@ import { useBackendStrategies, Strategy, StrategyStatus } from "../hooks/useBack
 import { notify } from "../services/notify"
 import { CreateStrategyModal } from "../components/create-strategy-modal"
 import { StrategyDetailsModal } from "@/components/StrategyDetailsModal"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { NotificationsModal } from "../components/NotificationsModal"
 import { LogoIcon } from "../components/LogoIcon"
 import { typography, fontWeights } from "../lib/typography"
@@ -272,16 +272,16 @@ export function StrategyScreen({ navigation, route }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
+  // Define o Header global para esta tela
+  useHeader({
+    title: t('strategy.title'),
+    subtitle: `${strategiesCount} ${strategiesCount === 1 ? t('strategy.strategy') : t('strategy.strategies')}`,
+    onNotificationsPress,
+    unreadCount,
+  })
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header padronizado com título customizado */}
-      <Header 
-        title={t('strategy.title')}
-        subtitle={`${strategiesCount} ${strategiesCount === 1 ? t('strategy.strategy') : t('strategy.strategies')}`}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -620,7 +620,7 @@ export function StrategyScreen({ navigation, route }: any) {
         visible={notificationsModalVisible}
         onClose={() => setNotificationsModalVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   )
 }
 

@@ -9,8 +9,8 @@ import { usePrivacy } from '@/contexts/PrivacyContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useOrders } from '@/contexts/OrdersContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useHeader } from '@/contexts/HeaderContext';
 import { apiService } from '@/services/api';
-import { Header } from '@/components/Header';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { TokenDetailsModal } from '@/components/token-details-modal';
 import { TradeModal } from '@/components/trade-modal';
@@ -188,18 +188,19 @@ export function AssetsScreen({ navigation }: any) {
     return { totalValue, totalAssets };
   }, [allAssetsSections]);
 
+  // Define o Header global para esta tela
+  const assetsSubtitle = `${String(globalTotals.totalAssets)} ${String(globalTotals.totalAssets === 1 ? 'asset' : 'assets')} • ${String(hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`))}`;
+  useHeader({
+    title: 'Assets',
+    subtitle: assetsSubtitle,
+    onNotificationsPress,
+    unreadCount,
+  });
+
   const loading = balanceLoading;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Assets"
-        subtitle={`${String(globalTotals.totalAssets)} ${String(globalTotals.totalAssets === 1 ? 'asset' : 'assets')} • ${String(hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`))}`}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-        navigation={navigation}
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Filters Section */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         {/* Search Bar */}
@@ -507,7 +508,7 @@ export function AssetsScreen({ navigation }: any) {
         visible={notificationsModalVisible}
         onClose={() => setNotificationsModalVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

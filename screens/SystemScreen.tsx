@@ -16,7 +16,7 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useAuth } from "../contexts/AuthContext"
 import { useNotifications } from "../contexts/NotificationsContext"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { NotificationsModal } from "../components/NotificationsModal"
 import { LogoIcon } from "../components/LogoIcon"
 import { typography, fontWeights } from "../lib/typography"
@@ -119,15 +119,16 @@ export function SystemScreen({ navigation }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title={t('settings.systemTitle')}
-        subtitle={t('settings.subtitle')}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-      />
+  // Define o Header global para esta tela
+  useHeader({
+    title: t('settings.systemTitle'),
+    subtitle: t('settings.subtitle'),
+    onNotificationsPress,
+    unreadCount,
+  })
 
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={styles.content}
@@ -695,7 +696,7 @@ export function SystemScreen({ navigation }: any) {
           </ScrollView>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   )
 }
 

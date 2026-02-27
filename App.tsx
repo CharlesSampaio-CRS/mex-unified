@@ -2,7 +2,7 @@ import { NavigationContainer } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
-import { ActivityIndicator, View, LogBox } from "react-native"
+import { ActivityIndicator, View, SafeAreaView, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
 import Svg, { Path, Rect, Circle } from "react-native-svg"
 
@@ -69,6 +69,7 @@ import { TargetScreen } from "./screens/TargetScreen"
 import { FlagScreen } from "./screens/FlagScreen"
 import { ChartScreen } from "./screens/ChartScreen"
 import { StrategyTemplatesScreen } from "./screens/StrategyTemplatesScreen"
+import { Header } from "./components/Header"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
 import { BalanceProvider, useBalance } from "./contexts/BalanceContext"
@@ -80,6 +81,7 @@ import { PrivacyProvider } from "./contexts/PrivacyContext"
 import { NotificationsProvider } from "./contexts/NotificationsContext"
 import { AlertsProvider } from "./contexts/AlertsContext"
 import { WatchlistProvider } from "./contexts/WatchlistContext"
+import { HeaderProvider } from "./contexts/HeaderContext"
 import { LoadingProgress } from "./components/LoadingProgress"
 import { MaintenanceScreen } from "./components/MaintenanceScreen"
 
@@ -204,7 +206,11 @@ function MainTabs() {
   const { colors } = useTheme()
   
   return (
-    <Tab.Navigator
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Header GLOBAL - renderizado UMA vez, nunca remonta ao trocar de aba */}
+      <Header global />
+      
+      <Tab.Navigator
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
@@ -390,6 +396,7 @@ function MainTabs() {
           }}
         />
       </Tab.Navigator>
+    </SafeAreaView>
   )
 }
 
@@ -447,21 +454,23 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <PrivacyProvider>
-            <NotificationsProvider>
-              <AlertsProvider>
-                <WatchlistProvider>
-                  <BalanceProvider>
-                    <CacheInvalidationProvider>
-                      <OrdersProvider>
-                        <LayoutProvider>
-                          <AppNavigator />
-                        </LayoutProvider>
-                      </OrdersProvider>
-                    </CacheInvalidationProvider>
-                  </BalanceProvider>
-                </WatchlistProvider>
-              </AlertsProvider>
-            </NotificationsProvider>
+            <HeaderProvider>
+              <NotificationsProvider>
+                <AlertsProvider>
+                  <WatchlistProvider>
+                    <BalanceProvider>
+                      <CacheInvalidationProvider>
+                        <OrdersProvider>
+                          <LayoutProvider>
+                            <AppNavigator />
+                          </LayoutProvider>
+                        </OrdersProvider>
+                      </CacheInvalidationProvider>
+                    </BalanceProvider>
+                  </WatchlistProvider>
+                </AlertsProvider>
+              </NotificationsProvider>
+            </HeaderProvider>
           </PrivacyProvider>
         </AuthProvider>
       </ThemeProvider>

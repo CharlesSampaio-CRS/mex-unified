@@ -1,19 +1,16 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native"
+import { View, Text, StyleSheet, ScrollView } from "react-native"
 import { memo } from "react"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
 
 export const FlagScreen = memo(function FlagScreen({ navigation }: any) {
   const { colors } = useTheme()
 
+  useHeader({ title: "Flag", subtitle: "Recurso Flag" })
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Flag"
-        subtitle="Recurso Flag"
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.content}>
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>🚩 Flag Feature</Text>
@@ -30,7 +27,7 @@ export const FlagScreen = memo(function FlagScreen({ navigation }: any) {
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Warning signals</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   )
 })
 

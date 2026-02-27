@@ -10,7 +10,7 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { notify } from '@/services/notify';
-import { Header } from '@/components/Header';
+import { useHeader } from '@/contexts/HeaderContext';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { OrderDetailsModal } from '@/components/order-details-modal';
 import { ConfirmModal } from '@/components/ConfirmModal';
@@ -176,6 +176,15 @@ export function OrdersScreen({ navigation }: any) {
     
     return { count, value };
   }, [filteredSections]);
+
+  // Define o Header global para esta tela
+  const ordersSubtitle = `${String(totals.count)} ${totals.count === 1 ? 'order' : 'orders'} • ${String(hideValue(`$${apiService.formatUSD(totals.value)}`))}`;
+  useHeader({
+    title: 'Orders',
+    subtitle: ordersSubtitle,
+    onNotificationsPress,
+    unreadCount,
+  });
 
   const handleOrderPress = useCallback((order: OpenOrder) => {
     setSelectedOrder(order);
@@ -451,15 +460,7 @@ export function OrdersScreen({ navigation }: any) {
   }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder, tokenPrices]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Orders"
-        subtitle={`${String(totals.count)} ${totals.count === 1 ? 'order' : 'orders'} • ${String(hideValue(`$${apiService.formatUSD(totals.value)}`))}`}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-        navigation={navigation}
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Filters */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         {/* Search */}
@@ -622,7 +623,7 @@ export function OrdersScreen({ navigation }: any) {
         confirmColor="#ef4444"
         icon="⚠️"
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
