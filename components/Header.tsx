@@ -265,9 +265,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,                    // Reduzido
+    flex: 1,
+    flexShrink: 1,
   },
   headerText: {
     flexDirection: "column",
+    flex: 1,
+    flexShrink: 1,
   },
   title: {
     fontSize: typography.h3,
