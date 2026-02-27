@@ -367,30 +367,30 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
-    padding: 20,                // Reduzido de 28 para 20 (mais compacto)
-    marginBottom: 25,           // Espaço pequeno do menu
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   content: {
-    gap: 16,                    // Reduzido de 20 para 16 (mais compacto)
+    gap: 10,
   },
   title: {
-    fontSize: typography.caption, // h3→caption (12-13px, igual PortfolioOverview)
-    fontWeight: fontWeights.regular, // medium→regular (igual PortfolioOverview)
-    letterSpacing: 0.5, // 0.3→0.5 (igual PortfolioOverview)
-    opacity: 0.5, // Adiciona opacidade (igual PortfolioOverview)
+    fontSize: 11,
+    fontWeight: fontWeights.regular,
+    letterSpacing: 0.5,
+    opacity: 0.5,
   },
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     alignSelf: 'center',
-    paddingVertical: 6,         // Reduzido de 10 para 6 (mais compacto)
+    paddingVertical: 4,
     width: '100%',
     overflow: 'hidden',
   },
@@ -420,20 +420,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   legend: {
-    gap: 2,                     // Reduzido para diminuir altura
+    gap: 1,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,                     // Reduzido para diminuir altura
-    minHeight: 28,              // Reduzido para diminuir altura
-    paddingVertical: 2,
+    gap: 6,
+    minHeight: 24,
+    paddingVertical: 1,
     width: '100%',
   },
   exchangeIconContainer: {
-    width: 32, // 22→32
-    height: 32, // 22→32
-    borderRadius: 16, // 11→16
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -442,13 +442,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.05)',
   },
   exchangeIcon: {
-    width: 28, // 20→28
-    height: 28, // 20→28
+    width: 20,
+    height: 20,
   },
   legendColor: {
-    width: 16, // 12→16
-    height: 16, // 12→16
-    borderRadius: 8, // 6→8
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   legendTextContainer: {
     flex: 1,
@@ -459,14 +459,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   legendName: {
-    fontSize: typography.caption, // Reduzido de body (16px) para caption (14px)
+    fontSize: 12,
     fontWeight: fontWeights.medium,
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
   },
   legendPercentage: {
-    fontSize: typography.caption, // Reduzido de body (16px) para caption (14px)
+    fontSize: 12,
     fontWeight: fontWeights.medium,
     minWidth: 40,
     maxWidth: 64,
@@ -482,9 +482,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   selectedIndicator: {
-    width: 10, // 8→10
-    height: 10, // 8→10
-    borderRadius: 5, // 4→5
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   emptyState: {
     paddingVertical: 32,
@@ -502,18 +502,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   legendContainer: {
-    gap: 6,                     // Igual ao legend (6px)
+    gap: 4,
   },
   skeletonLegendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    minHeight: 40,
+    gap: 8,
+    minHeight: 28,
   },
   skeletonColor: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     opacity: 0.3,
   },
   skeletonText: {
