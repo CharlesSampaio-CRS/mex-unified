@@ -249,7 +249,7 @@ export function StrategyDetailsModal({
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.quantity') || 'Quantity'}</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{pos.quantity.toFixed(6)}</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{(pos.quantity ?? 0).toFixed(6)}</Text>
           </View>
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
@@ -259,8 +259,8 @@ export function StrategyDetailsModal({
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.unrealizedPnl') || 'Unrealized P&L'}</Text>
-            <Text style={[styles.infoValue, { color: pos.unrealized_pnl >= 0 ? '#10b981' : '#ef4444' }]}>
-              {formatCurrency(pos.unrealized_pnl)} ({pos.unrealized_pnl_percent >= 0 ? '+' : ''}{pos.unrealized_pnl_percent.toFixed(2)}%)
+            <Text style={[styles.infoValue, { color: (pos.unrealized_pnl ?? 0) >= 0 ? '#10b981' : '#ef4444' }]}>
+              {formatCurrency(pos.unrealized_pnl)} ({(pos.unrealized_pnl_percent ?? 0) >= 0 ? '+' : ''}{(pos.unrealized_pnl_percent ?? 0).toFixed(2)}%)
             </Text>
           </View>
         </View>
@@ -290,22 +290,24 @@ export function StrategyDetailsModal({
               <View style={styles.statsRow}>
                 <View style={styles.statsCell}>
                   <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>{t('strategy.winRate') || 'Win Rate'}</Text>
-                  <Text style={[styles.statsValue, { color: colors.text }]}>{(stats.win_rate * 100).toFixed(1)}%</Text>
+                  <Text style={[styles.statsValue, { color: colors.text }]}>{(stats.win_rate ?? 0).toFixed(1)}%</Text>
                 </View>
                 <View style={styles.statsCell}>
                   <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>{t('strategy.totalSells') || 'Total Sells'}</Text>
-                  <Text style={[styles.statsValue, { color: colors.text }]}>{stats.total_sells}</Text>
+                  <Text style={[styles.statsValue, { color: colors.text }]}>{stats.total_sells ?? 0}</Text>
                 </View>
               </View>
               <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
               <View style={styles.statsRow}>
                 <View style={styles.statsCell}>
                   <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>{t('strategy.totalFees') || 'Total Fees'}</Text>
-                  <Text style={[styles.statsValue, { color: colors.textSecondary }]}>${stats.total_fees.toFixed(2)}</Text>
+                  <Text style={[styles.statsValue, { color: colors.textSecondary }]}>${(stats.total_fees ?? 0).toFixed(2)}</Text>
                 </View>
                 <View style={styles.statsCell}>
                   <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>{t('strategy.currentPosition') || 'Position'}</Text>
-                  <Text style={[styles.statsValue, { color: colors.text }]}>${stats.current_position.toFixed(2)}</Text>
+                  <Text style={[styles.statsValue, { color: colors.text }]}>
+                    {stats.current_position ? `${stats.current_position.quantity?.toFixed(6) ?? '0'}` : 'None'}
+                  </Text>
                 </View>
               </View>
             </>
@@ -487,8 +489,8 @@ export function StrategyDetailsModal({
                 <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatDate(exec.executed_at)}</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <Text style={{ fontSize: 12, color: colors.textSecondary }}>{exec.amount.toFixed(6)} @ {formatCurrencyAbs(exec.price)}</Text>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: exec.pnl_usd >= 0 ? '#10b981' : '#ef4444' }}>{formatCurrency(exec.pnl_usd)}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>{(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: (exec.pnl_usd ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>{formatCurrency(exec.pnl_usd)}</Text>
               </View>
               {exec.error_message ? <Text style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{exec.error_message}</Text> : null}
               {exec.reason ? <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>{exec.reason}</Text> : null}
@@ -532,7 +534,7 @@ export function StrategyDetailsModal({
               <Text style={{ fontSize: 12, color: colors.text, marginTop: 6 }}>{sig.message}</Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
                 <Text style={{ fontSize: 11, color: colors.textSecondary }}>Price: {formatCurrencyAbs(sig.price)}</Text>
-                <Text style={{ fontSize: 11, color: sig.price_change_percent >= 0 ? '#10b981' : '#ef4444' }}>{sig.price_change_percent >= 0 ? '+' : ''}{sig.price_change_percent.toFixed(2)}%</Text>
+                <Text style={{ fontSize: 11, color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>{(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%</Text>
               </View>
             </View>
           )
