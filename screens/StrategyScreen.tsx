@@ -336,7 +336,7 @@ export function StrategyScreen({ navigation, route }: any) {
                     </Text>
                     <View style={[styles.typeBadge, { backgroundColor: colors.surfaceSecondary }]}>
                       <Text style={[styles.typeText, { color: colors.primary }]}>
-                        {strategy.strategy_type}
+                        {(strategy as any).strategy_type || 'Custom'}
                       </Text>
                     </View>
                   </View>
@@ -382,7 +382,7 @@ export function StrategyScreen({ navigation, route }: any) {
                   {strategy.last_price != null && strategy.last_price > 0 && (
                     <View style={styles.detailRow}>
                       <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                        {t('strategy.lastPrice') || 'Last Price'}:
+                        {t('strategy.lastPrice') || 'Último Preço'}:
                       </Text>
                       <Text style={[styles.detailValue, { color: colors.text }]}>
                         {formatCurrencyAbs(strategy.last_price)}
@@ -392,7 +392,7 @@ export function StrategyScreen({ navigation, route }: any) {
 
                   <View style={styles.detailRow}>
                     <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      {t('strategy.totalTrades') || 'Total Trades'}:
+                      {t('strategy.totalTrades') || 'Execuções'}:
                     </Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>
                       {strategy.total_executions}
@@ -401,7 +401,7 @@ export function StrategyScreen({ navigation, route }: any) {
                   
                   <View style={styles.detailRow}>
                     <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      {t('strategy.profitLoss') || 'P&L'}:
+                      {t('strategy.profitLoss') || 'Lucro/Perda'}:
                     </Text>
                     <Text style={[
                       styles.detailValue, 
@@ -414,7 +414,7 @@ export function StrategyScreen({ navigation, route }: any) {
                   {strategy.position && (
                     <View style={styles.detailRow}>
                       <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                        {t('strategy.unrealizedPnl') || 'Unrealized P&L'}:
+                        {t('strategy.unrealizedPnl') || 'PnL Não Realizado'}:
                       </Text>
                       <Text style={[
                         styles.detailValue, 
