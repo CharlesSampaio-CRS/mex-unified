@@ -615,43 +615,38 @@ const styles = StyleSheet.create({
   // PNL Cards Row - Cards lado a lado (compactos)
   pnlCardsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
-    marginBottom: 12,
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 8,
   },
   pnlCard: {
     flex: 1,
-    paddingVertical: 10,        // +25% padding vertical (mais espaço)
-    paddingHorizontal: 12,      // +20% padding horizontal
-    borderRadius: 12,           // +20% border radius (mais arredondado)
+    padding: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
     alignItems: 'center',
-    gap: 4,
-    shadowColor: '#000',        // adiciona sombra sutil
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    gap: 2,
   },
   pnlCardLabel: {
-    fontSize: 10,  // Label card (reduzido de 12px)
+    fontSize: 9,
     fontWeight: fontWeights.medium,
     opacity: 0.5,
   },
   pnlCardContent: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 4,
+    gap: 3,
   },
   pnlCardArrow: {
-    fontSize: 12,  // Seta card (reduzido de 14px)
+    fontSize: 10,
     fontWeight: fontWeights.semibold,
   },
   pnlCardValue: {
-    fontSize: 12,  // Valor card (reduzido de 14px)
+    fontSize: 11,
     fontWeight: fontWeights.semibold,
   },
   pnlCardPercent: {
-    fontSize: 11,  // Percentual card (reduzido de 13px)
+    fontSize: 10,
     fontWeight: fontWeights.regular,
     opacity: 0.7,
   },
