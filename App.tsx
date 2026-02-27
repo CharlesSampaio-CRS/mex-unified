@@ -2,8 +2,9 @@ import { NavigationContainer } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
-import { ActivityIndicator, View, SafeAreaView, LogBox } from "react-native"
+import { ActivityIndicator, View, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
+import { SafeAreaView } from "react-native-safe-area-context"
 import Svg, { Path, Rect, Circle } from "react-native-svg"
 
 // 🔥 ERROR HANDLER GLOBAL - Captura TODOS os erros não tratados
@@ -206,7 +207,7 @@ function MainTabs() {
   const { colors } = useTheme()
   
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       {/* Header GLOBAL - renderizado UMA vez, nunca remonta ao trocar de aba */}
       <Header global />
       
@@ -217,8 +218,8 @@ function MainTabs() {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
             borderTopWidth: 0.5,
-            height: 56,
-            paddingBottom: 6,
+            height: 70,
+            paddingBottom: 16,
             paddingTop: 6,
             paddingHorizontal: 12,
             elevation: 0,
