@@ -222,7 +222,7 @@ export const Header = memo(function Header({
         {/* User Avatar - Abre perfil direto */}
         <TouchableOpacity 
           style={[styles.userAvatar, { backgroundColor: colors.primary, borderColor: colors.border }]}
-          onPress={() => navigation?.navigate('Settings', { tab: 'profile' })}
+          onPress={() => navigation?.navigate('Profile')}
           activeOpacity={0.7}
         >
           {user?.avatar ? (
@@ -240,9 +240,9 @@ export const Header = memo(function Header({
         selectedIconId={selectedIcon}
         onNavigate={(screenName) => {
           setIconSelectorVisible(false)
-          // Settings icon navega com tab: system
+          // Settings icon navega para System screen
           if (screenName === 'Settings') {
-            navigation?.navigate('Settings', { tab: 'system' })
+            navigation?.navigate('System')
           } else {
             navigation?.navigate(screenName)
           }

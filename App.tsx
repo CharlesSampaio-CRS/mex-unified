@@ -51,6 +51,8 @@ import { OrdersScreen } from "./screens/OrdersScreen"
 import { ExchangesScreen } from "./screens/ExchangesScreen"
 import { StrategyScreen } from "./screens/StrategyScreen"
 import { SettingsScreen } from "./screens/SettingsScreen"
+import { ProfileScreen } from "./screens/ProfileScreen"
+import { SystemScreen } from "./screens/SystemScreen"
 import { LoginScreen } from "./screens/LoginScreen"
 import { SignUpScreen } from "./screens/SignUpScreen"
 import { WatchlistManager } from "./components/WatchlistManager"
@@ -280,6 +282,20 @@ function MainTabs() {
           component={SettingsScreen}
           options={{
             tabBarButton: () => null, // Oculta da navegação inferior
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="System"
+          component={SystemScreen}
+          options={{
+            tabBarButton: () => null,
           }}
         />
         <Tab.Screen
