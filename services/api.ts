@@ -65,6 +65,75 @@ const TIMEOUTS = {
 
 const MAX_RETRIES = 2;
 
+// ==================== SILENT TOKEN REFRESH (401 INTERCEPTOR) ====================
+
+/**
+ * Mutex para evitar múltiplos refreshes simultâneos.
+ * Se uma request detecta 401 e inicia refresh, as demais aguardam o resultado.
+ */
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+/**
+ * Tenta renovar o access_token silenciosamente usando o refresh_token.
+ * Usa mutex para garantir que apenas UM refresh ocorra por vez.
+ * @returns Novo access_token ou null se falhou
+ */
+async function silentTokenRefresh(): Promise<string | null> {
+  // Se já está refreshando, aguarda o resultado existente
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = await secureStorage.getItemAsync('refresh_token');
+      if (!refreshToken) {
+        console.log('🔇 [Silent Refresh] Sem refresh token - ignorando');
+        return null;
+      }
+
+      console.log('🔄 [Silent Refresh] Renovando access token...');
+      const response = await fetch(`${config.kongBaseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (!response.ok) {
+        console.log(`🔇 [Silent Refresh] Refresh falhou: ${response.status} - limpando sessão`);
+        // Refresh token expirado → limpa tokens (forçará re-login)
+        await secureStorage.deleteItemAsync('access_token');
+        await secureStorage.deleteItemAsync('refresh_token');
+        return null;
+      }
+
+      const data = await response.json();
+      const newAccessToken = data.token || data.access_token;
+
+      if (newAccessToken) {
+        await secureStorage.setItemAsync('access_token', newAccessToken);
+        console.log('✅ [Silent Refresh] Access token renovado');
+      }
+      if (data.refresh_token) {
+        await secureStorage.setItemAsync('refresh_token', data.refresh_token);
+        console.log('✅ [Silent Refresh] Refresh token também renovado');
+      }
+
+      return newAccessToken || null;
+    } catch (error) {
+      console.error('🔇 [Silent Refresh] Erro ao renovar token:', error);
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 // Helper para obter o token de autenticação
 async function getAuthHeaders(): Promise<HeadersInit> {
   try {
@@ -83,7 +152,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   };
 }
 
-// Helper para adicionar timeout às requisições com retry
+// Helper para adicionar timeout às requisições com retry + refresh automático em 401
 async function fetchWithTimeout(
   url: string, 
   options: RequestInit = {}, 
@@ -113,6 +182,36 @@ async function fetchWithTimeout(
       );
       
       const response = await Promise.race([fetchPromise, timeoutPromise]);
+
+      // 🔄 SILENT 401 INTERCEPTOR: Se recebeu 401, tenta refresh UMA vez
+      if (response.status === 401) {
+        console.log(`🔇 [401 Interceptor] Token expirado em ${url.split('/').slice(-2).join('/')} - tentando refresh silencioso...`);
+        const newToken = await silentTokenRefresh();
+
+        if (newToken) {
+          // ✅ Refresh OK → repete a request com o novo token
+          const retryOptions: RequestInit = {
+            ...mergedOptions,
+            headers: {
+              ...mergedOptions.headers,
+              'Authorization': `Bearer ${newToken}`,
+            },
+          };
+
+          const retryFetch = fetch(url, retryOptions);
+          const retryTimeout = new Promise<Response>((_, reject) =>
+            setTimeout(() => reject(new Error(`Request timeout after ${timeout}ms`)), timeout)
+          );
+
+          const retryResponse = await Promise.race([retryFetch, retryTimeout]);
+          return retryResponse;
+        }
+
+        // ❌ Refresh falhou → retorna o 401 original (AuthContext cuidará do logout)
+        console.log('🔇 [401 Interceptor] Refresh falhou - retornando 401');
+        return response;
+      }
+
       return response;
     } catch (error: any) {
       if (error.name === 'AbortError') {
