@@ -178,7 +178,7 @@ export function OrdersScreen({ navigation }: any) {
   }, [filteredSections]);
 
   // Define o Header global para esta tela
-  const ordersSubtitle = `${String(totals.count)} ${totals.count === 1 ? 'order' : 'orders'} • ${String(hideValue(`$${apiService.formatUSD(totals.value)}`))}`;
+  const ordersSubtitle = `${String(totals.count)} open ${totals.count === 1 ? 'order' : 'orders'}`;
   useHeader({
     title: 'Orders',
     subtitle: ordersSubtitle,
