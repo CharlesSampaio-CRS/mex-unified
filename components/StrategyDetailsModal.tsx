@@ -46,7 +46,19 @@ export function StrategyDetailsModal({
   const [ticking, setTicking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'executions' | 'signals'>('overview')
-  const [tickResult, setTickResult] = useState<{ success: boolean; error?: string; price?: number; signals_count?: number; executions_count?: number; new_status?: string } | null>(null)
+  const [tickResult, setTickResult] = useState<{
+    success: boolean;
+    error?: string;
+    price?: number;
+    signals_count?: number;
+    executions_count?: number;
+    new_status?: string;
+    summary?: string;
+    signals?: Array<{ signal_type: string; price: number; message: string; acted: boolean; price_change_percent: number; created_at: number }>;
+    executions?: Array<{ execution_id: string; action: string; reason: string; price: number; amount: number; pnl_usd: number; fee: number; error_message?: string; executed_at: number }>;
+    acted_count?: number;
+    info_count?: number;
+  } | null>(null)
   const [expandedError, setExpandedError] = useState(false)
   const [expandedTickResult, setExpandedTickResult] = useState(false)
 
@@ -120,10 +132,15 @@ export function StrategyDetailsModal({
           signals_count: tick.signals_count || 0,
           executions_count: tick.executions_count || 0,
           new_status: tick.new_status || undefined,
+          summary: tick.summary || undefined,
+          signals: tick.signals || [],
+          executions: tick.executions || [],
+          acted_count: tick.acted_count || 0,
+          info_count: tick.info_count || 0,
         }
         setTickResult(tickInfo)
-        // Auto-expand if there's an error
-        if (tick.error) {
+        // Auto-expand if there's an error or an execution happened
+        if (tick.error || tick.executions_count > 0) {
           setExpandedTickResult(true)
         }
         console.log('⚡ [Tick result]', tickInfo)
@@ -189,14 +206,14 @@ export function StrategyDetailsModal({
     return map[status] || map.idle
   }
 
-  const getExecutionLabel = (action: string): { text: string; color: string } => {
-    const map: Record<string, { text: string; color: string }> = {
-      buy: { text: t('strategy.execBuy') || 'Buy', color: '#10b981' },
-      sell: { text: t('strategy.execSell') || 'Sell', color: '#ef4444' },
-      buy_failed: { text: t('strategy.execFailed') || 'Buy Failed', color: '#ef4444' },
-      sell_failed: { text: t('strategy.execFailed') || 'Sell Failed', color: '#ef4444' },
+  const getExecutionLabel = (action: string): { text: string; color: string; emoji: string } => {
+    const map: Record<string, { text: string; color: string; emoji: string }> = {
+      buy: { text: 'Compra', color: '#10b981', emoji: '📥' },
+      sell: { text: 'Venda', color: '#f59e0b', emoji: '📤' },
+      buy_failed: { text: 'Compra Falhou', color: '#ef4444', emoji: '❌' },
+      sell_failed: { text: 'Venda Falhou', color: '#ef4444', emoji: '❌' },
     }
-    return map[action] || { text: action, color: colors.textSecondary }
+    return map[action] || { text: action, color: colors.textSecondary, emoji: '📊' }
   }
 
   const formatDate = (ts: number | undefined): string => {
@@ -411,7 +428,7 @@ export function StrategyDetailsModal({
               <View style={styles.infoRow}>
                 <View style={styles.infoLeft}>
                   <Text style={{ fontSize: 16 }}>�</Text>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.lastPrice') || 'Last Price'}</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.lastPrice') || 'Último Preço'}</Text>
                 </View>
                 <Text style={[styles.infoValue, { color: colors.text }]}>{formatCurrencyAbs(strategy.last_price)}</Text>
               </View>
@@ -472,28 +489,82 @@ export function StrategyDetailsModal({
       return (
         <View style={styles.emptyContainer}>
           <Text style={{ fontSize: 40, marginBottom: 12 }}>📊</Text>
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('strategy.noExecutions') || 'No executions yet'}</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('strategy.noExecutions') || 'Nenhuma execução ainda'}</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, textAlign: 'center', paddingHorizontal: 24 }}>
+            Execuções aparecem quando o sistema executa ordens de venda na exchange (take profit, stop loss ou venda gradual).
+          </Text>
         </View>
       )
     }
+
+    const getReasonLabel = (reason: string): string => {
+      const map: Record<string, string> = {
+        'take_profit': '🎯 Take Profit',
+        'stop_loss': '🛑 Stop Loss',
+        'gradual_sell': '📈 Venda Gradual',
+      }
+      // Handle prefixed reasons like "sell_failed: ..."
+      if (reason.startsWith('sell_failed:')) return '❌ ' + reason.replace('sell_failed:', '').trim()
+      if (reason.startsWith('stop_loss_failed:')) return '🛑❌ ' + reason.replace('stop_loss_failed:', '').trim()
+      return map[reason] || reason.replace(/_/g, ' ')
+    }
+
     return (
       <View style={{ paddingTop: 16 }}>
-        {execs.slice(0, 20).map((exec, idx) => {
+        {execs.slice(0, 30).map((exec, idx) => {
           const label = getExecutionLabel(exec.action)
+          const isFailure = exec.action === 'sell_failed' || exec.action === 'buy_failed'
+          const pnlColor = isFailure ? '#ef4444' : (exec.pnl_usd ?? 0) >= 0 ? '#10b981' : '#ef4444'
           return (
-            <View key={exec.execution_id || idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View key={exec.execution_id || idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: label.color }]}>
+              {/* Header: Tipo + Data */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={[styles.execBadge, { backgroundColor: label.color + '18' }]}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: label.color }}>{label.text}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: label.color }}>{label.emoji} {label.text}</Text>
                 </View>
                 <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatDate(exec.executed_at)}</Text>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <Text style={{ fontSize: 12, color: colors.textSecondary }}>{(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}</Text>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: (exec.pnl_usd ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>{formatCurrency(exec.pnl_usd)}</Text>
+
+              {/* Quantidade e Preço */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, alignItems: 'center' }}>
+                <View>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                    {(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}
+                  </Text>
+                  {exec.fee != null && exec.fee > 0 && (
+                    <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 2 }}>Fee: ${exec.fee.toFixed(4)}</Text>
+                  )}
+                </View>
+                {!isFailure && (
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: pnlColor }}>{formatCurrency(exec.pnl_usd)}</Text>
+                    <Text style={{ fontSize: 10, color: pnlColor }}>{(exec.pnl_usd ?? 0) >= 0 ? 'Lucro' : 'Perda'}</Text>
+                  </View>
+                )}
               </View>
-              {exec.error_message ? <Text style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{exec.error_message}</Text> : null}
-              {exec.reason ? <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>{exec.reason}</Text> : null}
+
+              {/* Motivo */}
+              {exec.reason && (
+                <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border + '40' }}>
+                  <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                    {getReasonLabel(exec.reason)}
+                  </Text>
+                </View>
+              )}
+
+              {/* Erro (se falhou) */}
+              {exec.error_message && (
+                <View style={{ marginTop: 6, padding: 8, backgroundColor: 'rgba(239, 68, 68, 0.06)', borderRadius: 6 }}>
+                  <Text style={{ fontSize: 11, color: '#ef4444' }}>⚠️ {exec.error_message}</Text>
+                </View>
+              )}
+
+              {/* Exchange Order ID */}
+              {exec.exchange_order_id && (
+                <Text style={{ fontSize: 10, color: colors.textSecondary + '80', marginTop: 4 }}>
+                  ID: {exec.exchange_order_id}
+                </Text>
+              )}
             </View>
           )
         })}
@@ -507,10 +578,19 @@ export function StrategyDetailsModal({
       return (
         <View style={styles.emptyContainer}>
           <Text style={{ fontSize: 40, marginBottom: 12 }}>📡</Text>
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('strategy.noSignals') || 'No signals yet'}</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('strategy.noSignals') || 'Nenhum sinal ainda'}</Text>
         </View>
       )
     }
+
+    const signalTypeLabels: Record<string, { label: string; emoji: string }> = {
+      take_profit: { label: 'TAKE PROFIT', emoji: '🎯' },
+      stop_loss: { label: 'STOP LOSS', emoji: '🛑' },
+      gradual_sell: { label: 'VENDA GRADUAL', emoji: '📈' },
+      expired: { label: 'EXPIRADO', emoji: '⏰' },
+      info: { label: 'INFORMAÇÃO', emoji: '👁️' },
+    }
+
     return (
       <View style={{ paddingTop: 16 }}>
         {sigs.slice(0, 30).map((sig, idx) => {
@@ -520,21 +600,28 @@ export function StrategyDetailsModal({
             info: '#6b7280'
           }
           const sigColor = sigColors[sig.signal_type] || colors.textSecondary
+          const typeInfo = signalTypeLabels[sig.signal_type] || { label: sig.signal_type.toUpperCase(), emoji: '📡' }
           return (
-            <View key={idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View key={idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: sigColor }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={[styles.execBadge, { backgroundColor: sigColor + '18' }]}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: sigColor }}>{sig.signal_type.replace('_', ' ').toUpperCase()}</Text>
-                </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  {sig.acted && <Text style={{ fontSize: 10, color: '#10b981', fontWeight: '600' }}>ACTED</Text>}
-                  <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatDate(sig.created_at)}</Text>
+                  <View style={[styles.execBadge, { backgroundColor: sigColor + '18' }]}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: sigColor }}>{typeInfo.emoji} {typeInfo.label}</Text>
+                  </View>
+                  {sig.acted && (
+                    <View style={{ backgroundColor: '#10b981', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                      <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>EXECUTADO</Text>
+                    </View>
+                  )}
                 </View>
+                <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatDate(sig.created_at)}</Text>
               </View>
-              <Text style={{ fontSize: 12, color: colors.text, marginTop: 6 }}>{sig.message}</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                <Text style={{ fontSize: 11, color: colors.textSecondary }}>Price: {formatCurrencyAbs(sig.price)}</Text>
-                <Text style={{ fontSize: 11, color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>{(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%</Text>
+              <Text style={{ fontSize: 12, color: colors.text, marginTop: 6, lineHeight: 18 }}>{sig.message}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border + '40' }}>
+                <Text style={{ fontSize: 11, color: colors.textSecondary }}>💰 Preço: {formatCurrencyAbs(sig.price)}</Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>
+                  {(sig.price_change_percent ?? 0) >= 0 ? '▲' : '▼'} {(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%
+                </Text>
               </View>
             </View>
           )
@@ -562,7 +649,7 @@ export function StrategyDetailsModal({
             <>
               <View style={[styles.dateDivider, { backgroundColor: colors.border }]} />
               <View style={styles.dateRow}>
-                <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>{t('strategy.lastChecked') || 'Last Checked'}</Text>
+                <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>{t('strategy.lastChecked') || 'Última Verificação'}</Text>
                 <Text style={[styles.dateValue, { color: colors.text }]}>{formatDate(strategy.last_checked_at)}</Text>
               </View>
             </>
@@ -585,10 +672,12 @@ export function StrategyDetailsModal({
 
   const renderTabBar = () => {
     if (!strategy) return null
+    const execCount = (strategy as StrategyDetail)?.executions?.length || 0
+    const sigCount = (strategy as StrategyDetail)?.signals?.length || 0
     const tabs = [
-      { key: 'overview' as const, label: t('strategy.overview') || 'Overview' },
-      { key: 'executions' as const, label: `${t('strategy.executions') || 'Executions'} (${(strategy as StrategyDetail)?.executions?.length || 0})` },
-      { key: 'signals' as const, label: `${t('strategy.signals') || 'Signals'} (${(strategy as StrategyDetail)?.signals?.length || 0})` },
+      { key: 'overview' as const, label: t('strategy.overview') || 'Visão Geral' },
+      { key: 'executions' as const, label: `${t('strategy.executions') || 'Execuções'} (${execCount})` },
+      { key: 'signals' as const, label: `${t('strategy.signals') || 'Sinais'} (${sigCount})` },
     ]
     return (
       <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
@@ -646,38 +735,154 @@ export function StrategyDetailsModal({
               {tickResult && (
                 <TouchableOpacity
                   style={[styles.tickResultBanner, {
-                    backgroundColor: tickResult.success ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                    borderColor: tickResult.success ? '#10b981' : '#ef4444',
+                    backgroundColor: tickResult.error
+                      ? 'rgba(239, 68, 68, 0.08)'
+                      : (tickResult.executions_count ?? 0) > 0
+                        ? 'rgba(245, 158, 11, 0.08)'
+                        : 'rgba(16, 185, 129, 0.08)',
+                    borderColor: tickResult.error
+                      ? '#ef4444'
+                      : (tickResult.executions_count ?? 0) > 0
+                        ? '#f59e0b'
+                        : '#10b981',
                   }]}
                   onPress={() => setExpandedTickResult(!expandedTickResult)}
                   activeOpacity={0.7}
                 >
+                  {/* ── Resumo compacto ── */}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                      <Text style={{ fontSize: 16 }}>{tickResult.success ? '✅' : '❌'}</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: tickResult.success ? '#10b981' : '#ef4444' }}>
-                        {tickResult.success ? 'Tick executado com sucesso' : 'Tick com erro'}
+                      <Text style={{ fontSize: 16 }}>
+                        {tickResult.error ? '❌' : (tickResult.executions_count ?? 0) > 0 ? '⚡' : '✅'}
+                      </Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: tickResult.error ? '#ef4444' : (tickResult.executions_count ?? 0) > 0 ? '#f59e0b' : '#10b981' }} numberOfLines={expandedTickResult ? undefined : 1}>
+                        {tickResult.summary || (tickResult.error ? 'Tick com erro' : 'Tick executado')}
                       </Text>
                     </View>
                     <Text style={{ fontSize: 12, color: colors.textSecondary }}>{expandedTickResult ? '▲' : '▼'}</Text>
                   </View>
+
+                  {/* ── Detalhes expandidos ── */}
                   {expandedTickResult && (
-                    <View style={{ marginTop: 10, gap: 4 }}>
+                    <View style={{ marginTop: 10, gap: 6 }}>
+                      {/* Preço atual */}
                       {tickResult.price != null && tickResult.price > 0 && (
-                        <Text style={{ fontSize: 12, color: colors.text }}>💰 Price: {formatCurrencyAbs(tickResult.price)}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={{ fontSize: 12, color: colors.textSecondary }}>💰 Preço atual:</Text>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>{formatCurrencyAbs(tickResult.price)}</Text>
+                        </View>
                       )}
-                      {tickResult.signals_count != null && (
-                        <Text style={{ fontSize: 12, color: colors.text }}>📡 Signals: {tickResult.signals_count}</Text>
-                      )}
-                      {tickResult.executions_count != null && (
-                        <Text style={{ fontSize: 12, color: colors.text }}>⚡ Executions: {tickResult.executions_count}</Text>
-                      )}
+
+                      {/* Contadores resumo */}
+                      <View style={{ flexDirection: 'row', gap: 16, marginTop: 2 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Text style={{ fontSize: 11, color: colors.textSecondary }}>📡 Sinais:</Text>
+                          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text }}>{tickResult.signals_count ?? 0}</Text>
+                        </View>
+                        {(tickResult.acted_count ?? 0) > 0 && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={{ fontSize: 11, color: '#f59e0b' }}>🎯 Executados:</Text>
+                            <Text style={{ fontSize: 12, fontWeight: '600', color: '#f59e0b' }}>{tickResult.acted_count}</Text>
+                          </View>
+                        )}
+                        {(tickResult.executions_count ?? 0) > 0 && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={{ fontSize: 11, color: '#f59e0b' }}>⚡ Ordens:</Text>
+                            <Text style={{ fontSize: 12, fontWeight: '600', color: '#f59e0b' }}>{tickResult.executions_count}</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Status alterado */}
                       {tickResult.new_status && (
-                        <Text style={{ fontSize: 12, color: colors.text }}>🔄 New Status: {tickResult.new_status}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                          <Text style={{ fontSize: 12, color: '#8b5cf6' }}>🔄 Novo status:</Text>
+                          <Text style={{ fontSize: 12, fontWeight: '600', color: '#8b5cf6' }}>
+                            {getStatusLabel(tickResult.new_status as StrategyStatus)}
+                          </Text>
+                        </View>
                       )}
+
+                      {/* ── Sinais detalhados ── */}
+                      {tickResult.signals && tickResult.signals.length > 0 && (
+                        <View style={{ marginTop: 8, gap: 6 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5 }}>SINAIS DO TICK</Text>
+                          {tickResult.signals.map((sig, idx) => {
+                            const sigColorMap: Record<string, string> = {
+                              take_profit: '#10b981', stop_loss: '#ef4444',
+                              gradual_sell: '#f59e0b', expired: '#6b7280',
+                              info: colors.textSecondary,
+                            }
+                            const sigColor = sigColorMap[sig.signal_type] || colors.textSecondary
+                            return (
+                              <View key={idx} style={{ backgroundColor: sigColor + '0D', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: sigColor }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <Text style={{ fontSize: 11, fontWeight: '600', color: sigColor }}>
+                                      {sig.signal_type.replace('_', ' ').toUpperCase()}
+                                    </Text>
+                                    {sig.acted && (
+                                      <View style={{ backgroundColor: '#10b981', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>EXECUTADO</Text>
+                                      </View>
+                                    )}
+                                  </View>
+                                  <Text style={{ fontSize: 11, fontWeight: '500', color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>
+                                    {(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%
+                                  </Text>
+                                </View>
+                                <Text style={{ fontSize: 12, color: colors.text, lineHeight: 18 }}>{sig.message}</Text>
+                              </View>
+                            )
+                          })}
+                        </View>
+                      )}
+
+                      {/* ── Execuções do tick ── */}
+                      {tickResult.executions && tickResult.executions.length > 0 && (
+                        <View style={{ marginTop: 8, gap: 6 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5 }}>ORDENS EXECUTADAS</Text>
+                          {tickResult.executions.map((exec, idx) => {
+                            const isFailure = exec.action === 'sell_failed' || exec.action === 'buy_failed'
+                            const execColor = isFailure ? '#ef4444' : (exec.pnl_usd >= 0 ? '#10b981' : '#ef4444')
+                            return (
+                              <View key={exec.execution_id || idx} style={{ backgroundColor: execColor + '0D', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: execColor }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 12, fontWeight: '600', color: execColor }}>
+                                    {isFailure ? '❌ FALHOU' : exec.action === 'sell' ? '📤 VENDA' : '📥 COMPRA'}
+                                  </Text>
+                                  {!isFailure && (
+                                    <Text style={{ fontSize: 13, fontWeight: '700', color: exec.pnl_usd >= 0 ? '#10b981' : '#ef4444' }}>
+                                      {formatCurrency(exec.pnl_usd)}
+                                    </Text>
+                                  )}
+                                </View>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                                  <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                                    {(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}
+                                  </Text>
+                                  {exec.fee > 0 && (
+                                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>Fee: ${exec.fee.toFixed(4)}</Text>
+                                  )}
+                                </View>
+                                {exec.reason && (
+                                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 3, fontStyle: 'italic' }}>
+                                    Motivo: {exec.reason.replace(/_/g, ' ')}
+                                  </Text>
+                                )}
+                                {exec.error_message && (
+                                  <Text style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>⚠️ {exec.error_message}</Text>
+                                )}
+                              </View>
+                            )
+                          })}
+                        </View>
+                      )}
+
+                      {/* ── Erro ── */}
                       {tickResult.error && (
                         <View style={{ marginTop: 6, padding: 10, backgroundColor: 'rgba(239, 68, 68, 0.06)', borderRadius: 8 }}>
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#ef4444', marginBottom: 4 }}>ERROR DETAILS:</Text>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#ef4444', marginBottom: 4 }}>DETALHES DO ERRO:</Text>
                           <Text style={{ fontSize: 12, color: '#ef4444', lineHeight: 18 }} selectable>{tickResult.error}</Text>
                         </View>
                       )}
@@ -717,7 +922,7 @@ export function StrategyDetailsModal({
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('strategy.name')}</Text>
                 <Text style={[styles.strategyName, { color: colors.text }]}>{strategy.name}</Text>
-                {strategy.started_at ? <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>Started: {formatDate(strategy.started_at)}</Text> : null}
+                {strategy.started_at ? <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>Início: {formatDate(strategy.started_at)}</Text> : null}
               </View>
               {renderPositionCard()}
               {renderPnlSummary()}
