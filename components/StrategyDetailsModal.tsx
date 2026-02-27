@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native'
-import Svg, { Path, Circle } from 'react-native-svg'
+import Svg, { Path } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { 
@@ -163,11 +163,12 @@ export function StrategyDetailsModal({
     const map: Record<StrategyStatus, string> = {
       idle: t('strategy.statusIdle') || 'Idle',
       monitoring: t('strategy.statusMonitoring') || 'Monitoring',
-      buy_pending: t('strategy.statusBuyPending') || 'Buy Pending',
       in_position: t('strategy.statusInPosition') || 'In Position',
-      sell_pending: t('strategy.statusSellPending') || 'Sell Pending',
-      paused: t('strategy.paused') || 'Paused',
+      gradual_selling: 'Gradual Selling',
       completed: t('strategy.statusCompleted') || 'Completed',
+      stopped_out: 'Stopped Out',
+      expired: 'Expired',
+      paused: t('strategy.paused') || 'Paused',
       error: t('strategy.statusError') || 'Error',
     }
     return map[status] || status
@@ -177,9 +178,10 @@ export function StrategyDetailsModal({
     const map: Record<StrategyStatus, { bg: string; text: string; dot: string }> = {
       monitoring: { bg: 'rgba(59, 130, 246, 0.12)', text: '#3b82f6', dot: '#3b82f6' },
       in_position: { bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981', dot: '#10b981' },
-      buy_pending: { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', dot: '#f59e0b' },
-      sell_pending: { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', dot: '#f59e0b' },
+      gradual_selling: { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', dot: '#f59e0b' },
       completed: { bg: 'rgba(139, 92, 246, 0.12)', text: '#8b5cf6', dot: '#8b5cf6' },
+      stopped_out: { bg: 'rgba(239, 68, 68, 0.12)', text: '#ef4444', dot: '#ef4444' },
+      expired: { bg: 'rgba(107, 114, 128, 0.12)', text: '#6b7280', dot: '#6b7280' },
       error: { bg: 'rgba(239, 68, 68, 0.12)', text: '#ef4444', dot: '#ef4444' },
       paused: { bg: 'rgba(107, 114, 128, 0.12)', text: '#6b7280', dot: '#6b7280' },
       idle: { bg: 'rgba(107, 114, 128, 0.12)', text: '#9ca3af', dot: '#9ca3af' },
@@ -191,9 +193,6 @@ export function StrategyDetailsModal({
     const map: Record<string, { text: string; color: string }> = {
       buy: { text: t('strategy.execBuy') || 'Buy', color: '#10b981' },
       sell: { text: t('strategy.execSell') || 'Sell', color: '#ef4444' },
-      dca_buy: { text: t('strategy.execDcaBuy') || 'DCA Buy', color: '#3b82f6' },
-      grid_buy: { text: t('strategy.execGridBuy') || 'Grid Buy', color: '#8b5cf6' },
-      grid_sell: { text: t('strategy.execGridSell') || 'Grid Sell', color: '#f59e0b' },
       buy_failed: { text: t('strategy.execFailed') || 'Buy Failed', color: '#ef4444' },
       sell_failed: { text: t('strategy.execFailed') || 'Sell Failed', color: '#ef4444' },
     }
@@ -220,11 +219,16 @@ export function StrategyDetailsModal({
             {getStatusLabel(strategy.status)}
           </Text>
         </View>
-        <View style={[styles.typeBadge, { backgroundColor: colors.surfaceSecondary }]}>
-          <Text style={[styles.typeBadgeText, { color: colors.primary }]}>
-            {strategy.strategy_type}
+        {strategy.trigger_price != null && strategy.trigger_price > 0 && (
+          <Text style={{ fontSize: 11, color: '#10b981', fontWeight: '500' }}>
+            TP: {formatCurrencyAbs(strategy.trigger_price)}
           </Text>
-        </View>
+        )}
+        {strategy.stop_loss_price != null && strategy.stop_loss_price > 0 && (
+          <Text style={{ fontSize: 11, color: '#ef4444', fontWeight: '500' }}>
+            SL: {formatCurrencyAbs(strategy.stop_loss_price)}
+          </Text>
+        )}
       </View>
     )
   }
@@ -289,8 +293,8 @@ export function StrategyDetailsModal({
                   <Text style={[styles.statsValue, { color: colors.text }]}>{(stats.win_rate * 100).toFixed(1)}%</Text>
                 </View>
                 <View style={styles.statsCell}>
-                  <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>{t('strategy.avgProfit') || 'Avg Profit'}</Text>
-                  <Text style={[styles.statsValue, { color: stats.avg_profit_per_trade >= 0 ? '#10b981' : '#ef4444' }]}>{formatCurrency(stats.avg_profit_per_trade)}</Text>
+                  <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>{t('strategy.totalSells') || 'Total Sells'}</Text>
+                  <Text style={[styles.statsValue, { color: colors.text }]}>{stats.total_sells}</Text>
                 </View>
               </View>
               <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
@@ -300,8 +304,8 @@ export function StrategyDetailsModal({
                   <Text style={[styles.statsValue, { color: colors.textSecondary }]}>${stats.total_fees.toFixed(2)}</Text>
                 </View>
                 <View style={styles.statsCell}>
-                  <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>{t('strategy.daysActive') || 'Days Active'}</Text>
-                  <Text style={[styles.statsValue, { color: colors.text }]}>{stats.days_active}</Text>
+                  <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>{t('strategy.currentPosition') || 'Position'}</Text>
+                  <Text style={[styles.statsValue, { color: colors.text }]}>${stats.current_position.toFixed(2)}</Text>
                 </View>
               </View>
             </>
@@ -313,6 +317,7 @@ export function StrategyDetailsModal({
 
   const renderConfig = () => {
     if (!strategy?.config) return null
+    const cfg = strategy.config
     return (
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('strategy.configuration')}</Text>
@@ -329,10 +334,7 @@ export function StrategyDetailsModal({
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
-              <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <Circle cx="12" cy="12" r="10" stroke={colors.textSecondary} strokeWidth="2" />
-                <Path d="M12 6v6l4 2" stroke={colors.textSecondary} strokeWidth="2" strokeLinecap="round" />
-              </Svg>
+              <Text style={{ fontSize: 16 }}>🪙</Text>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.tradingPair')}</Text>
             </View>
             <Text style={[styles.infoValue, { color: colors.text }]}>{strategy.symbol}</Text>
@@ -340,19 +342,73 @@ export function StrategyDetailsModal({
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
-              <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke={colors.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.checkInterval') || 'Check Interval'}</Text>
+              <Text style={{ fontSize: 16 }}>💰</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Base Price</Text>
             </View>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{strategy.check_interval_secs}s</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{formatCurrencyAbs(cfg.base_price)}</Text>
+          </View>
+          <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <Text style={{ fontSize: 16 }}>🎯</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Take Profit</Text>
+            </View>
+            <Text style={[styles.infoValue, { color: '#10b981' }]}>+{cfg.take_profit_percent}%</Text>
+          </View>
+          {strategy.trigger_price != null && strategy.trigger_price > 0 && (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: 16 }}>📈</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Trigger Price</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#10b981' }]}>{formatCurrencyAbs(strategy.trigger_price)}</Text>
+              </View>
+            </>
+          )}
+          <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <Text style={{ fontSize: 16 }}>🛡️</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Stop Loss</Text>
+            </View>
+            <Text style={[styles.infoValue, { color: '#ef4444' }]}>-{cfg.stop_loss_percent}%</Text>
+          </View>
+          {strategy.stop_loss_price != null && strategy.stop_loss_price > 0 && (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: 16 }}>📉</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Stop Price</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#ef4444' }]}>{formatCurrencyAbs(strategy.stop_loss_price)}</Text>
+              </View>
+            </>
+          )}
+          <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <Text style={{ fontSize: 16 }}>📊</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Fee</Text>
+            </View>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{cfg.fee_percent}%</Text>
+          </View>
+          <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <Text style={{ fontSize: 16 }}>⏱️</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Expiration</Text>
+            </View>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{cfg.time_execution_min}min ({(cfg.time_execution_min / 60).toFixed(1)}h)</Text>
           </View>
           {strategy.last_price != null && strategy.last_price > 0 && (
             <>
               <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
               <View style={styles.infoRow}>
                 <View style={styles.infoLeft}>
-                  <Text style={{ fontSize: 16 }}>💰</Text>
+                  <Text style={{ fontSize: 16 }}>�</Text>
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.lastPrice') || 'Last Price'}</Text>
                 </View>
                 <Text style={[styles.infoValue, { color: colors.text }]}>{formatCurrencyAbs(strategy.last_price)}</Text>
@@ -364,88 +420,46 @@ export function StrategyDetailsModal({
     )
   }
 
-  const renderTakeProfitLevels = () => {
-    if (!strategy?.config?.take_profit_levels || strategy.config.take_profit_levels.length === 0) return null
+  const renderGradualLots = () => {
+    if (!strategy?.config?.gradual_sell) return null
+    const cfg = strategy.config
+    const lots = cfg.gradual_lots || []
     return (
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('strategy.takeProfit')}</Text>
-        <View style={[styles.conditionsCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-          {strategy.config.take_profit_levels.map((level, index) => (
-            <View key={index}>
-              {index > 0 && <View style={[styles.conditionDivider, { backgroundColor: colors.border }]} />}
-              <View style={styles.conditionRow}>
-                <View style={[styles.conditionBullet, { backgroundColor: level.executed ? '#8b5cf6' : '#10b981' }]} />
-                <View style={styles.conditionContent}>
-                  <Text style={[styles.conditionText, { color: colors.text }]}>
-                    {t('strategy.level')} {index + 1}: <Text style={{ fontWeight: '400' }}>+{level.percent}%</Text>
-                    {level.executed && <Text style={{ color: '#8b5cf6', fontWeight: '400' }}> ✓</Text>}
-                  </Text>
-                  <Text style={[styles.conditionSubtext, { color: colors.textSecondary }]}>
-                    {t('strategy.sell')} {level.sell_percent}% {t('strategy.ofPosition')}
-                    {level.executed_at ? ` · ${formatDate(level.executed_at)}` : ''}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
-      </View>
-    )
-  }
-
-  const renderStopLoss = () => {
-    if (!strategy?.config?.stop_loss?.enabled) return null
-    const sl = strategy.config.stop_loss
-    return (
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('strategy.stopLoss')}</Text>
-        <View style={[styles.actionsCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-          <View style={styles.actionRow}>
-            <View style={[styles.actionIcon, { backgroundColor: '#ef444420' }]}>
-              <Text style={styles.actionEmoji}>🛡️</Text>
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>
-                {t('strategy.protectionEnabled')}{sl.trailing ? ` (Trailing: ${sl.trailing_distance || 0}%)` : ''}
-              </Text>
-              <Text style={[styles.actionValue, { color: colors.text }]}>-{sl.percent}%</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-    )
-  }
-
-  const renderDcaConfig = () => {
-    if (!strategy?.config?.dca?.enabled) return null
-    const dca = strategy.config.dca
-    return (
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DCA</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>GRADUAL SELL</Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Buys Done</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{dca.buys_done} / {dca.max_buys || '∞'}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Gradual Take</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>+{cfg.gradual_take_percent}%</Text>
           </View>
-          {dca.dip_percent && (
-            <>
-              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Dip Trigger</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>-{dca.dip_percent}%</Text>
-              </View>
-            </>
-          )}
-          {dca.amount_per_buy && (
-            <>
-              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Amount/Buy</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>${dca.amount_per_buy}</Text>
-              </View>
-            </>
-          )}
+          <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.infoRow}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Timer entre lotes</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{cfg.timer_gradual_min}min</Text>
+          </View>
         </View>
+        {lots.length > 0 && (
+          <View style={[styles.conditionsCard, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginTop: 10 }]}>
+            {lots.map((lot, index) => (
+              <View key={index}>
+                {index > 0 && <View style={[styles.conditionDivider, { backgroundColor: colors.border }]} />}
+                <View style={styles.conditionRow}>
+                  <View style={[styles.conditionBullet, { backgroundColor: lot.executed ? '#8b5cf6' : '#f59e0b' }]} />
+                  <View style={styles.conditionContent}>
+                    <Text style={[styles.conditionText, { color: colors.text }]}>
+                      Lote {lot.lot_number}: <Text style={{ fontWeight: '400' }}>{lot.sell_percent}%</Text>
+                      {lot.executed && <Text style={{ color: '#8b5cf6', fontWeight: '400' }}> ✓</Text>}
+                    </Text>
+                    <Text style={[styles.conditionSubtext, { color: colors.textSecondary }]}>
+                      {lot.executed ? `Vendido @ ${formatCurrencyAbs(lot.executed_price)} · PnL: ${formatCurrency(lot.realized_pnl)}` : 'Pendente'}
+                      {lot.executed_at ? ` · ${formatDate(lot.executed_at)}` : ''}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
     )
   }
@@ -499,9 +513,9 @@ export function StrategyDetailsModal({
       <View style={{ paddingTop: 16 }}>
         {sigs.slice(0, 30).map((sig, idx) => {
           const sigColors: Record<string, string> = {
-            buy: '#10b981', take_profit: '#8b5cf6', stop_loss: '#ef4444',
-            trailing_stop: '#f59e0b', dca_buy: '#3b82f6', grid_trade: '#06b6d4',
-            info: '#6b7280', price_alert: '#f59e0b'
+            take_profit: '#10b981', stop_loss: '#ef4444',
+            gradual_sell: '#f59e0b', expired: '#6b7280',
+            info: '#6b7280'
           }
           const sigColor = sigColors[sig.signal_type] || colors.textSecondary
           return (
@@ -571,8 +585,8 @@ export function StrategyDetailsModal({
     if (!strategy) return null
     const tabs = [
       { key: 'overview' as const, label: t('strategy.overview') || 'Overview' },
-      { key: 'executions' as const, label: `${t('strategy.executions') || 'Executions'} (${strategy.executions_count || 0})` },
-      { key: 'signals' as const, label: `${t('strategy.signals') || 'Signals'} (${strategy.signals_count || 0})` },
+      { key: 'executions' as const, label: `${t('strategy.executions') || 'Executions'} (${(strategy as StrategyDetail)?.executions?.length || 0})` },
+      { key: 'signals' as const, label: `${t('strategy.signals') || 'Signals'} (${(strategy as StrategyDetail)?.signals?.length || 0})` },
     ]
     return (
       <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
@@ -701,14 +715,12 @@ export function StrategyDetailsModal({
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('strategy.name')}</Text>
                 <Text style={[styles.strategyName, { color: colors.text }]}>{strategy.name}</Text>
-                {strategy.description ? <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{strategy.description}</Text> : null}
+                {strategy.started_at ? <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>Started: {formatDate(strategy.started_at)}</Text> : null}
               </View>
               {renderPositionCard()}
               {renderPnlSummary()}
               {renderConfig()}
-              {renderTakeProfitLevels()}
-              {renderStopLoss()}
-              {renderDcaConfig()}
+              {renderGradualLots()}
               {renderDates()}
             </>
           )}
