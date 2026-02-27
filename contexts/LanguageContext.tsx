@@ -52,7 +52,7 @@ const translations = {
     
     // Profile Screen
     'profile.title': 'Perfil',
-    'profile.subtitle': 'Suas informações pessoais',
+    'profile.subtitle': 'Sua conta',
     'profile.user': 'Usuário do CryptoHub',
     'profile.memberSince': 'Membro desde',
     'profile.settings': 'Configurações',
@@ -845,7 +845,7 @@ const translations = {
     
     // Profile Screen
     'profile.title': 'Profile',
-    'profile.subtitle': 'Your personal information',
+    'profile.subtitle': 'Your account',
     'profile.user': 'CryptoHub User',
     'profile.memberSince': 'Member since',
     'profile.settings': 'Settings',
