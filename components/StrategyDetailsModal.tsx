@@ -20,6 +20,7 @@ import {
   StrategyStatsResponse} from '@/hooks/useBackendStrategies'
 import { apiService } from '@/services/api'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
+import { EditStrategyModal } from './edit-strategy-modal'
 
 interface StrategyDetailsModalProps {
   visible: boolean
@@ -61,6 +62,7 @@ export function StrategyDetailsModal({
   } | null>(null)
   const [expandedError, setExpandedError] = useState(false)
   const [expandedTickResult, setExpandedTickResult] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     if (visible && strategyId) {
@@ -74,6 +76,7 @@ export function StrategyDetailsModal({
       setTickResult(null)
       setExpandedError(false)
       setExpandedTickResult(false)
+      setShowEditModal(false)
     }
   }, [visible, strategyId])
 
@@ -241,9 +244,14 @@ export function StrategyDetailsModal({
             TP: {formatCurrencyAbs(strategy.trigger_price)}
           </Text>
         )}
-        {strategy.stop_loss_price != null && strategy.stop_loss_price > 0 && (
+        {strategy.stop_loss_price != null && strategy.stop_loss_price > 0 && (strategy.config as any).stop_loss_enabled !== false && (
           <Text style={{ fontSize: 11, color: '#ef4444', fontWeight: '500' }}>
             SL: {formatCurrencyAbs(strategy.stop_loss_price)}
+          </Text>
+        )}
+        {(strategy.config as any).stop_loss_enabled === false && (
+          <Text style={{ fontSize: 11, color: '#6b7280', fontWeight: '500' }}>
+            SL: OFF
           </Text>
         )}
       </View>
@@ -412,9 +420,13 @@ export function StrategyDetailsModal({
               <Text style={{ fontSize: 16 }}>🛡️</Text>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Stop Loss</Text>
             </View>
-            <Text style={[styles.infoValue, { color: '#ef4444' }]}>-{cfg.stop_loss_percent}%</Text>
+            {(cfg as any).stop_loss_enabled === false ? (
+              <Text style={[styles.infoValue, { color: '#6b7280' }]}>🚫 Desativado</Text>
+            ) : (
+              <Text style={[styles.infoValue, { color: '#ef4444' }]}>-{cfg.stop_loss_percent}%</Text>
+            )}
           </View>
-          {strategy.stop_loss_price != null && strategy.stop_loss_price > 0 && (
+          {(cfg as any).stop_loss_enabled !== false && strategy.stop_loss_price != null && strategy.stop_loss_price > 0 && (
             <>
               <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
               <View style={styles.infoRow}>
@@ -998,6 +1010,14 @@ export function StrategyDetailsModal({
               </TouchableOpacity>
 
               <TouchableOpacity
+                style={[styles.footerButton, { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: '#f59e0b' }]}
+                onPress={() => setShowEditModal(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.footerButtonText, { color: '#f59e0b' }]}>✏️ Editar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={[styles.footerButton, { backgroundColor: colors.primary }]}
                 onPress={() => {
                   if (strategyId) {
@@ -1028,6 +1048,17 @@ export function StrategyDetailsModal({
               )}
             </View>
           )}
+
+          {/* Edit Strategy Modal */}
+          <EditStrategyModal
+            visible={showEditModal}
+            strategy={strategy}
+            onClose={() => setShowEditModal(false)}
+            onSuccess={(updated) => {
+              setStrategy(updated as any)
+              setShowEditModal(false)
+            }}
+          />
         </View>
         </SafeAreaView>
       </KeyboardAvoidingView>

@@ -67,6 +67,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const [investedAmount, setInvestedAmount] = useState<string>("")
   const [takeProfitPercent, setTakeProfitPercent] = useState<string>("5.0")
   const [stopLossPercent, setStopLossPercent] = useState<string>("3.0")
+  const [stopLossEnabled, setStopLossEnabled] = useState(true)
   const [gradualTakePercent, setGradualTakePercent] = useState<string>("2.0")
   const [feePercent, setFeePercent] = useState<string>("0.1")
   const [gradualSell, setGradualSell] = useState(true)
@@ -100,6 +101,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       setInvestedAmount("")
       setTakeProfitPercent("5.0")
       setStopLossPercent("3.0")
+      setStopLossEnabled(true)
       setGradualTakePercent("2.0")
       setFeePercent("0.1")
       setGradualSell(true)
@@ -196,7 +198,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       Alert.alert(t("common.attention"), "Selecione exchange e token")
       return
     }
-    if (tp <= 0 || sl <= 0) {
+    if (tp <= 0 || (stopLossEnabled && sl <= 0)) {
       Alert.alert(t("common.attention"), "Take Profit e Stop Loss sao obrigatorios")
       return
     }
@@ -214,7 +216,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           base_price: bp,
           invested_amount: ia > 0 ? ia : undefined,
           take_profit_percent: tp,
-          stop_loss_percent: sl,
+          stop_loss_enabled: stopLossEnabled,
+          stop_loss_percent: stopLossEnabled ? sl : 5.0,
           gradual_take_percent: parseFloat(gradualTakePercent) || 2.0,
           fee_percent: fee,
           gradual_sell: gradualSell,
@@ -250,7 +253,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
   const canProceedToStep2 = selectedExchange !== ""
   const canProceedToStep3 = token.trim() !== ""
-  const canCreate = tp > 0 && sl > 0
+  const canCreate = tp > 0 && (stopLossEnabled ? sl > 0 : true)
 
   const renderStepIndicator = () => (
     <View style={styles.stepsContainer}>
@@ -486,20 +489,38 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           )}
         </View>
 
-        <View style={[styles.fieldCard, { borderColor: '#ef444440', backgroundColor: '#ef444408' }]}>
-          <Text style={[styles.fieldLabel, { color: colors.text }]}>🛡️ Stop Loss (%)</Text>
-          <TextInput
-            style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
-            placeholder="3.0"
-            placeholderTextColor={colors.textSecondary}
-            value={stopLossPercent}
-            onChangeText={(v) => setStopLossPercent(v.replace(/[^0-9.]/g, ''))}
-            keyboardType="decimal-pad"
-          />
-          {bp > 0 && stopLossPrice > 0 && (
-            <Text style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: '500' }}>
-              Stop: ${stopLossPrice.toFixed(4)} (base - {sl}%)
+        <View style={[styles.fieldCard, { borderColor: stopLossEnabled ? '#ef444440' : colors.border + '40', backgroundColor: stopLossEnabled ? '#ef444408' : colors.background }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: stopLossEnabled ? 12 : 0 }}>
+            <Text style={[styles.fieldLabel, { color: colors.text, marginBottom: 0 }]}>🛡️ Stop Loss</Text>
+            <Switch
+              value={stopLossEnabled}
+              onValueChange={setStopLossEnabled}
+              trackColor={{ false: colors.border, true: '#ef444460' }}
+              thumbColor={stopLossEnabled ? '#ef4444' : '#f4f3f4'}
+            />
+          </View>
+          {!stopLossEnabled && (
+            <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>
+              Stop loss desativado — a estratégia nunca vende por queda de preço (hold).
             </Text>
+          )}
+          {stopLossEnabled && (
+            <>
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>Stop Loss (%)</Text>
+              <TextInput
+                style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                placeholder="3.0"
+                placeholderTextColor={colors.textSecondary}
+                value={stopLossPercent}
+                onChangeText={(v) => setStopLossPercent(v.replace(/[^0-9.]/g, ''))}
+                keyboardType="decimal-pad"
+              />
+              {bp > 0 && stopLossPrice > 0 && (
+                <Text style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: '500' }}>
+                  Stop: ${stopLossPrice.toFixed(4)} (base - {sl}%)
+                </Text>
+              )}
+            </>
           )}
         </View>
 
@@ -592,7 +613,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
               Trigger (TP): {triggerPrice > 0 ? `$${triggerPrice.toFixed(4)}` : '—'} (+{tp}% + {fee}% fee)
             </Text>
             <Text style={{ fontSize: 12, color: '#ef4444' }}>
-              Stop Loss: {stopLossPrice > 0 ? `$${stopLossPrice.toFixed(4)}` : '—'} (-{sl}%)
+              Stop Loss: {stopLossEnabled ? (stopLossPrice > 0 ? `$${stopLossPrice.toFixed(4)} (-${sl}%)` : `(-${sl}%)`) : '🚫 Desativado'}
             </Text>
             <Text style={{ fontSize: 12, color: colors.text }}>
               Gradual: {gradualSell ? `4 lotes, timer ${timerGradualMin}min, step ${gradualTakePercent}%` : 'OFF'}
