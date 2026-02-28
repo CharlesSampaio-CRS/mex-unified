@@ -459,7 +459,7 @@ export function StrategyDetailsModal({
               <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
               <View style={styles.infoRow}>
                 <View style={styles.infoLeft}>
-                  <Text style={{ fontSize: 16 }}>�</Text>
+                  <Text style={{ fontSize: 16 }}>💲</Text>
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.lastPrice') || 'Último Preço'}</Text>
                 </View>
                 <Text style={[styles.infoValue, { color: colors.text }]}>{formatCurrencyAbs(strategy.last_price)}</Text>
@@ -992,75 +992,78 @@ export function StrategyDetailsModal({
               </TouchableOpacity>
             </View>
 
-          {renderContent()}
+            {renderContent()}
 
-          {!loading && !error && strategy && (
-            <View style={[styles.footer, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                style={[styles.footerButton, { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border }]}
-                onPress={handleTick}
-                disabled={ticking}
-                activeOpacity={0.7}
-              >
-                {ticking ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <Text style={[styles.footerButtonText, { color: colors.primary }]}>{t('strategy.triggerManual') || '⚡ Tick'}</Text>
-                )}
-              </TouchableOpacity>
+            {!loading && !error && strategy && (
+              <View style={[styles.footer, { borderTopColor: colors.border }]}>
+                <View style={styles.footerRow}>
+                  <TouchableOpacity
+                    style={[styles.footerButton, { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border }]}
+                    onPress={handleTick}
+                    disabled={ticking}
+                    activeOpacity={0.7}
+                  >
+                    {ticking ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Text style={[styles.footerButtonText, { color: colors.primary }]}>⚡ Tick</Text>
+                    )}
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.footerButton, { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: '#f59e0b' }]}
-                onPress={() => setShowEditModal(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.footerButtonText, { color: '#f59e0b' }]}>✏️ Editar</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.footerButton, { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: '#f59e0b' }]}
+                    onPress={() => setShowEditModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.footerButtonText, { color: '#f59e0b' }]}>✏️ Editar</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.footerRow}>
+                  <TouchableOpacity
+                    style={[styles.footerButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      if (strategyId) {
+                        onToggleActive?.(strategyId, strategy.is_active)
+                        onClose()
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.footerButtonText, { color: '#ffffff' }]}>
+                      {strategy.is_active ? '⏸ Desativar' : '▶️ Ativar'}
+                    </Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.footerButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  if (strategyId) {
-                    onToggleActive?.(strategyId, strategy.is_active)
-                    onClose()
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.footerButtonText, { color: '#ffffff' }]}>
-                  {strategy.is_active ? (t('strategy.deactivate') || 'Desativar') : (t('strategy.activate') || 'Ativar')}
-                </Text>
-              </TouchableOpacity>
-
-              {onDelete && (
-                <TouchableOpacity
-                  style={[styles.footerButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#ef4444' }]}
-                  onPress={() => {
-                    if (strategyId) {
-                      onDelete(strategyId)
-                      onClose()
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.footerButtonText, { color: '#ef4444' }]}>{t('strategy.delete') || 'Excluir'}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
-          {/* Edit Strategy Modal */}
-          <EditStrategyModal
-            visible={showEditModal}
-            strategy={strategy}
-            onClose={() => setShowEditModal(false)}
-            onSuccess={(updated) => {
-              setStrategy(updated as any)
-              setShowEditModal(false)
-            }}
-          />
-        </View>
+                  {onDelete && (
+                    <TouchableOpacity
+                      style={[styles.footerButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#ef4444' }]}
+                      onPress={() => {
+                        if (strategyId) {
+                          onDelete(strategyId)
+                          onClose()
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.footerButtonText, { color: '#ef4444' }]}>🗑 Excluir</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
+          </View>
         </SafeAreaView>
+
+        {/* Edit Strategy Modal — fora do modalContainer para não ser cortado */}
+        <EditStrategyModal
+          visible={showEditModal}
+          strategy={strategy}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={(updated) => {
+            setStrategy(updated as any)
+            setShowEditModal(false)
+          }}
+        />
       </KeyboardAvoidingView>
     </Modal>
   )
@@ -1398,20 +1401,24 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   footer: {
+    gap: 8,
+    padding: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 0.5,
+  },
+  footerRow: {
     flexDirection: 'row',
     gap: 8,
-    padding: 16,
-    borderTopWidth: 0.5,
   },
   footerButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 11,
     paddingHorizontal: 8,
     borderRadius: 10,
-    minHeight: 44,
+    minHeight: 42,
   },
   footerButtonText: {
     fontSize: 13,
