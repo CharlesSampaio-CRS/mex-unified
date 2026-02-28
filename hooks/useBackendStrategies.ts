@@ -27,6 +27,7 @@ export interface GradualLot {
 
 export interface StrategyConfig {
   base_price: number;
+  invested_amount?: number;
   take_profit_percent: number;
   stop_loss_percent: number;
   gradual_take_percent: number;

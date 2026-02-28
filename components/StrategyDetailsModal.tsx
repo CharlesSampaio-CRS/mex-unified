@@ -362,10 +362,30 @@ export function StrategyDetailsModal({
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
               <Text style={{ fontSize: 16 }}>💰</Text>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Base Price</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Preço de Compra</Text>
             </View>
             <Text style={[styles.infoValue, { color: colors.text }]}>{formatCurrencyAbs(cfg.base_price)}</Text>
           </View>
+          {(cfg as any).invested_amount > 0 && (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: 16 }}>💵</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Valor Investido</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#f59e0b' }]}>${(cfg as any).invested_amount.toFixed(2)}</Text>
+              </View>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: 16 }}>🔒</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Double-check</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#f59e0b' }]}>Ativo — ~{((cfg as any).invested_amount / cfg.base_price).toFixed(4)} moedas</Text>
+              </View>
+            </>
+          )}
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
@@ -380,7 +400,7 @@ export function StrategyDetailsModal({
               <View style={styles.infoRow}>
                 <View style={styles.infoLeft}>
                   <Text style={{ fontSize: 16 }}>📈</Text>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Trigger Price</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Preço Trigger</Text>
                 </View>
                 <Text style={[styles.infoValue, { color: '#10b981' }]}>{formatCurrencyAbs(strategy.trigger_price)}</Text>
               </View>
@@ -400,7 +420,7 @@ export function StrategyDetailsModal({
               <View style={styles.infoRow}>
                 <View style={styles.infoLeft}>
                   <Text style={{ fontSize: 16 }}>📉</Text>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Stop Price</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Preço Stop</Text>
                 </View>
                 <Text style={[styles.infoValue, { color: '#ef4444' }]}>{formatCurrencyAbs(strategy.stop_loss_price)}</Text>
               </View>
@@ -410,7 +430,7 @@ export function StrategyDetailsModal({
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
               <Text style={{ fontSize: 16 }}>📊</Text>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Fee</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Taxa</Text>
             </View>
             <Text style={[styles.infoValue, { color: colors.text }]}>{cfg.fee_percent}%</Text>
           </View>
@@ -418,7 +438,7 @@ export function StrategyDetailsModal({
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
               <Text style={{ fontSize: 16 }}>⏱️</Text>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Expiration</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Expiração</Text>
             </View>
             <Text style={[styles.infoValue, { color: colors.text }]}>{cfg.time_execution_min}min ({(cfg.time_execution_min / 60).toFixed(1)}h)</Text>
           </View>
@@ -445,7 +465,7 @@ export function StrategyDetailsModal({
     const lots = cfg.gradual_lots || []
     return (
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>GRADUAL SELL</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>VENDA GRADUAL</Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Gradual Take</Text>

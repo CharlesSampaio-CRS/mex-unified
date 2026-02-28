@@ -64,6 +64,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const tokenInputRef = useRef<TextInput>(null)
 
   const [basePrice, setBasePrice] = useState<string>("")
+  const [investedAmount, setInvestedAmount] = useState<string>("")
   const [takeProfitPercent, setTakeProfitPercent] = useState<string>("5.0")
   const [stopLossPercent, setStopLossPercent] = useState<string>("3.0")
   const [gradualTakePercent, setGradualTakePercent] = useState<string>("2.0")
@@ -96,6 +97,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       setTokenSearchQuery("")
       setShowTokenList(true)
       setBasePrice("")
+      setInvestedAmount("")
       setTakeProfitPercent("5.0")
       setStopLossPercent("3.0")
       setGradualTakePercent("2.0")
@@ -170,6 +172,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   }
 
   const bp = parseFloat(basePrice) || 0
+  const ia = parseFloat(investedAmount) || 0
   const tp = parseFloat(takeProfitPercent) || 0
   const sl = parseFloat(stopLossPercent) || 0
   const fee = parseFloat(feePercent) || 0
@@ -193,10 +196,6 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       Alert.alert(t("common.attention"), "Selecione exchange e token")
       return
     }
-    if (bp <= 0) {
-      Alert.alert(t("common.attention"), "Informe o preco base")
-      return
-    }
     if (tp <= 0 || sl <= 0) {
       Alert.alert(t("common.attention"), "Take Profit e Stop Loss sao obrigatorios")
       return
@@ -213,6 +212,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         exchange_name: capitalizeExchangeName(exchange.name),
         config: {
           base_price: bp,
+          invested_amount: ia > 0 ? ia : undefined,
           take_profit_percent: tp,
           stop_loss_percent: sl,
           gradual_take_percent: parseFloat(gradualTakePercent) || 2.0,
@@ -250,7 +250,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
   const canProceedToStep2 = selectedExchange !== ""
   const canProceedToStep3 = token.trim() !== ""
-  const canCreate = bp > 0 && tp > 0 && sl > 0
+  const canCreate = tp > 0 && sl > 0
 
   const renderStepIndicator = () => (
     <View style={styles.stepsContainer}>
@@ -424,24 +424,49 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.stepContent}>
-        <Text style={[styles.stepTitle, { color: colors.text }]}>Configuracao</Text>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>Configuração</Text>
         <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-          Configure preco base, take profit, stop loss e venda gradual.
+          Configure preço de compra, valor investido, take profit, stop loss e venda gradual.
         </Text>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.text }]}>💰 Preco Base (USDT)</Text>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>💰 Preço de Compra (USDT)</Text>
           <TextInput
             style={[styles.fieldInput, { borderColor: basePrice ? colors.primary : colors.border, color: colors.text, backgroundColor: colors.background }]}
-            placeholder="Ex: 150.00"
+            placeholder="Deixe vazio para buscar automaticamente"
             placeholderTextColor={colors.textSecondary}
             value={basePrice}
             onChangeText={(v) => setBasePrice(v.replace(/[^0-9.]/g, ''))}
             keyboardType="decimal-pad"
           />
           <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
-            Preco de referencia para calcular trigger e stop loss
+            Preço unitário da moeda na compra. Se vazio, busca o preço atual da exchange automaticamente.
           </Text>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>💵 Valor Investido (USDT)</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: investedAmount ? '#f59e0b' : colors.border, color: colors.text, backgroundColor: colors.background }]}
+            placeholder="Ex: 36.00 (opcional)"
+            placeholderTextColor={colors.textSecondary}
+            value={investedAmount}
+            onChangeText={(v) => setInvestedAmount(v.replace(/[^0-9.]/g, ''))}
+            keyboardType="decimal-pad"
+          />
+          <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
+            Quanto você investiu em $. Ativa double-check: só vende se o investimento realmente der lucro.
+          </Text>
+          {ia > 0 && bp > 0 && (
+            <View style={{ marginTop: 6, padding: 8, backgroundColor: '#f59e0b10', borderRadius: 6, borderWidth: 1, borderColor: '#f59e0b30' }}>
+              <Text style={{ fontSize: 12, color: '#f59e0b', fontWeight: '600' }}>
+                🔒 Double-check ativo: ~{(ia / bp).toFixed(4)} moedas
+              </Text>
+              <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                Venda só executa se ${ia.toFixed(2)} realmente der lucro no momento do trigger.
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={[styles.fieldCard, { borderColor: '#10b98140', backgroundColor: '#10b98108' }]}>
@@ -556,13 +581,18 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
               {token.includes('/') ? token.split('/')[0] : token} — {getSelectedExchangeName()}
             </Text>
             <Text style={{ fontSize: 12, color: colors.text }}>
-              Base: ${bp > 0 ? bp.toFixed(4) : '—'}
+              Preço de Compra: {bp > 0 ? `$${bp.toFixed(4)}` : '🔄 Auto (buscar da exchange)'}
             </Text>
+            {ia > 0 && (
+              <Text style={{ fontSize: 12, color: '#f59e0b' }}>
+                💵 Investido: ${ia.toFixed(2)} {bp > 0 ? `(~${(ia / bp).toFixed(4)} moedas)` : ''} — Double-check ativo
+              </Text>
+            )}
             <Text style={{ fontSize: 12, color: '#10b981' }}>
-              Trigger (TP): ${triggerPrice > 0 ? triggerPrice.toFixed(4) : '—'} (+{tp}% + {fee}% fee)
+              Trigger (TP): {triggerPrice > 0 ? `$${triggerPrice.toFixed(4)}` : '—'} (+{tp}% + {fee}% fee)
             </Text>
             <Text style={{ fontSize: 12, color: '#ef4444' }}>
-              Stop Loss: ${stopLossPrice > 0 ? stopLossPrice.toFixed(4) : '—'} (-{sl}%)
+              Stop Loss: {stopLossPrice > 0 ? `$${stopLossPrice.toFixed(4)}` : '—'} (-{sl}%)
             </Text>
             <Text style={{ fontSize: 12, color: colors.text }}>
               Gradual: {gradualSell ? `4 lotes, timer ${timerGradualMin}min, step ${gradualTakePercent}%` : 'OFF'}
