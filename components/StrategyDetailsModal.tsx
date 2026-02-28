@@ -535,14 +535,68 @@ export function StrategyDetailsModal({
         'stop_loss': '🛑 Stop Loss',
         'gradual_sell': '📈 Venda Gradual',
       }
-      // Handle prefixed reasons like "sell_failed: ..."
       if (reason.startsWith('sell_failed:')) return '❌ ' + reason.replace('sell_failed:', '').trim()
       if (reason.startsWith('stop_loss_failed:')) return '🛑❌ ' + reason.replace('stop_loss_failed:', '').trim()
       return map[reason] || reason.replace(/_/g, ' ')
     }
 
+    // ── Summary Stats ──
+    const totalPnl = execs.reduce((sum, e) => sum + (e.pnl_usd ?? 0), 0)
+    const successExecs = execs.filter(e => e.action === 'sell' || e.action === 'buy')
+    const failedExecs = execs.filter(e => e.action === 'sell_failed' || e.action === 'buy_failed')
+    const wins = successExecs.filter(e => (e.pnl_usd ?? 0) > 0).length
+    const winRate = successExecs.length > 0 ? (wins / successExecs.length) * 100 : 0
+    const totalFees = execs.reduce((sum, e) => sum + (e.fee ?? 0), 0)
+    const totalPnlColor = totalPnl >= 0 ? '#10b981' : '#ef4444'
+
     return (
-      <View style={{ paddingTop: 16 }}>
+      <View style={{ paddingTop: 12 }}>
+        {/* ── Resumo de Execuções ── */}
+        <View style={[styles.statsGrid, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginBottom: 12 }]}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5, marginBottom: 10 }}>
+            📊 RESUMO DE EXECUÇÕES
+          </Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>PnL Total</Text>
+              <Text style={[styles.statsValue, { color: totalPnlColor, fontSize: 15, fontWeight: '700' }]}>
+                {formatCurrency(totalPnl)}
+              </Text>
+            </View>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>Win Rate</Text>
+              <Text style={[styles.statsValue, { color: winRate >= 50 ? '#10b981' : '#f59e0b', fontSize: 15, fontWeight: '700' }]}>
+                {winRate.toFixed(0)}%
+              </Text>
+            </View>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>Operações</Text>
+              <Text style={[styles.statsValue, { color: colors.text, fontSize: 15, fontWeight: '700' }]}>
+                {execs.length}
+              </Text>
+            </View>
+          </View>
+          <View style={{ height: 0.5, backgroundColor: colors.border, marginVertical: 8 }} />
+          <View style={styles.statsRow}>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>✅ Sucesso</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#10b981' }}>{successExecs.length}</Text>
+            </View>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>❌ Falhas</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: failedExecs.length > 0 ? '#ef4444' : colors.textSecondary }}>{failedExecs.length}</Text>
+            </View>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>💸 Fees</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>${totalFees.toFixed(4)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Lista de Execuções ── */}
+        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5, marginBottom: 8, marginTop: 4 }}>
+          HISTÓRICO ({Math.min(execs.length, 30)} de {execs.length})
+        </Text>
         {execs.slice(0, 30).map((exec, idx) => {
           const label = getExecutionLabel(exec.action)
           const isFailure = exec.action === 'sell_failed' || exec.action === 'buy_failed'
@@ -559,7 +613,7 @@ export function StrategyDetailsModal({
 
               {/* Quantidade e Preço */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, alignItems: 'center' }}>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 12, color: colors.textSecondary }}>
                     {(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}
                   </Text>
@@ -611,6 +665,9 @@ export function StrategyDetailsModal({
         <View style={styles.emptyContainer}>
           <Text style={{ fontSize: 40, marginBottom: 12 }}>📡</Text>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('strategy.noSignals') || 'Nenhum sinal ainda'}</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, textAlign: 'center', paddingHorizontal: 24 }}>
+            Sinais são gerados a cada tick do monitor quando o preço se aproxima ou ultrapassa os alvos configurados.
+          </Text>
         </View>
       )
     }
@@ -623,18 +680,71 @@ export function StrategyDetailsModal({
       info: { label: 'INFORMAÇÃO', emoji: '👁️' },
     }
 
+    const sigColors: Record<string, string> = {
+      take_profit: '#10b981', stop_loss: '#ef4444',
+      gradual_sell: '#f59e0b', expired: '#6b7280',
+      info: '#6b7280',
+    }
+
+    // ── Summary Stats ──
+    const totalSignals = sigs.length
+    const actedSignals = sigs.filter(s => s.acted).length
+    const typeCounts: Record<string, number> = {}
+    sigs.forEach(s => { typeCounts[s.signal_type] = (typeCounts[s.signal_type] || 0) + 1 })
+
     return (
-      <View style={{ paddingTop: 16 }}>
+      <View style={{ paddingTop: 12 }}>
+        {/* ── Resumo de Sinais ── */}
+        <View style={[styles.statsGrid, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginBottom: 12 }]}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5, marginBottom: 10 }}>
+            📡 RESUMO DE SINAIS
+          </Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>Total</Text>
+              <Text style={[styles.statsValue, { color: colors.text, fontSize: 15, fontWeight: '700' }]}>{totalSignals}</Text>
+            </View>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>Executados</Text>
+              <Text style={[styles.statsValue, { color: actedSignals > 0 ? '#10b981' : colors.textSecondary, fontSize: 15, fontWeight: '700' }]}>{actedSignals}</Text>
+            </View>
+            <View style={styles.statsCell}>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>Taxa Ação</Text>
+              <Text style={[styles.statsValue, { color: actedSignals > 0 ? '#f59e0b' : colors.textSecondary, fontSize: 15, fontWeight: '700' }]}>
+                {totalSignals > 0 ? ((actedSignals / totalSignals) * 100).toFixed(0) : 0}%
+              </Text>
+            </View>
+          </View>
+          {/* ── Breakdown por tipo ── */}
+          {Object.keys(typeCounts).length > 1 && (
+            <>
+              <View style={{ height: 0.5, backgroundColor: colors.border, marginVertical: 8 }} />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {Object.entries(typeCounts).map(([type, count]) => {
+                  const color = sigColors[type] || colors.textSecondary
+                  const info = signalTypeLabels[type] || { label: type.toUpperCase(), emoji: '📡' }
+                  return (
+                    <View key={type} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: color + '10', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                      <Text style={{ fontSize: 11 }}>{info.emoji}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: '600', color }}>{count}</Text>
+                    </View>
+                  )
+                })}
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* ── Lista de Sinais ── */}
+        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5, marginBottom: 8, marginTop: 4 }}>
+          HISTÓRICO ({Math.min(sigs.length, 30)} de {sigs.length})
+        </Text>
         {sigs.slice(0, 30).map((sig, idx) => {
-          const sigColors: Record<string, string> = {
-            take_profit: '#10b981', stop_loss: '#ef4444',
-            gradual_sell: '#f59e0b', expired: '#6b7280',
-            info: '#6b7280'
-          }
           const sigColor = sigColors[sig.signal_type] || colors.textSecondary
           const typeInfo = signalTypeLabels[sig.signal_type] || { label: sig.signal_type.toUpperCase(), emoji: '📡' }
           return (
             <View key={idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: sigColor }]}>
+              {/* Header: Tipo + Acted + Data */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <View style={[styles.execBadge, { backgroundColor: sigColor + '18' }]}>
@@ -648,12 +758,25 @@ export function StrategyDetailsModal({
                 </View>
                 <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatDate(sig.created_at)}</Text>
               </View>
-              <Text style={{ fontSize: 12, color: colors.text, marginTop: 6, lineHeight: 18 }}>{sig.message}</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border + '40' }}>
+
+              {/* Mensagem */}
+              <Text style={{ fontSize: 12, color: colors.text, marginTop: 8, lineHeight: 18 }}>{sig.message}</Text>
+
+              {/* Footer: Preço + Variação */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border + '40', alignItems: 'center' }}>
                 <Text style={{ fontSize: 11, color: colors.textSecondary }}>💰 Preço: {formatCurrencyAbs(sig.price)}</Text>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>
-                  {(sig.price_change_percent ?? 0) >= 0 ? '▲' : '▼'} {(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{
+                    backgroundColor: ((sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444') + '15',
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                  }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>
+                      {(sig.price_change_percent ?? 0) >= 0 ? '▲' : '▼'} {(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
           )
