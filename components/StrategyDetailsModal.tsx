@@ -675,9 +675,9 @@ export function StrategyDetailsModal({
     const signalTypeLabels: Record<string, { label: string; emoji: string }> = {
       take_profit: { label: 'TAKE PROFIT', emoji: '🎯' },
       stop_loss: { label: 'STOP LOSS', emoji: '🛑' },
-      gradual_sell: { label: 'VENDA GRADUAL', emoji: '📈' },
+      gradual_sell: { label: 'GRADUAL', emoji: '📈' },
       expired: { label: 'EXPIRADO', emoji: '⏰' },
-      info: { label: 'INFORMAÇÃO', emoji: '👁️' },
+      info: { label: 'INFO', emoji: 'ℹ️' },
     }
 
     const sigColors: Record<string, string> = {
@@ -746,17 +746,17 @@ export function StrategyDetailsModal({
             <View key={idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: sigColor }]}>
               {/* Header: Tipo + Acted + Data */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1 }}>
                   <View style={[styles.execBadge, { backgroundColor: sigColor + '18' }]}>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: sigColor }}>{typeInfo.emoji} {typeInfo.label}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: sigColor }}>{typeInfo.emoji} {typeInfo.label}</Text>
                   </View>
                   {sig.acted && (
                     <View style={{ backgroundColor: '#10b981', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
-                      <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>EXECUTADO</Text>
+                      <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>EXEC</Text>
                     </View>
                   )}
                 </View>
-                <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatDate(sig.created_at)}</Text>
+                <Text style={{ fontSize: 10, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{formatDate(sig.created_at)}</Text>
               </View>
 
               {/* Mensagem */}
