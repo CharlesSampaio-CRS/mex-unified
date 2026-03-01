@@ -37,6 +37,14 @@ export interface StrategyConfig {
   gradual_lots: GradualLot[];
   timer_gradual_min: number;
   time_execution_min: number;
+  /** DCA (Dollar Cost Averaging) — compra mais quando o preço cai */
+  dca_enabled?: boolean;
+  /** Valor em USD para cada compra DCA (ex: 36 = comprar +$36) */
+  dca_buy_amount_usd?: number;
+  /** Queda % do preço médio para acionar DCA (ex: 5 = -5%) */
+  dca_trigger_percent?: number;
+  /** Máximo de compras DCA extras */
+  dca_max_buys?: number;
 }
 
 export type ExecutionAction =
@@ -64,6 +72,7 @@ export type SignalType =
   | 'take_profit'
   | 'stop_loss'
   | 'gradual_sell'
+  | 'dca_buy'
   | 'expired'
   | 'info';
 
@@ -105,6 +114,7 @@ export interface Strategy {
   error_message?: string;
   total_pnl_usd: number;
   total_executions: number;
+  dca_buys_done?: number;
   started_at: number;
   created_at: number;
   updated_at: number;

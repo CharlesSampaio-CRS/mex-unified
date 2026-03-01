@@ -438,6 +438,34 @@ export function StrategyDetailsModal({
               </View>
             </>
           )}
+          {(cfg as any).dca_enabled && (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: 16 }}>📉</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>DCA (Dollar Cost Avg)</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#3b82f6' }]}>Ativo</Text>
+              </View>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: 16 }}>💰</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Valor DCA</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#3b82f6' }]}>${(cfg as any).dca_buy_amount_usd?.toFixed(2) ?? '—'}</Text>
+              </View>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: 16 }}>📊</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Trigger / Max</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#3b82f6' }]}>-{(cfg as any).dca_trigger_percent ?? 5}% · {strategy.dca_buys_done ?? 0}/{(cfg as any).dca_max_buys ?? 3} compras</Text>
+              </View>
+            </>
+          )}
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
@@ -523,7 +551,7 @@ export function StrategyDetailsModal({
           <Text style={{ fontSize: 40, marginBottom: 12 }}>📊</Text>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('strategy.noExecutions') || 'Nenhuma execução ainda'}</Text>
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, textAlign: 'center', paddingHorizontal: 24 }}>
-            Execuções aparecem quando o sistema executa ordens de venda na exchange (take profit, stop loss ou venda gradual).
+            Execuções aparecem quando o sistema executa ordens na exchange (take profit, stop loss, DCA ou venda gradual).
           </Text>
         </View>
       )
@@ -534,6 +562,7 @@ export function StrategyDetailsModal({
         'take_profit': '🎯 Take Profit',
         'stop_loss': '🛑 Stop Loss',
         'gradual_sell': '📈 Venda Gradual',
+        'dca_buy': '📉 DCA Buy',
       }
       if (reason.startsWith('sell_failed:')) return '❌ ' + reason.replace('sell_failed:', '').trim()
       if (reason.startsWith('stop_loss_failed:')) return '🛑❌ ' + reason.replace('stop_loss_failed:', '').trim()
@@ -685,14 +714,15 @@ export function StrategyDetailsModal({
       take_profit: { label: 'TAKE PROFIT', emoji: '🎯' },
       stop_loss: { label: 'STOP LOSS', emoji: '🛑' },
       gradual_sell: { label: 'GRADUAL', emoji: '📈' },
+      dca_buy: { label: 'DCA', emoji: '📉' },
       expired: { label: 'EXPIRADO', emoji: '⏰' },
       info: { label: 'INFO', emoji: 'ℹ️' },
     }
 
     const sigColors: Record<string, string> = {
       take_profit: '#10b981', stop_loss: '#ef4444',
-      gradual_sell: '#f59e0b', expired: '#6b7280',
-      info: '#6b7280',
+      gradual_sell: '#f59e0b', dca_buy: '#3b82f6',
+      expired: '#6b7280', info: '#6b7280',
     }
 
     // ── Summary Stats ──

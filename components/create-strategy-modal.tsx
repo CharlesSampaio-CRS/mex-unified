@@ -73,6 +73,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const [gradualSell, setGradualSell] = useState(true)
   const [timerGradualMin, setTimerGradualMin] = useState<string>("15")
   const [timeExecutionMin, setTimeExecutionMin] = useState<string>("120")
+  const [dcaEnabled, setDcaEnabled] = useState(false)
+  const [dcaBuyAmountUsd, setDcaBuyAmountUsd] = useState<string>("")
+  const [dcaTriggerPercent, setDcaTriggerPercent] = useState<string>("5.0")
+  const [dcaMaxBuys, setDcaMaxBuys] = useState<string>("3")
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -107,6 +111,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       setGradualSell(true)
       setTimerGradualMin("15")
       setTimeExecutionMin("120")
+      setDcaEnabled(false)
+      setDcaBuyAmountUsd("")
+      setDcaTriggerPercent("5.0")
+      setDcaMaxBuys("3")
     }
   }, [visible])
 
@@ -224,6 +232,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           gradual_lots: [],
           timer_gradual_min: parseInt(timerGradualMin) || 15,
           time_execution_min: parseInt(timeExecutionMin) || 120,
+          dca_enabled: dcaEnabled,
+          dca_buy_amount_usd: dcaEnabled ? (parseFloat(dcaBuyAmountUsd) || 0) : undefined,
+          dca_trigger_percent: dcaEnabled ? (parseFloat(dcaTriggerPercent) || 5.0) : undefined,
+          dca_max_buys: dcaEnabled ? (parseInt(dcaMaxBuys) || 3) : undefined,
         },
       }
 
@@ -524,6 +536,87 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           )}
         </View>
 
+        <View style={[styles.fieldCard, { borderColor: dcaEnabled ? '#3b82f640' : colors.border + '40', backgroundColor: dcaEnabled ? '#3b82f608' : colors.background }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: dcaEnabled ? 12 : 0 }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={[styles.fieldLabel, { color: colors.text, marginBottom: 2 }]}>📉 DCA (Compra na Queda)</Text>
+              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                Compra mais quando o preço cai, baixando o preço médio
+              </Text>
+            </View>
+            <Switch
+              value={dcaEnabled}
+              onValueChange={(v) => {
+                setDcaEnabled(v)
+                if (v && stopLossEnabled) setStopLossEnabled(false)
+              }}
+              trackColor={{ false: colors.border, true: '#3b82f660' }}
+              thumbColor={dcaEnabled ? '#3b82f6' : '#f4f3f4'}
+            />
+          </View>
+          {dcaEnabled && (
+            <View style={{ gap: 12 }}>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Valor por compra (USD)</Text>
+                <TextInput
+                  style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  placeholder="36.00"
+                  placeholderTextColor={colors.textSecondary}
+                  value={dcaBuyAmountUsd}
+                  onChangeText={(v) => setDcaBuyAmountUsd(v.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                />
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                  Quanto comprar a cada queda (ex: $36)
+                </Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Queda para acionar (%)</Text>
+                <TextInput
+                  style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  placeholder="5.0"
+                  placeholderTextColor={colors.textSecondary}
+                  value={dcaTriggerPercent}
+                  onChangeText={(v) => setDcaTriggerPercent(v.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Máx. de compras DCA</Text>
+                <TextInput
+                  style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  placeholder="3"
+                  placeholderTextColor={colors.textSecondary}
+                  value={dcaMaxBuys}
+                  onChangeText={(v) => setDcaMaxBuys(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                />
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                  Máx investido: ${((parseFloat(dcaBuyAmountUsd) || 0) * (parseInt(dcaMaxBuys) || 3) + ia).toFixed(2)}
+                </Text>
+              </View>
+              {bp > 0 && ia > 0 && (parseFloat(dcaBuyAmountUsd) || 0) > 0 && (
+                <View style={{ padding: 10, backgroundColor: '#3b82f610', borderRadius: 8, borderWidth: 1, borderColor: '#3b82f630' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#3b82f6', marginBottom: 4 }}>📊 Simulação DCA</Text>
+                  {Array.from({ length: parseInt(dcaMaxBuys) || 3 }).map((_, i) => {
+                    const dcaAmt = parseFloat(dcaBuyAmountUsd) || 0
+                    const dcaTrig = parseFloat(dcaTriggerPercent) || 5
+                    const dcaPrice = bp * Math.pow(1 - dcaTrig / 100, i + 1)
+                    const totalInvested = ia + dcaAmt * (i + 1)
+                    const totalQty = ia / bp + Array.from({ length: i + 1 }).reduce<number>((sum, _, j) => sum + dcaAmt / (bp * Math.pow(1 - dcaTrig / 100, j + 1)), 0)
+                    const avgPrice = totalInvested / (totalQty as number)
+                    return (
+                      <Text key={i} style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                        DCA #{i + 1}: a ${dcaPrice.toFixed(2)} → médio ${avgPrice.toFixed(2)} (total: ${totalInvested.toFixed(0)})
+                      </Text>
+                    )
+                  })}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
         <View style={styles.fieldGroup}>
           <Text style={[styles.fieldLabel, { color: colors.text }]}>📊 Taxa / Fee (%)</Text>
           <TextInput
@@ -615,6 +708,11 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
             <Text style={{ fontSize: 12, color: '#ef4444' }}>
               Stop Loss: {stopLossEnabled ? (stopLossPrice > 0 ? `$${stopLossPrice.toFixed(4)} (-${sl}%)` : `(-${sl}%)`) : '🚫 Desativado'}
             </Text>
+            {dcaEnabled && (
+              <Text style={{ fontSize: 12, color: '#3b82f6' }}>
+                📉 DCA: ${dcaBuyAmountUsd || '0'}/compra, queda {dcaTriggerPercent}%, máx {dcaMaxBuys}x
+              </Text>
+            )}
             <Text style={{ fontSize: 12, color: colors.text }}>
               Gradual: {gradualSell ? `4 lotes, timer ${timerGradualMin}min, step ${gradualTakePercent}%` : 'OFF'}
             </Text>
