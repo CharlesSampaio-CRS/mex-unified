@@ -57,6 +57,7 @@ export interface StrategyExecution {
   exchange_order_id?: string;
   executed_at: number;
   error_message?: string;
+  source?: 'system' | 'user';
 }
 
 export type SignalType =
@@ -73,6 +74,7 @@ export interface StrategySignal {
   acted: boolean;
   price_change_percent: number;
   created_at: number;
+  source?: 'system' | 'user';
 }
 
 export interface PositionInfo {

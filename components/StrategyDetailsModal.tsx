@@ -603,12 +603,21 @@ export function StrategyDetailsModal({
           const pnlColor = isFailure ? '#ef4444' : (exec.pnl_usd ?? 0) >= 0 ? '#10b981' : '#ef4444'
           return (
             <View key={exec.execution_id || idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: label.color }]}>
-              {/* Header: Tipo + Data */}
+              {/* Header: Tipo + Source + Data */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={[styles.execBadge, { backgroundColor: label.color + '18' }]}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: label.color }}>{label.emoji} {label.text}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1 }}>
+                  <View style={[styles.execBadge, { backgroundColor: label.color + '18' }]}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: label.color }}>{label.emoji} {label.text}</Text>
+                  </View>
+                  {exec.source && (
+                    <View style={{ backgroundColor: exec.source === 'user' ? '#8b5cf6' + '18' : '#6b7280' + '18', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                      <Text style={{ fontSize: 9, fontWeight: '700', color: exec.source === 'user' ? '#8b5cf6' : '#6b7280' }}>
+                        {exec.source === 'user' ? '👤' : '⚙️'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
-                <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatDate(exec.executed_at)}</Text>
+                <Text style={{ fontSize: 10, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{formatDate(exec.executed_at)}</Text>
               </View>
 
               {/* Quantidade e Preço */}
@@ -744,7 +753,7 @@ export function StrategyDetailsModal({
           const typeInfo = signalTypeLabels[sig.signal_type] || { label: sig.signal_type.toUpperCase(), emoji: '📡' }
           return (
             <View key={idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: sigColor }]}>
-              {/* Header: Tipo + Acted + Data */}
+              {/* Header: Tipo + Acted + Source + Data */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1 }}>
                   <View style={[styles.execBadge, { backgroundColor: sigColor + '18' }]}>
@@ -753,6 +762,13 @@ export function StrategyDetailsModal({
                   {sig.acted && (
                     <View style={{ backgroundColor: '#10b981', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
                       <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>EXEC</Text>
+                    </View>
+                  )}
+                  {sig.source && (
+                    <View style={{ backgroundColor: sig.source === 'user' ? '#8b5cf6' + '18' : '#6b7280' + '18', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                      <Text style={{ fontSize: 9, fontWeight: '700', color: sig.source === 'user' ? '#8b5cf6' : '#6b7280' }}>
+                        {sig.source === 'user' ? '👤' : '⚙️'}
+                      </Text>
                     </View>
                   )}
                 </View>
