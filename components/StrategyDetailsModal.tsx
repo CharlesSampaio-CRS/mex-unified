@@ -46,7 +46,7 @@ export function StrategyDetailsModal({
   const [loading, setLoading] = useState(false)
   const [ticking, setTicking] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'executions' | 'signals'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'signals'>('overview')
   const [tickResult, setTickResult] = useState<{
     success: boolean;
     error?: string;
@@ -873,11 +873,9 @@ export function StrategyDetailsModal({
 
   const renderTabBar = () => {
     if (!strategy) return null
-    const execCount = (strategy as StrategyDetail)?.executions?.length || 0
     const sigCount = (strategy as StrategyDetail)?.signals?.length || 0
     const tabs = [
       { key: 'overview' as const, label: t('strategy.overview') || 'Visão Geral' },
-      { key: 'executions' as const, label: `${t('strategy.executions') || 'Execuções'} (${execCount})` },
       { key: 'signals' as const, label: `${t('strategy.signals') || 'Sinais'} (${sigCount})` },
     ]
     return (
@@ -1132,7 +1130,6 @@ export function StrategyDetailsModal({
               {renderDates()}
             </>
           )}
-          {activeTab === 'executions' && renderExecutionsList()}
           {activeTab === 'signals' && renderSignalsList()}
           <View style={{ height: 120 }} />
         </ScrollView>
