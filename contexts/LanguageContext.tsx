@@ -312,11 +312,11 @@ const translations = {
     'exchanges.taker': 'Taker',
     'exchanges.deposit': 'Depósito',
     'exchanges.withdraw': 'Saque',
-    // Deposit deep link
-    'deposit.label': 'Depositar',
-    'deposit.title': 'Depositar',
-    'deposit.confirmMessage': 'Você será redirecionado para o app da {exchange} para fazer um depósito.',
-    'deposit.openApp': 'Abrir App',
+    // Deep link to exchange app
+    'deposit.label': 'Abrir',
+    'deposit.title': 'Abrir app da exchange',
+    'deposit.confirmMessage': 'Você será redirecionado para o app da {exchange}. Nunca compartilhe suas credenciais e verifique sempre se está no app oficial.',
+    'deposit.openApp': 'Continuar',
     'exchanges.confirmDelete': '⚠️ Confirmar Exclusão',
     'exchanges.confirmDisconnect': '⚠️ Confirmar Desconexão',
     'exchanges.qrSuccess': '✅ Sucesso!',
@@ -1123,11 +1123,11 @@ const translations = {
     'exchanges.taker': 'Taker',
     'exchanges.deposit': 'Deposit',
     'exchanges.withdraw': 'Withdrawal',
-    // Deposit deep link
-    'deposit.label': 'Deposit',
-    'deposit.title': 'Deposit',
-    'deposit.confirmMessage': 'You will be redirected to the {exchange} app to make a deposit.',
-    'deposit.openApp': 'Open App',
+    // Deep link to exchange app
+    'deposit.label': 'Open',
+    'deposit.title': 'Open exchange app',
+    'deposit.confirmMessage': 'You will be redirected to the {exchange} app. Never share your credentials and always verify you are using the official app.',
+    'deposit.openApp': 'Continue',
     'exchanges.confirmDelete': '⚠️ Confirm Deletion',
     'exchanges.confirmDisconnect': '⚠️ Confirm Disconnect',
     'exchanges.qrSuccess': '✅ Success!',

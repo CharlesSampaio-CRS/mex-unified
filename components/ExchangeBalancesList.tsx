@@ -56,7 +56,7 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
       .replace('{exchange}', exchangeName)
 
     Alert.alert(
-      `💰 ${t('deposit.title') || 'Depositar'}`,
+      `⚠️ ${t('deposit.title') || 'Abrir app da exchange'}`,
       message,
       [
         { text: t('common.cancel') || 'Cancelar', style: 'cancel' },
@@ -153,18 +153,6 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                 <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
                   {ex.name}
                 </Text>
-                {ex.depositConfig && (
-                  <TouchableOpacity
-                    onPress={() => handleDeposit(ex.name, ex.ccxtId)}
-                    activeOpacity={0.6}
-                    hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                    style={styles.depositButton}
-                  >
-                    <Text style={[styles.depositText, { color: colors.success }]}>
-                      {t('deposit.label') || 'Depositar'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
                 {ex.hasError && (
                   <TouchableOpacity
                     onPress={() => setExpandedError(prev => prev === ex.name ? null : ex.name)}
@@ -174,6 +162,20 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                     <Text style={styles.errorIcon}>⚠️</Text>
                   </TouchableOpacity>
                 )}
+                <View style={styles.depositColumn}>
+                  {ex.depositConfig ? (
+                    <TouchableOpacity
+                      onPress={() => handleDeposit(ex.name, ex.ccxtId)}
+                      activeOpacity={0.6}
+                      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                      style={styles.depositButton}
+                    >
+                      <Text style={[styles.depositText, { color: colors.success }]}>
+                        {t('deposit.label') || 'Abrir'}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
                 <Text style={[styles.valueUsd, { color: colors.text }]}>
                   {hideValue(fmtUsd(ex.value))}
                 </Text>
@@ -285,11 +287,14 @@ const styles = StyleSheet.create({
     minWidth: 54,
     textAlign: 'right',
   },
+  depositColumn: {
+    width: 40,
+    alignItems: 'center',
+  },
   depositButton: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     paddingVertical: 2,
     borderRadius: 4,
-    marginLeft: 2,
   },
   depositText: {
     fontSize: 9,
