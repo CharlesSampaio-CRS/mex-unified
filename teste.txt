@@ -1,2 +1,7 @@
- ERROR  ❌ Cancel Order Error: [Error: Failed to cancel order: BadRequest: mexc {"msg":"Unknown order id.","code":-2011}]
- ERROR  Erro ao cancelar ordem: [Error: Failed to cancel order: BadRequest: mexc {"msg":"Unknown order id.","code":-2011}]
+token-details-modal.tsx:223 ❌ Erro ao carregar token: Error: Exchange não encontrada
+    at ?anon_0_ (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:198210:28)
+    at next (native)
+    at asyncGeneratorStep (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:11964:19)
+    at _next (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:11978:29)
+    at tryCallOne (address at InternalBytecode.js:1:1180)
+    at anonymous (address at InternalBytecode.js:1:1874)
