@@ -1,7 +1,4 @@
-token-details-modal.tsx:223 ❌ Erro ao carregar token: Error: Exchange não encontrada
-    at ?anon_0_ (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:198210:28)
-    at next (native)
-    at asyncGeneratorStep (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:11964:19)
-    at _next (http://192.168.18.15:8081/node_modules/expo/AppEntry.bundle//&platform=ios&dev=true&hot=false&lazy=true&transform.routerRoot=app:11978:29)
-    at tryCallOne (address at InternalBytecode.js:1:1180)
-    at anonymous (address at InternalBytecode.js:1:1874)
+curl 'http://54.94.231.254:3002/api/v1/balances/secure' \
+  -X 'POST' \
+  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwibmFtZSI6InVzZXIiLCJyb2xlcyI6WyJ1c2VyIl0sImlzX2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzcyNDY5MDEzLCJleHAiOjE3NzI0NzI2MTMsImp0aSI6ImZkMTZhNDFlLThhNTktNDQ4My1hNjIwLWIzOWRhZWNmYzk4ZCIsImF1ZCI6InRyYWRpbmctYXBpIiwiaXNzIjoidHJhZGluZy1zZXJ2aWNlIn0.3d5EL6OBcfxXHWhCEDFZI7haQ2FaDgAi7-I4eCYRLqM' \
+  -H 'Content-Type: application/json'
