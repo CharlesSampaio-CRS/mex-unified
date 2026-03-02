@@ -1021,58 +1021,80 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
 
           return (
             <View key={getExchangeId(exchange)} style={styles.exchangeSection}>
-              <View style={[styles.exchangeHeader, { backgroundColor: colors.card }]}>
-                <View style={styles.simpleExchangeTitleRow}>
-                  <Image 
-                    source={getExchangeLogo(getExchangeName(exchange))} 
-                    style={styles.simpleExchangeLogo}
-                    resizeMode="contain"
-                  />
-                  <Text style={[styles.simpleExchangeTitle, { color: colors.text }]}>
-                    {String(getExchangeName(exchange))}
+              {/* Exchange Header - mesmo estilo do header dos order cards */}
+              <View style={[styles.exchangeCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                <View style={[styles.exchangeCardHeader, { borderBottomColor: colors.border }]}>
+                  <View style={styles.exchangeCardLeft}>
+                    <Image 
+                      source={getExchangeLogo(getExchangeName(exchange))} 
+                      style={styles.exchangeCardLogo}
+                      resizeMode="contain"
+                    />
+                    <Text style={[styles.exchangeCardName, { color: colors.text }]}>
+                      {String(getExchangeName(exchange))}
+                    </Text>
+                  </View>
+                  <Text style={[styles.exchangeCardTotal, { color: colors.text }]}>
+                    {String(valuesHidden ? '****' : apiService.formatUSD(exchangeTotalUSD))}
                   </Text>
                 </View>
-                <Text style={[styles.simpleExchangeTotal, { color: colors.text }]}>
-                  {String(valuesHidden ? '****' : apiService.formatUSD(exchangeTotalUSD))}
-                </Text>
+
+                {/* Asset rows - inline como os order items */}
+                <View style={styles.exchangeCardBody}>
+                  {formattedAssets.map((asset: any, index: number) => (
+                    <BlinkingAssetCard
+                      key={asset.id}
+                      isAffected={recentlyAffectedSymbols.has(asset.symbol?.toUpperCase())}
+                      style={[
+                        styles.assetItemRow,
+                        { borderBottomColor: colors.border },
+                        index === formattedAssets.length - 1 && { borderBottomWidth: 0 },
+                      ]}
+                      onPress={() => {
+                        setSelectedToken({
+                          exchangeId: asset.exchangeId,
+                          symbol: asset.symbol
+                        })
+                        setTokenModalVisible(true)
+                      }}
+                    >
+                      {/* Symbol */}
+                      <View style={styles.assetSymbolContainer}>
+                        <Text style={[styles.assetSymbolText, { color: colors.text }]} numberOfLines={1}>
+                          {String(asset.symbol)}
+                        </Text>
+                      </View>
+
+                      {/* Variation badge */}
+                      {!asset.isStablecoin && asset.variation24h !== undefined ? (
+                        <View style={[styles.assetVariationBadge, { 
+                          backgroundColor: (asset.variation24h >= 0 ? colors.success : colors.danger) + '10' 
+                        }]}>
+                          <Text style={[styles.assetVariationText, { 
+                            color: asset.variation24h >= 0 ? colors.success : colors.danger 
+                          }]}>
+                            {String((asset.variation24h >= 0 ? '+' : '') + asset.variation24h.toFixed(1))}%
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={styles.assetVariationBadge}>
+                          <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.4 }]}>—</Text>
+                        </View>
+                      )}
+
+                      {/* Amount + Value inline */}
+                      <View style={styles.assetValuesContainer}>
+                        <Text style={[styles.assetAmountText, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {String(asset.amount)}
+                        </Text>
+                        <Text style={[styles.assetValueText, { color: colors.text }]} numberOfLines={1}>
+                          {String(valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD))}
+                        </Text>
+                      </View>
+                    </BlinkingAssetCard>
+                  ))}
+                </View>
               </View>
-              
-              {formattedAssets.map((asset: any) => (
-                <BlinkingAssetCard
-                  key={asset.id}
-                  isAffected={recentlyAffectedSymbols.has(asset.symbol?.toUpperCase())}
-                  style={[styles.simpleAssetCard, { backgroundColor: colors.card }]}
-                  onPress={() => {
-                    setSelectedToken({
-                      exchangeId: asset.exchangeId,
-                      symbol: asset.symbol
-                    })
-                    setTokenModalVisible(true)
-                  }}
-                >
-                  <View style={styles.simpleAssetInfo}>
-                    <Text style={[styles.simpleAssetSymbol, { color: colors.text }]}>
-                      {String(asset.symbol)}
-                    </Text>
-                    <Text style={[styles.simpleAssetAmount, { color: colors.textSecondary }]}>
-                      {String(asset.amount)} {String(asset.symbol)}
-                    </Text>
-                  </View>
-                  <View style={styles.simpleAssetRight}>
-                    <Text style={[styles.simpleAssetValue, { color: colors.text }]}>
-                      {String(valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD))}
-                    </Text>
-                    {!asset.isStablecoin && asset.variation24h !== undefined && (
-                      <Text style={[
-                        styles.simpleAssetVariation,
-                        { color: asset.variation24h >= 0 ? colors.success : colors.danger }
-                      ]}>
-                        {String((asset.variation24h >= 0 ? '+' : '') + asset.variation24h.toFixed(2))}%
-                      </Text>
-                    )}
-                  </View>
-                </BlinkingAssetCard>
-              ))}
             </View>
           )
         })}
@@ -1458,16 +1480,86 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   exchangeSection: {
-    marginBottom: 18,
+    marginBottom: 14,
   },
-  exchangeHeader: {
+  exchangeCard: {
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  exchangeCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0.5,
+  },
+  exchangeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exchangeCardLogo: {
+    width: 20,
+    height: 20,
+  },
+  exchangeCardName: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+  },
+  exchangeCardTotal: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.semibold,
+  },
+  exchangeCardBody: {
+    // Container for asset rows inside the card
+  },
+  // Asset item row - compact inline like order items
+  assetItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0.5,
+    gap: 8,
+  },
+  assetSymbolContainer: {
+    minWidth: 52,
+  },
+  assetSymbolText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
+  },
+  assetVariationBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    minWidth: 42,
+    alignItems: 'center',
+  },
+  assetVariationText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.bold,
+  },
+  assetValuesContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  assetAmountText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.regular,
+    minWidth: 50,
+    textAlign: 'right',
+  },
+  assetValueText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
+    minWidth: 56,
+    textAlign: 'right',
   },
   list: {
     gap: 8,
@@ -2118,57 +2210,8 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
     textAlign: 'center',
   },
-  // Estilos para listagem inline de assets (simple)
-  simpleExchangeSection: {
-    marginBottom: 12,
-  },
-  simpleExchangeTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  simpleExchangeLogo: {
-    width: 22,
-    height: 22,
-  },
-  simpleExchangeTitle: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.bold,
-  },
-  simpleExchangeTotal: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-  },
-  simpleAssetCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    marginTop: 6,
-    borderRadius: 6,
-  },
-  simpleAssetInfo: {
-    flex: 1,
-  },
-  simpleAssetSymbol: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-  },
-  simpleAssetAmount: {
-    fontSize: typography.caption,
-    marginTop: 2,
-  },
-  simpleAssetRight: {
-    alignItems: 'flex-end',
-  },
-  simpleAssetValue: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.medium,
-  },
-  simpleAssetVariation: {
-    fontSize: typography.caption,
-    marginTop: 2,
-  },
 })
+
+
 
 
