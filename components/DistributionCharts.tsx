@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 12,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.regular,
     letterSpacing: 0.3,
   },
   chartContent: {

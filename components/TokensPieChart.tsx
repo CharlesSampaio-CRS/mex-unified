@@ -466,13 +466,13 @@ const styles = StyleSheet.create({
   },
   centerValue: {
     fontSize: 10,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.regular,
     marginTop: 6,
     textAlign: 'center',
   },
   centerPercentage: {
     fontSize: 8,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.regular,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   },
   legendName: {
     fontSize: 10,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.regular,
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   legendPercentage: {
     fontSize: 10,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.regular,
     minWidth: 36,
     maxWidth: 56,
     textAlign: 'right',
