@@ -213,7 +213,7 @@ const ExchangeBar = memo(({
         {/* Erro (se houver) */}
         {exchange.hasError && (
           <View style={styles.errorBadge}>
-            <Ionicons name="alert-circle" size={12} color={colors.danger} />
+            <Ionicons name="alert-circle-outline" size={12} color={colors.danger} />
             <Text style={[styles.errorText, { color: colors.danger }]} numberOfLines={1}>
               {exchange.error || 'Error loading data'}
             </Text>

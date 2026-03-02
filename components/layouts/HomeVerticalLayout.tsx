@@ -28,7 +28,7 @@ export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({
       {/* Indicador de atualização */}
       {isUpdating && (
         <View style={[styles.updatingBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="refresh" size={16} color={colors.primary} />
+          <Ionicons name="refresh-outline" size={16} color={colors.primary} />
           <Text style={[styles.updatingText, { color: colors.primary }]}>
             {t('common.updatingData')}
           </Text>

@@ -166,7 +166,7 @@ export function CreateAlertModal({
               🔔 {t('alerts.createAlert')}
             </Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.text} />
+              <Ionicons name="close-outline" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 

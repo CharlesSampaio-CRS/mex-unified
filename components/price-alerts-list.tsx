@@ -272,7 +272,7 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
                       {/* Metadados */}
                       <View style={styles.alertMeta}>
                         <View style={styles.metaItem}>
-                          <Ionicons name="repeat" size={12} color={colors.textTertiary} />
+                          <Ionicons name="repeat-outline" size={12} color={colors.textTertiary} />
                           <Text style={[styles.metaText, { color: colors.textSecondary }]}>
                             {getAlertFrequencyLabel(alert.frequency)}
                           </Text>
@@ -280,7 +280,7 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
 
                         {alert.triggerCount > 0 && (
                           <View style={styles.metaItem}>
-                            <Ionicons name="notifications" size={12} color={colors.textTertiary} />
+                            <Ionicons name="notifications-outline" size={12} color={colors.textTertiary} />
                             <Text style={[styles.metaText, { color: colors.textSecondary }]}>
                               Disparado {alert.triggerCount}x
                             </Text>
@@ -289,7 +289,7 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
 
                         {alert.lastTriggeredAt && (
                           <View style={styles.metaItem}>
-                            <Ionicons name="time" size={12} color={colors.textTertiary} />
+                            <Ionicons name="time-outline" size={12} color={colors.textTertiary} />
                             <Text style={[styles.metaText, { color: colors.textSecondary }]}>
                               {new Date(alert.lastTriggeredAt).toLocaleString('pt-BR', {
                                 day: '2-digit',

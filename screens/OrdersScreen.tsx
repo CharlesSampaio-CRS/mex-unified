@@ -477,7 +477,7 @@ export function OrdersScreen({ navigation }: any) {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+              <Ionicons name="close-circle-outline" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>

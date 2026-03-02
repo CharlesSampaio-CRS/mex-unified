@@ -215,7 +215,7 @@ export function AssetsScreen({ navigation }: any) {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+              <Ionicons name="close-circle-outline" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -455,7 +455,7 @@ export function AssetsScreen({ navigation }: any) {
                         setTradeModalVisible(true);
                       }}
                     >
-                      <Ionicons name="swap-horizontal" size={16} color={colors.primary} />
+                      <Ionicons name="swap-horizontal-outline" size={16} color={colors.primary} />
                       <Text style={[styles.tradeButtonText, { color: colors.primary }]}>
                         Negociar
                       </Text>

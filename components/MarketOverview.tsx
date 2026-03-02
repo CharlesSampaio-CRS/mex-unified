@@ -332,7 +332,7 @@ export const MarketOverview: React.FC = () => {
                 {selectedToken?.name} ({selectedToken?.symbol})
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
+                <Ionicons name="close-outline" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
