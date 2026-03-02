@@ -71,6 +71,8 @@ export function TradeModal({
   const [selectedPair, setSelectedPair] = useState<string | null>(null)
   const [pairsLoading, setPairsLoading] = useState(false)
   const [pairsError, setPairsError] = useState<string | null>(null)
+  const [pairPriceLoading, setPairPriceLoading] = useState(false)
+  const [pairSearch, setPairSearch] = useState('')
 
   // Calcula diferença percentual entre preço digitado e preço de mercado
   const calculatePriceDifference = (): { percentage: number; isHigher: boolean } | null => {
@@ -263,6 +265,7 @@ export function TradeModal({
       setAvailablePairs([])
       setSelectedPair(null)
       setPairsError(null)
+      setPairSearch('')
 
       // 🔄 Busca pares disponíveis para este token na exchange
       const fetchPairs = async () => {
@@ -285,8 +288,6 @@ export function TradeModal({
             // Prioriza pares com quote/base currencies comuns
             const priorityOrder = ['USDT', 'BRL', 'USDC', 'BTC', 'ETH', 'EUR']
             const sortedPairs = relevantPairs.sort((a, b) => {
-              // Se token é base, prioriza por quote (USDT > BRL > USDC)
-              // Se token é quote, prioriza por base (BTC > ETH > SOL)
               const keyA = isQuoteOnly ? a.base : a.quote
               const keyB = isQuoteOnly ? b.base : b.quote
               const aIdx = priorityOrder.indexOf(keyA)
@@ -296,22 +297,18 @@ export function TradeModal({
               return aPriority - bPriority
             })
 
-            // Limita a 8 pares mais relevantes para não poluir a UI
-            const topPairs = sortedPairs.slice(0, 8)
-
-            setAvailablePairs(topPairs)
+            // Sem limite — mostra todos, com search quando >8
+            setAvailablePairs(sortedPairs)
             
             // Auto-seleciona o primeiro par
-            if (topPairs.length > 0) {
-              setSelectedPair(topPairs[0].symbol)
+            if (sortedPairs.length > 0) {
+              setSelectedPair(sortedPairs[0].symbol)
             }
           } else {
-            // Nenhum par encontrado - mostra erro
             setPairsError(`Nenhum par de trading ativo encontrado para ${symbol} nesta exchange`)
           }
         } catch (error: any) {
           console.error('❌ Error fetching pairs:', error)
-          // Fallback: assume par padrão TOKEN/USDT
           const fallbackPair = `${symbol.toUpperCase()}/USDT`
           setSelectedPair(fallbackPair)
           setAvailablePairs([{
@@ -332,6 +329,28 @@ export function TradeModal({
       }
     }
   }, [visible, currentPrice, symbol, exchangeId])
+
+  // 📈 Busca preço do par selecionado na exchange quando muda
+  useEffect(() => {
+    if (!selectedPair || !exchangeId || !visible) return
+    
+    const fetchPairPrice = async () => {
+      setPairPriceLoading(true)
+      try {
+        const result = await apiService.getPairTicker(exchangeId, selectedPair)
+        if (result.success && result.ticker?.last > 0) {
+          const lastPrice = result.ticker.last
+          setPrice(lastPrice < 0.01 ? lastPrice.toFixed(10).replace(/\.?0+$/, '') : lastPrice.toString())
+        }
+      } catch (error: any) {
+        console.warn('⚠️ Could not fetch pair price, keeping current:', error.message)
+      } finally {
+        setPairPriceLoading(false)
+      }
+    }
+
+    fetchPairPrice()
+  }, [selectedPair, exchangeId, visible])
 
   const isBuy = orderSide === 'buy'
 
@@ -587,9 +606,9 @@ export function TradeModal({
             <View>
               <Text style={[styles.title, { color: colors.text }]}>Trade {String(tradingPair || symbol.toUpperCase())}</Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                {String(exchangeName)} • {String(currentPrice < 0.01 
-                  ? currentPrice.toFixed(10).replace(/\.?0+$/, '') 
-                  : apiService.formatUSD(currentPrice))}
+                {String(exchangeName)} • {pairPriceLoading ? '⏳ ...' : String(parseFloat(price || '0') < 0.01 
+                  ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
+                  : apiService.formatUSD(parseFloat(price || '0')))}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -618,10 +637,59 @@ export function TradeModal({
               </View>
             ) : availablePairs.length > 1 ? (
               <View style={styles.section}>
-                <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>Par de trading</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {availablePairs.map((pair) => (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
+                    Par de trading {pairPriceLoading ? '⏳' : ''}
+                  </Text>
+                  <Text style={[{ fontSize: 11, color: colors.textTertiary }]}>
+                    {availablePairs.length} pares
+                  </Text>
+                </View>
+                {/* Search input para listas grandes (>8 pares) */}
+                {availablePairs.length > 8 && (
+                  <View style={[{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    marginTop: 6,
+                    marginBottom: 2,
+                    gap: 6,
+                  }]}>
+                    <Text style={{ color: colors.textTertiary, fontSize: 14 }}>🔍</Text>
+                    <TextInput
+                      style={{ flex: 1, fontSize: 13, color: colors.text, paddingVertical: 2 }}
+                      placeholder="Buscar par... (ex: BTC, ETH)"
+                      placeholderTextColor={colors.textTertiary}
+                      value={pairSearch}
+                      onChangeText={setPairSearch}
+                      autoCapitalize="characters"
+                    />
+                    {pairSearch.length > 0 && (
+                      <TouchableOpacity onPress={() => setPairSearch('')}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>✕</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+                <ScrollView 
+                  horizontal={availablePairs.length <= 8} 
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={availablePairs.length > 8}
+                  style={{ marginTop: 8, maxHeight: availablePairs.length > 8 ? 140 : undefined }}
+                >
+                  <View style={{ 
+                    flexDirection: availablePairs.length <= 8 ? 'row' : 'row', 
+                    flexWrap: availablePairs.length <= 8 ? 'nowrap' : 'wrap',
+                    gap: 8 
+                  }}>
+                    {availablePairs
+                      .filter(pair => !pairSearch || pair.symbol.toUpperCase().includes(pairSearch.toUpperCase()))
+                      .map((pair) => (
                       <TouchableOpacity
                         key={pair.symbol}
                         style={[
@@ -636,7 +704,7 @@ export function TradeModal({
                         ]}
                         onPress={() => {
                           setSelectedPair(pair.symbol)
-                          setAmount('') // Limpa quantidade ao trocar par (moeda do campo muda)
+                          setAmount('')
                           setSelectedPercent(null)
                         }}
                       >
@@ -656,6 +724,7 @@ export function TradeModal({
               <View style={[styles.section, { paddingVertical: 4 }]}>
                 <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
                   Par: <Text style={{ color: colors.text, fontWeight: '700' }}>{tradingPair}</Text>
+                  {pairPriceLoading ? ' ⏳' : ''}
                 </Text>
               </View>
             ) : null}

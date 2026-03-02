@@ -70,6 +70,8 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   const [pairsLoading, setPairsLoading] = useState(false)
   const [pairsError, setPairsError] = useState<string | null>(null)
   const [selectedPair, setSelectedPair] = useState<PairInfo | null>(null)
+  const [pairPriceLoading, setPairPriceLoading] = useState(false)
+  const [pairSearchFilter, setPairSearchFilter] = useState('')
 
   // Step 4: Order form
   const [orderSide, setOrderSide] = useState<OrderSide | null>(null)
@@ -91,6 +93,8 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
       setPairsLoading(false)
       setPairsError(null)
       setSelectedPair(null)
+      setPairPriceLoading(false)
+      setPairSearchFilter('')
       setOrderSide(null)
       setOrderType(null)
       setAmount('')
@@ -137,7 +141,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     setSelectedPair(null)
 
     try {
-      const exchangeId = selectedExchange.exchange_id || selectedExchange._id || ''
+      const exchangeId = selectedExchange.exchange_id || (selectedExchange as any)._id || ''
       const result = await apiService.getAvailablePairs(exchangeId, tokenInput.trim().toUpperCase())
       
       if (result.success && result.pairs.length > 0) {
@@ -160,12 +164,13 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
           return (aIdx >= 0 ? aIdx : 999) - (bIdx >= 0 ? bIdx : 999)
         })
 
-        // Limit to 12 most relevant
-        const topPairs = sorted.slice(0, 12)
-        setAvailablePairs(topPairs)
+        // Sem limite — mostra todos, com search quando >12
+        setAvailablePairs(sorted)
+        setPairSearchFilter('')
 
-        if (topPairs.length === 1) {
-          setSelectedPair(topPairs[0])
+        if (sorted.length === 1) {
+          // Auto-seleciona e vai direto para order step com fetch de preço
+          handleSelectPair(sorted[0])
         }
       } else {
         setPairsError(`Nenhum par de trading encontrado para ${tokenInput.toUpperCase()} nesta exchange`)
@@ -197,8 +202,8 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     fetchPairs()
   }
 
-  // Handle pair selection → go to order step
-  const handleSelectPair = (pair: PairInfo) => {
+  // Handle pair selection → fetch price then go to order step
+  const handleSelectPair = async (pair: PairInfo) => {
     setSelectedPair(pair)
     setOrderSide(null)
     setOrderType(null)
@@ -206,6 +211,23 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     setPrice('')
     setCreateOrderError(null)
     setStep('order')
+
+    // 📈 Busca o preço atual do par na exchange
+    const exId = selectedExchange?.exchange_id || (selectedExchange as any)?._id || ''
+    if (exId && pair.symbol) {
+      setPairPriceLoading(true)
+      try {
+        const result = await apiService.getPairTicker(exId, pair.symbol)
+        if (result.success && result.ticker?.last > 0) {
+          const lastPrice = result.ticker.last
+          setPrice(lastPrice < 0.01 ? lastPrice.toFixed(10).replace(/\.?0+$/, '') : lastPrice.toString())
+        }
+      } catch (error: any) {
+        console.warn('⚠️ Could not fetch pair price:', error.message)
+      } finally {
+        setPairPriceLoading(false)
+      }
+    }
   }
 
   // Go back one step
@@ -218,6 +240,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
       setAvailablePairs([])
       setSelectedPair(null)
       setPairsError(null)
+      setPairSearchFilter('')
     } else if (step === 'order') {
       setStep('pair')
       setSelectedPair(null)
@@ -237,15 +260,33 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   const exchangeName = selectedExchange?.exchange_name || ''
   const exchangeId = selectedExchange?.exchange_id || ''
 
+  // Detecta se o token digitado é a quote do par (ex: digitou BRL, par BTC/BRL)
+  const tokenUpper = tokenInput.trim().toUpperCase()
+  const isTokenTheQuote = tokenUpper === quoteCurrency
+  const isTokenTheBase = tokenUpper === baseCurrency
+
+  // Quando o token é a QUOTE, o campo quantidade representa a quote currency
+  const amountCurrency = isTokenTheQuote ? quoteCurrency : baseCurrency
+
   const amountNum = parseFloat(amount || '0')
   const priceNum = parseFloat(price || '0')
-  const total = amountNum * priceNum
 
+  // Total em quote currency:
+  // - Se amount em base (caso normal): total = amount * price
+  // - Se amount em quote (isTokenTheQuote): total = amount (já é em quote)
+  const total = isTokenTheQuote ? amountNum : (amountNum * priceNum)
+
+  // Quantidade em base currency para enviar ao CCXT (sempre requer base):
+  const baseAmount = isTokenTheQuote
+    ? (priceNum > 0 ? amountNum / priceNum : 0)
+    : amountNum
+
+  const isBuy = orderSide === 'buy'
   const sideSelected = orderSide !== null
   const typeSelected = orderType !== null
   const hasValidAmount = amountNum > 0
   const hasValidPrice = orderType === 'market' || (orderType === 'limit' && priceNum > 0)
-  const isFormComplete = sideSelected && typeSelected && hasValidAmount && hasValidPrice && !createOrderLoading
+  const isFormComplete = sideSelected && typeSelected && hasValidAmount && hasValidPrice && !createOrderLoading && !pairPriceLoading
 
   // Handle submit → show confirm
   const handleSubmit = () => {
@@ -280,13 +321,19 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     const priceVal = parseFloat(price)
     const isBuy = orderSide === 'buy'
 
+    // CCXT create_order espera amount em BASE currency sempre.
+    // Se o campo quantidade está em quote (isTokenTheQuote), converte para base.
+    const amountForApi = isTokenTheQuote
+      ? (priceVal > 0 ? amountVal / priceVal : 0)
+      : amountVal
+
     try {
       const result = isBuy
         ? await apiService.createBuyOrder(
             user.id,
             exchangeId,
             tradingPair,
-            amountVal,
+            amountForApi,
             orderType,
             orderType === 'limit' ? priceVal : undefined
           )
@@ -294,7 +341,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
             user.id,
             exchangeId,
             tradingPair,
-            amountVal,
+            amountForApi,
             orderType,
             orderType === 'limit' ? priceVal : undefined
           )
@@ -307,7 +354,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
         notify.orderCreated(addNotification, {
           symbol: tradingPair,
           side: orderSide,
-          amount: amountVal,
+          amount: amountForApi,
           price: priceVal,
           type: orderType,
           exchange: exchangeName,
@@ -323,9 +370,9 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
             type: orderType as 'limit' | 'market',
             side: orderSide as 'buy' | 'sell',
             price: priceVal,
-            amount: amountVal,
+            amount: amountForApi,
             filled: 0,
-            remaining: amountVal,
+            remaining: amountForApi,
             status: 'open' as const,
             timestamp: Date.now(),
             datetime: new Date().toISOString(),
@@ -570,29 +617,72 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.pairGrid}>
-          {availablePairs.map((pair) => (
-            <TouchableOpacity
-              key={pair.symbol}
-              style={[
-                styles.pairChip,
-                {
-                  backgroundColor: selectedPair?.symbol === pair.symbol ? colors.primary : colors.surface,
-                  borderColor: selectedPair?.symbol === pair.symbol ? colors.primary : colors.border,
-                }
-              ]}
-              onPress={() => handleSelectPair(pair)}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.pairChipText,
-                { color: selectedPair?.symbol === pair.symbol ? '#fff' : colors.text }
-              ]}>
-                {pair.symbol}
+        <>
+          {/* Search para listas grandes (>12 pares) */}
+          {availablePairs.length > 12 && (
+            <View style={[{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 10,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              marginBottom: 8,
+              gap: 8,
+            }]}>
+              <Ionicons name="search-outline" size={16} color={colors.textTertiary} />
+              <TextInput
+                style={{ flex: 1, fontSize: 14, color: colors.text, paddingVertical: 2 }}
+                placeholder="Buscar par... (ex: BTC, ETH, SOL)"
+                placeholderTextColor={colors.textTertiary}
+                value={pairSearchFilter}
+                onChangeText={setPairSearchFilter}
+                autoCapitalize="characters"
+              />
+              {pairSearchFilter.length > 0 && (
+                <TouchableOpacity onPress={() => setPairSearchFilter('')}>
+                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+              <Text style={{ fontSize: 11, color: colors.textTertiary }}>
+                {availablePairs.length} pares
               </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+            </View>
+          )}
+          <ScrollView 
+            showsVerticalScrollIndicator={availablePairs.length > 12}
+            style={{ maxHeight: availablePairs.length > 12 ? 280 : undefined }}
+            nestedScrollEnabled={true}
+          >
+            <View style={styles.pairGrid}>
+              {availablePairs
+                .filter(pair => !pairSearchFilter || pair.symbol.toUpperCase().includes(pairSearchFilter.toUpperCase()))
+                .map((pair) => (
+                <TouchableOpacity
+                  key={pair.symbol}
+                  style={[
+                    styles.pairChip,
+                    {
+                      backgroundColor: selectedPair?.symbol === pair.symbol ? colors.primary : colors.surface,
+                      borderColor: selectedPair?.symbol === pair.symbol ? colors.primary : colors.border,
+                    }
+                  ]}
+                  onPress={() => handleSelectPair(pair)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.pairChipText,
+                    { color: selectedPair?.symbol === pair.symbol ? '#fff' : colors.text }
+                  ]}>
+                    {pair.symbol}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </>
       )}
     </View>
   )
@@ -705,7 +795,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
         {typeSelected && orderType === 'limit' && (
           <>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
-              Preço ({quoteCurrency})
+              Preço ({quoteCurrency}) {pairPriceLoading ? '⏳' : ''}
             </Text>
             <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.inputPrefix, { color: colors.textSecondary }]}>
@@ -713,12 +803,12 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
               </Text>
               <TextInput
                 style={[styles.formInput, { color: colors.text }]}
-                placeholder="0.00"
+                placeholder={pairPriceLoading ? 'Buscando preço...' : '0.00'}
                 placeholderTextColor={colors.textTertiary}
                 value={price}
                 onChangeText={setPrice}
                 keyboardType="decimal-pad"
-                autoFocus={true}
+                autoFocus={!pairPriceLoading}
               />
             </View>
           </>
@@ -728,7 +818,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
         {typeSelected && (
           <>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
-              Quantidade ({baseCurrency})
+              Quantidade ({amountCurrency})
             </Text>
             <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TextInput
@@ -738,12 +828,19 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                 value={amount}
                 onChangeText={setAmount}
                 keyboardType="decimal-pad"
-                autoFocus={orderType === 'market'}
+                autoFocus={orderType === 'market' && !pairPriceLoading}
               />
               <Text style={[styles.inputSuffix, { color: colors.textSecondary }]}>
-                {baseCurrency}
+                {amountCurrency}
               </Text>
             </View>
+
+            {/* Info: conversão quando token é a quote */}
+            {isTokenTheQuote && hasValidAmount && priceNum > 0 && (
+              <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
+                ≈ {apiService.formatTokenAmount(baseAmount.toFixed(8))} {baseCurrency}
+              </Text>
+            )}
 
             {/* Percentage buttons */}
             <View style={styles.percentRow}>
@@ -752,7 +849,6 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                   key={pct}
                   style={[styles.percentChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => {
-                    // Sem saldo disponível aqui (não temos balance por par), só seta porcentagem como placeholder
                     Alert.alert('Dica', `Use ${pct}% do saldo disponível na exchange.\nPara cálculos automáticos, use o botão Trade na tela de Assets.`)
                   }}
                 >
@@ -769,8 +865,10 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
             <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>Total Estimado</Text>
             <Text style={[styles.totalValue, { color: colors.text }]}>
               {orderType === 'market'
-                ? `${apiService.formatTokenAmount(amount)} ${baseCurrency} (preço de mercado)`
-                : `${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(total, total < 1 ? 6 : 2)} ${quoteCurrency}`
+                ? `${apiService.formatTokenAmount(isTokenTheQuote ? baseAmount.toFixed(8) : amount)} ${baseCurrency} (preço de mercado)`
+                : isTokenTheQuote
+                  ? `${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(amountNum, amountNum < 1 ? 6 : 2)} ${quoteCurrency}`
+                  : `${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(total, total < 1 ? 6 : 2)} ${quoteCurrency}`
               }
             </Text>
           </View>
@@ -897,9 +995,12 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
         onConfirm={executeOrder}
         title={orderSide === 'buy' ? '✅ Confirmar Compra' : '🔴 Confirmar Venda'}
         message={
-          `${orderType === 'limit' ? 'LIMIT' : 'MARKET'} ${orderSide === 'buy' ? 'compra' : 'venda'} de ${apiService.formatTokenAmount(amount)} ${baseCurrency}` +
+          `${orderType === 'limit' ? 'LIMIT' : 'MARKET'} ${orderSide === 'buy' ? 'compra' : 'venda'} de ` +
+          (isTokenTheQuote
+            ? `${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(amountNum, amountNum < 0.01 ? 8 : 2)} ${quoteCurrency} (≈ ${apiService.formatTokenAmount(baseAmount.toFixed(8))} ${baseCurrency})`
+            : `${apiService.formatTokenAmount(amount)} ${baseCurrency}`) +
           (orderType === 'limit' ? `\nPreço: ${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(priceNum, priceNum < 0.01 ? 8 : 2)}` : '') +
-          (orderType === 'limit' ? `\nTotal: ${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(total, total < 1 ? 6 : 2)} ${quoteCurrency}` : '') +
+          (orderType === 'limit' && !isTokenTheQuote ? `\nTotal: ${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(total, total < 1 ? 6 : 2)} ${quoteCurrency}` : '') +
           `\n\n📍 ${exchangeName} • ${tradingPair}`
         }
         confirmText={orderSide === 'buy' ? 'Comprar' : 'Vender'}

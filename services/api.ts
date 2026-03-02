@@ -1833,6 +1833,63 @@ export const apiService = {
   // ==========================================
 
   /**
+   * 📈 Busca o preço atual (ticker) de um par de trading em uma exchange
+   * @param exchangeId ID da exchange no MongoDB
+   * @param symbol Par de trading (ex: "BTC/USDT", "ETH/BRL")
+   * @returns Promise com ticker (last, bid, ask, high, low, volume)
+   */
+  async getPairTicker(
+    exchangeId: string,
+    symbol: string
+  ): Promise<{
+    success: boolean
+    symbol: string
+    exchange: string
+    ticker: {
+      last: number
+      bid: number | null
+      ask: number | null
+      high: number | null
+      low: number | null
+      volume: number | null
+    }
+  }> {
+    try {
+      const accessToken = await secureStorage.getItemAsync('access_token');
+      
+      if (!accessToken) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/token-pairs/ticker`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            exchange_id: exchangeId,
+            symbol: symbol
+          }),
+        },
+        TIMEOUTS.NORMAL
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('❌ Get Pair Ticker Error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * 🔄 Busca pares de trading disponíveis para um token em uma exchange
    * Retorna apenas pares ativos no mercado spot
    * @param exchangeId ID da exchange no MongoDB
