@@ -170,7 +170,7 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
                       style={styles.depositButton}
                     >
-                      <Text style={[styles.depositText, { color: colors.success }]}>
+                      <Text style={[styles.depositText, { color: colors.primary }]}>
                         {t('deposit.label') || 'Abrir'}
                       </Text>
                     </TouchableOpacity>
