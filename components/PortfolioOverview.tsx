@@ -12,6 +12,7 @@ import { SkeletonPortfolioOverview } from "./SkeletonLoaders"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { PortfolioChart } from "./PortfolioChart"
 import { ExchangesPieChart } from "./ExchangesPieChart"
+import { TokensPieChart } from "./TokensPieChart"
 import { ExchangeBalancesList } from "./ExchangeBalancesList"
 import { GradientCard } from "./GradientCard"
 import { typography, fontWeights } from "@/lib/typography"
@@ -389,6 +390,9 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
 
         {/* Gráfico de Pizza das Exchanges */}
         <ExchangesPieChart />
+
+        {/* Gráfico de Pizza dos Tokens */}
+        <TokensPieChart />
       </LinearGradient>
   )
 })
