@@ -18,6 +18,7 @@ import { OpenOrder } from '@/types/orders';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 import { getExchangeLogo } from '@/lib/exchange-logos';
+import { CreateOrderModal } from '@/components/create-order-modal';
 
 // Sub-componente com animação piscante para ordens sendo canceladas
 function AnimatedOrderCard({ 
@@ -78,6 +79,7 @@ export function OrdersScreen({ navigation }: any) {
   const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set());
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string } | null>(null);
+  const [createOrderVisible, setCreateOrderVisible] = useState(false);
 
   const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
 
@@ -506,6 +508,16 @@ export function OrdersScreen({ navigation }: any) {
                 ? 'Tente ajustar os filtros' 
                 : 'Você não possui ordens abertas'}
             </Text>
+            {!search && selectedType === 'All' && (
+              <TouchableOpacity
+                style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
+                onPress={() => setCreateOrderVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                <Text style={styles.emptyStateButtonText}>Nova Ordem</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.ordersListContainer}>
@@ -567,6 +579,21 @@ export function OrdersScreen({ navigation }: any) {
         confirmColor="#ef4444"
         icon="⚠️"
       />
+
+      {/* Modal de Criação de Nova Ordem */}
+      <CreateOrderModal
+        visible={createOrderVisible}
+        onClose={() => setCreateOrderVisible(false)}
+      />
+
+      {/* FAB: Nova Ordem */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.primary }]}
+        activeOpacity={0.8}
+        onPress={() => setCreateOrderVisible(true)}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -633,6 +660,21 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.regular,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 16,
+  },
+  emptyStateButtonText: {
+    color: '#fff',
+    fontSize: typography.button,
+    fontWeight: fontWeights.semibold,
   },
   ordersListContainer: {
     padding: 16,
@@ -758,5 +800,20 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
 });
