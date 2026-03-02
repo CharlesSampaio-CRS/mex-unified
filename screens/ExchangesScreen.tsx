@@ -23,7 +23,7 @@ export function ExchangesScreen({ route, navigation }: any) {
   const [linkedCount, setLinkedCount] = useState(0)
   const [availableCount, setAvailableCount] = useState(0)
   const openTab = route?.params?.openTab || 'linked'
-  const [activeTab, setActiveTab] = useState<'linked' | 'available'>(openTab)
+  const [activeTab, setActiveTab] = useState<'all' | 'linked' | 'available'>(openTab === 'available' ? 'available' : 'all')
   
   // Função para carregar contadores
   const loadExchangesCounts = useCallback(async () => {
@@ -63,9 +63,7 @@ export function ExchangesScreen({ route, navigation }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
-  const subtitle = activeTab === 'linked' 
-    ? `${linkedCount} ${linkedCount === 1 ? t('exchanges.connectedSingular') : t('exchanges.connectedPlural')}`
-    : `${availableCount} ${availableCount === 1 ? t('exchanges.availableSingular') : t('exchanges.availablePlural')}`
+  const subtitle = `${linkedCount} conectada${linkedCount !== 1 ? 's' : ''} • ${availableCount} disponíve${availableCount !== 1 ? 'is' : 'l'}`
 
   // Define o Header global para esta tela
   useHeader({
