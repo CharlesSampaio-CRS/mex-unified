@@ -334,11 +334,13 @@ export function AssetsScreen({ navigation }: any) {
                 {/* Exchange Header - mesmo padrão dos Orders */}
                 <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                   <View style={styles.exchangeCardLeft}>
-                    <Image 
-                      source={getExchangeLogo(section.exchangeName)} 
-                      style={styles.exchangeCardLogo}
-                      resizeMode="contain"
-                    />
+                    <View style={styles.exchangeLogoContainer}>
+                      <Image 
+                        source={getExchangeLogo(section.exchangeName)} 
+                        style={styles.exchangeCardLogo}
+                        resizeMode="contain"
+                      />
+                    </View>
                     <Text style={[styles.exchangeCardName, { color: colors.text }]}>
                       {String(section.exchangeName || 'Unknown')}
                     </Text>
@@ -592,8 +594,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   exchangeCardLogo: {
-    width: 20,
-    height: 20,
+    width: '100%',
+    height: '100%',
+  },
+  exchangeLogoContainer: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: 2,
   },
   exchangeCardName: {
     fontSize: typography.bodySmall,
