@@ -141,28 +141,35 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
           {exchanges.map((ex) => (
             <View key={ex.name}>
               <View style={styles.row}>
-                {ex.logo ? (
-                  <Image source={ex.logo} style={styles.icon} />
-                ) : (
-                  <View style={[styles.iconFallback, { backgroundColor: colors.border }]}>
-                    <Text style={[styles.iconLetter, { color: colors.textSecondary }]}>
-                      {ex.name.charAt(0)}
-                    </Text>
-                  </View>
-                )}
-                <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {ex.name}
-                </Text>
-                {ex.hasError && (
-                  <TouchableOpacity
-                    onPress={() => setExpandedError(prev => prev === ex.name ? null : ex.name)}
-                    activeOpacity={0.6}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={styles.errorIcon}>⚠️</Text>
-                  </TouchableOpacity>
-                )}
-                <View style={styles.depositColumn}>
+                {/* Col: Icon */}
+                <View style={styles.colIcon}>
+                  {ex.logo ? (
+                    <Image source={ex.logo} style={styles.icon} />
+                  ) : (
+                    <View style={[styles.iconFallback, { backgroundColor: colors.border }]}>
+                      <Text style={[styles.iconLetter, { color: colors.textSecondary }]}>
+                        {ex.name.charAt(0)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {/* Col: Name */}
+                <View style={styles.colName}>
+                  <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {ex.name}
+                  </Text>
+                  {ex.hasError && (
+                    <TouchableOpacity
+                      onPress={() => setExpandedError(prev => prev === ex.name ? null : ex.name)}
+                      activeOpacity={0.6}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={styles.errorIcon}>⚠️</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {/* Col: Abrir */}
+                <View style={styles.colAction}>
                   {ex.depositConfig ? (
                     <TouchableOpacity
                       onPress={() => handleDeposit(ex.name, ex.ccxtId)}
@@ -176,13 +183,19 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                     </TouchableOpacity>
                   ) : null}
                 </View>
-                <Text style={[styles.valueUsd, { color: colors.text }]}>
-                  {hideValue(fmtUsd(ex.value))}
-                </Text>
-                {usdToBrlRate ? (
-                  <Text style={[styles.valueBrl, { color: colors.textSecondary }]}>
-                    {hideValue(fmtBrl(ex.value * usdToBrlRate))}
+                {/* Col: USD */}
+                <View style={styles.colUsd}>
+                  <Text style={[styles.valueUsd, { color: colors.text }]}>
+                    {hideValue(fmtUsd(ex.value))}
                   </Text>
+                </View>
+                {/* Col: BRL */}
+                {usdToBrlRate ? (
+                  <View style={styles.colBrl}>
+                    <Text style={[styles.valueBrl, { color: colors.textSecondary }]}>
+                      {hideValue(fmtBrl(ex.value * usdToBrlRate))}
+                    </Text>
+                  </View>
                 ) : null}
               </View>
               {/* Mensagem de erro expandida */}
@@ -222,16 +235,38 @@ const styles = StyleSheet.create({
     fontSize: 10,
     opacity: 0.3,
   },
-  // Lista expandida
+  // Table layout
   list: {
     marginTop: 4,
-    gap: 4,
+    gap: 2,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
+  },
+  // Columns
+  colIcon: {
+    width: 22,
+    alignItems: 'center',
+  },
+  colName: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  colAction: {
+    width: 38,
+    alignItems: 'center',
+  },
+  colUsd: {
+    width: 72,
+    alignItems: 'flex-end',
+  },
+  colBrl: {
+    width: 72,
+    alignItems: 'flex-end',
   },
   icon: {
     width: 16,
@@ -251,10 +286,10 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.semibold,
   },
   name: {
-    flex: 1,
     fontSize: 10,
     fontWeight: fontWeights.regular,
     opacity: 0.45,
+    flexShrink: 1,
   },
   errorIcon: {
     fontSize: 10,
@@ -284,12 +319,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: fontWeights.light,
     opacity: 0.35,
-    minWidth: 54,
-    textAlign: 'right',
-  },
-  depositColumn: {
-    width: 40,
-    alignItems: 'center',
   },
   depositButton: {
     paddingHorizontal: 4,
