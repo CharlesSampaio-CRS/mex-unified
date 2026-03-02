@@ -185,14 +185,14 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                 </View>
                 {/* Col: USD */}
                 <View style={styles.colUsd}>
-                  <Text style={[styles.valueUsd, { color: colors.text }]}>
+                  <Text style={[styles.valueUsd, { color: colors.text }]} numberOfLines={1}>
                     {hideValue(fmtUsd(ex.value))}
                   </Text>
                 </View>
                 {/* Col: BRL */}
                 {usdToBrlRate ? (
                   <View style={styles.colBrl}>
-                    <Text style={[styles.valueBrl, { color: colors.textSecondary }]}>
+                    <Text style={[styles.valueBrl, { color: colors.textSecondary }]} numberOfLines={1}>
                       {hideValue(fmtBrl(ex.value * usdToBrlRate))}
                     </Text>
                   </View>
@@ -247,27 +247,26 @@ const styles = StyleSheet.create({
   },
   // Columns
   colIcon: {
-    width: 20,
-    alignItems: 'center',
+    width: 18,
+    alignItems: 'center' as const,
   },
   colName: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 3,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 4,
-    marginRight: 2,
   },
   colAction: {
-    width: 32,
-    alignItems: 'center',
+    flex: 1,
+    alignItems: 'center' as const,
   },
   colUsd: {
-    width: 62,
-    alignItems: 'flex-end',
+    flex: 2,
+    alignItems: 'flex-end' as const,
   },
   colBrl: {
-    width: 62,
-    alignItems: 'flex-end',
+    flex: 2,
+    alignItems: 'flex-end' as const,
   },
   icon: {
     width: 16,
