@@ -395,23 +395,23 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 20,
-    padding: 14,
+    borderRadius: 14,
+    padding: 12,
     borderWidth: 0,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 1,                // era 1 (mantido suave)
+      height: 1,
     },
-    shadowOpacity: 0.03,        // era 0.04 (-25% - mais suave)
-    shadowRadius: 6,
-    elevation: 1,               // era 2 (-50% - menos sombra Android)
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,           // Reduzido de 12 para 10 (mais compacto)
+    marginBottom: 6,
   },
   headerRow: {
     flexDirection: "row",
@@ -420,16 +420,16 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   label: {
-    fontSize: 11,  // Label header (reduzido de 14px)
+    fontSize: 10,
     fontWeight: fontWeights.regular,
     letterSpacing: 0.5,
     textTransform: "uppercase",
-    opacity: 0.5,
+    opacity: 0.45,
   },
   refreshButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -438,9 +438,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   refreshIcon: {
-    fontSize: 16,  // Ícone refresh (reduzido de 18px)
+    fontSize: 14,
     fontWeight: fontWeights.light,
-    opacity: 0.6,
+    opacity: 0.5,
   },
   valueSection: {
     flexDirection: "row",
@@ -451,203 +451,203 @@ const styles = StyleSheet.create({
   valueContainer: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 6,
+    gap: 4,
     flex: 1,
   },
   value: {
-    fontSize: 16,  // Valor principal do portfolio (reduzido de 17px)
+    fontSize: 15,
     fontWeight: fontWeights.light,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   currencyLabel: {
-    fontSize: 11,  // Label USD/BRL (reduzido de 13px)
+    fontSize: 10,
     fontWeight: fontWeights.medium,
-    opacity: 0.5,
-    letterSpacing: 0.4,
+    opacity: 0.45,
+    letterSpacing: 0.3,
   },
   brlContainer: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 6,
+    gap: 4,
     justifyContent: "flex-end",
   },
   brlValue: {
-    fontSize: 12,  // Valor BRL (reduzido de 13px)
+    fontSize: 11,
     fontWeight: fontWeights.regular,
-    opacity: 0.6,
+    opacity: 0.55,
   },
   lastUpdated: {
-    fontSize: 11,  // Timestamp (reduzido de 12px)
+    fontSize: 10,
     fontWeight: fontWeights.light,
-    opacity: 0.4,
+    opacity: 0.35,
   },
-  // PNL Inline - abaixo do valor total
+  // PNL Inline
   pnlInline: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,           // Reduzido de 16 para 12 (mais compacto)
+    gap: 4,
+    marginBottom: 8,
   },
   pnlInlineArrow: {
-    fontSize: 12,  // Seta PnL (reduzido de 16px)
+    fontSize: 10,
     fontWeight: fontWeights.bold,
-    opacity: 0.9,
+    opacity: 0.85,
   },
   pnlInlineValue: {
-    fontSize: 12,  // Valor PnL (reduzido de 14px)
+    fontSize: 11,
     fontWeight: fontWeights.semibold,
   },
   pnlInlinePercent: {
-    fontSize: 11,  // Percentual PnL (reduzido de 14px)
+    fontSize: 10,
     fontWeight: fontWeights.regular,
-    opacity: 0.8,
+    opacity: 0.7,
   },
   pnlInlineLabel: {
-    fontSize: 10,  // Label 24h (reduzido de 12px)
+    fontSize: 9,
     fontWeight: fontWeights.regular,
-    opacity: 0.4,
-    marginLeft: 4,
+    opacity: 0.35,
+    marginLeft: 2,
   },
-  // PNLs - Pills compactas lado a lado (OLD - não usado)
+  // PNLs pills (OLD)
   pnlsContainer: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 12,
   },
   pnlPill: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
   },
   pnlPillLabel: {
-    fontSize: 10,  // Label PnL pill (reduzido de 12px)
+    fontSize: 9,
     fontWeight: fontWeights.semibold,
-    opacity: 0.5,
-    letterSpacing: 0.5,
+    opacity: 0.45,
+    letterSpacing: 0.4,
   },
   pnlPillValues: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   pnlPillArrow: {
-    fontSize: 12,  // Seta pill (reduzido de 16px)
+    fontSize: 10,
     fontWeight: fontWeights.bold,
   },
   pnlPillValue: {
-    fontSize: 12,  // Valor pill (reduzido de 14px)
+    fontSize: 11,
     fontWeight: fontWeights.semibold,
   },
-  // Seção de PNL em linha única - visual suave (OLD - pode remover)
+  // Seção PNL linha (OLD)
   pnlSection: {
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: 6,
+    paddingBottom: 6,
     borderTopWidth: 0.5,
   },
   pnlRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   pnlLabel: {
-    fontSize: 10,  // Label seção (reduzido de 12px)
+    fontSize: 9,
     fontWeight: fontWeights.regular,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
     textTransform: "uppercase",
-    opacity: 0.35,
-    minWidth: 70,
+    opacity: 0.3,
+    minWidth: 60,
   },
   pnlIndicator: {
-    width: 18,
+    width: 16,
     alignItems: "center",
   },
   pnlArrow: {
-    fontSize: 11,  // Seta seção (reduzido de 14px)
+    fontSize: 10,
     fontWeight: fontWeights.light,
-    opacity: 0.6,
+    opacity: 0.5,
   },
   pnlValue: {
-    fontSize: 11,  // Valor seção (reduzido de 14px)
+    fontSize: 10,
     fontWeight: fontWeights.medium,
     letterSpacing: 0,
     flex: 1,
   },
   pnlPercent: {
-    fontSize: 11,  // Percentual seção (reduzido de 13px)
+    fontSize: 10,
     fontWeight: fontWeights.regular,
-    opacity: 0.6,
+    opacity: 0.55,
   },
   errorText: {
-    fontSize: 13,  // Texto erro (reduzido de 16px)
+    fontSize: 12,
     textAlign: "center",
   },
   exchangesCount: {
-    fontSize: 12,  // Contador exchanges (reduzido de 14px)
+    fontSize: 11,
   },
   refreshButtonDisabled: {
     opacity: 0.5,
   },
   refreshButtonAbsolute: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(128, 128, 128, 0.08)',
     zIndex: 10,
   },
-  // PNL Diário - Resumo rápido acima do gráfico
+  // PNL Diário
   todayPnlContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    marginTop: 8,
+    gap: 4,
+    paddingVertical: 4,
+    marginTop: 6,
   },
-  // PNL Cards Row - Cards lado a lado (compactos)
+  // PNL Cards Row
   pnlCardsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 8,
+    gap: 6,
+    marginTop: 6,
+    marginBottom: 6,
   },
   pnlCard: {
     flex: 1,
-    padding: 6,
-    paddingHorizontal: 10,
-    borderRadius: 10,
+    padding: 5,
+    paddingHorizontal: 8,
+    borderRadius: 8,
     alignItems: 'center',
-    gap: 2,
+    gap: 1,
   },
   pnlCardLabel: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: fontWeights.medium,
-    opacity: 0.5,
+    opacity: 0.45,
   },
   pnlCardContent: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 3,
+    gap: 2,
   },
   pnlCardArrow: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: fontWeights.semibold,
   },
   pnlCardValue: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: fontWeights.semibold,
   },
   pnlCardPercent: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: fontWeights.regular,
-    opacity: 0.7,
+    opacity: 0.65,
   },
 })

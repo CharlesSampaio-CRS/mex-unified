@@ -24,7 +24,7 @@ export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({
   const { t } = useLanguage();
   
   return (
-    <View style={{ gap: 24 }}>
+    <View style={{ gap: 16 }}>
       {/* Indicador de atualização */}
       {isUpdating && (
         <View style={[styles.updatingBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -48,16 +48,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
     borderWidth: 1,
-    marginHorizontal: 16,
-    marginTop: 8,
-    gap: 8,
+    marginHorizontal: 14,
+    marginTop: 6,
+    gap: 6,
   },
   updatingText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
   },
 });

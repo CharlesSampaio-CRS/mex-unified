@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   headerText: {
     flexDirection: "column",
@@ -679,26 +679,26 @@ const styles = StyleSheet.create({
   },
   scrollView: commonStyles.scrollView,
   content: {
-    padding: spacing.cardPadding + 2, // 16px (14 + 2 = 16)
+    padding: spacing.cardPadding,
     paddingBottom: 80,
   },
   // Empty State
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 60,
+    paddingVertical: 48,
   },
   emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    fontSize: 48,
+    marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "300",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyDesc: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "300",
     textAlign: "center",
   },
@@ -707,33 +707,33 @@ const styles = StyleSheet.create({
     gap: spacing.cardGap, // Aumentado de itemGap (12px) para cardGap (16px)
   },
   strategyCard: {
-    borderRadius: borderRadius.xl, // Aumentado para xl (20px) - mais moderno
-    padding: spacing.cardPaddingLarge, // Aumentado para 20px - mais espaçoso
-    ...shadows.md, // Sombra média para melhor destaque
+    borderRadius: borderRadius.lg,
+    padding: spacing.cardPadding,
+    ...shadows.sm,
   },
   strategyHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   strategyHeaderLeft: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 10,
   },
   strategyName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "400",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   typeBadge: {
     alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 5,
   },
   typeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "400",
     textTransform: "uppercase",
   },
@@ -781,8 +781,8 @@ const styles = StyleSheet.create({
   },
   // Strategy Info
   strategyInfo: {
-    gap: 8,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 10,
   },
   infoRow: {
     flexDirection: "row",
@@ -790,11 +790,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   infoLabel: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "300",
   },
   infoValue: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "400",
     flex: 1,
     textAlign: "right",
@@ -804,14 +804,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.05)",
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 5,
   },
   statusActive: {},
   statusInactive: {},
@@ -821,39 +821,39 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
     alignSelf: "flex-start",
   },
   deleteButton: {
-    padding: 8,
+    padding: 6,
   },
   deleteIcon: {
-    fontSize: 18,
+    fontSize: 16,
   },
   // Tabs
   tabsContainer: {
     flexDirection: "row",
-    gap: 24,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    gap: 20,
+    paddingHorizontal: 14,
+    marginBottom: 12,
     borderBottomWidth: 1,
   },
   tab: {
-    paddingVertical: 10,
-    paddingBottom: 12,
+    paddingVertical: 8,
+    paddingBottom: 10,
   },
   tabActive: {
     borderBottomWidth: 2,
   },
   tabText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "400",
   },
   tabTextActive: {
@@ -864,23 +864,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 60,
-    gap: 12,
+    paddingVertical: 48,
+    gap: 10,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: 12,
   },
   // Create Button
   createButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginTop: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
+    marginTop: 20,
     borderWidth: 0.5,
   },
   createButtonText: {
     color: "#3b82f6",
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: fontWeights.bold,
     letterSpacing: 0.2,
     textAlign: 'center',
@@ -888,25 +888,25 @@ const styles = StyleSheet.create({
   // Stats
   statsSection: {
     borderTopWidth: 1,
-    paddingTop: 12,
-    marginTop: 12,
-    gap: 8,
+    paddingTop: 10,
+    marginTop: 10,
+    gap: 6,
   },
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 6,
   },
   statItem: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "400",
   },
   statValue: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "600",
   },
   // Modals
@@ -924,36 +924,36 @@ const styles = StyleSheet.create({
   },
   confirmModal: {
     width: "90%",
-    borderRadius: 20,
-    padding: 20,
-    gap: 16,
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
   },
   confirmTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: "500",
     textAlign: "center",
   },
   confirmMessage: {
-    fontSize: 14,
+    fontSize: 12,
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 18,
   },
   confirmButtons: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 6,
   },
   confirmButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 6,
     alignItems: "center",
   },
   cancelButton: {
     borderWidth: 1,
   },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
   },
   deleteConfirmButton: {
@@ -961,13 +961,13 @@ const styles = StyleSheet.create({
   },
   deleteConfirmButtonText: {
     color: "#ffffff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
   },
   // Novos estilos para padrão GenericItemList
   strategyDetails: {
-    gap: 6,
-    marginBottom: 12,
+    gap: 5,
+    marginBottom: 10,
   },
   detailRow: {
     flexDirection: 'row',
@@ -975,31 +975,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailLabel: {
-    fontSize: 13,
+    fontSize: 11,
   },
   detailValue: {
-    fontSize: 13,
+    fontSize: 11,
     flex: 1,
     textAlign: 'right',
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+    gap: 6,
+    marginTop: 10,
   },
   detailsButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    minHeight: 44,
+    minHeight: 38,
   },
   detailsButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   actionButton: {
@@ -1007,15 +1007,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    minHeight: 44,
+    minHeight: 38,
   },
   actionButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
 })

@@ -357,107 +357,107 @@ export const TopGainersLosers: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,  // Reduzido de 16px para mais compacto
+    gap: 10,
   },
   section: {
-    borderRadius: 12,
-    padding: 12,  // Reduzido de 16px para mais compacto
+    borderRadius: 10,
+    padding: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,  // Reduzido de 12px
+    marginBottom: 6,
   },
   card: {
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 6,
+    padding: 10,
   },
   tokenRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   skeletonText: {
     borderRadius: 4,
   },
   skeletonIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
   },
   emptyState: {
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: 11,
     fontStyle: 'italic',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,  // Reduzido de 12px para mais compacto
-    gap: 6,  // Reduzido de 8px
+    marginBottom: 6,
+    gap: 5,
   },
   sectionTitle: {
-    fontSize: 14,  // Título seção (reduzido de 16px)
+    fontSize: 12,
     fontWeight: '600',
   },
   tokensList: {
-    gap: 4,  // Reduzido de 8px para mais compacto
+    gap: 3,
   },
   tokenItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 8,  // Reduzido de 12px para mais compacto
-    borderRadius: 8,
+    padding: 6,
+    borderRadius: 6,
   },
   tokenLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 8,  // Reduzido de 12px para mais compacto
+    gap: 6,
   },
   tokenIcon: {
-    width: 20,
+    width: 18,
   },
   tokenInfo: {
     flex: 1,
   },
   tokenSymbol: {
-    fontSize: 13,  // Símbolo token (reduzido de 14px - padrão compacto)
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: 1,  // Reduzido de 2px
+    marginBottom: 1,
   },
   tokenExchange: {
-    fontSize: 11,
+    fontSize: 10,
   },
   tokenRight: {
     alignItems: 'flex-end',
-    gap: 2,  // Reduzido de 4px
+    gap: 2,
   },
   tokenPrice: {
-    fontSize: 13,  // Preço token (reduzido de 14px)
+    fontSize: 12,
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   changeContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
   },
   changeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
   },
   // Botão Ver mais
@@ -465,17 +465,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,  // Reduzido de 8px
-    padding: 8,  // Reduzido de 12px para mais compacto
-    borderRadius: 8,
-    marginTop: 6,  // Reduzido de 8px
+    gap: 5,
+    padding: 6,
+    borderRadius: 6,
+    marginTop: 4,
     borderWidth: 1,
   },
   viewMoreText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
   },
-  // Modal - Mesmo estilo do order-details-modal
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContainer: {
-    borderRadius: 20,
+    borderRadius: 16,
     width: '90%',
     maxHeight: '85%',
     overflow: 'hidden',
@@ -499,25 +499,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    padding: 16,
     borderBottomWidth: 1,
     flexShrink: 0,
   },
   modalTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     flex: 1,
   },
   modalTitle: {
-    fontSize: 16,  // Título modal (reduzido de 20px)
+    fontSize: 15,
     fontWeight: '700',
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
-    fontSize: 22,  // X fechar (reduzido de 24px)
+    fontSize: 20,
     fontWeight: '300',
   },
   modalContent: {
@@ -525,17 +525,17 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   modalContentContainer: {
-    gap: 8,
-    padding: 20,
+    gap: 6,
+    padding: 16,
   },
   footer: {
-    padding: 20,
+    padding: 16,
     borderTopWidth: 1,
     alignItems: 'center',
     flexShrink: 0,
   },
   footerText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
   },
 });

@@ -173,12 +173,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   testButton: {
-    padding: 12,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 6,
     alignItems: 'center',
   },
   testButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
 })

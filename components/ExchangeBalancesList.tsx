@@ -125,13 +125,13 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: fontWeights.regular,
-    opacity: 0.45,
+    opacity: 0.4,
   },
   chevron: {
-    fontSize: 11,
-    opacity: 0.35,
+    fontSize: 10,
+    opacity: 0.3,
   },
   // Lista expandida
   list: {
@@ -163,20 +163,20 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: fontWeights.regular,
-    opacity: 0.5,
+    opacity: 0.45,
   },
   valueUsd: {
-    fontSize: 11,
-    fontWeight: fontWeights.light,
-    opacity: 0.7,
-  },
-  valueBrl: {
     fontSize: 10,
     fontWeight: fontWeights.light,
-    opacity: 0.4,
-    minWidth: 58,
+    opacity: 0.65,
+  },
+  valueBrl: {
+    fontSize: 9,
+    fontWeight: fontWeights.light,
+    opacity: 0.35,
+    minWidth: 54,
     textAlign: 'right',
   },
 })

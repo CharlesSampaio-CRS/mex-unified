@@ -1211,55 +1211,55 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 10,
     position: 'relative',
   },
   searchIcon: {
     position: 'absolute',
-    left: 12,
-    fontSize: 16,
+    left: 10,
+    fontSize: 14,
     zIndex: 1,
   },
   searchInput: {
     flex: 1,
-    height: 40,
-    borderRadius: 10,
-    paddingLeft: 36,
-    paddingRight: 36,
-    fontSize: 14,
+    height: 36,
+    borderRadius: 8,
+    paddingLeft: 32,
+    paddingRight: 32,
+    fontSize: 13,
     backgroundColor: 'rgba(128, 128, 128, 0.05)',
     borderWidth: 1,
   },
   clearButton: {
     position: 'absolute',
-    right: 12,
-    width: 20,
-    height: 20,
+    right: 10,
+    width: 18,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   clearIcon: {
-    fontSize: 14,
-    opacity: 0.6,
+    fontSize: 12,
+    opacity: 0.5,
   },
   // Resultado da busca externa
   externalSearchResult: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 10,
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
     borderWidth: 1,
   },
   searchingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    gap: 6,
+    paddingVertical: 3,
   },
   searchingText: {
-    fontSize: 13,
+    fontSize: 11,
   },
   tokenFoundContainer: {
-    gap: 10,
+    gap: 8,
   },
   tokenFoundHeader: {
     flexDirection: 'row',
@@ -1271,46 +1271,46 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tokenFoundSymbol: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   tokenFoundExchange: {
-    fontSize: 12,
+    fontSize: 11,
   },
   tokenFoundPrice: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   tokenFoundButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 6,
     alignItems: 'center',
   },
   tokenFoundButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   tokenNotFoundContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    gap: 6,
+    paddingVertical: 3,
   },
   tokenNotFoundText: {
-    fontSize: 13,
+    fontSize: 11,
     flex: 1,
   },
   tokenNotFoundSubtext: {
-    fontSize: 11,
-    opacity: 0.7,
-    marginTop: 4,
+    fontSize: 10,
+    opacity: 0.6,
+    marginTop: 3,
     textAlign: 'center',
   },
-  // Card Principal - DUPLICADO do Summary
+  // Card Principal
   container: {
-    borderRadius: 20,
-    padding: 14,
+    borderRadius: 14,
+    padding: 12,
     borderWidth: 0,
     shadowColor: "#000",
     shadowOffset: {
@@ -1318,19 +1318,19 @@ const styles = StyleSheet.create({
       height: 1,
     },
     shadowOpacity: 0.03,
-    shadowRadius: 10,
+    shadowRadius: 6,
     elevation: 1,
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  // Card de filtro - design compacto e integrado
+  // Card de filtro
   filterCard: {
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 12,
+    borderRadius: 10,
+    padding: 8,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 1,
   },
   headerRow: {
@@ -1342,7 +1342,7 @@ const styles = StyleSheet.create({
   filterDivider: {
     height: 1,
     backgroundColor: 'rgba(128, 128, 128, 0.1)',
-    marginVertical: 12,
+    marginVertical: 10,
   },
   valueContainer: {
     flexDirection: "column",
@@ -1359,9 +1359,9 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   refreshButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1458,28 +1458,28 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   exchangeSection: {
-    marginBottom: 24,
+    marginBottom: 18,
   },
   exchangeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 10,
+    padding: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   list: {
-    gap: 10,
-    paddingHorizontal: 0,  // Removido padding - vem do container pai (HomeTabsLayout)
+    gap: 8,
+    paddingHorizontal: 0,
   },
   card: {
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 10,
+    padding: 12,
     borderWidth: 0,
   },
   cardMargin: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   cardContent: {
     flexDirection: "row",
@@ -1489,16 +1489,16 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   logoContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    padding: 3,
+    padding: 2,
     borderWidth: 0,
   },
   logoImage: {
@@ -1509,11 +1509,11 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
   },
   exchangeName: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
   },
   orderCount: {
-    fontSize: 13,
+    fontSize: 11,
   },
   exchangeNameRow: {
     flexDirection: "row",
@@ -1522,16 +1522,16 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   ordersBadge: {
-    paddingHorizontal: 10,      // -17% mais compacto
-    paddingVertical: 5,         // -17% mais fino
-    borderRadius: 8,            // +33% mais arredondado
-    marginLeft: 6,              // mantido
-    borderWidth: 0,             // sem borda - mais clean
-    shadowColor: '#000',        // sombra sutil
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginLeft: 5,
+    borderWidth: 0,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
   ordersBadgeText: {
     fontSize: typography.micro,
@@ -1576,10 +1576,10 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   tokensContainer: {
-    borderRadius: 0,            // sem bordas arredondadas 
-    padding: 12,                // padding para espaçamento dos cards
-    marginTop: 0,               
-    borderWidth: 0,             // sem borda - cards individuais tem suas próprias bordas
+    borderRadius: 0,
+    padding: 10,
+    marginTop: 0,
+    borderWidth: 0,
     overflow: 'hidden',
   },
   infoBox: {
@@ -1718,37 +1718,37 @@ const styles = StyleSheet.create({
   },
   // 🆕 Estilos compactos para layout horizontal simplificado - CARD DESIGN (igual aos cards de ordens)
   tokenItemCompact: {
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    padding: 14,
-    marginBottom: 8,
+    padding: 12,
+    marginBottom: 6,
   },
   tokenHeader: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   tokenTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 3,
   },
   tokenSymbol: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
   variationBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
   },
   variationText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   tokenDetails: {
-    gap: 6,
+    gap: 5,
   },
   tokenDetailRow: {
     flexDirection: 'row',
@@ -1756,29 +1756,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tokenDetailLabel: {
-    fontSize: 13,
+    fontSize: 11,
   },
   tokenDetailValue: {
-    fontSize: 13,
+    fontSize: 11,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+    gap: 6,
+    marginTop: 10,
   },
   detailsButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    minHeight: 44,
+    minHeight: 38,
   },
   detailsButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   tradeButton: {
@@ -1786,15 +1786,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    minHeight: 44,
+    minHeight: 38,
   },
   tradeButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   // 🆕 Estilos antigos para compatibilidade
@@ -1802,7 +1802,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   tokenSymbolCard: {
     fontSize: typography.body,
@@ -1810,53 +1810,53 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   variationBadgeCard: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
   },
   variationTextCard: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
   tokenDetailsRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 10,
+    gap: 10,
+    marginBottom: 8,
   },
   tokenFooterRow: {
-    marginTop: 4,
+    marginTop: 3,
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   tokenFooterButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: 38,
   },
   tokenFooterButtonText: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.semibold,
   },
   tradeButtonCard: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: 38,
   },
   tokenCompactRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,                    // +20% espaço entre elementos
+    gap: 10,
   },
   tokenSymbolCompact: {
     fontSize: typography.bodySmall,  // tamanho consistente com orders
@@ -1888,10 +1888,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   variationBadgeCompact: {
-    paddingHorizontal: 12,      // era 10 - um pouco mais largo
-    paddingVertical: 6,         // era 5 - um pouco mais alto
-    borderRadius: 8,            // mantido
-    minWidth: 72,               // era 68 - um pouco mais largo
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    minWidth: 64,
   },
   variationTextCompact: {
     fontSize: typography.caption, // era tiny - MAIOR
@@ -1992,14 +1992,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
   },
   tokenInfoModal: {
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 20,
-    minWidth: 280,
-    maxWidth: 340,
+    padding: 16,
+    minWidth: 260,
+    maxWidth: 320,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -2013,8 +2013,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: 12,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
   },
@@ -2033,18 +2033,18 @@ const styles = StyleSheet.create({
     marginRight: -4,
   },
   closeButtonText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: fontWeights.regular,
-    lineHeight: 24,
+    lineHeight: 20,
   },
   modalContent: {
-    gap: 12,
+    gap: 10,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   infoLabel: {
     fontSize: typography.body,
@@ -2058,20 +2058,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 48,
+    paddingHorizontal: 24,
+    paddingVertical: 36,
   },
   emptyStateTitle: {
     fontSize: typography.body,
     fontWeight: fontWeights.semibold,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   emptyStateDescription: {
     fontSize: typography.caption,
     fontWeight: fontWeights.regular,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   errorBadge: {
     paddingHorizontal: 6,
@@ -2120,7 +2120,7 @@ const styles = StyleSheet.create({
   },
   // Estilos para listagem inline de assets (simple)
   simpleExchangeSection: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   simpleExchangeTitleRow: {
     flexDirection: 'row',
@@ -2128,8 +2128,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   simpleExchangeLogo: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
   },
   simpleExchangeTitle: {
     fontSize: typography.body,
@@ -2143,9 +2143,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    marginTop: 8,
-    borderRadius: 8,
+    padding: 10,
+    marginTop: 6,
+    borderRadius: 6,
   },
   simpleAssetInfo: {
     flex: 1,

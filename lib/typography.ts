@@ -9,57 +9,57 @@
 
 export const typography = {
   // ========================================
-  // TÍTULOS (Headings)
+  // TÍTULOS (Headings) — compacto para mobile
   // ========================================
-  h1: 28,      // Título principal de página (otimizado mobile)
-  h2: 24,      // Título de seção grande
-  h3: 20,      // Título de seção média
-  h4: 18,      // Subtítulo/Card title
+  h1: 22,      // Título principal de página
+  h2: 19,      // Título de seção grande
+  h3: 17,      // Título de seção média / Header
+  h4: 15,      // Subtítulo / Card title
   
   // ========================================
   // CORPO DE TEXTO (Body)
   // ========================================
-  body: 16,         // Texto principal padrão
-  bodyLarge: 17,    // Texto destacado/importante
-  bodySmall: 15,    // Texto secundário
+  body: 14,         // Texto principal padrão
+  bodyLarge: 15,    // Texto destacado/importante
+  bodySmall: 13,    // Texto secundário
   
   // ========================================
   // TEXTOS PEQUENOS (Small text)
   // ========================================
-  caption: 14,  // Labels, descrições, helper text
-  tiny: 13,     // Metadados, timestamps, contadores
-  micro: 12,    // Badges, tags, variações de preço
+  caption: 12,  // Labels, descrições, helper text
+  tiny: 11,     // Metadados, timestamps, contadores
+  micro: 10,    // Badges, tags, variações de preço
   
   // ========================================
   // VALORES NUMÉRICOS (Display)
   // ========================================
-  displayLarge: 48,   // Valor principal do portfolio
-  display: 32,        // Valores grandes (gráficos)
-  displaySmall: 24,   // Valores médios
+  displayLarge: 32,   // Valor principal do portfolio
+  display: 24,        // Valores grandes (gráficos)
+  displaySmall: 20,   // Valores médios
   
   // ========================================
   // BOTÕES (Buttons)
   // ========================================
-  button: 16,       // Botão primário/principal
-  buttonSmall: 14,  // Botão secundário/pequeno
+  button: 14,       // Botão primário/principal
+  buttonSmall: 12,  // Botão secundário/pequeno
   
   // ========================================
   // FORMULÁRIOS (Forms)
   // ========================================
-  input: 16,        // Texto de input
-  label: 14,        // Labels de formulário
-  placeholder: 16,  // Placeholder text
-  errorText: 13,    // Mensagens de erro
+  input: 14,        // Texto de input
+  label: 12,        // Labels de formulário
+  placeholder: 14,  // Placeholder text
+  errorText: 11,    // Mensagens de erro
   
   // ========================================
   // ÍCONES E EMOJIS (Icons)
   // ========================================
-  iconSmall: 16,    // Ícones pequenos
-  icon: 20,         // Ícones médios
-  iconLarge: 24,    // Ícones grandes
-  emoji: 32,        // Emojis decorativos
-  emojiLarge: 48,   // Emojis de destaque
-  emojiHuge: 64,    // Emojis de empty state
+  iconSmall: 14,    // Ícones pequenos
+  icon: 18,         // Ícones médios
+  iconLarge: 22,    // Ícones grandes
+  emoji: 28,        // Emojis decorativos
+  emojiLarge: 40,   // Emojis de destaque
+  emojiHuge: 52,    // Emojis de empty state
 } as const
 
 /**

@@ -127,28 +127,28 @@ export function SkeletonPortfolioOverview() {
 
 const styles = StyleSheet.create({
   card: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   cardHeaderText: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
   },
   cardBody: {
-    marginTop: 8,
+    marginTop: 6,
   },
   exchangeItem: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   exchangeHeader: {
     flexDirection: 'row',
@@ -156,13 +156,13 @@ const styles = StyleSheet.create({
   },
   exchangeInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
   },
   chartContainer: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   chartHeader: {
     flexDirection: 'row',
@@ -173,14 +173,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   overviewContainer: {
-    padding: 20,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 10,
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   overviewStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 10,
   },
 })

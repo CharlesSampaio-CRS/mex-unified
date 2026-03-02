@@ -10,33 +10,33 @@
 export const spacing = {
   // Atomic spacing
   xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 18,
+  xxl: 22,
+  xxxl: 28,
   
-  // Screen padding - reduzido para mobile
-  screenHorizontal: 16,
-  screenTop: 12,
-  screenBottom: 100,
+  // Screen padding - compacto mobile
+  screenHorizontal: 14,
+  screenTop: 8,
+  screenBottom: 90,
   
-  // Component spacing - otimizado
-  cardPadding: 14,
-  cardPaddingLarge: 16,
-  cardGap: 12,
-  sectionGap: 20,
-  itemGap: 10,
+  // Component spacing - compacto
+  cardPadding: 12,
+  cardPaddingLarge: 14,
+  cardGap: 10,
+  sectionGap: 16,
+  itemGap: 8,
   
   // Header
-  headerPaddingH: 16,
-  headerPaddingV: 16,
+  headerPaddingH: 14,
+  headerPaddingV: 12,
   
   // Title section (para compatibilidade com código legado)
-  titleSectionPaddingH: 16,
-  titleSectionPaddingTop: 8,
-  titleSectionPaddingBottom: 12,
+  titleSectionPaddingH: 14,
+  titleSectionPaddingTop: 6,
+  titleSectionPaddingBottom: 10,
 } as const
 
 /**
@@ -45,11 +45,11 @@ export const spacing = {
 export const borderRadius = {
   none: 0,
   xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
+  sm: 6,
+  md: 10,
+  lg: 12,
+  xl: 16,
+  xxl: 20,
   full: 9999,
 } as const
 
@@ -58,30 +58,30 @@ export const borderRadius = {
  */
 export const sizes = {
   // Buttons
-  buttonSmall: 36,
-  buttonMedium: 44,
-  buttonLarge: 52,
-  buttonXLarge: 60,
+  buttonSmall: 32,
+  buttonMedium: 40,
+  buttonLarge: 48,
+  buttonXLarge: 54,
   
   // Icons
-  iconXSmall: 16,
-  iconSmall: 20,
-  iconMedium: 24,
-  iconLarge: 32,
-  iconXLarge: 40,
-  iconXXLarge: 48,
+  iconXSmall: 14,
+  iconSmall: 18,
+  iconMedium: 22,
+  iconLarge: 28,
+  iconXLarge: 36,
+  iconXXLarge: 44,
   
   // Avatar
-  avatarSmall: 32,
-  avatarMedium: 40,
-  avatarLarge: 56,
-  avatarXLarge: 80,
-  avatarXXLarge: 120,
+  avatarSmall: 28,
+  avatarMedium: 36,
+  avatarLarge: 48,
+  avatarXLarge: 68,
+  avatarXXLarge: 100,
   
   // Input
-  inputHeight: 48,
-  inputHeightSmall: 40,
-  inputHeightLarge: 56,
+  inputHeight: 42,
+  inputHeightSmall: 36,
+  inputHeightLarge: 50,
 } as const
 
 /**
