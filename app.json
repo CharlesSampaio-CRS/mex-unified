@@ -13,7 +13,19 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cryptohub.mobile"
+      "bundleIdentifier": "com.cryptohub.mobile",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "bnc",
+          "mexc",
+          "novadax",
+          "bybitapp",
+          "bitget",
+          "kucoin",
+          "okx",
+          "coinbase"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {

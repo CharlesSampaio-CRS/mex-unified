@@ -51,36 +51,47 @@ interface ExchangeData {
 }
 
 // Componente Skeleton para loading
-const SkeletonExchangesPieChart = memo(function SkeletonExchangesPieChart() {
+const SkeletonExchangesPieChart = memo(function SkeletonExchangesPieChart({ embedded }: { embedded?: boolean }) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { width } = useWindowDimensions()
   const chartSize = Math.max(MIN_CHART_SIZE, Math.min(BASE_CHART_SIZE, width - 80))
   
-  return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
-      <View style={styles.content}>
+  const content = (
+    <>
+      {!embedded && (
         <Text style={[styles.title, { color: colors.text }]}>
           {t('home.distribution') || 'Distribuição por Exchange'}
         </Text>
-        <View style={styles.chartContainer}>
-          {/* Círculo skeleton sem loading indicator */}
-          <View style={[styles.skeletonCircle, { backgroundColor: colors.surfaceSecondary, width: chartSize, height: chartSize, borderRadius: chartSize / 2 }]} />
-        </View>
-        <View style={styles.legendContainer}>
-          {[1, 2, 3].map((i) => (
-            <View key={i} style={styles.skeletonLegendItem}>
-              <View style={[styles.skeletonColor, { backgroundColor: colors.border }]} />
-              <View style={[styles.skeletonText, { backgroundColor: colors.border }]} />
-            </View>
-          ))}
-        </View>
+      )}
+      <View style={styles.chartContainer}>
+        <View style={[styles.skeletonCircle, { backgroundColor: colors.surfaceSecondary, width: chartSize, height: chartSize, borderRadius: chartSize / 2 }]} />
+      </View>
+      <View style={styles.legendContainer}>
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={styles.skeletonLegendItem}>
+            <View style={[styles.skeletonColor, { backgroundColor: colors.border }]} />
+            <View style={[styles.skeletonText, { backgroundColor: colors.border }]} />
+          </View>
+        ))}
+      </View>
+    </>
+  )
+
+  if (embedded) {
+    return <View style={styles.content}>{content}</View>
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
+      <View style={styles.content}>
+        {content}
       </View>
     </View>
   )
 })
 
-export const ExchangesPieChart = memo(function ExchangesPieChart() {
+export const ExchangesPieChart = memo(function ExchangesPieChart({ embedded }: { embedded?: boolean }) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { data, loading, error } = useBalance()
@@ -210,32 +221,45 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
   // Mostra skeleton apenas durante loading inicial (não durante refresh)
   // IMPORTANTE: Esse check deve vir DEPOIS de todos os hooks
   if (loading && !data && !error) {
-    return <SkeletonExchangesPieChart />
+    return <SkeletonExchangesPieChart embedded={embedded} />
   }
 
   if (chartData.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.card }]}>
-        <View style={styles.content}>
+    const emptyContent = (
+      <>
+        {!embedded && (
           <Text style={[styles.title, { color: colors.text }]}>
             {t('home.distribution') || 'Por Exchange'}
           </Text>
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {t('home.noExchangesConnected') || 'Nenhuma exchange conectada'}
-            </Text>
-          </View>
+        )}
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            {t('home.noExchangesConnected') || 'Nenhuma exchange conectada'}
+          </Text>
+        </View>
+      </>
+    )
+
+    if (embedded) {
+      return <View style={styles.content}>{emptyContent}</View>
+    }
+
+    return (
+      <View style={[styles.container, { backgroundColor: colors.card }]}>
+        <View style={styles.content}>
+          {emptyContent}
         </View>
       </View>
     )
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
-      <View style={styles.content}>
+  const chartContent = (
+    <>
+      {!embedded && (
         <Text style={[styles.title, { color: colors.text }]}>
           {t('home.distribution') || 'Distribuição por Exchange'}
         </Text>
+      )}
 
         <View style={styles.chartContainer}>
           {/* Gráfico de Pizza */}
@@ -346,7 +370,7 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
                     </Text>
                     {/* ⚠️ Indicador de erro */}
                     {item.hasError && (
-                      <Text style={{ fontSize: 12, opacity: opacity * 0.8 }}>⚠️</Text>
+                      <Text style={{ fontSize: 10, opacity: opacity * 0.8 }}>⚠️</Text>
                     )}
                   </View>
                   <Text style={[styles.legendPercentage, { color: colors.textSecondary, opacity }]} numberOfLines={1}>
@@ -360,6 +384,17 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
             )
           })}
         </View>
+    </>
+  )
+
+  if (embedded) {
+    return <View style={styles.content}>{chartContent}</View>
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
+      <View style={styles.content}>
+        {chartContent}
       </View>
     </View>
   )
@@ -367,30 +402,30 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
-    padding: 20,                // Reduzido de 28 para 20 (mais compacto)
-    marginBottom: 25,           // Espaço pequeno do menu
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   content: {
-    gap: 16,                    // Reduzido de 20 para 16 (mais compacto)
+    gap: 10,
   },
   title: {
-    fontSize: typography.caption, // h3→caption (12-13px, igual PortfolioOverview)
-    fontWeight: fontWeights.regular, // medium→regular (igual PortfolioOverview)
-    letterSpacing: 0.5, // 0.3→0.5 (igual PortfolioOverview)
-    opacity: 0.5, // Adiciona opacidade (igual PortfolioOverview)
+    fontSize: 11,
+    fontWeight: fontWeights.regular,
+    letterSpacing: 0.5,
+    opacity: 0.5,
   },
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     alignSelf: 'center',
-    paddingVertical: 6,         // Reduzido de 10 para 6 (mais compacto)
+    paddingVertical: 4,
     width: '100%',
     overflow: 'hidden',
   },
@@ -409,31 +444,31 @@ const styles = StyleSheet.create({
   },
   centerValue: {
     fontSize: 10, // Reduzido
-    fontWeight: fontWeights.medium, // regular→medium
+    fontWeight: fontWeights.regular,
     marginTop: 6, // 4→6
     textAlign: 'center',
   },
   centerPercentage: {
     fontSize: 8, // Reduzido
-    fontWeight: fontWeights.medium, // regular→medium
+    fontWeight: fontWeights.regular,
     marginTop: 4, // 2→4
     textAlign: 'center',
   },
   legend: {
-    gap: 2,                     // Reduzido para diminuir altura
+    gap: 1,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,                     // Reduzido para diminuir altura
-    minHeight: 28,              // Reduzido para diminuir altura
-    paddingVertical: 2,
+    gap: 5,
+    minHeight: 20,
+    paddingVertical: 1,
     width: '100%',
   },
   exchangeIconContainer: {
-    width: 32, // 22→32
-    height: 32, // 22→32
-    borderRadius: 16, // 11→16
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -442,13 +477,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.05)',
   },
   exchangeIcon: {
-    width: 28, // 20→28
-    height: 28, // 20→28
+    width: 20,
+    height: 20,
   },
   legendColor: {
-    width: 16, // 12→16
-    height: 16, // 12→16
-    borderRadius: 8, // 6→8
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   legendTextContainer: {
     flex: 1,
@@ -459,17 +494,17 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   legendName: {
-    fontSize: typography.caption, // Reduzido de body (16px) para caption (14px)
-    fontWeight: fontWeights.medium,
+    fontSize: 10,
+    fontWeight: fontWeights.regular,
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
   },
   legendPercentage: {
-    fontSize: typography.caption, // Reduzido de body (16px) para caption (14px)
-    fontWeight: fontWeights.medium,
-    minWidth: 40,
-    maxWidth: 64,
+    fontSize: 10,
+    fontWeight: fontWeights.regular,
+    minWidth: 36,
+    maxWidth: 56,
     textAlign: 'right',
     flexShrink: 0,
   },
@@ -482,9 +517,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   selectedIndicator: {
-    width: 10, // 8→10
-    height: 10, // 8→10
-    borderRadius: 5, // 4→5
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   emptyState: {
     paddingVertical: 32,
@@ -502,18 +537,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   legendContainer: {
-    gap: 6,                     // Igual ao legend (6px)
+    gap: 4,
   },
   skeletonLegendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    minHeight: 40,
+    gap: 8,
+    minHeight: 28,
   },
   skeletonColor: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     opacity: 0.3,
   },
   skeletonText: {

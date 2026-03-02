@@ -1,19 +1,16 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native"
+import { View, Text, StyleSheet, ScrollView } from "react-native"
 import { memo } from "react"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
 
 export const DiamondScreen = memo(function DiamondScreen({ navigation }: any) {
   const { colors } = useTheme()
 
+  useHeader({ title: "Diamond", subtitle: "Recurso Diamond" })
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Diamond"
-        subtitle="Recurso Diamond"
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.content}>
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>💎 Diamond Feature</Text>
@@ -30,7 +27,7 @@ export const DiamondScreen = memo(function DiamondScreen({ navigation }: any) {
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Premium portfolio</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   )
 })
 

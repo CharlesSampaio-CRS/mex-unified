@@ -13,12 +13,9 @@ import { useLanguage } from "@/contexts/LanguageContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useBalance } from "@/contexts/BalanceContext"
 import { usePrivacy } from "@/contexts/PrivacyContext"
-import { capitalizeExchangeName } from "@/lib/exchange-helpers"
+import { capitalizeExchangeName, getExchangeName, getExchangeId } from "@/lib/exchange-helpers"
 import { apiService } from "@/services/api"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
-import { config } from "@/lib/config"
-import { exchangeService } from "@/services/exchange-service"
-import { decryptData } from "@/lib/encryption"
 
 interface TokenDetailsModalProps {
   visible: boolean
@@ -101,6 +98,15 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
   const [tokenData, setTokenData] = useState<TokenDetails | null>(null)
   const [userTotalAmount, setUserTotalAmount] = useState<number>(0)
   const [userTotalValue, setUserTotalValue] = useState<number>(0)
+  const [exchangeBreakdown, setExchangeBreakdown] = useState<Array<{
+    exchangeId: string
+    exchangeName: string
+    amount: number
+    free: number
+    used: number
+    valueUsd: number
+    priceUsd: number
+  }>>([])
 
   useEffect(() => {
     if (visible && exchangeId && symbol) {
@@ -113,28 +119,48 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
     if (!balanceData?.exchanges || !symbol) {
       setUserTotalAmount(0)
       setUserTotalValue(0)
+      setExchangeBreakdown([])
       return
     }
 
     let totalAmount = 0
     let totalValue = 0
+    const breakdown: typeof exchangeBreakdown = []
 
     balanceData.exchanges.forEach((exchange: any) => {
-      // ✅ Suporta ambas estruturas: balances (nova) e tokens (antiga)
       const balances = exchange.balances || exchange.tokens || {}
       const token = balances[symbol]
       
       if (token) {
         const amount = token.total || parseFloat(token.amount || '0')
+        const free = parseFloat(token.free || '0')
+        const used = parseFloat(token.used || token.locked || '0')
         const valueUsd = token.usd_value || parseFloat(token.value_usd || '0')
+        const priceUsd = parseFloat(token.price_usd || '0')
         
         totalAmount += amount || 0
         totalValue += valueUsd || 0
+
+        if (amount > 0 || valueUsd > 0) {
+          breakdown.push({
+            exchangeId: getExchangeId(exchange),
+            exchangeName: capitalizeExchangeName(getExchangeName(exchange)),
+            amount: amount || 0,
+            free: free || 0,
+            used: used || 0,
+            valueUsd: valueUsd || 0,
+            priceUsd: priceUsd || 0,
+          })
+        }
       }
     })
 
+    // Sort by value descending
+    breakdown.sort((a, b) => b.valueUsd - a.valueUsd)
+
     setUserTotalAmount(totalAmount)
     setUserTotalValue(totalValue)
+    setExchangeBreakdown(breakdown)
   }
 
   const loadTokenDetails = async () => {
@@ -147,49 +173,17 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
       setLoading(true)
       setError(null)
       
-      // 1️⃣ Buscar a exchange do banco com credenciais
-      const exchange = await exchangeService.getExchangeById(exchangeId, user.id)
-      if (!exchange) {
-        throw new Error('Exchange não encontrada')
+      // 🔐 Usa endpoint secure — backend busca credenciais do MongoDB via JWT
+      // Não precisa descriptografar credenciais no frontend
+      const symbolToSend = symbol.toUpperCase()
+      
+      const response = await apiService.getTokenDetailsSecure(exchangeId, symbolToSend)
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao carregar detalhes do token')
       }
       
-      // 2️⃣ Descriptografar as credenciais
-      const apiKey = await decryptData(exchange.api_key_encrypted, user.id)
-      const apiSecret = await decryptData(exchange.api_secret_encrypted, user.id)
-      const passphrase = exchange.api_passphrase_encrypted 
-        ? await decryptData(exchange.api_passphrase_encrypted, user.id) 
-        : undefined
-      
-      // 3️⃣ Formatar o símbolo como par (ex: BTC -> BTC/USDT)
-      const pair = symbol.includes('/') ? symbol.toUpperCase() : `${symbol.toUpperCase()}/USDT`
-      
-      // 4️⃣ Chamar o endpoint /tokens/details (POST) com credenciais
-      const response = await fetch(`${config.apiBaseUrl}/tokens/details`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          exchange: {
-            exchange_id: exchangeId,
-            ccxt_id: exchange.exchange_type, // Ex: 'mexc', 'binance'
-            name: exchange.exchange_name,
-            api_key: apiKey,
-            api_secret: apiSecret,
-            passphrase: passphrase,
-            is_active: exchange.is_active === 1,
-          },
-          symbol: pair, // Ex: 'BTC/USDT', 'REKTCOIN/USDT'
-        }),
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Erro ao carregar detalhes do token')
-      }
-      
-      const data = await response.json()
-      setTokenData(data)
+      setTokenData(response)
     } catch (err: any) {
       console.error('❌ Erro ao carregar token:', err)
       setError(err.message || 'Erro ao carregar dados')
@@ -246,6 +240,15 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
     return type === 'bid' ? '#10b981' : '#ef4444'
   }
 
+  // Retorna o símbolo correto da moeda quote (ex: R$, $, €)
+  const getQuoteSymbol = () => {
+    const quote = tokenData?.quote?.toUpperCase()
+    if (quote === 'BRL') return 'R$'
+    if (quote === 'EUR') return '€'
+    if (quote === 'BTC') return '₿'
+    return '$' // USDT, USDC, USD
+  }
+
   const formatDateTime = (timestamp: number) => {
     const date = new Date(timestamp)
     return date.toLocaleString('pt-BR', {
@@ -286,9 +289,10 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                   <>
                     <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
                       {capitalizeExchangeName(tokenData.exchange?.name || 'Exchange')}
+                      {tokenData.pair ? ` · ${tokenData.pair}` : ''}
                     </Text>
                     <Text style={[styles.modalPrice, { color: colors.primary }]}>
-                      ${formatPrice(tokenData.price?.current || '0')}
+                      {getQuoteSymbol()}{formatPrice(tokenData.price?.current || '0')}
                     </Text>
                   </>
                 )}
@@ -320,12 +324,15 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Totais do Usuário */}
                 {(userTotalAmount > 0 || userTotalValue > 0) && (
-                  <View style={[styles.section, { backgroundColor: colors.primary + '10', borderBottomColor: colors.cardBorder }]}>
+                  <View style={[styles.section, { backgroundColor: colors.primary + '08', borderBottomColor: colors.cardBorder }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      Seus Saldos
+                    </Text>
                     <View style={styles.userTotalContainer}>
                       <View style={styles.userTotalRow}>
                         <Text style={[styles.label, { color: colors.textSecondary }]}>{t('tokenDetails.totalQuantity')}</Text>
                         <Text style={[styles.value, { color: colors.text, fontWeight: '600' }]}>
-                          {hideValue(apiService.formatTokenAmount(userTotalAmount.toString()))}
+                          {hideValue(apiService.formatTokenAmount(userTotalAmount.toString()))} {symbol?.toUpperCase()}
                         </Text>
                       </View>
                       <View style={styles.userTotalRow}>
@@ -344,7 +351,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                     {t('token.priceVariation')}
                   </Text>
                   <View style={styles.changeContainer}>
-                    <View style={styles.changeItem}>
+                    <View style={[styles.changeItem, { backgroundColor: colors.surfaceSecondary || colors.card }]}>
                       <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>
                         1h
                       </Text>
@@ -357,7 +364,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         {formatPercent(tokenData.change?.['1h']?.price_change_percent)}
                       </Text>
                     </View>
-                    <View style={styles.changeItem}>
+                    <View style={[styles.changeItem, { backgroundColor: colors.surfaceSecondary || colors.card }]}>
                       <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>
                         4h
                       </Text>
@@ -370,7 +377,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         {formatPercent(tokenData.change?.['4h']?.price_change_percent)}
                       </Text>
                     </View>
-                    <View style={styles.changeItem}>
+                    <View style={[styles.changeItem, { backgroundColor: colors.surfaceSecondary || colors.card }]}>
                       <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>
                         24h
                       </Text>
@@ -386,6 +393,43 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                   </View>
                 </View>
 
+                {/* Bid / Ask + Spread */}
+                {(tokenData.price?.bid || tokenData.price?.ask) && (
+                  <View style={[styles.section, { borderBottomColor: colors.cardBorder }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      Livro de Ofertas
+                    </Text>
+                    <View style={styles.row}>
+                      <View style={styles.halfColumn}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>
+                          Bid (Compra)
+                        </Text>
+                        <Text style={[styles.value, { color: getBidAskColor('bid') }]}>
+                          {getQuoteSymbol()}{formatPrice(tokenData.price.bid)}
+                        </Text>
+                      </View>
+                      <View style={styles.halfColumn}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>
+                          Ask (Venda)
+                        </Text>
+                        <Text style={[styles.value, { color: getBidAskColor('ask') }]}>
+                          {getQuoteSymbol()}{formatPrice(tokenData.price.ask)}
+                        </Text>
+                      </View>
+                    </View>
+                    {tokenData.price.bid && tokenData.price.ask && (
+                      <View style={[styles.spreadRow, { borderTopColor: colors.cardBorder }]}>
+                        <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>
+                          Spread
+                        </Text>
+                        <Text style={[styles.value, { color: colors.text, fontSize: 14 }]}>
+                          {calculateSpread(tokenData.price.bid, tokenData.price.ask)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+
                 {/* Máxima e Mínima 24h */}
                 <View style={[styles.section, { borderBottomColor: colors.cardBorder }]}>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -397,7 +441,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         Máxima
                       </Text>
                       <Text style={[styles.value, { color: colors.success }]}>
-                        {formatPrice(tokenData.price?.high_24h || '0')}
+                        {getQuoteSymbol()}{formatPrice(tokenData.price?.high_24h || '0')}
                       </Text>
                     </View>
                     <View style={styles.halfColumn}>
@@ -405,14 +449,236 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         Mínima
                       </Text>
                       <Text style={[styles.value, { color: colors.danger }]}>
-                        {formatPrice(tokenData.price?.low_24h || '0')}
+                        {getQuoteSymbol()}{formatPrice(tokenData.price?.low_24h || '0')}
                       </Text>
                     </View>
                   </View>
                 </View>
 
+                {/* Volume 24h */}
+                {(tokenData.volume?.base_24h || tokenData.volume?.quote_24h) && (
+                  <View style={[styles.section, { borderBottomColor: colors.cardBorder }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      Volume 24h
+                    </Text>
+                    <View style={styles.row}>
+                      <View style={styles.halfColumn}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>
+                          Base ({symbol?.toUpperCase()})
+                        </Text>
+                        <Text style={[styles.value, { color: colors.text }]}>
+                          {formatVolume(tokenData.volume.base_24h)}
+                        </Text>
+                      </View>
+                      <View style={styles.halfColumn}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>
+                          Quote ({tokenData.quote || 'USDT'})
+                        </Text>
+                        <Text style={[styles.value, { color: colors.text }]}>
+                          {getQuoteSymbol()}{formatVolume(tokenData.volume.quote_24h)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Distribuição por Exchange */}
+                {exchangeBreakdown.length > 0 && (
+                  <View style={[styles.section, { borderBottomColor: colors.cardBorder }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      Distribuição por Exchange
+                    </Text>
+                    <View style={styles.exchangesListContainer}>
+                      {exchangeBreakdown.map((ex) => (
+                        <View 
+                          key={ex.exchangeId} 
+                          style={[styles.exchangeItem, { backgroundColor: colors.surfaceSecondary || colors.card }]}
+                        >
+                          <View style={styles.exchangeItemLeft}>
+                            <Text style={[styles.exchangeItemName, { color: colors.text }]}>
+                              {ex.exchangeName}
+                            </Text>
+                            <Text style={[styles.exchangeItemAmount, { color: colors.textSecondary }]}>
+                              {hideValue(apiService.formatTokenAmount(ex.amount.toString()))} {symbol?.toUpperCase()}
+                            </Text>
+                            {ex.used > 0 && (
+                              <Text style={[styles.exchangeItemAmount, { color: colors.textSecondary, fontSize: 11, marginTop: 2 }]}>
+                                {hideValue(apiService.formatTokenAmount(ex.free.toString()))} livre · {hideValue(apiService.formatTokenAmount(ex.used.toString()))} em uso
+                              </Text>
+                            )}
+                          </View>
+                          <Text style={[styles.exchangeItemValue, { color: colors.primary }]}>
+                            {hideValue(`$${apiService.formatUSD(ex.valueUsd)}`)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Informações de Mercado */}
+                {tokenData.market_info && (
+                  <View style={[styles.section, { borderBottomColor: colors.cardBorder }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      Informações de Mercado
+                    </Text>
+                    
+                    {/* Status */}
+                    <View style={[styles.marketStatusRow, { marginBottom: 12 }]}>
+                      <Text style={[styles.label, { color: colors.textSecondary }]}>
+                        Status do par
+                      </Text>
+                      <Text style={[styles.value, { 
+                        color: tokenData.market_info.active ? colors.success : colors.danger 
+                      }]}>
+                        {tokenData.market_info.active ? '● Ativo' : '● Inativo'}
+                      </Text>
+                    </View>
+
+                    {/* Precisão */}
+                    {tokenData.market_info.precision && (
+                      <View style={styles.row}>
+                        <View style={styles.halfColumn}>
+                          <Text style={[styles.label, { color: colors.textSecondary }]}>
+                            Precisão (Quantidade)
+                          </Text>
+                          <Text style={[styles.value, { color: colors.text }]}>
+                            {tokenData.market_info.precision.amount != null 
+                              ? `${tokenData.market_info.precision.amount} decimais` 
+                              : 'N/A'}
+                          </Text>
+                        </View>
+                        <View style={styles.halfColumn}>
+                          <Text style={[styles.label, { color: colors.textSecondary }]}>
+                            Precisão (Preço)
+                          </Text>
+                          <Text style={[styles.value, { color: colors.text }]}>
+                            {tokenData.market_info.precision.price != null 
+                              ? `${tokenData.market_info.precision.price} decimais` 
+                              : 'N/A'}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Limites */}
+                    {tokenData.market_info.limits && (
+                      <View style={styles.limitsContainer}>
+                        <Text style={[styles.subsectionTitle, { color: colors.text }]}>
+                          Limites de Negociação
+                        </Text>
+                        
+                        {/* Quantidade */}
+                        {(tokenData.market_info.limits.amount?.min != null || tokenData.market_info.limits.amount?.max != null) && (
+                          <View style={styles.row}>
+                            <View style={styles.halfColumn}>
+                              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                Qtd. Mínima
+                              </Text>
+                              <Text style={[styles.value, { color: colors.text }]}>
+                                {tokenData.market_info.limits.amount.min != null 
+                                  ? apiService.formatTokenAmount(tokenData.market_info.limits.amount.min.toString()) 
+                                  : 'N/A'}
+                              </Text>
+                            </View>
+                            <View style={styles.halfColumn}>
+                              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                Qtd. Máxima
+                              </Text>
+                              <Text style={[styles.value, { color: colors.text }]}>
+                                {tokenData.market_info.limits.amount.max != null 
+                                  ? apiService.formatTokenAmount(tokenData.market_info.limits.amount.max.toString()) 
+                                  : 'Sem limite'}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Custo */}
+                        {(tokenData.market_info.limits.cost?.min != null || tokenData.market_info.limits.cost?.max != null) && (
+                          <View style={[styles.row, { marginTop: 8 }]}>
+                            <View style={styles.halfColumn}>
+                              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                Custo Mínimo
+                              </Text>
+                              <Text style={[styles.value, { color: colors.text }]}>
+                                {tokenData.market_info.limits.cost.min != null 
+                                  ? `${getQuoteSymbol()}${apiService.formatUSD(tokenData.market_info.limits.cost.min)}` 
+                                  : 'N/A'}
+                              </Text>
+                            </View>
+                            <View style={styles.halfColumn}>
+                              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                Custo Máximo
+                              </Text>
+                              <Text style={[styles.value, { color: colors.text }]}>
+                                {tokenData.market_info.limits.cost.max != null 
+                                  ? `${getQuoteSymbol()}${apiService.formatUSD(tokenData.market_info.limits.cost.max)}` 
+                                  : 'Sem limite'}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Preço */}
+                        {(tokenData.market_info.limits.price?.min != null || tokenData.market_info.limits.price?.max != null) && (
+                          <View style={[styles.row, { marginTop: 8 }]}>
+                            <View style={styles.halfColumn}>
+                              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                Preço Mínimo
+                              </Text>
+                              <Text style={[styles.value, { color: colors.text }]}>
+                                {tokenData.market_info.limits.price.min != null 
+                                  ? `${getQuoteSymbol()}${formatPrice(tokenData.market_info.limits.price.min)}` 
+                                  : 'N/A'}
+                              </Text>
+                            </View>
+                            <View style={styles.halfColumn}>
+                              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                Preço Máximo
+                              </Text>
+                              <Text style={[styles.value, { color: colors.text }]}>
+                                {tokenData.market_info.limits.price.max != null 
+                                  ? `${getQuoteSymbol()}${formatPrice(tokenData.market_info.limits.price.max)}` 
+                                  : 'Sem limite'}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Alavancagem */}
+                        {tokenData.market_info.limits.leverage && 
+                         (tokenData.market_info.limits.leverage.min != null || tokenData.market_info.limits.leverage.max != null) && (
+                          <View style={[styles.row, { marginTop: 8 }]}>
+                            <View style={styles.halfColumn}>
+                              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                Alavancagem Mín.
+                              </Text>
+                              <Text style={[styles.value, { color: colors.text }]}>
+                                {tokenData.market_info.limits.leverage.min != null 
+                                  ? `${tokenData.market_info.limits.leverage.min}x` 
+                                  : 'N/A'}
+                              </Text>
+                            </View>
+                            <View style={styles.halfColumn}>
+                              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                Alavancagem Máx.
+                              </Text>
+                              <Text style={[styles.value, { color: colors.text }]}>
+                                {tokenData.market_info.limits.leverage.max != null 
+                                  ? `${tokenData.market_info.limits.leverage.max}x` 
+                                  : 'N/A'}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                )}
+
                 {/* Última Atualização */}
-                <View style={[styles.section, { marginBottom: 20, borderBottomWidth: 0 }]}>
+                <View style={[styles.section, { paddingVertical: 20, borderBottomWidth: 0 }]}>
                   <Text style={[styles.lastUpdate, { color: colors.textSecondary }]}>
                     {t('common.updated')} {formatDateTime(tokenData.timestamp || Date.now())}
                   </Text>
@@ -450,11 +716,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     padding: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
   },
   headerLeft: {
     flex: 1,
-    gap: 4,
+    gap: 2,
   },
   modalTitle: {
     fontSize: 24,
@@ -462,14 +729,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
     opacity: 0.7,
+    marginTop: 2,
   },
   modalPrice: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 6,
   },
   closeButton: {
     padding: 4,
@@ -511,17 +779,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '400',
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 12,
+    letterSpacing: 0.3,
   },
   subsectionTitle: {
-    fontSize: 16,
-    fontWeight: '400',
+    fontSize: 14,
+    fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
   },
@@ -535,13 +805,13 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   userTotalContainer: {
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
   },
   userTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 28,
   },
   userTotalLabel: {
     fontSize: 15,
@@ -552,7 +822,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   exchangesListContainer: {
-    marginTop: 12,
     gap: 8,
   },
   exchangesListTitle: {
@@ -565,7 +834,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   exchangeItemLeft: {
     flex: 1,
@@ -582,42 +851,47 @@ const styles = StyleSheet.create({
   exchangeItemValue: {
     fontSize: 14,
     fontWeight: '600',
+    marginLeft: 8,
   },
   changeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
   },
   changeItem: {
     flex: 1,
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
   },
   changeLabel: {
-    fontSize: 14,
-    fontWeight: '300',
+    fontSize: 13,
+    fontWeight: '500',
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   changeValue: {
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
   },
   row: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   halfColumn: {
     flex: 1,
+    minWidth: 0,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '300',
+    fontSize: 13,
+    fontWeight: '400',
     marginBottom: 4,
   },
   value: {
-    fontSize: 17,
-    fontWeight: '400',
+    fontSize: 16,
+    fontWeight: '500',
   },
   spreadRow: {
     flexDirection: 'row',
@@ -625,8 +899,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
     paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   infoGrid: {
     flexDirection: 'row',
@@ -647,8 +920,18 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   lastUpdate: {
-    fontSize: 14,
-    fontWeight: '300',
+    fontSize: 12,
+    fontWeight: '400',
     textAlign: 'center',
+    opacity: 0.6,
+  },
+  limitsContainer: {
+    marginTop: 4,
+  },
+  marketStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 28,
   },
 })

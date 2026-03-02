@@ -332,7 +332,7 @@ export const MarketOverview: React.FC = () => {
                 {selectedToken?.name} ({selectedToken?.symbol})
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
+                <Ionicons name="close-outline" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -423,37 +423,37 @@ export const MarketOverview: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   headerLeft: {
     flex: 1,
   },
   title: {
-    fontSize: 13,  // Título (reduzido de 14px - padrão compacto)
+    fontSize: 12,
     fontWeight: fontWeights.semibold,
   },
   updateTime: {
-    fontSize: 11,  // Timestamp (reduzido de 12px)
+    fontSize: 10,
     fontWeight: fontWeights.medium,
     marginTop: 2,
-    opacity: 0.7,
+    opacity: 0.6,
   },
   refreshButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -461,61 +461,61 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   refreshIcon: {
-    fontSize: 16,  // Ícone refresh (reduzido de 18px)
+    fontSize: 14,
     fontWeight: fontWeights.light,
-    opacity: 0.6,
+    opacity: 0.5,
   },
   loadingContainer: {
-    paddingVertical: 40,
+    paddingVertical: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorContainer: {
-    paddingVertical: 40,
+    paddingVertical: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorText: {
-    fontSize: 12,  // Texto erro (reduzido de 14px)
+    fontSize: 11,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   retryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
   retryButtonText: {
     color: '#fff',
-    fontSize: 12,  // Texto botão (reduzido de 14px)
+    fontSize: 11,
     fontWeight: fontWeights.semibold,
   },
   scrollContent: {
-    gap: 10,
-    paddingRight: 12,
+    gap: 8,
+    paddingRight: 10,
   },
   tokenCard: {
-    width: 120,
-    padding: 10,
-    borderRadius: 10,
+    width: 110,
+    padding: 8,
+    borderRadius: 8,
   },
   tokenHeader: {
-    marginBottom: 6,
+    marginBottom: 4,
   },
   tokenSymbol: {
-    fontSize: 13,  // Símbolo token (reduzido de 14px - padrão compacto)
+    fontSize: 12,
     fontWeight: fontWeights.semibold,
     marginBottom: 1,
   },
   tokenName: {
-    fontSize: 11,  // Nome token (reduzido de 13px)
+    fontSize: 10,
     fontWeight: fontWeights.regular,
   },
   tokenBody: {
-    marginBottom: 6,
+    marginBottom: 4,
   },
   tokenPrice: {
-    fontSize: 14,  // Preço token (reduzido de 16px)
+    fontSize: 13,
     fontWeight: fontWeights.medium,
   },
   tokenFooter: {
@@ -525,14 +525,14 @@ const styles = StyleSheet.create({
   changeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 5,
+    gap: 3,
   },
   changeText: {
-    fontSize: 11,  // Variação % (reduzido de 12px)
-    fontWeight: fontWeights.medium,  // Reduzido de semibold para medium
+    fontSize: 10,
+    fontWeight: fontWeights.medium,
   },
   // Modal styles
   modalOverlay: {
@@ -541,19 +541,19 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
     maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 16,  // Título modal (reduzido de 20px)
+    fontSize: 15,
     fontWeight: fontWeights.semibold,
     flex: 1,
   },
@@ -561,37 +561,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   detailLabel: {
-    fontSize: 12,  // Label detail (reduzido de 14px)
+    fontSize: 11,
     fontWeight: fontWeights.medium,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   detailValue: {
-    fontSize: 15,  // Valor detail (reduzido de 18px)
+    fontSize: 14,
     fontWeight: fontWeights.semibold,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   infoBox: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 12,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 10,
   },
   infoText: {
-    fontSize: 12,  // Texto info (reduzido de 14px)
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 18,
   },
   chartSection: {
-    marginBottom: 24,
+    marginBottom: 20,
     alignItems: 'center',
   },
   chartLoading: {
-    height: 160,
+    height: 140,
     justifyContent: 'center',
     alignItems: 'center',
   },

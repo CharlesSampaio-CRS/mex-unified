@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Text as SvgText, Line } from 'react-native-svg';
@@ -9,12 +9,13 @@ import { usePrivacy } from '@/contexts/PrivacyContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useOrders } from '@/contexts/OrdersContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useHeader } from '@/contexts/HeaderContext';
 import { apiService } from '@/services/api';
-import { Header } from '@/components/Header';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { TokenDetailsModal } from '@/components/token-details-modal';
 import { TradeModal } from '@/components/trade-modal';
 import { getExchangeBalances, getExchangeId, getExchangeName, capitalizeExchangeName } from '@/lib/exchange-helpers';
+import { getExchangeLogo } from '@/lib/exchange-logos';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 
@@ -38,7 +39,7 @@ export function AssetsScreen({ navigation }: any) {
     exchangeName: string;
     symbol: string;
     currentPrice: number;
-    balance: { token: number; usdt: number };
+    balance: { token: number; usdt: number; brl?: number };
   } | null>(null);
 
   const onNotificationsPress = useCallback(() => {
@@ -74,6 +75,9 @@ export function AssetsScreen({ navigation }: any) {
           const usdtData = balances['USDT'] || balances['usdt'];
           const usdtBalance = usdtData ? parseFloat((usdtData.free || 0).toString()) : 0;
 
+          const brlData = balances['BRL'] || balances['brl'];
+          const brlBalance = brlData ? parseFloat((brlData.free || 0).toString()) : 0;
+
           const tokenData = {
             id: `${exchangeId}-${symbolUpper}`,
             symbol: symbolUpper,
@@ -88,6 +92,7 @@ export function AssetsScreen({ navigation }: any) {
             exchangeName,
             isStablecoin: ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD'].includes(symbolUpper),
             usdtBalance,
+            brlBalance,
           };
 
           if (!exchangeMap.has(exchangeId)) {
@@ -188,18 +193,19 @@ export function AssetsScreen({ navigation }: any) {
     return { totalValue, totalAssets };
   }, [allAssetsSections]);
 
+  // Define o Header global para esta tela
+  const assetsSubtitle = `${String(globalTotals.totalAssets)} ${String(globalTotals.totalAssets === 1 ? 'asset' : 'assets')} • ${String(hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`))}`;
+  useHeader({
+    title: 'Assets',
+    subtitle: assetsSubtitle,
+    onNotificationsPress,
+    unreadCount,
+  });
+
   const loading = balanceLoading;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Assets"
-        subtitle={`${String(globalTotals.totalAssets)} ${String(globalTotals.totalAssets === 1 ? 'asset' : 'assets')} • ${String(hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`))}`}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-        navigation={navigation}
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Filters Section */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         {/* Search Bar */}
@@ -214,7 +220,7 @@ export function AssetsScreen({ navigation }: any) {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+              <Ionicons name="close-circle-outline" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -329,17 +335,26 @@ export function AssetsScreen({ navigation }: any) {
           <View style={styles.assetsListContainer}>
             {assetsSections.map((section, sectionIndex) => (
               <View key={section.exchangeId} style={styles.exchangeSection}>
-                {/* Exchange Header */}
-                <View style={styles.exchangeHeader}>
-                  <Text style={[styles.exchangeName, { color: colors.text }]}>
-                    {String(section.exchangeName || 'Unknown')}
-                  </Text>
-                  <Text style={[styles.exchangeCount, { color: colors.textSecondary }]}>
+                {/* Exchange Header - mesmo padrão dos Orders */}
+                <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                  <View style={styles.exchangeCardLeft}>
+                    <View style={styles.exchangeLogoContainer}>
+                      <Image 
+                        source={getExchangeLogo(section.exchangeName)} 
+                        style={styles.exchangeCardLogo}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text style={[styles.exchangeCardName, { color: colors.text }]}>
+                      {String(section.exchangeName || 'Unknown')}
+                    </Text>
+                  </View>
+                  <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
                     {String(section.items.length)} {String(section.items.length === 1 ? 'ativo' : 'ativos')}
                   </Text>
                 </View>
 
-                {/* Asset Cards */}
+                {/* Asset Cards - Compact */}
                 {section.items.map((item, itemIndex) => (
                   <TouchableOpacity
                     key={item.id}
@@ -359,85 +374,52 @@ export function AssetsScreen({ navigation }: any) {
                       setTokenModalVisible(true);
                     }}
                   >
-                    {/* Card Header: Symbol + Value */}
-                    <View style={styles.cardHeader}>
-                      <View style={styles.symbolSection}>
-                        <View style={[styles.symbolIcon, { backgroundColor: colors.primaryLight }]}>
-                          <Text style={[styles.symbolIconText, { color: colors.primary }]}>
+                    {/* Linha única compacta - mesmo padrão Orders */}
+                    <View style={styles.cardRow}>
+                      {/* Lado esquerdo: Ícone + Info */}
+                      <View style={styles.cardLeft}>
+                        <View style={[styles.typeIcon, { backgroundColor: colors.primaryLight }]}>
+                          <Text style={[styles.typeIconText, { color: colors.primary }]}>
                             {String((item.symbol || '?').charAt(0))}
                           </Text>
                         </View>
-                        <View>
-                          <Text style={[styles.assetSymbol, { color: colors.text }]}>
-                            {String(item.symbol || 'Unknown')}
-                          </Text>
-                          <Text style={[styles.assetName, { color: colors.textSecondary }]}>
-                            {String(item.name || 'Unknown')}
+                        <View style={styles.cardInfo}>
+                          <View style={styles.cardInfoTop}>
+                            <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
+                              {String(item.symbol || 'Unknown')}
+                            </Text>
+                            {item.variation24h !== null && item.variation24h !== undefined && !item.isStablecoin && (
+                              <View style={[
+                                styles.sideBadge,
+                                { backgroundColor: item.variation24h >= 0 ? colors.successLight : colors.dangerLight }
+                              ]}>
+                                <Text style={[
+                                  styles.sideBadgeText,
+                                  { color: item.variation24h >= 0 ? colors.success : colors.danger }
+                                ]}>
+                                  {String(item.variation24h >= 0 ? '▲' : '▼')}{String(Math.abs(item.variation24h || 0).toFixed(1))}%
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                            {String(hideValue(`${apiService.formatTokenAmount(String(item.amount || 0))} @ $${apiService.formatUSD(item.priceUSD || 0)}`))}
                           </Text>
                         </View>
                       </View>
-                      <View style={styles.valueSection}>
-                        <Text style={[styles.assetValue, { color: colors.text }]}>
+
+                      {/* Lado direito: Valor + Amount */}
+                      <View style={styles.cardRight}>
+                        <Text style={[styles.assetValue, { color: colors.text }]} numberOfLines={1}>
                           {String(hideValue(`$${apiService.formatUSD(item.valueUSD || 0)}`))}
                         </Text>
-                        <Text style={[styles.assetAmount, { color: colors.textSecondary }]}>
+                        <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
                           {String(hideValue(apiService.formatTokenAmount(String(item.amount || 0))))}
                         </Text>
                       </View>
                     </View>
 
-                    {/* Card Body: Details */}
-                    <View style={styles.cardBody}>
-                      <View style={styles.detailRow}>
-                        <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                          Preço
-                        </Text>
-                        <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                          {String(hideValue(`$${apiService.formatUSD(item.priceUSD || 0)}`))}
-                        </Text>
-                      </View>
-                      
-                      {item.variation24h !== null && item.variation24h !== undefined && !item.isStablecoin && (
-                        <View style={styles.detailRow}>
-                          <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                            24h
-                          </Text>
-                          <View style={[
-                            styles.variationBadgeInline,
-                            { backgroundColor: item.variation24h >= 0 ? colors.successLight : colors.dangerLight }
-                          ]}>
-                            <Text style={[
-                              styles.variationTextInline,
-                              { color: item.variation24h >= 0 ? colors.success : colors.danger }
-                            ]}>
-                              {String(item.variation24h >= 0 ? '▲' : '▼')} {String(Math.abs(item.variation24h || 0).toFixed(2))}%
-                            </Text>
-                          </View>
-                        </View>
-                      )}
-
-                      <View style={styles.detailRow}>
-                        <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                          Disponível
-                        </Text>
-                        <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                          {String(hideValue(apiService.formatTokenAmount(String(item.free || 0))))}
-                        </Text>
-                      </View>
-
-                      {item.used > 0 && (
-                        <View style={styles.detailRow}>
-                          <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                            Bloqueado
-                          </Text>
-                          <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                            {String(hideValue(apiService.formatTokenAmount(String(item.used || 0))))}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Card Footer: Action Button */}
+                    {/* Botão Negociar compacto */}
                     <TouchableOpacity
                       style={[styles.tradeButton, { borderTopColor: colors.border }]}
                       onPress={() => {
@@ -448,13 +430,14 @@ export function AssetsScreen({ navigation }: any) {
                           currentPrice: item.priceUSD,
                           balance: {
                             token: item.free,
-                            usdt: item.usdtBalance
+                            usdt: item.usdtBalance,
+                            brl: item.brlBalance
                           }
                         });
                         setTradeModalVisible(true);
                       }}
                     >
-                      <Ionicons name="swap-horizontal" size={16} color={colors.primary} />
+                      <Ionicons name="swap-horizontal-outline" size={14} color={colors.primary} />
                       <Text style={[styles.tradeButtonText, { color: colors.primary }]}>
                         Negociar
                       </Text>
@@ -507,7 +490,7 @@ export function AssetsScreen({ navigation }: any) {
         visible={notificationsModalVisible}
         onClose={() => setNotificationsModalVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -549,7 +532,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   exchangeFilterText: {
-    fontSize: typography.micro,  // 12 - menor e mais clean
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
   resultsCount: {
@@ -559,7 +542,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   resultsCountText: {
-    fontSize: typography.micro,  // 12
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
   zeroToggle: {
@@ -572,7 +555,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   zeroToggleText: {
-    fontSize: typography.micro,  // 12
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
   emptyState: {
@@ -582,13 +565,13 @@ const styles = StyleSheet.create({
     marginTop: 60,
   },
   emptyStateTitle: {
-    fontSize: typography.h4,  // 18
+    fontSize: typography.h4,
     fontWeight: fontWeights.semibold,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
-    fontSize: typography.caption,  // 14
+    fontSize: typography.caption,
     fontWeight: fontWeights.regular,
     textAlign: 'center',
     lineHeight: 20,
@@ -597,120 +580,126 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   exchangeSection: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  exchangeHeader: {
+  // Exchange header card (mesmo padrão dos Orders)
+  exchangeCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 10,
   },
-  exchangeName: {
-    fontSize: typography.body,  // 16
+  exchangeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exchangeCardLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  exchangeLogoContainer: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: 2,
+  },
+  exchangeCardName: {
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
   },
-  exchangeCount: {
-    fontSize: typography.micro,  // 12
+  exchangeCardCount: {
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
+  // Card compacto - mesmo padrão Orders
   assetCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 8,
     overflow: 'hidden',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 16,
-    paddingBottom: 12,
-  },
-  symbolSection: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     gap: 12,
-    flex: 1,
   },
-  symbolIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  typeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  symbolIconText: {
-    fontSize: typography.h4,  // 18
+  typeIconText: {
+    fontSize: 12,
     fontWeight: fontWeights.bold,
+  },
+  cardInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  cardInfoTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   assetSymbol: {
-    fontSize: typography.body,  // 16
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
-    marginBottom: 2,
+    flexShrink: 1,
   },
-  assetName: {
-    fontSize: typography.micro,  // 12
-    fontWeight: fontWeights.medium,
+  sideBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
-  valueSection: {
-    alignItems: 'flex-end',
-  },
-  assetValue: {
-    fontSize: typography.body,  // 16
+  sideBadgeText: {
+    fontSize: 9,
     fontWeight: fontWeights.bold,
-    marginBottom: 2,
   },
-  assetAmount: {
-    fontSize: typography.micro,  // 12
+  cardSubtext: {
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
   },
-  cardBody: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 8,
+  cardRight: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    gap: 2,
   },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  detailLabel: {
-    fontSize: typography.tiny,  // 13
-    fontWeight: fontWeights.medium,
-  },
-  detailValue: {
-    fontSize: typography.tiny,  // 13
-    fontWeight: fontWeights.semibold,
-  },
-  variationBadgeInline: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  variationTextInline: {
-    fontSize: typography.micro,  // 12
+  assetValue: {
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
   },
   tradeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
+    paddingVertical: 8,
+    gap: 5,
     borderTopWidth: 1,
   },
   tradeButtonText: {
-    fontSize: typography.buttonSmall,  // 14
-    fontWeight: fontWeights.bold,
-  },
-  variationBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  variationText: {
-    fontSize: 11,
+    fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
   },
 });

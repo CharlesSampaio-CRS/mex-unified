@@ -1,19 +1,16 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native"
+import { View, Text, StyleSheet, ScrollView } from "react-native"
 import { memo } from "react"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
 
 export const CrownScreen = memo(function CrownScreen({ navigation }: any) {
   const { colors } = useTheme()
 
+  useHeader({ title: "Crown", subtitle: "Recurso Crown" })
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Crown"
-        subtitle="Recurso Crown"
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.content}>
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>👑 Crown Feature</Text>
@@ -30,7 +27,7 @@ export const CrownScreen = memo(function CrownScreen({ navigation }: any) {
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Priority support</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   )
 })
 

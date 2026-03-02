@@ -1,2 +1,4 @@
- ERROR  ❌ Cancel Order Error: [Error: Failed to cancel order: BadRequest: mexc {"msg":"Unknown order id.","code":-2011}]
- ERROR  Erro ao cancelar ordem: [Error: Failed to cancel order: BadRequest: mexc {"msg":"Unknown order id.","code":-2011}]
+curl 'http://54.94.231.254:3002/api/v1/balances/secure' \
+  -X 'POST' \
+  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OThkZGQ3YmQyZDU2MDI0ODQ5YjgwZTAiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwibmFtZSI6InVzZXIiLCJyb2xlcyI6WyJ1c2VyIl0sImlzX2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzcyNDY5MDEzLCJleHAiOjE3NzI0NzI2MTMsImp0aSI6ImZkMTZhNDFlLThhNTktNDQ4My1hNjIwLWIzOWRhZWNmYzk4ZCIsImF1ZCI6InRyYWRpbmctYXBpIiwiaXNzIjoidHJhZGluZy1zZXJ2aWNlIn0.3d5EL6OBcfxXHWhCEDFZI7haQ2FaDgAi7-I4eCYRLqM' \
+  -H 'Content-Type: application/json'

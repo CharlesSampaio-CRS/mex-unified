@@ -7,6 +7,7 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
+import { useHeaderConfig } from "../contexts/HeaderContext"
 import { LogoIcon } from "./LogoIcon"
 import { IconSelectorModal } from "./IconSelectorModal"
 
@@ -93,6 +94,8 @@ const GridIcon = ({ color }: { color: string }) => (
 )
 
 interface HeaderProps {
+  /** Se true, usa HeaderContext (modo global no MainTabs). Se false/undefined, usa props diretas (modo legado). */
+  global?: boolean
   hideIcons?: boolean
   onNotificationsPress?: () => void
   unreadCount?: number
@@ -118,13 +121,14 @@ const UserIcon = ({ color }: { color: string }) => (
 )
 
 export const Header = memo(function Header({ 
-  hideIcons = false, 
-  onNotificationsPress, 
-  unreadCount = 0,
-  title,
-  subtitle,
-  selectedIcon,
-  onIconSelect,
+  global = false,
+  hideIcons: hideIconsProp = false, 
+  onNotificationsPress: onNotificationsProp, 
+  unreadCount: unreadCountProp = 0,
+  title: titleProp,
+  subtitle: subtitleProp,
+  selectedIcon: selectedIconProp,
+  onIconSelect: onIconSelectProp,
   navigation: navigationProp
 }: HeaderProps) {
   const { colors } = useTheme()
@@ -136,6 +140,17 @@ export const Header = memo(function Header({
   const iconOpacity = useRef(new Animated.Value(1)).current
   const iconScale = useRef(new Animated.Value(1)).current
   const [iconSelectorVisible, setIconSelectorVisible] = useState(false)
+
+  // Se global, lê do HeaderContext; senão, usa props diretas
+  const { config: headerConfig, titleOpacity } = useHeaderConfig()
+  
+  const title = global ? (headerConfig.title || 'MeX') : (titleProp || 'MeX')
+  const subtitle = global ? (headerConfig.subtitle || t('home.subtitle')) : (subtitleProp || t('home.subtitle'))
+  const onNotificationsPress = global ? headerConfig.onNotificationsPress : onNotificationsProp
+  const unreadCount = global ? (headerConfig.unreadCount ?? 0) : (unreadCountProp ?? 0)
+  const hideIcons = global ? (headerConfig.hideIcons ?? false) : hideIconsProp
+  const selectedIcon = global ? headerConfig.selectedIcon : selectedIconProp
+  const onIconSelect = global ? headerConfig.onIconSelect : onIconSelectProp
   
   // Gera as iniciais do usuário para o avatar
   const getUserInitials = () => {
@@ -167,14 +182,14 @@ export const Header = memo(function Header({
     <View style={[styles.header, { backgroundColor: colors.background }]}>
       <View style={styles.headerContent}>
         <LogoIcon size={24} />
-        <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {title || 'MeX'}
+        <Animated.View style={[styles.headerText, global ? { opacity: titleOpacity } : undefined]}>
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            {title}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {subtitle || t('home.subtitle')}
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+            {subtitle}
           </Text>
-        </View>
+        </Animated.View>
       </View>
 
       <Animated.View 
@@ -222,7 +237,7 @@ export const Header = memo(function Header({
         {/* User Avatar - Abre perfil direto */}
         <TouchableOpacity 
           style={[styles.userAvatar, { backgroundColor: colors.primary, borderColor: colors.border }]}
-          onPress={() => navigation?.navigate('Settings', { tab: 'profile' })}
+          onPress={() => navigation?.navigate('Profile')}
           activeOpacity={0.7}
         >
           {user?.avatar ? (
@@ -240,9 +255,9 @@ export const Header = memo(function Header({
         selectedIconId={selectedIcon}
         onNavigate={(screenName) => {
           setIconSelectorVisible(false)
-          // Settings icon navega com tab: system
+          // Settings icon navega para System screen
           if (screenName === 'Settings') {
-            navigation?.navigate('Settings', { tab: 'system' })
+            navigation?.navigate('System')
           } else {
             navigation?.navigate(screenName)
           }
@@ -257,17 +272,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,      // Reduzido para mobile
-    paddingVertical: 16,        // Reduzido
-    paddingBottom: 12,          // Reduzido
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingBottom: 8,
   },
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,                    // Reduzido
+    gap: 8,
+    flex: 1,
+    flexShrink: 1,
   },
   headerText: {
     flexDirection: "column",
+    flex: 1,
+    flexShrink: 1,
   },
   title: {
     fontSize: typography.h3,
@@ -276,59 +295,59 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   subtitle: {
-    fontSize: typography.caption,
-    marginTop: 2,
+    fontSize: typography.tiny,
+    marginTop: 1,
     fontWeight: fontWeights.light,
-    opacity: 0.6,
+    opacity: 0.5,
   },
   actions: {
     flexDirection: "row",
-    gap: 6,                     // Reduzido para mobile
+    gap: 5,
   },
   userAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: 1.5,
     overflow: 'hidden',
   },
   avatarImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700' as const,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 0.5 },
     textShadowRadius: 1,
   },
   iconButton: {
-    width: 32,                  // Reduzido para mobile
-    height: 32,                 // Reduzido
+    width: 28,
+    height: 28,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 0,
     position: "relative",
-    opacity: 0.9,
+    opacity: 0.85,
   },
   badge: {
     position: "absolute",
-    top: -4,
-    right: -4,
+    top: -3,
+    right: -3,
     backgroundColor: "#ef4444",
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    borderRadius: 7,
+    minWidth: 14,
+    height: 14,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
   badgeText: {
     color: "#ffffff",

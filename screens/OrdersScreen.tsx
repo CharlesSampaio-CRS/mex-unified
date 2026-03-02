@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -10,13 +10,15 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { notify } from '@/services/notify';
-import { Header } from '@/components/Header';
+import { useHeader } from '@/contexts/HeaderContext';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { OrderDetailsModal } from '@/components/order-details-modal';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { OpenOrder } from '@/types/orders';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
+import { getExchangeLogo } from '@/lib/exchange-logos';
+import { CreateOrderModal } from '@/components/create-order-modal';
 
 // Sub-componente com animação piscante para ordens sendo canceladas
 function AnimatedOrderCard({ 
@@ -77,6 +79,7 @@ export function OrdersScreen({ navigation }: any) {
   const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set());
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string } | null>(null);
+  const [createOrderVisible, setCreateOrderVisible] = useState(false);
 
   const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
 
@@ -176,6 +179,15 @@ export function OrdersScreen({ navigation }: any) {
     
     return { count, value };
   }, [filteredSections]);
+
+  // Define o Header global para esta tela
+  const ordersSubtitle = `${String(totals.count)} open ${totals.count === 1 ? 'order' : 'orders'}`;
+  useHeader({
+    title: 'Orders',
+    subtitle: ordersSubtitle,
+    onNotificationsPress,
+    unreadCount,
+  });
 
   const handleOrderPress = useCallback((order: OpenOrder) => {
     setSelectedOrder(order);
@@ -305,161 +317,86 @@ export function OrdersScreen({ navigation }: any) {
           onPress={() => handleOrderPress(order)}
           disabled={isCancelling}
         >
-        {/* Header */}
-        <View style={styles.cardHeader}>
-          <View style={styles.symbolSection}>
-            <View style={[
-              styles.typeIcon,
-              { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-            ]}>
-              <Ionicons 
-                name={isBuy ? 'arrow-up' : 'arrow-down'} 
-                size={20} 
-                color={isBuy ? colors.success : colors.danger}
-              />
-            </View>
-            <View>
-              <View style={styles.symbolWithPnl}>
-                <Text style={[styles.orderSymbol, { color: colors.text }]}>
-                  {String(order.symbol || 'N/A')}
-                </Text>
-                {hasPnl && (
+          {/* Linha única compacta */}
+          <View style={styles.cardRow}>
+            {/* Lado esquerdo: Ícone + Info */}
+            <View style={styles.cardLeft}>
+              <View style={[
+                styles.typeIcon,
+                { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
+              ]}>
+                <Ionicons 
+                  name={isBuy ? 'arrow-up-outline' : 'arrow-down-outline'} 
+                  size={16} 
+                  color={isBuy ? colors.success : colors.danger}
+                />
+              </View>
+              <View style={styles.cardInfo}>
+                <View style={styles.cardInfoTop}>
+                  <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
+                    {String(order.symbol || 'N/A')}
+                  </Text>
                   <View style={[
-                    styles.pnlBadge,
-                    { backgroundColor: isPnlPositive ? colors.successLight : colors.dangerLight }
+                    styles.sideBadge,
+                    { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
                   ]}>
-                    <Ionicons
-                      name={isPnlPositive ? 'caret-up' : 'caret-down'}
-                      size={10}
-                      color={isPnlPositive ? colors.success : colors.danger}
-                    />
                     <Text style={[
-                      styles.pnlText,
-                      { color: isPnlPositive ? colors.success : colors.danger }
+                      styles.sideBadgeText,
+                      { color: isBuy ? colors.success : colors.danger }
                     ]}>
-                      {String(hideValue(`$${apiService.formatUSD(Math.abs(pnlValue), Math.abs(pnlValue) < 1 ? 4 : 2)}`))}
+                      {String(isBuy ? 'C' : 'V')}
                     </Text>
                   </View>
-                )}
-              </View>
-              <View style={styles.badgeRow}>
-                <View style={[
-                  styles.typeBadge,
-                  { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-                ]}>
-                  <Text style={[
-                    styles.typeBadgeText,
-                    { color: isBuy ? colors.success : colors.danger }
-                  ]}>
-                    {String(isBuy ? 'COMPRA' : 'VENDA')}
-                  </Text>
                 </View>
-                <View style={[styles.typeBadge, { backgroundColor: colors.card }]}>
-                  <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>
-                    {String((order.type || 'LIMIT').toString().toUpperCase())}
-                  </Text>
-                </View>
+                <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {String(hideValue(`${apiService.formatTokenAmount(String(amount))} @ $${apiService.formatUSD(price, priceDecimals)}`))}
+                </Text>
               </View>
             </View>
-          </View>
-          <View style={styles.valueSection}>
-            <Text style={[styles.orderValue, { color: colors.text }]}>
-              {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
-            </Text>
-            {hasPnl && (
-              <Text style={[styles.pnlPercent, { color: isPnlPositive ? colors.success : colors.danger }]}>
-                {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
-              </Text>
-            )}
-          </View>
-        </View>
 
-        {/* Body */}
-        <View style={styles.cardBody}>
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-              Preço
-            </Text>
-            <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-              {String(hideValue(`$${apiService.formatUSD(price, priceDecimals)}`))}
-            </Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-              Quantidade
-            </Text>
-            <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-              {String(hideValue(apiService.formatTokenAmount(String(amount))))}
-            </Text>
-          </View>
-
-          {order.filled != null && Number(order.filled) > 0 && (
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                Executado
+            {/* Lado direito: Valor + PnL */}
+            <View style={styles.cardRight}>
+              <Text style={[styles.orderValue, { color: colors.text }]} numberOfLines={1}>
+                {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
               </Text>
-              <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                {String(hideValue(apiService.formatTokenAmount(String(order.filled))))}
-              </Text>
+              {hasPnl ? (
+                <Text style={[styles.pnlText, { color: isPnlPositive ? colors.success : colors.danger }]} numberOfLines={1}>
+                  {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
+                </Text>
+              ) : (
+                <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {String((order.type || 'LIMIT').toString().toUpperCase())}
+                </Text>
+              )}
             </View>
-          )}
+          </View>
 
-          {order.timestamp != null && order.timestamp > 0 && (
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                Data
+          {/* Botão cancelar compacto */}
+          {!isCancelling ? (
+            <TouchableOpacity
+              style={[styles.cancelButton, { borderTopColor: colors.border }]}
+              onPress={() => handleCancelOrder(order, exchangeId)}
+            >
+              <Ionicons name="close-circle-outline" size={14} color={colors.danger} />
+              <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
+                Cancelar
               </Text>
-              <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                {String(new Date(order.timestamp).toLocaleDateString('pt-BR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }))}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Cancel Button */}
-        <TouchableOpacity
-          style={[styles.cancelButton, { borderTopColor: colors.border }]}
-          onPress={() => handleCancelOrder(order, exchangeId)}
-          disabled={isCancelling}
-        >
-          {isCancelling ? (
-            <>
-              <Ionicons name="hourglass-outline" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ) : (
+            <View style={[styles.cancelButton, { borderTopColor: colors.border }]}>
+              <Ionicons name="hourglass-outline" size={14} color={colors.textSecondary} />
               <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
                 Cancelando...
               </Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
-              <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
-                Cancelar Ordem
-              </Text>
-            </>
+            </View>
           )}
-        </TouchableOpacity>
         </TouchableOpacity>
       </AnimatedOrderCard>
     );
   }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder, tokenPrices]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Orders"
-        subtitle={`${String(totals.count)} ${totals.count === 1 ? 'order' : 'orders'} • ${String(hideValue(`$${apiService.formatUSD(totals.value)}`))}`}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-        navigation={navigation}
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Filters */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         {/* Search */}
@@ -474,7 +411,7 @@ export function OrdersScreen({ navigation }: any) {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+              <Ionicons name="close-circle-outline" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -536,10 +473,20 @@ export function OrdersScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Results Count */}
-        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
-          {String(totals.count)} {String(totals.count === 1 ? 'ordem encontrada' : 'ordens encontradas')}
-        </Text>
+        {/* Results Count + New Order Button */}
+        <View style={styles.filterFooter}>
+          <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
+            {String(totals.count)} {String(totals.count === 1 ? 'ordem encontrada' : 'ordens encontradas')}
+          </Text>
+          <TouchableOpacity
+            style={[styles.newOrderButton, { borderColor: colors.primary }]}
+            onPress={() => setCreateOrderVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-outline" size={14} color={colors.primary} />
+            <Text style={[styles.newOrderText, { color: colors.primary }]}>Nova</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       
       <ScrollView
@@ -571,16 +518,36 @@ export function OrdersScreen({ navigation }: any) {
                 ? 'Tente ajustar os filtros' 
                 : 'Você não possui ordens abertas'}
             </Text>
+            {!search && selectedType === 'All' && (
+              <TouchableOpacity
+                style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
+                onPress={() => setCreateOrderVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                <Text style={styles.emptyStateButtonText}>Nova Ordem</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.ordersListContainer}>
             {filteredSections.map((section) => (
               <View key={section.exchangeId} style={styles.exchangeSection}>
-                <View style={styles.exchangeHeader}>
-                  <Text style={[styles.exchangeName, { color: colors.text }]}>
-                    {String(section.exchangeName)}
-                  </Text>
-                  <Text style={[styles.exchangeCount, { color: colors.textSecondary }]}>
+                {/* Exchange Header - mesmo estilo dos Assets */}
+                <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                  <View style={styles.exchangeCardLeft}>
+                    <View style={styles.exchangeLogoContainer}>
+                      <Image 
+                        source={getExchangeLogo(section.exchangeName)} 
+                        style={styles.exchangeCardLogo}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text style={[styles.exchangeCardName, { color: colors.text }]}>
+                      {String(section.exchangeName)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
                     {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
                   </Text>
                 </View>
@@ -622,7 +589,13 @@ export function OrdersScreen({ navigation }: any) {
         confirmColor="#ef4444"
         icon="⚠️"
       />
-    </SafeAreaView>
+
+      {/* Modal de Criação de Nova Ordem */}
+      <CreateOrderModal
+        visible={createOrderVisible}
+        onClose={() => setCreateOrderVisible(false)}
+      />
+    </View>
   );
 }
 
@@ -671,6 +644,24 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
     paddingVertical: 4,
   },
+  filterFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  newOrderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  newOrderText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
+  },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -689,122 +680,131 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+  emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 16,
+  },
+  emptyStateButtonText: {
+    color: '#fff',
+    fontSize: typography.button,
+    fontWeight: fontWeights.semibold,
+  },
   ordersListContainer: {
     padding: 16,
   },
   exchangeSection: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  exchangeHeader: {
+  // Exchange header card (mesmo padrão dos Assets)
+  exchangeCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 10,
   },
-  exchangeName: {
-    fontSize: typography.body,
+  exchangeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exchangeCardLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  exchangeLogoContainer: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: 2,
+  },
+  exchangeCardName: {
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
   },
-  exchangeCount: {
+  exchangeCardCount: {
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
   orderCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 8,
     overflow: 'hidden',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 16,
-    paddingBottom: 12,
-  },
-  symbolSection: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     gap: 12,
+  },
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     flex: 1,
+    minWidth: 0,
   },
   typeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  orderSymbol: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.bold,
+  cardInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
-  symbolWithPnl: {
+  cardInfoTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  pnlBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  pnlText: {
-    fontSize: 10,
-    fontWeight: fontWeights.bold,
-  },
-  pnlPercent: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.bold,
-    marginTop: 1,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  typeBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  typeBadgeText: {
-    fontSize: 9,
-    fontWeight: fontWeights.bold,
-    letterSpacing: 0.3,
-  },
-  valueSection: {
-    alignItems: 'flex-end',
-  },
-  orderValue: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.bold,
-    marginBottom: 2,
-  },
-  orderType: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.medium,
-  },
-  cardBody: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
     gap: 6,
   },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  orderSymbol: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+    flexShrink: 1,
   },
-  detailLabel: {
+  sideBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  sideBadgeText: {
+    fontSize: 9,
+    fontWeight: fontWeights.bold,
+  },
+  cardSubtext: {
     fontSize: typography.micro,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.regular,
   },
-  detailValue: {
+  cardRight: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    gap: 2,
+  },
+  orderValue: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+  },
+  pnlText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
   },
@@ -812,12 +812,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
+    paddingVertical: 8,
+    gap: 5,
     borderTopWidth: 1,
   },
   cancelButtonText: {
-    fontSize: typography.buttonSmall,
-    fontWeight: fontWeights.bold,
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
 });

@@ -4,37 +4,9 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
 import { ActivityIndicator, View, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context"
 import Svg, { Path, Rect, Circle } from "react-native-svg"
 
-// 🔥 ERROR HANDLER GLOBAL - Captura TODOS os erros não tratados
-// if (__DEV__) {
-//   const originalConsoleError = console.error
-//   console.error = (...args) => {
-//     // 🔍 Log detalhado para encontrar fonte do erro
-//     const errorMessage = args[0]
-//     if (typeof errorMessage === 'string' && errorMessage.includes('Text strings must be rendered')) {
-//       console.log('🔴 TEXT RENDER ERROR DETECTED!')
-//       console.log('🔴 Arguments:', JSON.stringify(args, null, 2))
-//       console.log('🔴 Component stack:', new Error().stack)
-//       
-//       // Tenta pegar o componentStack do React se disponível
-//       if (args[1] && typeof args[1] === 'object' && args[1].componentStack) {
-//         console.log('🔴 React Component Stack:', args[1].componentStack)
-//       }
-//     }
-//     originalConsoleError(...args)
-//   }
-//   
-//   // Captura erros não tratados do JavaScript
-//   ErrorUtils.setGlobalHandler((error, isFatal) => {
-//     console.error('FATAL ERROR:', { 
-//       message: error?.message,
-//       name: error?.name,
-//       isFatal, 
-//       stack: error?.stack 
-//     })
-//   })
-// }
 
 // Desabilitar warnings de desenvolvimento (mas manter erros)
 if (__DEV__) {
@@ -51,6 +23,8 @@ import { OrdersScreen } from "./screens/OrdersScreen"
 import { ExchangesScreen } from "./screens/ExchangesScreen"
 import { StrategyScreen } from "./screens/StrategyScreen"
 import { SettingsScreen } from "./screens/SettingsScreen"
+import { ProfileScreen } from "./screens/ProfileScreen"
+import { SystemScreen } from "./screens/SystemScreen"
 import { LoginScreen } from "./screens/LoginScreen"
 import { SignUpScreen } from "./screens/SignUpScreen"
 import { WatchlistManager } from "./components/WatchlistManager"
@@ -67,6 +41,7 @@ import { TargetScreen } from "./screens/TargetScreen"
 import { FlagScreen } from "./screens/FlagScreen"
 import { ChartScreen } from "./screens/ChartScreen"
 import { StrategyTemplatesScreen } from "./screens/StrategyTemplatesScreen"
+import { Header } from "./components/Header"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
 import { BalanceProvider, useBalance } from "./contexts/BalanceContext"
@@ -78,6 +53,7 @@ import { PrivacyProvider } from "./contexts/PrivacyContext"
 import { NotificationsProvider } from "./contexts/NotificationsContext"
 import { AlertsProvider } from "./contexts/AlertsContext"
 import { WatchlistProvider } from "./contexts/WatchlistContext"
+import { HeaderProvider } from "./contexts/HeaderContext"
 import { LoadingProgress } from "./components/LoadingProgress"
 import { MaintenanceScreen } from "./components/MaintenanceScreen"
 
@@ -202,15 +178,19 @@ function MainTabs() {
   const { colors } = useTheme()
   
   return (
-    <Tab.Navigator
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      {/* Header GLOBAL - renderizado UMA vez, nunca remonta ao trocar de aba */}
+      <Header global />
+      
+      <Tab.Navigator
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
             borderTopWidth: 0.5,
-            height: 56,
-            paddingBottom: 6,
+            height: 70,
+            paddingBottom: 16,
             paddingTop: 6,
             paddingHorizontal: 12,
             elevation: 0,
@@ -280,6 +260,20 @@ function MainTabs() {
           component={SettingsScreen}
           options={{
             tabBarButton: () => null, // Oculta da navegação inferior
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="System"
+          component={SystemScreen}
+          options={{
+            tabBarButton: () => null,
           }}
         />
         <Tab.Screen
@@ -374,6 +368,7 @@ function MainTabs() {
           }}
         />
       </Tab.Navigator>
+    </SafeAreaView>
   )
 }
 
@@ -427,29 +422,33 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <PrivacyProvider>
-            <NotificationsProvider>
-              <AlertsProvider>
-                <WatchlistProvider>
-                  <BalanceProvider>
-                    <CacheInvalidationProvider>
-                      <OrdersProvider>
-                        <LayoutProvider>
-                          <AppNavigator />
-                        </LayoutProvider>
-                      </OrdersProvider>
-                    </CacheInvalidationProvider>
-                  </BalanceProvider>
-                </WatchlistProvider>
-              </AlertsProvider>
-            </NotificationsProvider>
-          </PrivacyProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </LanguageProvider>
+    <SafeAreaProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <PrivacyProvider>
+              <HeaderProvider>
+                <NotificationsProvider>
+                  <AlertsProvider>
+                    <WatchlistProvider>
+                      <BalanceProvider>
+                        <CacheInvalidationProvider>
+                          <OrdersProvider>
+                            <LayoutProvider>
+                              <AppNavigator />
+                            </LayoutProvider>
+                          </OrdersProvider>
+                        </CacheInvalidationProvider>
+                      </BalanceProvider>
+                    </WatchlistProvider>
+                  </AlertsProvider>
+                </NotificationsProvider>
+              </HeaderProvider>
+            </PrivacyProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </LanguageProvider>
+    </SafeAreaProvider>
   )
 }
 

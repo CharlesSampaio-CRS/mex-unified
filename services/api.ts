@@ -65,6 +65,75 @@ const TIMEOUTS = {
 
 const MAX_RETRIES = 2;
 
+// ==================== SILENT TOKEN REFRESH (401 INTERCEPTOR) ====================
+
+/**
+ * Mutex para evitar múltiplos refreshes simultâneos.
+ * Se uma request detecta 401 e inicia refresh, as demais aguardam o resultado.
+ */
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+/**
+ * Tenta renovar o access_token silenciosamente usando o refresh_token.
+ * Usa mutex para garantir que apenas UM refresh ocorra por vez.
+ * @returns Novo access_token ou null se falhou
+ */
+async function silentTokenRefresh(): Promise<string | null> {
+  // Se já está refreshando, aguarda o resultado existente
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = await secureStorage.getItemAsync('refresh_token');
+      if (!refreshToken) {
+        console.log('🔇 [Silent Refresh] Sem refresh token - ignorando');
+        return null;
+      }
+
+      console.log('🔄 [Silent Refresh] Renovando access token...');
+      const response = await fetch(`${config.kongBaseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (!response.ok) {
+        console.log(`🔇 [Silent Refresh] Refresh falhou: ${response.status} - limpando sessão`);
+        // Refresh token expirado → limpa tokens (forçará re-login)
+        await secureStorage.deleteItemAsync('access_token');
+        await secureStorage.deleteItemAsync('refresh_token');
+        return null;
+      }
+
+      const data = await response.json();
+      const newAccessToken = data.token || data.access_token;
+
+      if (newAccessToken) {
+        await secureStorage.setItemAsync('access_token', newAccessToken);
+        console.log('✅ [Silent Refresh] Access token renovado');
+      }
+      if (data.refresh_token) {
+        await secureStorage.setItemAsync('refresh_token', data.refresh_token);
+        console.log('✅ [Silent Refresh] Refresh token também renovado');
+      }
+
+      return newAccessToken || null;
+    } catch (error) {
+      console.error('🔇 [Silent Refresh] Erro ao renovar token:', error);
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 // Helper para obter o token de autenticação
 async function getAuthHeaders(): Promise<HeadersInit> {
   try {
@@ -83,7 +152,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   };
 }
 
-// Helper para adicionar timeout às requisições com retry
+// Helper para adicionar timeout às requisições com retry + refresh automático em 401
 async function fetchWithTimeout(
   url: string, 
   options: RequestInit = {}, 
@@ -113,6 +182,36 @@ async function fetchWithTimeout(
       );
       
       const response = await Promise.race([fetchPromise, timeoutPromise]);
+
+      // 🔄 SILENT 401 INTERCEPTOR: Se recebeu 401, tenta refresh UMA vez
+      if (response.status === 401) {
+        console.log(`🔇 [401 Interceptor] Token expirado em ${url.split('/').slice(-2).join('/')} - tentando refresh silencioso...`);
+        const newToken = await silentTokenRefresh();
+
+        if (newToken) {
+          // ✅ Refresh OK → repete a request com o novo token
+          const retryOptions: RequestInit = {
+            ...mergedOptions,
+            headers: {
+              ...mergedOptions.headers,
+              'Authorization': `Bearer ${newToken}`,
+            },
+          };
+
+          const retryFetch = fetch(url, retryOptions);
+          const retryTimeout = new Promise<Response>((_, reject) =>
+            setTimeout(() => reject(new Error(`Request timeout after ${timeout}ms`)), timeout)
+          );
+
+          const retryResponse = await Promise.race([retryFetch, retryTimeout]);
+          return retryResponse;
+        }
+
+        // ❌ Refresh falhou → retorna o 401 original (AuthContext cuidará do logout)
+        console.log('🔇 [401 Interceptor] Refresh falhou - retornando 401');
+        return response;
+      }
+
       return response;
     } catch (error: any) {
       if (error.name === 'AbortError') {
@@ -573,7 +672,44 @@ export const apiService = {
   },
 
   /**
-   * Busca todas as exchanges disponíveis para conexão
+   * 🔐 Busca detalhes do token via endpoint seguro (JWT + MongoDB credentials)
+   * Backend busca e descriptografa credenciais automaticamente
+   * Backend resolve o melhor par automaticamente (USDT → BRL → USDC → BTC → ETH → EUR)
+   * 
+   * @param exchangeId ID da exchange do usuário
+   * @param symbol Símbolo do token (ex: BTC, ETH, REKTCOIN) ou par (ex: BTC/USDT)
+   * @returns Promise com detalhes do token
+   */
+  async getTokenDetailsSecure(exchangeId: string, symbol: string): Promise<any> {
+    try {
+      const headers = await getAuthHeaders();
+      
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/token-details/secure`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            exchange_id: exchangeId,
+            symbol: symbol,
+          }),
+        },
+        TIMEOUTS.NORMAL
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
    * @param userId ID do usuário
    * @param forceRefresh Força atualização sem cache
    * @returns Promise com a lista de exchanges disponíveis
@@ -1727,6 +1863,126 @@ export const apiService = {
    */
   async deleteStrategyTemplate(id: string) {
     return this.delete(`/strategy-templates/${id}`, TIMEOUTS.FAST);
+  },
+
+  // ==========================================
+  // 🔄 TOKEN PAIRS - Pares disponíveis por exchange
+  // ==========================================
+
+  /**
+   * 📈 Busca o preço atual (ticker) de um par de trading em uma exchange
+   * @param exchangeId ID da exchange no MongoDB
+   * @param symbol Par de trading (ex: "BTC/USDT", "ETH/BRL")
+   * @returns Promise com ticker (last, bid, ask, high, low, volume)
+   */
+  async getPairTicker(
+    exchangeId: string,
+    symbol: string
+  ): Promise<{
+    success: boolean
+    symbol: string
+    exchange: string
+    ticker: {
+      last: number
+      bid: number | null
+      ask: number | null
+      high: number | null
+      low: number | null
+      volume: number | null
+    }
+  }> {
+    try {
+      const accessToken = await secureStorage.getItemAsync('access_token');
+      
+      if (!accessToken) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/token-pairs/ticker`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            exchange_id: exchangeId,
+            symbol: symbol
+          }),
+        },
+        TIMEOUTS.NORMAL
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('❌ Get Pair Ticker Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 🔄 Busca pares de trading disponíveis para um token em uma exchange
+   * Retorna apenas pares ativos no mercado spot
+   * @param exchangeId ID da exchange no MongoDB
+   * @param token Símbolo do token (ex: BTC, USDT, ETH)
+   * @returns Promise com lista de pares disponíveis
+   */
+  async getAvailablePairs(
+    exchangeId: string,
+    token: string
+  ): Promise<{
+    success: boolean
+    token: string
+    exchange: string
+    pairs: Array<{
+      symbol: string
+      base: string
+      quote: string
+      active: boolean
+      min_amount: number
+      min_cost: number
+    }>
+    count: number
+  }> {
+    try {
+      const accessToken = await secureStorage.getItemAsync('access_token');
+      
+      if (!accessToken) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/token-pairs`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            exchange_id: exchangeId,
+            token: token
+          }),
+        },
+        TIMEOUTS.SLOW
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('❌ Get Available Pairs Error:', error);
+      throw error;
+    }
   },
 };
 

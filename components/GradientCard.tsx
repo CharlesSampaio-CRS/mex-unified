@@ -34,8 +34,8 @@ export function GradientCard({ children, style }: GradientCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
-    padding: 16,
+    borderRadius: 14,
+    padding: 12,
     borderWidth: 0,
     shadowColor: "#000",
     shadowOffset: {
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
       height: 1,
     },
     shadowOpacity: 0.03,
-    shadowRadius: 6,
+    shadowRadius: 4,
     elevation: 1,
   },
 });

@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
 import { memo, useState, useCallback } from "react"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { typography, fontWeights } from "../lib/typography"
@@ -96,10 +96,14 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
     )
   }
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header title={t("strategy.templates")} subtitle={t("strategy.templatesSubtitle")} />
+  // Define o Header global para esta tela
+  useHeader({
+    title: t("strategy.templates"),
+    subtitle: t("strategy.templatesSubtitle"),
+  })
 
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -235,7 +239,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
         onSuccess={() => { setShowCreateModal(false); fetchTemplates() }}
         colors={colors}
       />
-    </SafeAreaView>
+    </View>
   )
 })
 

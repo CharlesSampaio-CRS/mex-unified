@@ -50,7 +50,7 @@ export function WatchlistFavorites() {
     exchangeName: string
     symbol: string
     currentPrice: number
-    balance: { token: number; usdt: number }
+    balance: { token: number; usdt: number; brl?: number }
   } | null>(null)
 
   // Refresh
@@ -370,7 +370,8 @@ export function WatchlistFavorites() {
                         currentPrice: item.priceUSD,
                         balance: {
                           token: item.free,
-                          usdt: item.usdtBalance
+                          usdt: item.usdtBalance,
+                          brl: item.brlBalance || 0
                         }
                       })
                       setTradeModalVisible(true)

@@ -2,7 +2,7 @@ import { StyleSheet, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useState, useCallback, useEffect } from "react"
 import { ExchangesManager } from "../components/exchanges-manager"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { NotificationsModal } from "../components/NotificationsModal"
 import { useTheme } from "../contexts/ThemeContext"
 import { useNotifications } from "../contexts/NotificationsContext"
@@ -23,7 +23,7 @@ export function ExchangesScreen({ route, navigation }: any) {
   const [linkedCount, setLinkedCount] = useState(0)
   const [availableCount, setAvailableCount] = useState(0)
   const openTab = route?.params?.openTab || 'linked'
-  const [activeTab, setActiveTab] = useState<'linked' | 'available'>(openTab)
+  const [activeTab, setActiveTab] = useState<'all' | 'linked' | 'available'>(openTab === 'available' ? 'available' : 'all')
   
   // Função para carregar contadores
   const loadExchangesCounts = useCallback(async () => {
@@ -63,18 +63,18 @@ export function ExchangesScreen({ route, navigation }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
-  const subtitle = activeTab === 'linked' 
-    ? `${linkedCount} ${linkedCount === 1 ? t('exchanges.connectedSingular') : t('exchanges.connectedPlural')}`
-    : `${availableCount} ${availableCount === 1 ? t('exchanges.availableSingular') : t('exchanges.availablePlural')}`
+  const subtitle = `${linkedCount} conectada${linkedCount !== 1 ? 's' : ''} • ${availableCount} disponíve${availableCount !== 1 ? 'is' : 'l'}`
+
+  // Define o Header global para esta tela
+  useHeader({
+    title: t('exchanges.title'),
+    subtitle,
+    onNotificationsPress,
+    unreadCount,
+  })
   
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title={t('exchanges.title')}
-        subtitle={subtitle}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-      />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         <ExchangesManager initialTab={openTab} />
       </View>
@@ -83,7 +83,7 @@ export function ExchangesScreen({ route, navigation }: any) {
         visible={notificationsModalVisible}
         onClose={() => setNotificationsModalVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   )
 }
 

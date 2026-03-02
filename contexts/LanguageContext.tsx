@@ -52,7 +52,7 @@ const translations = {
     
     // Profile Screen
     'profile.title': 'Perfil',
-    'profile.subtitle': 'Suas informações pessoais',
+    'profile.subtitle': 'Sua conta',
     'profile.user': 'Usuário do CryptoHub',
     'profile.memberSince': 'Membro desde',
     'profile.settings': 'Configurações',
@@ -312,6 +312,11 @@ const translations = {
     'exchanges.taker': 'Taker',
     'exchanges.deposit': 'Depósito',
     'exchanges.withdraw': 'Saque',
+    // Deep link to exchange app
+    'deposit.label': 'Abrir',
+    'deposit.title': 'Abrir app da exchange',
+    'deposit.confirmMessage': 'Você será redirecionado para o app da {exchange}. Nunca compartilhe suas credenciais e verifique sempre se está no app oficial.',
+    'deposit.openApp': 'Continuar',
     'exchanges.confirmDelete': '⚠️ Confirmar Exclusão',
     'exchanges.confirmDisconnect': '⚠️ Confirmar Desconexão',
     'exchanges.qrSuccess': '✅ Sucesso!',
@@ -845,7 +850,7 @@ const translations = {
     
     // Profile Screen
     'profile.title': 'Profile',
-    'profile.subtitle': 'Your personal information',
+    'profile.subtitle': 'Your account',
     'profile.user': 'CryptoHub User',
     'profile.memberSince': 'Member since',
     'profile.settings': 'Settings',
@@ -1118,6 +1123,11 @@ const translations = {
     'exchanges.taker': 'Taker',
     'exchanges.deposit': 'Deposit',
     'exchanges.withdraw': 'Withdrawal',
+    // Deep link to exchange app
+    'deposit.label': 'Open',
+    'deposit.title': 'Open exchange app',
+    'deposit.confirmMessage': 'You will be redirected to the {exchange} app. Never share your credentials and always verify you are using the official app.',
+    'deposit.openApp': 'Continue',
     'exchanges.confirmDelete': '⚠️ Confirm Deletion',
     'exchanges.confirmDisconnect': '⚠️ Confirm Disconnect',
     'exchanges.qrSuccess': '✅ Success!',

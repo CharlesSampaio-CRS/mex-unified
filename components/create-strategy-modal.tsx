@@ -13,26 +13,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Switch,
 } from "react-native"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
-import { useBalance } from "@/contexts/BalanceContext"
-import { useBackendStrategies } from "@/hooks/useBackendStrategies"
-import { exchangeService } from "@/services/exchange-service"
+import { useBackendStrategies, CreateStrategyRequest } from "@/hooks/useBackendStrategies"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
 import { apiService } from "@/services/api"
-import { LinkedExchange } from "@/types/api"
 import { config } from "@/lib/config"
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 import { useNotifications } from "@/contexts/NotificationsContext"
 import { notify } from "@/services/notify"
 
-// Tipo para exchange no modal
 interface LocalExchange {
   _id: string
   exchange_id: string
-  exchange_type: string  // CCXT ID: binance, bybit, etc
+  exchange_type: string
   name: string
   ccxt_id: string
   is_active: boolean
@@ -49,8 +46,7 @@ interface CreateStrategyModalProps {
 export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navigation }: CreateStrategyModalProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
-  const { data: balanceData, loading: balanceLoading } = useBalance()
-  const { createStrategy } = useBackendStrategies(false) // Não auto-load
+  const { createStrategy } = useBackendStrategies(false)
   const { addNotification } = useNotifications()
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
@@ -58,27 +54,30 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   const [loadingExchanges, setLoadingExchanges] = useState(false)
   const [tokens, setTokens] = useState<string[]>([])
   const [loadingTokens, setLoadingTokens] = useState(false)
-  const [searchingToken, setSearchingToken] = useState(false)
-  const [tokenSearchResults, setTokenSearchResults] = useState<any[]>([])
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
 
-  // Form state
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("")
   const [selectedExchange, setSelectedExchange] = useState<string>("")
-  const [selectedExchangeType, setSelectedExchangeType] = useState<string>("")  // CCXT ID: binance, bybit, etc
+  const [selectedExchangeType, setSelectedExchangeType] = useState<string>("")
   const [token, setToken] = useState<string>("")
-  const [showCustomTokenInput, setShowCustomTokenInput] = useState(false)
-  
-  // Token search/filter state
   const [tokenSearchQuery, setTokenSearchQuery] = useState<string>("")
   const [showTokenList, setShowTokenList] = useState(true)
   const tokenInputRef = useRef<TextInput>(null)
-  const [keyboardVisible, setKeyboardVisible] = useState(false)
 
-  // Templates da API
-  const [apiTemplates, setApiTemplates] = useState<any[]>([])
-  const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [basePrice, setBasePrice] = useState<string>("")
+  const [investedAmount, setInvestedAmount] = useState<string>("")
+  const [takeProfitPercent, setTakeProfitPercent] = useState<string>("5.0")
+  const [stopLossPercent, setStopLossPercent] = useState<string>("3.0")
+  const [stopLossEnabled, setStopLossEnabled] = useState(true)
+  const [gradualTakePercent, setGradualTakePercent] = useState<string>("2.0")
+  const [feePercent, setFeePercent] = useState<string>("0.1")
+  const [gradualSell, setGradualSell] = useState(true)
+  const [timerGradualMin, setTimerGradualMin] = useState<string>("15")
+  const [timeExecutionMin, setTimeExecutionMin] = useState<string>("120")
+  const [dcaEnabled, setDcaEnabled] = useState(false)
+  const [dcaBuyAmountUsd, setDcaBuyAmountUsd] = useState<string>("")
+  const [dcaTriggerPercent, setDcaTriggerPercent] = useState<string>("5.0")
+  const [dcaMaxBuys, setDcaMaxBuys] = useState<string>("3")
 
-  // Detectar teclado aberto/fechado
   useEffect(() => {
     const showSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
@@ -88,867 +87,707 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => setKeyboardVisible(false)
     )
-    return () => {
-      showSub.remove()
-      hideSub.remove()
-    }
+    return () => { showSub.remove(); hideSub.remove() }
   }, [])
 
   useEffect(() => {
     if (visible) {
       loadExchanges()
-      loadApiTemplates()
     } else {
-      // Reset form when modal closes
       setStep(1)
-      setSelectedTemplate("")
       setSelectedExchange("")
+      setSelectedExchangeType("")
       setToken("")
       setTokens([])
-      setShowCustomTokenInput(false)
-      setTokenSearchResults([])
       setTokenSearchQuery("")
       setShowTokenList(true)
+      setBasePrice("")
+      setInvestedAmount("")
+      setTakeProfitPercent("5.0")
+      setStopLossPercent("3.0")
+      setStopLossEnabled(true)
+      setGradualTakePercent("2.0")
+      setFeePercent("0.1")
+      setGradualSell(true)
+      setTimerGradualMin("15")
+      setTimeExecutionMin("120")
+      setDcaEnabled(false)
+      setDcaBuyAmountUsd("")
+      setDcaTriggerPercent("5.0")
+      setDcaMaxBuys("3")
     }
   }, [visible])
 
-  // Carrega templates da API
-  const loadApiTemplates = async () => {
-    try {
-      setLoadingTemplates(true)
-      const res = await apiService.listStrategyTemplates()
-      // this.get() retorna { data: { success, templates } }
-      const body = res?.data ?? res
-      if (body?.success && body.templates) {
-        setApiTemplates(body.templates)
-      }
-    } catch (e) {
-      console.error("❌ Erro ao carregar templates:", e)
-    } finally {
-      setLoadingTemplates(false)
-    }
-  }
-
-  // Load tokens when reaching step 3
   useEffect(() => {
-    if (step === 3 && selectedExchange) {
-      setToken("") // Clear token selection when exchange changes
-      setTokenSearchQuery("") // Clear search
+    if (step === 2 && selectedExchange) {
+      setToken("")
+      setTokenSearchQuery("")
       setShowTokenList(true)
       loadTokens()
     }
   }, [step, selectedExchange])
 
-  // Filtrar tokens com base na busca
   const filteredTokens = React.useMemo(() => {
-    
-    // Garante que tokens é um array válido
-    if (!Array.isArray(tokens) || tokens.length === 0) {
-      return []
-    }
-    
-    // Se não há busca, retorna todos os tokens
-    if (!tokenSearchQuery.trim()) {
-      return tokens
-    }
-    
-    // Filtra tokens pela busca
+    if (!Array.isArray(tokens) || tokens.length === 0) return []
+    if (!tokenSearchQuery.trim()) return tokens
     const query = tokenSearchQuery.toLowerCase()
-    const filtered = tokens.filter(tokenSymbol => 
-      tokenSymbol && typeof tokenSymbol === 'string' && tokenSymbol.toLowerCase().includes(query)
-    )
-    return filtered
+    return tokens.filter(t => t && typeof t === 'string' && t.toLowerCase().includes(query))
   }, [tokens, tokenSearchQuery])
 
   const loadExchanges = async () => {
     try {
       setLoadingExchanges(true)
-      console.log('📊 Loading connected exchanges from MongoDB via API...')
-      
-      // � Busca exchanges do MongoDB (via API backend)
       const response = await apiService.listExchanges()
-      const connectedExchanges = response.exchanges.filter((ex: any) => ex.is_active)
-      
-      console.log(`✅ Loaded ${connectedExchanges.length} active exchanges from MongoDB`)
-      
-      // Converter para o formato esperado pelo componente
-      const formattedExchanges = connectedExchanges.map(ex => ({
+      const connected = response.exchanges.filter((ex: any) => ex.is_active)
+      setExchanges(connected.map((ex: any) => ({
         _id: ex.exchange_id,
         exchange_id: ex.exchange_id,
-        exchange_type: ex.exchange_type,  // CCXT ID: binance, bybit, etc
+        exchange_type: ex.exchange_type,
         name: capitalizeExchangeName(ex.exchange_name),
         ccxt_id: ex.exchange_type,
         is_active: ex.is_active,
-      }))
-      
-      setExchanges(formattedExchanges)
+      })))
     } catch (error) {
-      console.error("❌ Error loading exchanges:", error)
-      Alert.alert(t("common.error"), t("error.loadExchanges") || "Erro ao carregar exchanges")
+      Alert.alert(t("common.error"), "Erro ao carregar exchanges")
     } finally {
       setLoadingExchanges(false)
     }
   }
 
   const loadTokens = async () => {
-    // Validação: verifica se exchange foi selecionada
-    if (!selectedExchange || !selectedExchangeType) {
-      console.log('⚠️ No exchange selected')
-      setTokens([])
-      return
-    }
-
+    if (!selectedExchange || !selectedExchangeType) { setTokens([]); return }
     try {
       setLoadingTokens(true)
       setTokens([])
-      
-      console.log(`📊 Loading tokens for exchange: ${selectedExchangeType} (id: ${selectedExchange})`)
-      
-      // 🗄️ Busca tokens do MongoDB cache usando ccxt_id (binance, bybit, mexc, etc)
       const url = `${config.apiBaseUrl}/tokens/by-ccxt?ccxt_id=${selectedExchangeType}&quote=USDT`
-      
-      console.log(`🔗 Calling GET: ${url}`)
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("❌ HTTP error:", response.status, errorText)
-        throw new Error(`Erro ao buscar tokens: ${response.status}`)
-      }
-      
+      const response = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+      if (!response.ok) throw new Error(`Erro: ${response.status}`)
       const data = await response.json()
-      console.log(`✅ Received ${data.tokens?.length || 0} tokens from MongoDB cache`)
-      
       if (data && Array.isArray(data.tokens)) {
-        // Extrai PARES completos dos tokens (ex: SOL/USDT) — CCXT precisa do pair, não só do symbol
-        const tokenPairs = data.tokens.map((token: any) => {
-          // Se for string, retorna direto (pode já ser um pair)
-          if (typeof token === 'string') {
-            return token
-          }
-          // Se for objeto, pega o campo pair (ex: "SOL/USDT") — é o que o CCXT espera
-          if (token && typeof token === 'object') {
-            return token.pair || token.symbol || token.base || null
-          }
+        const pairs = data.tokens.map((t: any) => {
+          if (typeof t === 'string') return t
+          if (t && typeof t === 'object') return t.pair || t.symbol || t.base || null
           return null
-        }).filter((pair: any): pair is string => pair !== null)
-        
-        // Remove duplicatas e ordena
-        const uniqueTokens = [...new Set<string>(tokenPairs)].sort()
-        
-        if (uniqueTokens.length > 0) {
-          console.log(`✅ Setting ${uniqueTokens.length} unique tokens`)
-          setTokens(uniqueTokens)
-        } else {
-          console.log('⚠️ No tokens found')
-          setTokens([])
-          Alert.alert(t("common.warning"), t("warning.noTokensAvailable") || "Nenhum token disponível para esta exchange")
-        }
-      } else {
-        console.log('⚠️ Invalid response format')
-        setTokens([])
-        Alert.alert(t("common.warning"), t("error.invalidResponse") || "Resposta inválida do servidor")
+        }).filter((p: any): p is string => p !== null)
+        const unique = [...new Set<string>(pairs)].sort()
+        setTokens(unique)
+        if (unique.length === 0) Alert.alert(t("common.warning"), "Nenhum token disponivel")
       }
     } catch (error) {
-      console.error("❌ Error loading available tokens:", error)
-      const errorMessage = error instanceof Error ? error.message : t("error.unknownError")
-      Alert.alert(t("common.error"), `${t("error.loadTokens") || "Erro ao carregar tokens"}: ${errorMessage}`)
+      Alert.alert(t("common.error"), "Erro ao carregar tokens")
       setTokens([])
     } finally {
       setLoadingTokens(false)
     }
   }
 
-  // Busca token específico na API
+  const bp = parseFloat(basePrice) || 0
+  const ia = parseFloat(investedAmount) || 0
+  const tp = parseFloat(takeProfitPercent) || 0
+  const sl = parseFloat(stopLossPercent) || 0
+  const fee = parseFloat(feePercent) || 0
+  const triggerPrice = bp > 0 ? bp * (1 + tp / 100 + fee / 100) : 0
+  const stopLossPrice = bp > 0 ? bp * (1 - sl / 100) : 0
+
+  const getSelectedExchangeName = () => {
+    const ex = exchanges.find(e => e.exchange_id === selectedExchange)
+    return capitalizeExchangeName(ex?.name || "")
+  }
+
+  const generateStrategyName = () => {
+    const exchName = getSelectedExchangeName()
+    const ts = Math.floor(Date.now() / 1000)
+    const base = token.includes('/') ? token.split('/')[0] : token
+    return `${base}_${exchName}_${ts}`
+  }
+
   const handleCreateStrategy = async () => {
-    if (!selectedTemplate || !selectedExchange || !token.trim()) {
-      Alert.alert(t("common.attention"), t("error.fillAllFields"))
+    if (!selectedExchange || !token.trim()) {
+      Alert.alert(t("common.attention"), "Selecione exchange e token")
       return
     }
-
+    if (tp <= 0 || (stopLossEnabled && sl <= 0)) {
+      Alert.alert(t("common.attention"), "Take Profit e Stop Loss sao obrigatorios")
+      return
+    }
     try {
       setLoading(true)
-      
-      // Busca exchange do array local
       const exchange = exchanges.find(ex => ex.exchange_id === selectedExchange)
-      if (!exchange) {
-        throw new Error("Exchange não encontrada")
-      }
-      
-      // Template selecionado vem do MongoDB (via API)
-      const tplInfo = getSelectedTemplate()
-      
-      // token contém o pair completo (ex: "SOL/USDT") — extrair base para exibição
-      const tokenBase = token.includes('/') ? token.split('/')[0] : token
-      
-      const strategyData: Parameters<typeof createStrategy>[0] = {
+      if (!exchange) throw new Error("Exchange nao encontrada")
+
+      const strategyData: CreateStrategyRequest = {
         name: generateStrategyName(),
-        description: `Estratégia ${tplInfo.name} para ${tokenBase} na ${capitalizeExchangeName(exchange.name)}`,
-        symbol: token,  // pair completo: "SOL/USDT" (é o que o CCXT precisa)
+        symbol: token,
         exchange_id: selectedExchange,
         exchange_name: capitalizeExchangeName(exchange.name),
-        strategy_type: tplInfo.type,
         config: {
-          take_profit_levels: [],
-          mode: 'template',
+          base_price: bp,
+          invested_amount: ia > 0 ? ia : undefined,
+          take_profit_percent: tp,
+          stop_loss_enabled: stopLossEnabled,
+          stop_loss_percent: stopLossEnabled ? sl : 5.0,
+          gradual_take_percent: parseFloat(gradualTakePercent) || 2.0,
+          fee_percent: fee,
+          gradual_sell: gradualSell,
+          gradual_lots: [],
+          timer_gradual_min: parseInt(timerGradualMin) || 15,
+          time_execution_min: parseInt(timeExecutionMin) || 120,
+          dca_enabled: dcaEnabled,
+          dca_buy_amount_usd: dcaEnabled ? (parseFloat(dcaBuyAmountUsd) || 0) : undefined,
+          dca_trigger_percent: dcaEnabled ? (parseFloat(dcaTriggerPercent) || 5.0) : undefined,
+          dca_max_buys: dcaEnabled ? (parseInt(dcaMaxBuys) || 3) : undefined,
         },
       }
-      
-      console.log('💾 Saving strategy to MongoDB:', strategyData)
-      const createdStrategy = await createStrategy(strategyData)
 
-      // Fecha o modal e limpa o loading antes de chamar onSuccess
+      const created = await createStrategy(strategyData)
       setLoading(false)
       onClose()
-      
-      const strategyId = createdStrategy.id || ""
-      
-      // 🔔 Notificação: Estratégia criada
+
+      const tokenBase = token.includes('/') ? token.split('/')[0] : token
       notify.strategyCreated(addNotification, {
         name: strategyData.name,
         symbol: tokenBase,
         exchange: capitalizeExchangeName(exchange.name),
-        template: selectedTemplate,
-        strategyId,
+        template: 'simple',
+        strategyId: created.id || "",
       })
-      
-      // Aguarda um pouco para o modal fechar antes de recarregar
-      setTimeout(() => {
-        onSuccess(strategyId)
-      }, 300)
+      setTimeout(() => onSuccess(created.id || ""), 300)
     } catch (error: any) {
-      console.error("❌ Error creating strategy:", error)
       setLoading(false)
-      
-      // 🔔 Notificação: Erro ao criar
       notify.strategyError(addNotification, {
         name: generateStrategyName(),
         action: 'criar',
         error: error.message || 'Erro desconhecido',
       })
-      
-      Alert.alert(t("common.error"), error.message || t("error.createStrategy"))
+      Alert.alert(t("common.error"), error.message || "Erro ao criar estrategia")
     }
   }
 
-  const canProceedToStep2 = selectedTemplate !== ""
-  const canProceedToStep3 = selectedExchange !== ""
-  const canCreate = token.trim() !== ""
+  const canProceedToStep2 = selectedExchange !== ""
+  const canProceedToStep3 = token.trim() !== ""
+  const canCreate = tp > 0 && (stopLossEnabled ? sl > 0 : true)
 
-  const getSelectedExchangeName = () => {
-    const exchange = exchanges.find(e => {
-      const exchangeId = e.exchange_id || e._id || ""
-      return exchangeId === selectedExchange
-    })
-    return capitalizeExchangeName(exchange?.name || "")
-  }
+  const renderStepIndicator = () => (
+    <View style={styles.stepsContainer}>
+      {[1, 2, 3].map((s, i) => (
+        <React.Fragment key={s}>
+          {i > 0 && <View style={[styles.stepLine, { backgroundColor: colors.border }]} />}
+          <View style={styles.stepItem}>
+            <View style={[
+              styles.stepCircle,
+              { borderColor: step >= s ? colors.primary : colors.border },
+              step >= s && { backgroundColor: colors.primary },
+            ]}>
+              <Text style={[styles.stepNumber, { color: step >= s ? colors.primaryText : colors.textSecondary }]}>
+                {s}
+              </Text>
+            </View>
+            <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
+              {s === 1 ? 'Exchange' : s === 2 ? 'Token' : 'Config'}
+            </Text>
+          </View>
+        </React.Fragment>
+      ))}
+    </View>
+  )
 
-  // Gera nome da estratégia: Token_Exchange_timestamp
-  const generateStrategyName = () => {
-    const exchName = getSelectedExchangeName()
-    const ts = Math.floor(Date.now() / 1000)
-    // Usar só o base do pair (SOL de SOL/USDT) para o nome ficar limpo
-    const base = token.includes('/') ? token.split('/')[0] : token
-    return `${base}_${exchName}_${ts}`
-  }
+  const renderStep1 = () => (
+    <View style={styles.stepContent}>
+      <Text style={[styles.stepTitle, { color: colors.text }]}>{t("strategy.chooseExchange")}</Text>
+      <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+        {t("strategy.selectExchangeDesc")}
+      </Text>
+      {loadingExchanges ? (
+        <View style={styles.loadingContainer}><AnimatedLogoIcon size={48} /></View>
+      ) : exchanges.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={{ fontSize: 48, marginBottom: 12 }}>📭</Text>
+          <Text style={{ fontSize: 16, color: colors.text }}>{t('strategy.noExchanges')}</Text>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>
+            {t('strategy.connectExchange')}
+          </Text>
+        </View>
+      ) : (
+        <View style={{ gap: 12 }}>
+          {exchanges.map((exchange) => (
+            <TouchableOpacity
+              key={exchange.exchange_id}
+              style={[
+                styles.card,
+                { backgroundColor: colors.background, borderColor: colors.border },
+                selectedExchange === exchange.exchange_id && { borderColor: colors.primary, borderWidth: 2 },
+              ]}
+              onPress={() => {
+                setSelectedExchange(exchange.exchange_id)
+                setSelectedExchangeType(exchange.exchange_type)
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>
+                {capitalizeExchangeName(exchange.name)}
+              </Text>
+              <Text style={{ color: "#10b981", fontSize: 12 }}>● {t('strategy.connected')}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  )
 
-  // Helper: busca o template selecionado da API (MongoDB)
-  const getSelectedTemplate = () => {
-    const tpl = apiTemplates.find(t => t.id === selectedTemplate)
-    if (tpl) return { name: tpl.name, icon: tpl.icon, type: tpl.strategy_type }
-    return { name: selectedTemplate, icon: "📊", type: selectedTemplate }
-  }
+  const renderStep2 = () => (
+    <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 8 }}>
+      {!keyboardVisible && (
+        <Text style={[styles.stepTitle, { color: colors.text, marginBottom: 10 }]}>
+          {t("strategy.chooseToken")}
+        </Text>
+      )}
+      {loadingTokens ? (
+        <View style={styles.loadingContainer}>
+          <AnimatedLogoIcon size={48} />
+          <Text style={{ color: colors.textSecondary, marginTop: 12 }}>{t('common.loadingTokens')}</Text>
+        </View>
+      ) : token && !showTokenList ? (
+        <View style={{ flex: 1, justifyContent: 'center', paddingBottom: 40 }}>
+          <TouchableOpacity
+            onPress={() => { setShowTokenList(true); setTokenSearchQuery("") }}
+            activeOpacity={0.7}
+            style={{
+              borderWidth: 1.5, borderColor: colors.primary, borderRadius: 16, padding: 16,
+              backgroundColor: `${colors.primary}08`, flexDirection: 'row', alignItems: 'center', gap: 12,
+            }}
+          >
+            <Text style={{ fontSize: 32 }}>🪙</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 22, fontWeight: '700', color: colors.primary, letterSpacing: 1 }}>{token}</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{t('strategy.tapToChange')}</Text>
+            </View>
+            <Text style={{ fontSize: 18, color: colors.textSecondary }}>✏️</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={{ flex: 1 }}>
+          <View style={[styles.searchInputWrapper, { borderColor: colors.border, backgroundColor: colors.background, marginBottom: 6 }]}>
+            <Text style={{ fontSize: 16 }}>🔍</Text>
+            <TextInput
+              ref={tokenInputRef}
+              style={{ flex: 1, fontSize: 17, color: colors.text, paddingVertical: 0 }}
+              placeholder={t('strategy.searchToken')}
+              placeholderTextColor={colors.textSecondary}
+              value={tokenSearchQuery}
+              onChangeText={setTokenSearchQuery}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+            {tokenSearchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => { setTokenSearchQuery(""); tokenInputRef.current?.focus() }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 18 }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 6, paddingHorizontal: 4 }}>
+            {tokenSearchQuery ? `${filteredTokens.length} resultado${filteredTokens.length !== 1 ? 's' : ''}` : `${tokens.length} tokens`}
+          </Text>
+          <FlatList
+            data={filteredTokens}
+            keyExtractor={(item) => item}
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="on-drag"
+            style={{ flex: 1, borderWidth: 1, borderRadius: 12, borderColor: colors.border, backgroundColor: colors.background }}
+            contentContainerStyle={{ paddingVertical: 4 }}
+            renderItem={({ item: sym }) => {
+              const isSelected = token === sym
+              return (
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16,
+                    backgroundColor: isSelected ? `${colors.primary}12` : 'transparent',
+                  }}
+                  onPress={() => { setToken(sym); setTokenSearchQuery(""); setShowTokenList(false); Keyboard.dismiss() }}
+                  activeOpacity={0.5}
+                >
+                  <Text style={{ fontSize: 17, marginRight: 12 }}>🪙</Text>
+                  <Text style={{ flex: 1, fontSize: 17, fontWeight: isSelected ? '600' : '400', color: isSelected ? colors.primary : colors.text }}>
+                    {sym}
+                  </Text>
+                  {isSelected && <Text style={{ color: colors.primary, fontSize: 18, fontWeight: '600' }}>✓</Text>}
+                </TouchableOpacity>
+              )
+            }}
+            ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: 0.4 }} />}
+            ListEmptyComponent={
+              <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 15 }}>
+                  {tokenSearchQuery ? `Nenhum resultado para "${tokenSearchQuery}"` : 'Nenhum token disponivel'}
+                </Text>
+              </View>
+            }
+            initialNumToRender={30}
+            maxToRenderPerBatch={30}
+            windowSize={7}
+            getItemLayout={(_, index) => ({ length: 49, offset: 49 * index, index })}
+          />
+        </View>
+      )}
+    </View>
+  )
+
+  const renderStep3 = () => (
+    <ScrollView
+      style={styles.content}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 40 }}
+      showsVerticalScrollIndicator={true}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.stepContent}>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>Configuração</Text>
+        <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+          Configure preço de compra, valor investido, take profit, stop loss e venda gradual.
+        </Text>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>💰 Preço de Compra (USDT)</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: basePrice ? colors.primary : colors.border, color: colors.text, backgroundColor: colors.background }]}
+            placeholder="Deixe vazio para buscar automaticamente"
+            placeholderTextColor={colors.textSecondary}
+            value={basePrice}
+            onChangeText={(v) => setBasePrice(v.replace(/[^0-9.]/g, ''))}
+            keyboardType="decimal-pad"
+          />
+          <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
+            Preço unitário da moeda na compra. Se vazio, busca o preço atual da exchange automaticamente.
+          </Text>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>💵 Valor Investido (USDT)</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: investedAmount ? '#f59e0b' : colors.border, color: colors.text, backgroundColor: colors.background }]}
+            placeholder="Ex: 36.00 (opcional)"
+            placeholderTextColor={colors.textSecondary}
+            value={investedAmount}
+            onChangeText={(v) => setInvestedAmount(v.replace(/[^0-9.]/g, ''))}
+            keyboardType="decimal-pad"
+          />
+          <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
+            Quanto você investiu em $. Ativa double-check: só vende se o investimento realmente der lucro.
+          </Text>
+          {ia > 0 && bp > 0 && (
+            <View style={{ marginTop: 6, padding: 8, backgroundColor: '#f59e0b10', borderRadius: 6, borderWidth: 1, borderColor: '#f59e0b30' }}>
+              <Text style={{ fontSize: 12, color: '#f59e0b', fontWeight: '600' }}>
+                🔒 Double-check ativo: ~{(ia / bp).toFixed(4)} moedas
+              </Text>
+              <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                Venda só executa se ${ia.toFixed(2)} realmente der lucro no momento do trigger.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={[styles.fieldCard, { borderColor: '#10b98140', backgroundColor: '#10b98108' }]}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>🎯 Take Profit (%)</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+            placeholder="5.0"
+            placeholderTextColor={colors.textSecondary}
+            value={takeProfitPercent}
+            onChangeText={(v) => setTakeProfitPercent(v.replace(/[^0-9.]/g, ''))}
+            keyboardType="decimal-pad"
+          />
+          {bp > 0 && triggerPrice > 0 && (
+            <Text style={{ fontSize: 12, color: '#10b981', marginTop: 6, fontWeight: '500' }}>
+              Trigger: ${triggerPrice.toFixed(4)} (base + {tp}% + {fee}% fee)
+            </Text>
+          )}
+        </View>
+
+        <View style={[styles.fieldCard, { borderColor: stopLossEnabled ? '#ef444440' : colors.border + '40', backgroundColor: stopLossEnabled ? '#ef444408' : colors.background }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: stopLossEnabled ? 12 : 0 }}>
+            <Text style={[styles.fieldLabel, { color: colors.text, marginBottom: 0 }]}>🛡️ Stop Loss</Text>
+            <Switch
+              value={stopLossEnabled}
+              onValueChange={setStopLossEnabled}
+              trackColor={{ false: colors.border, true: '#ef444460' }}
+              thumbColor={stopLossEnabled ? '#ef4444' : '#f4f3f4'}
+            />
+          </View>
+          {!stopLossEnabled && (
+            <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>
+              Stop loss desativado — a estratégia nunca vende por queda de preço (hold).
+            </Text>
+          )}
+          {stopLossEnabled && (
+            <>
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>Stop Loss (%)</Text>
+              <TextInput
+                style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                placeholder="3.0"
+                placeholderTextColor={colors.textSecondary}
+                value={stopLossPercent}
+                onChangeText={(v) => setStopLossPercent(v.replace(/[^0-9.]/g, ''))}
+                keyboardType="decimal-pad"
+              />
+              {bp > 0 && stopLossPrice > 0 && (
+                <Text style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: '500' }}>
+                  Stop: ${stopLossPrice.toFixed(4)} (base - {sl}%)
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+
+        <View style={[styles.fieldCard, { borderColor: dcaEnabled ? '#3b82f640' : colors.border + '40', backgroundColor: dcaEnabled ? '#3b82f608' : colors.background }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: dcaEnabled ? 12 : 0 }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={[styles.fieldLabel, { color: colors.text, marginBottom: 2 }]}>📉 DCA (Compra na Queda)</Text>
+              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                Compra mais quando o preço cai, baixando o preço médio
+              </Text>
+            </View>
+            <Switch
+              value={dcaEnabled}
+              onValueChange={(v) => {
+                setDcaEnabled(v)
+                if (v && stopLossEnabled) setStopLossEnabled(false)
+              }}
+              trackColor={{ false: colors.border, true: '#3b82f660' }}
+              thumbColor={dcaEnabled ? '#3b82f6' : '#f4f3f4'}
+            />
+          </View>
+          {dcaEnabled && (
+            <View style={{ gap: 12 }}>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Valor por compra (USD)</Text>
+                <TextInput
+                  style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  placeholder="36.00"
+                  placeholderTextColor={colors.textSecondary}
+                  value={dcaBuyAmountUsd}
+                  onChangeText={(v) => setDcaBuyAmountUsd(v.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                />
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                  Quanto comprar a cada queda (ex: $36)
+                </Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Queda para acionar (%)</Text>
+                <TextInput
+                  style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  placeholder="5.0"
+                  placeholderTextColor={colors.textSecondary}
+                  value={dcaTriggerPercent}
+                  onChangeText={(v) => setDcaTriggerPercent(v.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Máx. de compras DCA</Text>
+                <TextInput
+                  style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  placeholder="3"
+                  placeholderTextColor={colors.textSecondary}
+                  value={dcaMaxBuys}
+                  onChangeText={(v) => setDcaMaxBuys(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                />
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                  Máx investido: ${((parseFloat(dcaBuyAmountUsd) || 0) * (parseInt(dcaMaxBuys) || 3) + ia).toFixed(2)}
+                </Text>
+              </View>
+              {bp > 0 && ia > 0 && (parseFloat(dcaBuyAmountUsd) || 0) > 0 && (
+                <View style={{ padding: 10, backgroundColor: '#3b82f610', borderRadius: 8, borderWidth: 1, borderColor: '#3b82f630' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#3b82f6', marginBottom: 4 }}>📊 Simulação DCA</Text>
+                  {Array.from({ length: parseInt(dcaMaxBuys) || 3 }).map((_, i) => {
+                    const dcaAmt = parseFloat(dcaBuyAmountUsd) || 0
+                    const dcaTrig = parseFloat(dcaTriggerPercent) || 5
+                    const dcaPrice = bp * Math.pow(1 - dcaTrig / 100, i + 1)
+                    const totalInvested = ia + dcaAmt * (i + 1)
+                    const totalQty = ia / bp + Array.from({ length: i + 1 }).reduce<number>((sum, _, j) => sum + dcaAmt / (bp * Math.pow(1 - dcaTrig / 100, j + 1)), 0)
+                    const avgPrice = totalInvested / (totalQty as number)
+                    return (
+                      <Text key={i} style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                        DCA #{i + 1}: a ${dcaPrice.toFixed(2)} → médio ${avgPrice.toFixed(2)} (total: ${totalInvested.toFixed(0)})
+                      </Text>
+                    )
+                  })}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>📊 Taxa / Fee (%)</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+            placeholder="0.1"
+            placeholderTextColor={colors.textSecondary}
+            value={feePercent}
+            onChangeText={(v) => setFeePercent(v.replace(/[^0-9.]/g, ''))}
+            keyboardType="decimal-pad"
+          />
+        </View>
+
+        <View style={[styles.fieldCard, { borderColor: colors.primary + '40', backgroundColor: colors.primary + '08' }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: gradualSell ? 16 : 0 }}>
+            <Text style={[styles.fieldLabel, { color: colors.text, marginBottom: 0 }]}>📦 Venda Gradual</Text>
+            <Switch
+              value={gradualSell}
+              onValueChange={setGradualSell}
+              trackColor={{ false: colors.border, true: colors.primary + '60' }}
+              thumbColor={gradualSell ? colors.primary : '#f4f3f4'}
+            />
+          </View>
+          {gradualSell && (
+            <View style={{ gap: 12 }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                4 lotes de 25% cada, com timer entre vendas
+              </Text>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Gradual Take (%)</Text>
+                <TextInput
+                  style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  placeholder="2.0"
+                  placeholderTextColor={colors.textSecondary}
+                  value={gradualTakePercent}
+                  onChangeText={(v) => setGradualTakePercent(v.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                />
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                  Step de preco entre cada lote gradual
+                </Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Timer entre lotes (min)</Text>
+                <TextInput
+                  style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  placeholder="15"
+                  placeholderTextColor={colors.textSecondary}
+                  value={timerGradualMin}
+                  onChangeText={(v) => setTimerGradualMin(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>⏱️ Tempo de Execucao (min)</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+            placeholder="120"
+            placeholderTextColor={colors.textSecondary}
+            value={timeExecutionMin}
+            onChangeText={(v) => setTimeExecutionMin(v.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+          />
+          <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
+            Estrategia expira apos {timeExecutionMin || '120'} min ({((parseInt(timeExecutionMin) || 120) / 60).toFixed(1)}h)
+          </Text>
+        </View>
+
+        <View style={[styles.summaryCard, { backgroundColor: `${colors.primary}10`, borderColor: colors.primary + '30' }]}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: 8 }}>📋 Resumo</Text>
+          <View style={{ gap: 4 }}>
+            <Text style={{ fontSize: 12, color: colors.text }}>
+              {token.includes('/') ? token.split('/')[0] : token} — {getSelectedExchangeName()}
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.text }}>
+              Preço de Compra: {bp > 0 ? `$${bp.toFixed(4)}` : '🔄 Auto (buscar da exchange)'}
+            </Text>
+            {ia > 0 && (
+              <Text style={{ fontSize: 12, color: '#f59e0b' }}>
+                💵 Investido: ${ia.toFixed(2)} {bp > 0 ? `(~${(ia / bp).toFixed(4)} moedas)` : ''} — Double-check ativo
+              </Text>
+            )}
+            <Text style={{ fontSize: 12, color: '#10b981' }}>
+              Trigger (TP): {triggerPrice > 0 ? `$${triggerPrice.toFixed(4)}` : '—'} (+{tp}% + {fee}% fee)
+            </Text>
+            <Text style={{ fontSize: 12, color: '#ef4444' }}>
+              Stop Loss: {stopLossEnabled ? (stopLossPrice > 0 ? `$${stopLossPrice.toFixed(4)} (-${sl}%)` : `(-${sl}%)`) : '🚫 Desativado'}
+            </Text>
+            {dcaEnabled && (
+              <Text style={{ fontSize: 12, color: '#3b82f6' }}>
+                📉 DCA: ${dcaBuyAmountUsd || '0'}/compra, queda {dcaTriggerPercent}%, máx {dcaMaxBuys}x
+              </Text>
+            )}
+            <Text style={{ fontSize: 12, color: colors.text }}>
+              Gradual: {gradualSell ? `4 lotes, timer ${timerGradualMin}min, step ${gradualTakePercent}%` : 'OFF'}
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.text }}>
+              Expiracao: {timeExecutionMin}min ({((parseInt(timeExecutionMin) || 120) / 60).toFixed(1)}h)
+            </Text>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
+  )
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <KeyboardAvoidingView 
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <SafeAreaView style={styles.safeArea}>
           <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
-            {/* Header */}
             <View style={[styles.header, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.title, { color: colors.text }]}>
-                {t("strategy.newStrategy")}
-              </Text>
+              <Text style={[styles.title, { color: colors.text }]}>{t("strategy.newStrategy")}</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <Text style={[styles.closeIcon, { color: colors.text }]}>✕</Text>
               </TouchableOpacity>
             </View>
-          {/* Steps Indicator - esconde quando teclado aberto no step 3 */}
-          {!(step === 3 && keyboardVisible) && (
-          <View style={styles.stepsContainer}>
-            <View style={styles.stepItem}>
-              <View
-                style={[
-                  styles.stepCircle,
-                  { borderColor: colors.primary },
-                  step >= 1 && { backgroundColor: colors.primary },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.stepNumber,
-                    { color: step >= 1 ? colors.primaryText : colors.primary },
-                  ]}
-                >
-                  1
-                </Text>
-              </View>
-              <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
-                {t("strategy.labelTemplate")}
-              </Text>
-            </View>
-            <View style={[styles.stepLine, { backgroundColor: colors.border }]} />
-            <View style={styles.stepItem}>
-              <View
-                style={[
-                  styles.stepCircle,
-                  { borderColor: step >= 2 ? colors.primary : colors.border },
-                  step >= 2 && { backgroundColor: colors.primary },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.stepNumber,
-                    { color: step >= 2 ? colors.primaryText : colors.textSecondary },
-                  ]}
-                >
-                  2
-                </Text>
-              </View>
-              <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
-                {t("strategy.labelExchange")}
-              </Text>
-            </View>
-            <View style={[styles.stepLine, { backgroundColor: colors.border }]} />
-            <View style={styles.stepItem}>
-              <View
-                style={[
-                  styles.stepCircle,
-                  { borderColor: step >= 3 ? colors.primary : colors.border },
-                  step >= 3 && { backgroundColor: colors.primary },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.stepNumber,
-                    { color: step >= 3 ? colors.primaryText : colors.textSecondary },
-                  ]}
-                >
-                  3
-                </Text>
-              </View>
-              <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
-                {t("strategy.labelToken")}
-              </Text>
-            </View>
-          </View>
-          )}
-          {/* Content */}
-          {step === 3 ? (
-            <View style={[styles.content, { paddingHorizontal: 20, paddingTop: 8 }]}>
-              {/* Título + resumo — esconde quando teclado está aberto */}
-              {!keyboardVisible && (
-                <>
-                  <Text style={[styles.stepTitle, { color: colors.text, marginBottom: 10 }]}>
-                    {t("strategy.chooseToken")}
-                  </Text>
-                  <View style={[styles.summaryCard, { marginBottom: 10, padding: 10, gap: 2 }]}>
-                    <View style={styles.summaryRow}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Template:</Text>
-                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: '500' }}>
-                        {getSelectedTemplate().name}
-                      </Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Exchange:</Text>
-                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: '500' }}>
-                        {getSelectedExchangeName()}
-                      </Text>
-                    </View>
-                  </View>
-                </>
-              )}
 
-              {loadingTokens ? (
-                <View style={styles.loadingContainer}>
-                  <AnimatedLogoIcon size={48} />
-                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-                    {t('common.loadingTokens')}
-                  </Text>
-                </View>
-              ) : token && !showTokenList ? (
-                /* ── Token selecionado: resumo completo da estratégia ── */
-                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                  {/* Card do token selecionado (toque para alterar) */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowTokenList(true)
-                      setTokenSearchQuery("")
-                    }}
-                    activeOpacity={0.7}
-                    style={{
-                      borderWidth: 1.5,
-                      borderColor: colors.primary,
-                      borderRadius: 16,
-                      padding: 16,
-                      backgroundColor: `${colors.primary}08`,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 12,
-                    }}
-                  >
-                    <Text style={{ fontSize: 32 }}>🪙</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 22, fontWeight: '700', color: colors.primary, letterSpacing: 1 }}>
-                        {token}
-                      </Text>
-                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                        {t('strategy.tapToChange')}
-                      </Text>
-                    </View>
-                    <Text style={{ fontSize: 18, color: colors.textSecondary }}>✏️</Text>
-                  </TouchableOpacity>
+            {!(step >= 2 && keyboardVisible) && renderStepIndicator()}
 
-                  {/* Resumo completo da estratégia */}
-                  <View style={{
-                    marginTop: 16,
-                    borderRadius: 14,
-                    borderWidth: 0.5,
-                    borderColor: colors.border,
-                    backgroundColor: colors.background,
-                    overflow: 'hidden',
-                  }}>
-                    {/* Header do resumo */}
-                    <View style={{
-                      backgroundColor: `${colors.primary}10`,
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                      borderBottomWidth: 0.5,
-                      borderBottomColor: colors.border,
-                    }}>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-                        📋 {t('strategy.summary')}
-                      </Text>
-                    </View>
-
-                    {/* Linhas de detalhe */}
-                    <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
-                      {/* Nome */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.name')}</Text>
-                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500', maxWidth: '65%', textAlign: 'right' }} numberOfLines={1}>
-                          {(token.includes('/') ? token.split('/')[0] : token)}_{getSelectedExchangeName()}_{Math.floor(Date.now() / 1000)}
-                        </Text>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Template */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.template')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text style={{ fontSize: 16 }}>
-                            {getSelectedTemplate().icon}
-                          </Text>
-                          <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
-                            {getSelectedTemplate().name}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Exchange */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.exchange')}</Text>
-                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
-                          {getSelectedExchangeName()}
-                        </Text>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Tipo de Estratégia */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.strategyType')}</Text>
-                        <Text style={{ fontSize: 14, color: colors.primary, fontWeight: '500' }}>
-                          {getSelectedTemplate().type}
-                        </Text>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Par de Trading */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.tradingPair')}</Text>
-                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '600' }}>
-                          {token}
-                        </Text>
-                      </View>
-                      <View style={{ height: 0.5, backgroundColor: colors.border, opacity: 0.5 }} />
-
-                      {/* Status */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '400' }}>{t('strategy.status')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' }} />
-                          <Text style={{ fontSize: 14, color: '#10b981', fontWeight: '500' }}>
-                            {t('strategy.active')}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Descrição */}
-                  <View style={{
-                    marginTop: 12,
-                    padding: 14,
-                    borderRadius: 12,
-                    backgroundColor: `${colors.textSecondary}08`,
-                    borderWidth: 0.5,
-                    borderColor: colors.border,
-                  }}>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20, fontStyle: 'italic' }}>
-                      {`Estratégia ${getSelectedTemplate().name} para ${token.includes('/') ? token.split('/')[0] : token} na ${getSelectedExchangeName()}`}
-                    </Text>
-                  </View>
-                </ScrollView>
-              ) : (
-                /* ── Lista de tokens: busca + FlatList ── */
-                <View style={{ flex: 1 }}>
-                  {/* Campo de busca */}
-                  <View style={[
-                    styles.tokenSearchInputWrapper,
-                    {
-                      borderColor: colors.border,
-                      backgroundColor: colors.background,
-                      marginBottom: 6,
-                    },
-                  ]}>
-                    <Text style={{ fontSize: 16 }}>🔍</Text>
-                    <TextInput
-                      ref={tokenInputRef}
-                      style={{
-                        flex: 1,
-                        fontSize: 17,
-                        fontWeight: '400',
-                        color: colors.text,
-                        paddingVertical: 0,
-                      }}
-                      placeholder={t('strategy.searchToken')}
-                      placeholderTextColor={colors.textSecondary}
-                      value={tokenSearchQuery}
-                      onChangeText={setTokenSearchQuery}
-                      autoCapitalize="characters"
-                      autoCorrect={false}
-                      returnKeyType="search"
-                    />
-                    {tokenSearchQuery.length > 0 && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setTokenSearchQuery("")
-                          tokenInputRef.current?.focus()
-                        }}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Text style={{ color: colors.textSecondary, fontSize: 18 }}>✕</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  {/* Contagem */}
-                  <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 6, paddingHorizontal: 4 }}>
-                    {tokenSearchQuery
-                      ? `${filteredTokens.length} resultado${filteredTokens.length !== 1 ? 's' : ''}`
-                      : `${tokens.length} tokens disponíveis`
-                    }
-                  </Text>
-
-                  {/* Lista */}
-                  <FlatList
-                    data={filteredTokens}
-                    keyExtractor={(item) => item}
-                    keyboardShouldPersistTaps="always"
-                    keyboardDismissMode="on-drag"
-                    style={{
-                      flex: 1,
-                      borderWidth: 1,
-                      borderRadius: 12,
-                      borderColor: colors.border,
-                      backgroundColor: colors.background,
-                    }}
-                    contentContainerStyle={{ paddingVertical: 4 }}
-                    renderItem={({ item: tokenSymbol }) => {
-                      const isSelected = token === tokenSymbol
-                      return (
-                        <TouchableOpacity
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingVertical: 14,
-                            paddingHorizontal: 16,
-                            backgroundColor: isSelected ? `${colors.primary}12` : 'transparent',
-                          }}
-                          onPress={() => {
-                            setToken(tokenSymbol)
-                            setTokenSearchQuery("")
-                            setShowTokenList(false)
-                            Keyboard.dismiss()
-                          }}
-                          activeOpacity={0.5}
-                        >
-                          <Text style={{ fontSize: 17, marginRight: 12 }}>🪙</Text>
-                          <Text
-                            style={{
-                              flex: 1,
-                              fontSize: 17,
-                              fontWeight: isSelected ? '600' : '400',
-                              color: isSelected ? colors.primary : colors.text,
-                              letterSpacing: 0.3,
-                            }}
-                          >
-                            {tokenSymbol}
-                          </Text>
-                          {isSelected && (
-                            <Text style={{ color: colors.primary, fontSize: 18, fontWeight: '600' }}>✓</Text>
-                          )}
-                        </TouchableOpacity>
-                      )
-                    }}
-                    ItemSeparatorComponent={() => (
-                      <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: 0.4 }} />
-                    )}
-                    ListEmptyComponent={
-                      <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center' }}>
-                          {tokenSearchQuery
-                            ? t('strategy.noTokenFound').replace('{query}', tokenSearchQuery)
-                            : t('strategy.noTokenAvailable')
-                          }
-                        </Text>
-                      </View>
-                    }
-                    initialNumToRender={30}
-                    maxToRenderPerBatch={30}
-                    windowSize={7}
-                    getItemLayout={(_, index) => ({
-                      length: 49,
-                      offset: 49 * index,
-                      index,
-                    })}
-                  />
-                </View>
-              )}
-            </View>
-          ) : (
-          <ScrollView 
-            style={styles.content}
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={true}
-          >
-            {/* Step 1: Template Selection - da API */}
-            {step === 1 && (
-              <View style={styles.stepContent}>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>
-                  {t("strategy.chooseTemplate")}
-                </Text>
-                <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                  {t("strategy.selectTemplate")}
-                </Text>
-
-                {loadingTemplates ? (
-                  <View style={styles.loadingContainer}>
-                    <AnimatedLogoIcon size={48} />
-                  </View>
-                ) : (
-                  <View style={styles.templatesList}>
-                    {apiTemplates.map((tpl) => (
-                      <TouchableOpacity
-                        key={tpl.id}
-                        style={[
-                          styles.templateCard,
-                          { backgroundColor: colors.background, borderColor: colors.border },
-                          selectedTemplate === tpl.id && {
-                            borderColor: colors.primary,
-                            borderWidth: 2,
-                          },
-                        ]}
-                        onPress={() => setSelectedTemplate(tpl.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.templateIcon}>{tpl.icon}</Text>
-                        <Text style={[styles.templateName, { color: colors.text }]}>
-                          {tpl.name}
-                        </Text>
-                        <Text style={[styles.templateDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                          {tpl.summary || tpl.strategy_type}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-
-                    {/* Botão: Criar novo template → navega para StrategyTemplates */}
-                    <TouchableOpacity
-                      style={[
-                        styles.templateCard,
-                        {
-                          backgroundColor: 'transparent',
-                          borderColor: colors.primary,
-                          borderWidth: 1.5,
-                          borderStyle: 'dashed' as any,
-                        },
-                      ]}
-                      onPress={() => {
-                        onClose()
-                        setTimeout(() => {
-                          navigation?.navigate("StrategyTemplates")
-                        }, 300)
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.templateIcon}>➕</Text>
-                      <Text style={[styles.templateName, { color: colors.primary }]}>
-                        {t('strategy.newTemplate')}
-                      </Text>
-                      <Text style={[styles.templateDescription, { color: colors.textSecondary }]}>
-                        {t('strategy.customTemplate')}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            )}
-            {/* Step 2: Exchange Selection */}
-            {step === 2 && (
-              <View style={styles.stepContent}>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>
-                  {t("strategy.chooseExchange")}
-                </Text>
-                <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                  {t("strategy.selectExchangeDesc")}
-                </Text>
-                {loadingExchanges ? (
-                  <View style={styles.loadingContainer}>
-                    <AnimatedLogoIcon size={48} />
-                  </View>
-                ) : exchanges.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <Text style={styles.emptyIcon}>📭</Text>
-                    <Text style={[styles.emptyText, { color: colors.text }]}>
-                      {t('strategy.noExchanges')}
-                    </Text>
-                    <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
-                      {t('strategy.connectExchange')}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.exchangesList}>
-                    {exchanges.map((exchange) => {
-                      // Use exchange_id and exchangeType (CCXT ID)
-                      const exchangeId = exchange.exchange_id || exchange._id || ""
-                      const exchangeType = exchange.exchange_type || exchange.ccxt_id || ""
-                      return (
-                        <TouchableOpacity
-                          key={exchangeId}
-                          style={[
-                            styles.exchangeCard,
-                            { backgroundColor: colors.background, borderColor: colors.border },
-                            selectedExchange === exchangeId && {
-                              borderColor: colors.primary,
-                              borderWidth: 2,
-                            },
-                          ]}
-                          onPress={() => {
-                            setSelectedExchange(exchangeId)
-                            setSelectedExchangeType(exchangeType)  // Guardar o CCXT ID
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={[styles.exchangeName, { color: colors.text }]}>
-                            {capitalizeExchangeName(exchange.name)}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.exchangeStatus,
-                              {
-                                color: "#10b981",
-                              },
-                            ]}
-                          >
-                            ● {t('strategy.connected')}
-                          </Text>
-                        </TouchableOpacity>
-                      )
-                    })}
-                  </View>
-                )}
-              </View>
-            )}
-          </ScrollView>
-          )}
-          {/* Footer - esconde quando teclado aberto no step 3 */}
-          {!(step === 3 && keyboardVisible) && (
-          <View style={[styles.footer, { borderTopColor: colors.border }]}>
-            {step > 1 && (
-              <TouchableOpacity
-                style={[styles.button, styles.buttonSecondary, { borderColor: colors.border }]}
-                onPress={() => setStep((prev) => (prev - 1) as 1 | 2 | 3)}
-                disabled={loading}
-              >
-                <Text style={[styles.buttonText, { color: colors.text }]}>{t("common.back")}</Text>
-              </TouchableOpacity>
-            )}
-            {step < 3 ? (
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.buttonPrimary,
-                  { backgroundColor: colors.primary },
-                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3)
-                    ? { opacity: 0.5 }
-                    : {},
-                ]}
-                onPress={() => {
-                  const nextStep = (step + 1) as 1 | 2 | 3
-                  setStep(nextStep)
-                }}
-                disabled={
-                  (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3)
-                }
-              >
-                <Text style={styles.buttonTextPrimary}>{step === 3 ? t("common.create") : t("common.next")}</Text>
-              </TouchableOpacity>
+            {step === 1 ? (
+              <ScrollView style={styles.content} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20, flexGrow: 1 }}>
+                {renderStep1()}
+              </ScrollView>
+            ) : step === 2 ? (
+              renderStep2()
             ) : (
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.buttonPrimary,
-                  { backgroundColor: colors.primary },
-                  !canCreate || loading ? { opacity: 0.5 } : {},
-                ]}
-                onPress={handleCreateStrategy}
-                disabled={!canCreate || loading}
-              >
-                {loading ? (
-                  <AnimatedLogoIcon size={24} />
-                ) : (
-                  <Text style={styles.buttonTextPrimary}>{t('strategy.createNew')}</Text>
+              renderStep3()
+            )}
+
+            {!(step >= 2 && keyboardVisible) && (
+              <View style={[styles.footer, { borderTopColor: colors.border }]}>
+                {step > 1 && (
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonSecondary, { borderColor: colors.border }]}
+                    onPress={() => setStep((prev) => (prev - 1) as 1 | 2 | 3)}
+                    disabled={loading}
+                  >
+                    <Text style={[styles.buttonText, { color: colors.text }]}>{t("common.back")}</Text>
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
+                {step < 3 ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.button, styles.buttonPrimary, { backgroundColor: colors.primary },
+                      (step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3) ? { opacity: 0.5 } : {},
+                    ]}
+                    onPress={() => setStep((prev) => (prev + 1) as 1 | 2 | 3)}
+                    disabled={(step === 1 && !canProceedToStep2) || (step === 2 && !canProceedToStep3)}
+                  >
+                    <Text style={styles.buttonTextPrimary}>{t("common.next")}</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.button, styles.buttonPrimary, { backgroundColor: colors.primary },
+                      !canCreate || loading ? { opacity: 0.5 } : {},
+                    ]}
+                    onPress={handleCreateStrategy}
+                    disabled={!canCreate || loading}
+                  >
+                    {loading ? <AnimatedLogoIcon size={24} /> : (
+                      <Text style={styles.buttonTextPrimary}>{t('strategy.createNew')}</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
           </View>
-          )}
-        </View>
         </SafeAreaView>
       </KeyboardAvoidingView>
     </Modal>
@@ -956,554 +795,37 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  safeArea: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-  },
-  modalContainer: {
-    borderRadius: 20,
-    width: "90%",
-    maxHeight: "85%",
-    height: "85%",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-  },
-  title: {
-    fontSize: typography.h2,
-    fontWeight: fontWeights.medium,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  closeIcon: {
-    fontSize: typography.h1,
-    fontWeight: fontWeights.light,
-  },
-  stepsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-  },
-  stepItem: {
-    alignItems: "center",
-  },
-  stepCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 6,
-  },
-  stepNumber: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.medium,
-  },
-  stepLabel: {
-    fontSize: typography.tiny,
-    fontWeight: fontWeights.light,
-  },
-  stepLine: {
-    width: 40,
-    height: 2,
-    marginHorizontal: 8,
-    marginBottom: 22,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-    flexGrow: 1,
-  },
-  stepContent: {
-    paddingBottom: 20,
-  },
-  stepTitle: {
-    fontSize: typography.h3,
-    fontWeight: fontWeights.medium,
-    marginBottom: 8,
-  },
-  stepDescription: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.light,
-    marginBottom: 24,
-  },
-  templatesList: {
-    gap: 12,
-    paddingBottom: 12,
-  },
-  templateCard: {
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  templateIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  templateName: {
-    fontSize: typography.h4,
-    fontWeight: fontWeights.medium,
-    marginBottom: 4,
-  },
-  templateDescription: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.light,
-    textAlign: "center",
-  },
-  loadingContainer: {
-    paddingVertical: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: typography.h4,
-    fontWeight: fontWeights.regular,
-    marginBottom: 6,
-  },
-  emptyDescription: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.light,
-    textAlign: "center",
-  },
-  exchangesList: {
-    gap: 12,
-  },
-  exchangeCard: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  exchangeName: {
-    fontSize: typography.h4,
-    fontWeight: fontWeights.regular,
-    marginBottom: 6,
-  },
-  exchangeStatus: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.light,
-  },
-  summaryCard: {
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
-    marginBottom: 20,
-    gap: 8,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  summaryLabel: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.light,
-  },
-  summaryValue: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.medium,
-  },
-  input: {
-    borderWidth: 0.5,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: typography.h4,
-    fontWeight: fontWeights.regular,
-  },
-  loadingText: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.light,
-    marginTop: 12,
-    textAlign: "center",
-  },
-  tokenInputContainer: {
-    marginBottom: 16,
-  },
-  searchContainer: {
-    marginBottom: 8,
-  },
-  searchInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingRight: 4,
-  },
-  searchInputText: {
-    flex: 1,
-    padding: 12,
-    fontSize: typography.h4,
-    fontWeight: fontWeights.regular,
-  },
-  searchIconButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 6,
-  },
-  searchIcon: {
-    fontSize: typography.h3,
-  },
-  searchInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    fontWeight: "400",
-  },
-  searchButton: {
-    width: 50,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchButtonText: {
-    fontSize: 20,
-  },
-  suggestionsDropdown: {
-    marginTop: 4,
-    borderWidth: 1,
-    borderRadius: 8,
-    maxHeight: 200,
-    overflow: 'hidden',
-  },
-  suggestionsScrollView: {
-    maxHeight: 200,
-  },
-  suggestionItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 0.5,
-  },
-  suggestionText: {
-    fontSize: 15,
-    fontWeight: "400",
-  },
-  tokenInfoCard: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 8,
-  },
-  tokenInfoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  tokenInfoTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  tokenInfoClose: {
-    fontSize: 18,
-    fontWeight: '300',
-    paddingHorizontal: 4,
-  },
-  tokenInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  tokenInfoLabel: {
-    fontSize: 13,
-    fontWeight: '300',
-  },
-  tokenInfoValue: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  inputHint: {
-    fontSize: 12,
-    fontWeight: '300',
-    marginTop: 6,
-    fontStyle: 'italic',
-  },
-  toggleListButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  toggleListText: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  tokenCount: {
-    fontSize: 12,
-    fontWeight: '300',
-  },
-  noResultsCard: {
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  tokensListContainer: {
-    flex: 1,
-  },
-  tokensScrollView: {
-    maxHeight: 200,
-    borderWidth: 1,
-    borderRadius: 8,
-  },
-  tokenListItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 0.5,
-  },
-  tokenListItemText: {
-    fontSize: 15,
-    fontWeight: "300",
-  },
-  noResultsContainer: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    alignItems: "center",
-  },
-  noResultsText: {
-    fontSize: 14,
-    fontWeight: '300',
-    marginBottom: 8,
-  },
-  noResultsHint: {
-    fontSize: 13,
-    fontWeight: "400",
-  },
-  selectWrapper: {
-    borderWidth: 0.5,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  pickerWrapper: {
-    borderWidth: 0.5,
-    borderRadius: 12,
-    overflow: "hidden",
-    paddingHorizontal: 4,
-    paddingVertical: 0,
-  },
-  picker: {
-    height: Platform.OS === "ios" ? 180 : 50,
-    width: "100%",
-    fontSize: 16,
-  },
-  customInputContainer: {
-    gap: 12,
-    marginBottom: 8,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "400",
-    marginBottom: 8,
-    letterSpacing: -0.2,
-  },
-  // ── Step 3 Token Selection (redesigned) ──
-  selectedTokenCard: {
-    borderWidth: 1.5,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
-  },
-  selectedTokenCardContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  selectedTokenIcon: {
-    fontSize: 28,
-  },
-  selectedTokenCardTitle: {
-    fontSize: typography.h3,
-    fontWeight: fontWeights.medium,
-  },
-  selectedTokenCardSub: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.light,
-    marginTop: 2,
-  },
-  tokenSearchRow: {
-    marginBottom: 8,
-  },
-  tokenSearchInputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderRadius: 14,
-    height: 50,
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  tokenSearchIcon: {
-    fontSize: 16,
-  },
-  tokenSearchField: {
-    flex: 1,
-    fontSize: typography.body,
-    fontWeight: fontWeights.regular,
-    paddingVertical: 0,
-  },
-  tokenSearchClear: {
-    width: 28,
-    height: 28,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tokenCountRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-    paddingHorizontal: 4,
-  },
-  tokenCountText: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.light,
-  },
-  tokenDismissText: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.medium,
-  },
-  tokenFlatList: {
-    borderWidth: 1,
-    borderRadius: 14,
-    maxHeight: 320,
-    flexGrow: 0,
-  },
-  tokenFlatListItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    borderBottomWidth: 0.5,
-    gap: 10,
-  },
-  tokenFlatListIcon: {
-    fontSize: 18,
-  },
-  tokenFlatListText: {
-    flex: 1,
-    fontSize: typography.body,
-  },
-  tokenEmptyList: {
-    paddingVertical: 32,
-    alignItems: "center",
-  },
-  tokenEmptyText: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.light,
-    textAlign: "center",
-  },
-  footer: {
-    flexDirection: "row",
-    gap: 12,
-    padding: 20,
-    borderTopWidth: 1,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 24,       // Adiciona padding horizontal padrão
-    borderRadius: 12,            // 8→12 (padrão primary button)
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,               // Adiciona minHeight padrão
-  },
-  buttonSecondary: {
-    borderWidth: 1,
-  },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
+  safeArea: { width: "100%", alignItems: "center", justifyContent: "center", flex: 1 },
+  modalContainer: { borderRadius: 20, width: "90%", maxHeight: "85%", height: "85%" },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
+  title: { fontSize: typography.h2, fontWeight: fontWeights.medium },
+  closeButton: { padding: 4 },
+  closeIcon: { fontSize: typography.h1, fontWeight: fontWeights.light },
+  stepsContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 20, paddingHorizontal: 20 },
+  stepItem: { alignItems: "center" },
+  stepCircle: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 6 },
+  stepNumber: { fontSize: typography.body, fontWeight: fontWeights.medium },
+  stepLabel: { fontSize: typography.tiny, fontWeight: fontWeights.light },
+  stepLine: { width: 50, height: 2, marginHorizontal: 10, marginBottom: 22 },
+  content: { flex: 1 },
+  stepContent: { paddingBottom: 20 },
+  stepTitle: { fontSize: typography.h3, fontWeight: fontWeights.medium, marginBottom: 8 },
+  stepDescription: { fontSize: typography.body, fontWeight: fontWeights.light, marginBottom: 24 },
+  loadingContainer: { paddingVertical: 40, alignItems: "center", justifyContent: "center", gap: 16 },
+  emptyState: { alignItems: "center", paddingVertical: 40, gap: 6 },
+  card: { padding: 16, borderRadius: 12, borderWidth: 1 },
+  searchInputWrapper: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: 14, height: 50, paddingHorizontal: 14, gap: 10 },
+  fieldGroup: { marginBottom: 20 },
+  fieldCard: { marginBottom: 20, borderWidth: 1, borderRadius: 14, padding: 16 },
+  fieldLabel: { fontSize: 15, fontWeight: '600', marginBottom: 8 },
+  fieldInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18, fontWeight: '600' },
+  fieldHint: { fontSize: 12, marginTop: 6, fontStyle: 'italic' },
+  summaryCard: { padding: 14, borderRadius: 12, borderWidth: 0.5, marginTop: 8 },
+  footer: { flexDirection: "row", gap: 12, padding: 20, borderTopWidth: 1 },
+  button: { flex: 1, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", minHeight: 48 },
+  buttonSecondary: { borderWidth: 1 },
   buttonPrimary: {},
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "400",
-  },
-  buttonTextPrimary: {
-    color: "#1a1a1a",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  tokenSearchInput: {
-    height: 48,
-    borderWidth: 0.5,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-  },
-  dropdown: {
-    position: "absolute",
-    top: 52,
-    left: 0,
-    right: 0,
-    borderWidth: 1,
-    borderRadius: 12,
-    zIndex: 1000,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(0,0,0,0.05)",
-  },
-  dropdownItemText: {
-    fontSize: 15,
-    fontWeight: "400",
-  },
-  clearButton: {
-    position: "absolute",
-    right: 12,
-    top: 12,
-    width: 24,
-    height: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  selectedTokenBadge: {
-    padding: 8,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  selectedTokenText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
+  buttonText: { fontSize: 14, fontWeight: "400" },
+  buttonTextPrimary: { color: "#1a1a1a", fontSize: 14, fontWeight: "500" },
 })

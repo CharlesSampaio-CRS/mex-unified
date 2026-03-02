@@ -11,7 +11,7 @@ import { useTheme } from "@/contexts/ThemeContext"
 import { useWatchlist } from "@/contexts/WatchlistContext"
 import { useAlerts } from "@/contexts/AlertsContext"
 import { useNotifications } from "@/contexts/NotificationsContext"
-import { Header } from "./Header"
+import { useHeader } from "@/contexts/HeaderContext"
 import { TabBar } from "./TabBar"
 import { NotificationsModal } from "./NotificationsModal"
 import { AlertsList } from "@/components/price-alerts-list"
@@ -50,15 +50,16 @@ export function WatchlistManager() {
     setActiveTab(index === 0 ? 'favorites' : 'alerts')
   }, [])
 
+  // Define o Header global para esta tela
+  useHeader({
+    title: headerTitle,
+    subtitle: headerSubtitle,
+    onNotificationsPress,
+    unreadCount,
+  })
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-        title={headerTitle}
-        subtitle={headerSubtitle}
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* TabBar padronizado */}
       <TabBar 
         tabs={tabs}
@@ -80,7 +81,7 @@ export function WatchlistManager() {
         visible={notificationsModalVisible}
         onClose={() => setNotificationsModalVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   )
 }
 

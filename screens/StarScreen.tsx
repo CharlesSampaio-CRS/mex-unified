@@ -1,19 +1,16 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native"
+import { View, Text, StyleSheet, ScrollView } from "react-native"
 import { memo } from "react"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
 
 export const StarScreen = memo(function StarScreen({ navigation }: any) {
   const { colors } = useTheme()
 
+  useHeader({ title: 'Star', subtitle: 'Seus favoritos e destaques' })
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Star"
-        subtitle="Seus favoritos e destaques"
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.content}>
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>⭐ Star Feature</Text>
@@ -30,7 +27,7 @@ export const StarScreen = memo(function StarScreen({ navigation }: any) {
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Rankings personalizados</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   )
 })
 

@@ -1,6 +1,7 @@
-import { Text, StyleSheet, ScrollView, View, TouchableOpacity, Modal, Pressable, RefreshControl, KeyboardAvoidingView, Platform } from "react-native"
+import { Text, StyleSheet, ScrollView, View, TouchableOpacity, Modal, RefreshControl, KeyboardAvoidingView, Platform, TextInput } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { Ionicons } from "@expo/vector-icons"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useAuth } from "../contexts/AuthContext"
@@ -9,11 +10,10 @@ import { useBackendStrategies, Strategy, StrategyStatus } from "../hooks/useBack
 import { notify } from "../services/notify"
 import { CreateStrategyModal } from "../components/create-strategy-modal"
 import { StrategyDetailsModal } from "@/components/StrategyDetailsModal"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { NotificationsModal } from "../components/NotificationsModal"
-import { LogoIcon } from "../components/LogoIcon"
 import { typography, fontWeights } from "../lib/typography"
-import { commonStyles, spacing, borderRadius, shadows } from "@/lib/layout"
+import { commonStyles } from "@/lib/layout"
 
 /**
  * 🤖 Strategy Screen - MongoDB Backend
@@ -24,8 +24,8 @@ import { commonStyles, spacing, borderRadius, shadows } from "@/lib/layout"
  */
 
 export function StrategyScreen({ navigation, route }: any) {
-  const { colors, isDark } = useTheme()
-  const { t, language } = useLanguage()
+  const { colors } = useTheme()
+  const { t } = useLanguage()
   const { user } = useAuth()
   const { unreadCount, addNotification } = useNotifications()
   const { 
@@ -40,6 +40,8 @@ export function StrategyScreen({ navigation, route }: any) {
   } = useBackendStrategies(true) // Auto-load
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
+  const [search, setSearch] = useState('')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'paused'>('all')
 
   // Abre modal de criação se vier da tela de templates
   useEffect(() => {
@@ -64,24 +66,6 @@ export function StrategyScreen({ navigation, route }: any) {
   // Modal de detalhes da estratégia
   const [detailsModalVisible, setDetailsModalVisible] = useState(false)
   const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null)
-
-  // Themed toggle styles
-  const themedToggleStyles = useMemo(() => ({
-    toggle: { 
-      backgroundColor: isDark ? 'rgba(60, 60, 60, 0.4)' : 'rgba(220, 220, 220, 0.5)',
-      borderColor: isDark ? 'rgba(80, 80, 80, 0.3)' : 'rgba(200, 200, 200, 0.4)',
-    },
-    toggleActive: { 
-      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.4)' : 'rgba(59, 130, 246, 0.5)',
-      borderColor: isDark ? 'rgba(59, 130, 246, 0.6)' : 'rgba(59, 130, 246, 0.7)',
-    },
-    toggleThumb: { 
-      backgroundColor: isDark ? 'rgba(140, 140, 140, 0.9)' : 'rgba(120, 120, 120, 0.85)',
-    },
-    toggleThumbActive: { 
-      backgroundColor: isDark ? 'rgba(96, 165, 250, 1)' : 'rgba(59, 130, 246, 1)',
-    },
-  }), [isDark])
 
   const toggleStrategyHandler = useCallback((id: string) => {
     const strategyToToggle = strategies.find(s => s.id === id)
@@ -187,13 +171,6 @@ export function StrategyScreen({ navigation, route }: any) {
     }).format(value)}`;
   }, [])
 
-  const formatCurrencyAbs = useCallback((value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
-  }, [])
-
   const getStatusLabel = useCallback((status: StrategyStatus): string => {
     const labels: Record<StrategyStatus, string> = {
       idle: t('strategy.statusIdle') || 'Idle',
@@ -221,42 +198,34 @@ export function StrategyScreen({ navigation, route }: any) {
     }
   }, [])
 
-  const formatDate = useCallback((date: Date) => {
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date)
-  }, [])
-
-  const formatNextCheck = useCallback((nextCheck: Date) => {
-    const now = new Date()
-    const diffMs = nextCheck.getTime() - now.getTime()
-    const diffMinutes = Math.floor(diffMs / 60000)
-    
-    if (diffMinutes < 0) {
-      return t('strategy.soon')
-    } else if (diffMinutes === 0) {
-      return t('strategy.now')
-    } else if (diffMinutes === 1) {
-      return t('strategy.inOneMinute')
-    } else if (diffMinutes < 60) {
-      return `${t('strategy.in')} ${diffMinutes} ${t('strategy.minutes')}`
-    } else {
-      // Show time if more than 1 hour (timezone-aware)
-      return new Intl.DateTimeFormat(language === 'pt-BR' ? 'pt-BR' : 'en-US', {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "America/Sao_Paulo", // Força timezone do Brasil
-      }).format(nextCheck)
-    }
-  }, [t, language])
-
   // Memoize computed values to avoid recalculation on every render
   const strategiesCount = useMemo(() => strategies.length, [strategies.length])
   const hasStrategies = useMemo(() => strategiesCount > 0, [strategiesCount])
+
+  // Filtered strategies based on search + filter
+  const filteredStrategies = useMemo(() => {
+    let result = strategies
+
+    // Filter by active/paused
+    if (activeFilter === 'active') {
+      result = result.filter(s => s.is_active)
+    } else if (activeFilter === 'paused') {
+      result = result.filter(s => !s.is_active)
+    }
+
+    // Filter by search
+    if (search.trim()) {
+      const q = search.toLowerCase().trim()
+      result = result.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        s.symbol.toLowerCase().includes(q) ||
+        s.exchange_name.toLowerCase().includes(q) ||
+        ((s as any).strategy_type || '').toLowerCase().includes(q)
+      )
+    }
+
+    return result
+  }, [strategies, activeFilter, search])
 
   // 🔄 Refresh - atualiza estratégias do MongoDB
   const handleRefresh = useCallback(async () => {
@@ -272,16 +241,118 @@ export function StrategyScreen({ navigation, route }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
+  // Define o Header global para esta tela
+  useHeader({
+    title: t('strategy.title'),
+    subtitle: `${strategiesCount} ${strategiesCount === 1 ? t('strategy.strategy') : t('strategy.strategies')}`,
+    onNotificationsPress,
+    unreadCount,
+  })
+
+  // Helper: get strategy type icon
+  const getTypeIcon = useCallback((type: string): string => {
+    switch (type?.toLowerCase()) {
+      case 'dca': return 'repeat-outline'
+      case 'grid': return 'grid-outline'
+      case 'scalping': return 'flash-outline'
+      default: return 'analytics-outline'
+    }
+  }, [])
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header padronizado com título customizado */}
-      <Header 
-        title={t('strategy.title')}
-        subtitle={`${strategiesCount} ${strategiesCount === 1 ? t('strategy.strategy') : t('strategy.strategies')}`}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Filters */}
+      <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        {/* Search */}
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Buscar estratégia..."
+            placeholderTextColor={colors.textTertiary}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Ionicons name="close-circle-outline" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Filter Chips */}
+        <View style={styles.typeFilterRow}>
+          <TouchableOpacity
+            style={[
+              styles.typeFilterChip,
+              {
+                backgroundColor: activeFilter === 'all' ? colors.primary : colors.surface,
+                borderColor: activeFilter === 'all' ? colors.primary : colors.border,
+              }
+            ]}
+            onPress={() => setActiveFilter('all')}
+          >
+            <Text style={[
+              styles.typeFilterText,
+              { color: activeFilter === 'all' ? colors.background : colors.text }
+            ]}>
+              Todas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.typeFilterChip,
+              {
+                backgroundColor: activeFilter === 'active' ? colors.success : colors.surface,
+                borderColor: activeFilter === 'active' ? colors.success : colors.border,
+              }
+            ]}
+            onPress={() => setActiveFilter('active')}
+          >
+            <Text style={[
+              styles.typeFilterText,
+              { color: activeFilter === 'active' ? colors.background : colors.text }
+            ]}>
+              Ativas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.typeFilterChip,
+              {
+                backgroundColor: activeFilter === 'paused' ? '#6b7280' : colors.surface,
+                borderColor: activeFilter === 'paused' ? '#6b7280' : colors.border,
+              }
+            ]}
+            onPress={() => setActiveFilter('paused')}
+          >
+            <Text style={[
+              styles.typeFilterText,
+              { color: activeFilter === 'paused' ? colors.background : colors.text }
+            ]}>
+              Pausadas
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Results Count + New Button */}
+        <View style={styles.filterFooter}>
+          <Text style={[styles.resultsCount, { color: colors.textTertiary }]}>
+            {filteredStrategies.length} {filteredStrategies.length === 1 ? 'estratégia' : 'estratégias'}
+          </Text>
+          <TouchableOpacity
+            style={[styles.newStrategyButton, { borderColor: colors.primary }]}
+            onPress={handleNewStrategy}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-outline" size={14} color={colors.primary} />
+            <Text style={[styles.newStrategyText, { color: colors.primary }]}>Nova</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -295,208 +366,150 @@ export function StrategyScreen({ navigation, route }: any) {
           />
         }
       >
-        {strategies.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('strategy.empty')}</Text>
-              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-                {t('strategy.emptyDesc')}
-              </Text>
-              <TouchableOpacity
-                style={[styles.createButton, { backgroundColor: 'transparent', borderColor: '#3b82f6' }]}
-                onPress={handleNewStrategy}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.createButtonText}>{t('strategy.new')}</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              {/* Botão "Nova" no topo quando há estratégias */}
-              <View style={styles.actionButtonInline}>
-                <TouchableOpacity
-                  style={[styles.newButton, { backgroundColor: 'transparent', borderColor: '#3b82f6' }]}
-                  onPress={handleNewStrategy}
-                  activeOpacity={0.8}
+        {filteredStrategies.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="analytics-outline" size={40} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {strategies.length === 0 ? t('strategy.empty') : 'Nenhuma estratégia encontrada'}
+            </Text>
+            <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+              {strategies.length === 0 ? t('strategy.emptyDesc') : 'Tente ajustar sua busca ou filtros'}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.strategiesList}>
+            {filteredStrategies.map((strategy) => {
+              const strategyType = (strategy as any).strategy_type || 'Custom'
+              const statusColor = getStatusColor(strategy.status)
+              const isPnlPositive = strategy.total_pnl_usd >= 0
+              const hasError = !!strategy.error_message
+
+              return (
+                <View
+                  key={strategy.id}
+                  style={[
+                    styles.compactCard,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: hasError ? 'rgba(239, 68, 68, 0.3)' : colors.border,
+                    }
+                  ]}
                 >
-                  <Text style={styles.newButtonText}>{t('strategy.new')}</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.strategiesList}>
-            {strategies.map((strategy) => (
-              <View
-                key={strategy.id}
-                style={[styles.strategyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              >
-                {/* Header do card - nome e badge de status clicável */}
-                <View style={styles.strategyHeader}>
-                  <View style={styles.strategyHeaderLeft}>
-                    <Text style={[styles.strategyName, { color: colors.text }]}>
-                      {strategy.name}
-                    </Text>
-                    <View style={[styles.typeBadge, { backgroundColor: colors.surfaceSecondary }]}>
-                      <Text style={[styles.typeText, { color: colors.primary }]}>
-                        {strategy.strategy_type}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  {/* Badge de status operacional (Fase 5) */}
                   <TouchableOpacity
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: `${getStatusColor(strategy.status)}15` }
-                    ]}
-                    onPress={() => toggleStrategyHandler(strategy.id)}
+                    style={{ flex: 1 }}
                     activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.statusText,
-                      { color: getStatusColor(strategy.status) }
-                    ]}>
-                      {getStatusLabel(strategy.status)}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Detalhes (dados reais Fase 5) */}
-                <View style={styles.strategyDetails}>
-                  <View style={styles.detailRow}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      {t('strategy.exchange')}:
-                    </Text>
-                    <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {strategy.exchange_name}
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.detailRow}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      {t('strategy.token')}:
-                    </Text>
-                    <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {strategy.symbol}
-                    </Text>
-                  </View>
-                  
-                  {strategy.last_price != null && strategy.last_price > 0 && (
-                    <View style={styles.detailRow}>
-                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                        {t('strategy.lastPrice') || 'Last Price'}:
-                      </Text>
-                      <Text style={[styles.detailValue, { color: colors.text }]}>
-                        {formatCurrencyAbs(strategy.last_price)}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.detailRow}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      {t('strategy.totalTrades') || 'Total Trades'}:
-                    </Text>
-                    <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {strategy.total_executions}
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.detailRow}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      {t('strategy.profitLoss') || 'P&L'}:
-                    </Text>
-                    <Text style={[
-                      styles.detailValue, 
-                      { color: strategy.total_pnl_usd >= 0 ? colors.success : colors.danger }
-                    ]}>
-                      {formatCurrency(strategy.total_pnl_usd)}
-                    </Text>
-                  </View>
-
-                  {strategy.position && (
-                    <View style={styles.detailRow}>
-                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                        {t('strategy.unrealizedPnl') || 'Unrealized P&L'}:
-                      </Text>
-                      <Text style={[
-                        styles.detailValue, 
-                        { color: strategy.position.unrealized_pnl >= 0 ? colors.success : colors.danger }
-                      ]}>
-                        {formatCurrency(strategy.position.unrealized_pnl)} ({strategy.position.unrealized_pnl_percent >= 0 ? '+' : ''}{strategy.position.unrealized_pnl_percent.toFixed(2)}%)
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Error message compacto (se houver) */}
-                {strategy.error_message && (
-                  <TouchableOpacity
-                    style={{
-                      marginTop: 8,
-                      padding: 10,
-                      backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: 'rgba(239, 68, 68, 0.2)',
-                    }}
                     onPress={() => {
                       setSelectedStrategyId(strategy.id)
                       setDetailsModalVisible(true)
                     }}
-                    activeOpacity={0.7}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 12 }}>⚠️</Text>
-                      <Text style={{ fontSize: 11, color: '#ef4444', flex: 1 }} numberOfLines={2}>
-                        {strategy.error_message}
-                      </Text>
-                      <Text style={{ fontSize: 10, color: colors.textSecondary }}>▶</Text>
+                    {/* Compact Row */}
+                    <View style={styles.cardRow}>
+                      {/* Left: Icon + Info */}
+                      <View style={styles.cardLeft}>
+                        <View style={[
+                          styles.typeIcon,
+                          { backgroundColor: `${statusColor}18` }
+                        ]}>
+                          <Ionicons
+                            name={getTypeIcon(strategyType) as any}
+                            size={16}
+                            color={statusColor}
+                          />
+                        </View>
+                        <View style={styles.cardInfo}>
+                          <View style={styles.cardInfoTop}>
+                            <Text style={[styles.cardSymbol, { color: colors.text }]} numberOfLines={1}>
+                              {strategy.name}
+                            </Text>
+                            <View style={[
+                              styles.sideBadge,
+                              { backgroundColor: `${statusColor}18` }
+                            ]}>
+                              <Text style={[styles.sideBadgeText, { color: statusColor }]}>
+                                {strategyType.toUpperCase()}
+                              </Text>
+                            </View>
+                            {hasError && (
+                              <Ionicons name="warning-outline" size={12} color="#ef4444" />
+                            )}
+                          </View>
+                          <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                            {strategy.exchange_name} • {strategy.symbol}
+                            {strategy.total_executions > 0 ? ` • ${strategy.total_executions} exec` : ''}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Right: PnL + Status */}
+                      <View style={styles.cardRight}>
+                        <Text
+                          style={[
+                            styles.cardValue,
+                            { color: isPnlPositive ? colors.success : colors.danger }
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {formatCurrency(strategy.total_pnl_usd)}
+                        </Text>
+                        <Text style={[styles.cardStatusText, { color: statusColor }]} numberOfLines={1}>
+                          {getStatusLabel(strategy.status)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Footer Actions */}
+                    <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
+                      <TouchableOpacity
+                        style={styles.cardActionButton}
+                        onPress={() => {
+                          setSelectedStrategyId(strategy.id)
+                          setDetailsModalVisible(true)
+                        }}
+                      >
+                        <Ionicons name="eye-outline" size={14} color={colors.primary} />
+                        <Text style={[styles.cardActionText, { color: colors.primary }]}>
+                          Detalhes
+                        </Text>
+                      </TouchableOpacity>
+
+                      <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
+
+                      <TouchableOpacity
+                        style={styles.cardActionButton}
+                        onPress={() => toggleStrategyHandler(strategy.id)}
+                      >
+                        <Ionicons
+                          name={strategy.is_active ? 'pause-outline' : 'play-outline'}
+                          size={14}
+                          color={strategy.is_active ? '#f59e0b' : colors.success}
+                        />
+                        <Text style={[
+                          styles.cardActionText,
+                          { color: strategy.is_active ? '#f59e0b' : colors.success }
+                        ]}>
+                          {strategy.is_active ? 'Pausar' : 'Ativar'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
+
+                      <TouchableOpacity
+                        style={styles.cardActionButton}
+                        onPress={() => deleteStrategyHandler(strategy.id, strategy.name)}
+                      >
+                        <Ionicons name="trash-outline" size={14} color={colors.danger} />
+                        <Text style={[styles.cardActionText, { color: colors.danger }]}>
+                          Excluir
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
-                )}
-
-                {/* Botões de ação */}
-                <View style={styles.actionButtons}>
-                  {/* Botão Ver Detalhes */}
-                  <TouchableOpacity
-                    style={[
-                      styles.detailsButton,
-                      { backgroundColor: colors.surface, borderColor: colors.border }
-                    ]}
-                    onPress={() => {
-                      setSelectedStrategyId(strategy.id)
-                      setDetailsModalVisible(true)
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.detailsButtonText, { color: colors.primary }]}>
-                      {t('strategy.viewDetails')}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* Botão Deletar */}
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      { 
-                        backgroundColor: 'transparent', 
-                        borderColor: colors.danger 
-                      }
-                    ]}
-                    onPress={() => deleteStrategyHandler(strategy.id, strategy.name)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.actionButtonText, 
-                      { color: colors.danger }
-                    ]}>
-                      {t('strategy.delete')}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
-              </View>
-            ))}
-              </View>
-            </>
-          )}
+              )
+            })}
+          </View>
+        )}
       </ScrollView>
 
       {/* Toggle Confirmation Modal */}
@@ -620,401 +633,249 @@ export function StrategyScreen({ navigation, route }: any) {
         visible={notificationsModalVisible}
         onClose={() => setNotificationsModalVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: commonStyles.screenContainer,
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: spacing.headerPaddingH,
-    paddingVertical: spacing.headerPaddingV,
+  // Filters
+  filtersContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
   },
-  titleSection: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: spacing.titleSectionPaddingH,
-    paddingTop: spacing.titleSectionPaddingTop,
-    paddingBottom: spacing.titleSectionPaddingBottom,
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: 12,
   },
-  titleContent: {
-    flexDirection: "column",
+  searchInput: {
+    flex: 1,
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
+    paddingVertical: 0,
   },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+  typeFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
   },
-  headerText: {
-    flexDirection: "column",
+  typeFilterChip: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
   },
-  title: {
-    fontSize: typography.h3,
-    fontWeight: fontWeights.light,
-    letterSpacing: -0.2,
+  typeFilterText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
   },
-  subtitle: {
-    fontSize: typography.caption,
-    marginTop: 2,
-    fontWeight: fontWeights.light,
+  filterFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  actionButtonContainer: commonStyles.actionButtonContainer,
-  actionButtonInline: {
-    marginBottom: spacing.itemGap,
-    alignItems: 'flex-end',
-  },
-  newButton: {
-    ...commonStyles.button,
-  },
-  newButtonText: {
-    color: "#3b82f6",
-    fontSize: typography.body,
+  resultsCount: {
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
-    letterSpacing: 0,
-    textAlign: 'center',
+    paddingVertical: 4,
+  },
+  newStrategyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  newStrategyText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
   },
   scrollView: commonStyles.scrollView,
   content: {
-    padding: spacing.cardPadding + 2, // 16px (14 + 2 = 16)
+    padding: 16,
     paddingBottom: 80,
   },
   // Empty State
   emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    marginTop: 60,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "300",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
+    marginTop: 16,
     marginBottom: 8,
   },
   emptyDesc: {
-    fontSize: 14,
-    fontWeight: "300",
-    textAlign: "center",
+    fontSize: typography.caption,
+    fontWeight: fontWeights.regular,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   // Strategies List
   strategiesList: {
-    gap: spacing.cardGap, // Aumentado de itemGap (12px) para cardGap (16px)
+    gap: 0,
   },
-  strategyCard: {
-    borderRadius: borderRadius.xl, // Aumentado para xl (20px) - mais moderno
-    padding: spacing.cardPaddingLarge, // Aumentado para 20px - mais espaçoso
-    ...shadows.md, // Sombra média para melhor destaque
-  },
-  strategyHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  strategyHeaderLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  strategyName: {
-    fontSize: 16,
-    fontWeight: "400",
-    marginBottom: 6,
-  },
-  typeBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  typeText: {
-    fontSize: 11,
-    fontWeight: "400",
-    textTransform: "uppercase",
-  },
-  // Toggle
-  toggle: {
-    width: 44,
-    height: 24,
+  // Compact Card
+  compactCard: {
     borderRadius: 12,
-    padding: 2,
-    justifyContent: "center",
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    marginBottom: 8,
+    overflow: 'hidden',
   },
-  toggleActive: {
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  toggleThumb: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleThumbActive: {
-    transform: [{ translateX: 20 }],
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  // Strategy Info
-  strategyInfo: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  infoLabel: {
-    fontSize: 13,
-    fontWeight: "300",
-  },
-  infoValue: {
-    fontSize: 13,
-    fontWeight: "400",
-    flex: 1,
-    textAlign: "right",
-  },
-  // Strategy Footer
-  strategyFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.05)",
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusActive: {},
-  statusInactive: {},
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-  },
-  deleteButton: {
-    padding: 8,
-  },
-  deleteIcon: {
-    fontSize: 18,
-  },
-  // Tabs
-  tabsContainer: {
-    flexDirection: "row",
-    gap: 24,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    borderBottomWidth: 1,
-  },
-  tab: {
-    paddingVertical: 10,
-    paddingBottom: 12,
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: "400",
-  },
-  tabTextActive: {
-    fontWeight: "600",
-  },
-  // Loading
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 60,
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     gap: 12,
   },
-  loadingText: {
-    fontSize: 14,
-  },
-  // Create Button
-  createButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginTop: 24,
-    borderWidth: 0.5,
-  },
-  createButtonText: {
-    color: "#3b82f6",
-    fontSize: 13,
-    fontWeight: fontWeights.bold,
-    letterSpacing: 0.2,
-    textAlign: 'center',
-  },
-  // Stats
-  statsSection: {
-    borderTopWidth: 1,
-    paddingTop: 12,
-    marginTop: 12,
-    gap: 8,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  statItem: {
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     flex: 1,
-    gap: 4,
+    minWidth: 0,
   },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "400",
+  typeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  statValue: {
-    fontSize: 13,
-    fontWeight: "600",
+  cardInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  cardInfoTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardSymbol: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+    flexShrink: 1,
+  },
+  sideBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  sideBadgeText: {
+    fontSize: 9,
+    fontWeight: fontWeights.bold,
+  },
+  cardSubtext: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
+  },
+  cardRight: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    gap: 2,
+  },
+  cardValue: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+  },
+  cardStatusText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
+    textTransform: 'uppercase',
+  },
+  // Card Footer Actions
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+  },
+  cardActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    flex: 1,
+    paddingVertical: 2,
+  },
+  cardActionDivider: {
+    width: 1,
+    height: 16,
+  },
+  cardActionText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
   // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalSafeArea: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
     flex: 1,
   },
   confirmModal: {
-    width: "90%",
-    borderRadius: 20,
-    padding: 20,
-    gap: 16,
+    width: '90%',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
   },
   confirmTitle: {
-    fontSize: 20,
-    fontWeight: "500",
-    textAlign: "center",
+    fontSize: 17,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   confirmMessage: {
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   confirmButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
   },
   confirmButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: 'center',
   },
   cancelButton: {
     borderWidth: 1,
   },
   confirmButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  deleteConfirmButton: {
-    backgroundColor: "#ef4444",
-  },
-  deleteConfirmButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  // Novos estilos para padrão GenericItemList
-  strategyDetails: {
-    gap: 6,
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  detailLabel: {
-    fontSize: 13,
-  },
-  detailValue: {
-    fontSize: 13,
-    flex: 1,
-    textAlign: 'right',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  detailsButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    minHeight: 44,
-  },
-  detailsButtonText: {
     fontSize: 14,
     fontWeight: '600',
   },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    minHeight: 44,
+  deleteConfirmButton: {
+    backgroundColor: '#ef4444',
   },
-  actionButtonText: {
+  deleteConfirmButtonText: {
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },

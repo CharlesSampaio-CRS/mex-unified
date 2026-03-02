@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, RefreshControl } from "react-native"
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
+import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
 import { exchangeService } from "@/services/exchange-service"
 import { AvailableExchange, LinkedExchange } from "@/types/api"
@@ -13,8 +14,8 @@ import { QRScanner } from "./QRScanner"
 import { LogoIcon } from "./LogoIcon"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
-import { TabBar } from "./TabBar"
 import { spacing, borderRadius, shadows } from "@/lib/layout"
+import { getExchangeLogo } from "@/lib/exchange-logos"
 import Svg, { Path } from "react-native-svg"
 import { encryptExchangeCredentials } from "@/lib/encryption"
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
@@ -35,7 +36,7 @@ const exchangeLogos: Record<string, any> = {
 }
 
 interface ExchangesManagerProps {
-  initialTab?: 'available' | 'linked'
+  initialTab?: 'all' | 'available' | 'linked'
 }
 
 // Subcomponente memoizado para renderizar cada card de exchange
@@ -58,43 +59,31 @@ const LinkedExchangeCard = memo(({
   onPress: () => void
   isRefreshing?: boolean
 }) => {
-  const [showMenu, setShowMenu] = useState(false)
   const exchangeNameLower = linkedExchange.name.toLowerCase()
   const localIcon = exchangeLogos[exchangeNameLower]
   const exchangeId = linkedExchange.exchange_id
-  
-  // Backend retorna is_active (boolean), não status (string)
   const isActive = linkedExchange.is_active === true || linkedExchange.status === 'active'
-  
   const isDark = colors.isDark
 
-  // Themed styles for toggle (seguindo padrão do HomeScreen)
-  const themedToggleStyles = useMemo(() => ({
-    toggleButton: { 
-      backgroundColor: isDark ? 'rgba(60, 60, 60, 0.4)' : 'rgba(200, 200, 200, 0.3)',
-      borderColor: isDark ? 'rgba(80, 80, 80, 0.3)' : 'rgba(180, 180, 180, 0.2)',
-    },
-    toggleButtonActive: { 
-      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(59, 130, 246, 0.15)',
-      borderColor: isDark ? 'rgba(59, 130, 246, 0.4)' : 'rgba(59, 130, 246, 0.3)',
-    },
-    toggleThumb: { 
-      backgroundColor: isDark ? 'rgba(140, 140, 140, 0.9)' : 'rgba(100, 100, 100, 0.7)',
-    },
-    toggleThumbActive: { 
-      backgroundColor: isDark ? 'rgba(96, 165, 250, 0.9)' : 'rgba(59, 130, 246, 0.8)',
-    },
-  }), [isDark])
-  
+  // API Key expiry logic
+  const daysUntilExpiry = linkedExchange.days_until_expiry
+  const hasExpiry = daysUntilExpiry != null && linkedExchange.api_key_expiry_days != null
+  const isExpired = hasExpiry && daysUntilExpiry <= 0
+  const isExpiringSoon = hasExpiry && !isExpired && daysUntilExpiry <= 15
+
+  const expiryLabel = useMemo(() => {
+    if (!hasExpiry) return null
+    if (isExpired) return t('exchanges.apiKeyExpired') || 'API Key expirada'
+    if (isExpiringSoon) {
+      const label = t('exchanges.apiKeyExpiresSoon') || 'Expira em {days} dias'
+      return label.replace('{days}', String(daysUntilExpiry))
+    }
+    return null
+  }, [hasExpiry, isExpired, isExpiringSoon, daysUntilExpiry, t])
+
   const formattedDate = useMemo(() => {
-    // Se estiver atualizando, mostra "Updating..."
-    if (isRefreshing) {
-      return t('home.updating') || 'Updating...'
-    }
-    
-    if (!linkedExchange.linked_at) {
-      return t('exchanges.noDate') || 'N/A'
-    }
+    if (isRefreshing) return t('home.updating') || 'Updating...'
+    if (!linkedExchange.linked_at) return t('exchanges.noDate') || 'N/A'
     try {
       return new Date(linkedExchange.linked_at).toLocaleDateString('pt-BR')
     } catch (error) {
@@ -102,144 +91,97 @@ const LinkedExchangeCard = memo(({
     }
   }, [linkedExchange.linked_at, t, isRefreshing])
 
-  const themedStyles = useMemo(() => ({
-    card: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-    },
-    statusDotActive: {
-      backgroundColor: colors.primary,
-    },
-    statusDotInactive: {
-      backgroundColor: colors.danger,
-    },
-  }), [colors])
-
   return (
-    <View style={[styles.compactCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      {/* Header do card - nome e badge de status */}
-      <View style={styles.itemHeader}>
-        <View style={styles.itemHeaderLeft}>
-          <View style={[styles.compactIconContainer, isDark && { backgroundColor: '#FFFFFF' }]}>
+    <TouchableOpacity
+      style={[styles.compactCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      {/* Linha única compacta */}
+      <View style={styles.cardRow}>
+        {/* Lado esquerdo: Ícone + Info */}
+        <View style={styles.cardLeft}>
+          <View style={[styles.typeIcon, isDark && { backgroundColor: '#FFFFFF' }]}>
             {localIcon ? (
               <Image 
                 source={localIcon} 
-                style={styles.compactIcon}
-                resizeMode="contain"
-              />
-            ) : linkedExchange.icon ? (
-              <Image 
-                source={{ uri: linkedExchange.icon }} 
-                style={styles.compactIcon}
+                style={styles.typeIconImage}
                 resizeMode="contain"
               />
             ) : (
-              <Text style={styles.iconText}>🔗</Text>
+              <Text style={styles.typeIconText}>🔗</Text>
             )}
           </View>
-          <Text style={[styles.itemSymbol, { color: colors.text }]} numberOfLines={1}>
-            {capitalizeExchangeName(linkedExchange.name)}
-          </Text>
-        </View>
-        
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* Badge de status */}
-          <View style={[
-            styles.statusBadge,
-            { backgroundColor: isActive ? colors.successLight : colors.dangerLight }
-          ]}>
-            <Text style={[
-              styles.statusText,
-              { color: isActive ? colors.success : colors.danger }
-            ]}>
-              {isActive ? t('exchanges.active') : t('exchanges.inactive')}
+          <View style={styles.cardInfo}>
+            <View style={styles.cardInfoTop}>
+              <Text style={[styles.cardSymbol, { color: colors.text }]} numberOfLines={1}>
+                {capitalizeExchangeName(linkedExchange.name)}
+              </Text>
+              <View style={[
+                styles.sideBadge,
+                { backgroundColor: isActive ? colors.successLight : colors.dangerLight }
+              ]}>
+                <Text style={[
+                  styles.sideBadgeText,
+                  { color: isActive ? colors.success : colors.danger }
+                ]}>
+                  {isActive ? 'ON' : 'OFF'}
+                </Text>
+              </View>
+              {expiryLabel && (
+                <View style={[
+                  styles.sideBadge,
+                  { backgroundColor: isExpired ? colors.dangerLight : colors.warningLight, marginLeft: 4 }
+                ]}>
+                  <Text style={[
+                    styles.sideBadgeText,
+                    { color: isExpired ? colors.danger : colors.warning }
+                  ]}>
+                    {isExpired ? '🔴' : '⚠️'} {expiryLabel}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+              {formattedDate}
             </Text>
           </View>
-          
-          {/* Menu três pontos */}
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setShowMenu(!showMenu)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.menuIcon, { color: colors.textSecondary }]}>⋮</Text>
-          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Menu dropdown */}
-      {showMenu && (
-        <View style={[styles.menuDropdown, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <TouchableOpacity
-            style={styles.deleteMenuItem}
-            onPress={() => {
-              setShowMenu(false)
-              onDelete(exchangeId, linkedExchange.name)
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.deleteMenuText, { color: colors.danger }]}>{t('exchanges.delete')}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Detalhes (2 linhas) */}
-      <View style={styles.itemDetails}>
-        <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            {t('exchanges.connectedAt')}:
+        {/* Lado direito: Status */}
+        <View style={styles.cardRight}>
+          <Text style={[styles.cardValue, { color: isActive ? colors.success : colors.danger }]} numberOfLines={1}>
+            {isActive ? t('exchanges.active') : t('exchanges.inactive')}
           </Text>
-          <Text style={[styles.detailValue, { color: colors.text }]}>
-            {formattedDate}
-          </Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            {t('exchanges.country')}:
-          </Text>
-          <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
-            {linkedExchange.country || linkedExchange.pais_de_origem || 'N/A'}
+          <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+            {linkedExchange.country || linkedExchange.pais_de_origem || ''}
           </Text>
         </View>
       </View>
 
-      {/* Botões de ação */}
-      <View style={styles.actionButtons}>
-        {/* Botão Ver Detalhes */}
+      {/* Botões de ação compactos */}
+      <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[
-            styles.detailsButton,
-            { backgroundColor: colors.surface, borderColor: colors.border }
-          ]}
-          onPress={onPress}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.detailsButtonText, { color: colors.primary }]}>
-            {t('exchanges.viewDetails')}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Botão Ativar/Desativar */}
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            { 
-              backgroundColor: 'transparent', 
-              borderColor: isActive ? colors.danger : colors.success 
-            }
-          ]}
+          style={styles.cardActionButton}
           onPress={() => onToggle(exchangeId, isActive ? 'active' : 'inactive', linkedExchange.name)}
-          activeOpacity={0.7}
         >
-          <Text style={[
-            styles.actionButtonText, 
-            { color: isActive ? colors.danger : colors.success }
-          ]}>
+          <Ionicons name={isActive ? 'pause-circle-outline' : 'play-circle-outline'} size={14} color={isActive ? colors.danger : colors.success} />
+          <Text style={[styles.cardActionText, { color: isActive ? colors.danger : colors.success }]}>
             {isActive ? t('exchanges.deactivate') : t('exchanges.activate')}
           </Text>
         </TouchableOpacity>
+        <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
+        <TouchableOpacity
+          style={styles.cardActionButton}
+          onPress={() => onDelete(exchangeId, linkedExchange.name)}
+        >
+          <Ionicons name="trash-outline" size={14} color={colors.danger} />
+          <Text style={[styles.cardActionText, { color: colors.danger }]}>
+            {t('exchanges.delete')}
+          </Text>
+        </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 })
 
@@ -267,108 +209,64 @@ const AvailableExchangeCard = memo(({
   const isDark = colors.isDark
 
   return (
-    <View style={[styles.availableCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      {/* Header do card - nome e badge */}
-      <View style={styles.itemHeader}>
-        <View style={styles.itemHeaderLeft}>
-          <View style={[styles.availableIconContainer, isDark && { backgroundColor: '#FFFFFF' }]}>
+    <TouchableOpacity
+      style={[styles.compactCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      {/* Linha única compacta */}
+      <View style={styles.cardRow}>
+        {/* Lado esquerdo: Ícone + Info */}
+        <View style={styles.cardLeft}>
+          <View style={[styles.typeIcon, isDark && { backgroundColor: '#FFFFFF' }]}>
             {localIcon ? (
               <Image 
                 source={localIcon} 
-                style={styles.availableIcon}
-                resizeMode="contain"
-              />
-            ) : exchange.icon ? (
-              <Image 
-                source={{ uri: exchange.icon }} 
-                style={styles.availableIcon}
+                style={styles.typeIconImage}
                 resizeMode="contain"
               />
             ) : (
-              <Text style={styles.iconText}>🔗</Text>
+              <Text style={styles.typeIconText}>🌐</Text>
             )}
           </View>
-          <Text style={[styles.itemSymbol, { color: colors.text }]} numberOfLines={1}>
-            {capitalizeExchangeName(exchange.nome || exchange.name || 'Unknown Exchange')}
-          </Text>
-        </View>
-        
-        {/* Badge de status conectado */}
-        {isLinked && (
-          <View style={[
-            styles.statusBadge,
-            { backgroundColor: colors.successLight }
-          ]}>
-            <Text style={[styles.statusText, { color: colors.success }]}>
-              {t('exchanges.connectedSingular').toUpperCase()}
+          <View style={styles.cardInfo}>
+            <View style={styles.cardInfoTop}>
+              <Text style={[styles.cardSymbol, { color: colors.text }]} numberOfLines={1}>
+                {capitalizeExchangeName(exchange.nome || exchange.name || 'Unknown')}
+              </Text>
+              {exchange.requires_passphrase && (
+                <View style={[styles.sideBadge, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.sideBadgeText, { color: colors.primary }]}>🔑</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+              {exchange.pais_de_origem || t('exchanges.readyToConnect')}
             </Text>
           </View>
-        )}
-      </View>
-
-      {/* Detalhes (1-2 linhas) */}
-      <View style={styles.itemDetails}>
-        {exchange.requires_passphrase && (
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-              ℹ️ {t('exchanges.requiresPassphrase')}
-            </Text>
-          </View>
-        )}
-        <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('exchanges.country')}:</Text>
-          <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={1}>
-            {exchange.pais_de_origem || 'N/A'}
-          </Text>
         </View>
-        <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-            {isRefreshing 
-              ? t('home.updating') || 'Updating...'
-              : (isLinked ? t('exchanges.alreadyConnected') : t('exchanges.readyToConnect'))
-            }
+
+        {/* Lado direito: Status */}
+        <View style={styles.cardRight}>
+          <Text style={[styles.cardValue, { color: colors.textSecondary }]} numberOfLines={1}>
+            {isLinked ? '✓ ' + t('exchanges.connectedSingular') : ''}
           </Text>
         </View>
       </View>
 
-      {/* Botões de ação */}
-      <View style={styles.actionButtons}>
-        {/* Botão Ver Detalhes */}
+      {/* Botão conectar compacto */}
+      {!isLinked && (
         <TouchableOpacity
-          style={[
-            styles.detailsButton,
-            { backgroundColor: colors.surface, borderColor: colors.border }
-          ]}
-          onPress={onPress}
-          activeOpacity={0.7}
+          style={[styles.connectFooter, { borderTopColor: colors.border }]}
+          onPress={() => onConnect(exchange)}
         >
-          <Text style={[styles.detailsButtonText, { color: colors.primary }]}>
-            {t('exchanges.viewDetails')}
+          <Ionicons name="link-outline" size={14} color={colors.success} />
+          <Text style={[styles.cardActionText, { color: colors.success }]}>
+            {t('exchanges.connect')}
           </Text>
         </TouchableOpacity>
-
-        {/* Botão Conectar (ou desabilitado se já conectada) */}
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            { 
-              backgroundColor: 'transparent', 
-              borderColor: isLinked ? colors.border : colors.success 
-            }
-          ]}
-          onPress={() => !isLinked && onConnect(exchange)}
-          disabled={isLinked}
-          activeOpacity={0.7}
-        >
-          <Text style={[
-            styles.actionButtonText, 
-            { color: isLinked ? colors.textSecondary : colors.success }
-          ]}>
-            {isLinked ? '✓ ' + t('exchanges.connectedSingular') : t('exchanges.connect')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      )}
+    </TouchableOpacity>
   )
 })
 
@@ -386,8 +284,9 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
-  const [activeTab, setActiveTab] = useState<'available' | 'linked'>(initialTab)
+  const [activeTab, setActiveTab] = useState<'all' | 'available' | 'linked'>(initialTab === 'available' ? 'available' : initialTab === 'linked' ? 'linked' : 'all')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   
   // Modal de conexão
   const [connectModalVisible, setConnectModalVisible] = useState(false)
@@ -441,7 +340,10 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         ccxt_id: ex.exchange_type || ex.ccxt_id,
         icon: ex.icon || ex.logo,
         status: ex.is_active ? 'active' : 'inactive',
-        linked_at: ex.created_at
+        linked_at: ex.created_at,
+        api_key_expiry_days: ex.api_key_expiry_days,
+        days_until_expiry: ex.days_until_expiry,
+        api_key_expires_at: ex.api_key_expires_at,
       }))
       setLinkedExchanges(mappedExchanges as any)
       // Buscar exchanges disponíveis (catálogo)
@@ -1008,12 +910,102 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
 
   return (
     <SafeAreaView style={[styles.container, themedStyles.container]}>
-      {/* Tabs - usando componente TabBar padronizado */}
-      <TabBar 
-        tabs={[t('exchanges.connected'), t('exchanges.available')]}
-        activeTab={activeTab === 'linked' ? 0 : 1}
-        onTabChange={(index) => setActiveTab(index === 0 ? 'linked' : 'available')}
-      />
+      {/* Filters - mesmo padrão Orders */}
+      <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        {/* Search Bar */}
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Buscar exchange..."
+            placeholderTextColor={colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle-outline" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Filter Chips - mesmo padrão Orders (Todas/Compra/Venda) */}
+        <View style={styles.typeFilterRow}>
+          <TouchableOpacity
+            style={[
+              styles.typeFilterChip,
+              { 
+                backgroundColor: activeTab === 'all' ? colors.primary : colors.surface,
+                borderColor: activeTab === 'all' ? colors.primary : colors.border
+              }
+            ]}
+            onPress={() => setActiveTab('all')}
+          >
+            <Text style={[
+              styles.typeFilterText,
+              { color: activeTab === 'all' ? colors.background : colors.text }
+            ]}>
+              Todas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.typeFilterChip,
+              { 
+                backgroundColor: activeTab === 'linked' ? colors.success : colors.surface,
+                borderColor: activeTab === 'linked' ? colors.success : colors.border
+              }
+            ]}
+            onPress={() => setActiveTab('linked')}
+          >
+            <Text style={[
+              styles.typeFilterText,
+              { color: activeTab === 'linked' ? colors.background : colors.text }
+            ]}>
+              Conectadas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.typeFilterChip,
+              { 
+                backgroundColor: activeTab === 'available' ? colors.info || colors.primary : colors.surface,
+                borderColor: activeTab === 'available' ? colors.info || colors.primary : colors.border
+              }
+            ]}
+            onPress={() => setActiveTab('available')}
+          >
+            <Text style={[
+              styles.typeFilterText,
+              { color: activeTab === 'available' ? colors.background : colors.text }
+            ]}>
+              Disponíveis
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Results Count */}
+        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
+          {(() => {
+            const linkedCount = linkedExchanges.filter(ex => {
+              if (!searchQuery) return true
+              const q = searchQuery.toLowerCase()
+              return (ex.name || '').toLowerCase().includes(q)
+            }).length
+            const availableCount = availableExchanges.filter(ex => {
+              if (!searchQuery) return true
+              const q = searchQuery.toLowerCase()
+              return (ex.nome || '').toLowerCase().includes(q)
+            }).filter(ex => !linkedExchanges.some(l => l.name?.toLowerCase() === ex.nome?.toLowerCase() || l.ccxt_id === ex.ccxt_id)).length
+            
+            if (activeTab === 'linked') return `${linkedCount} ${linkedCount === 1 ? 'conectada' : 'conectadas'}`
+            if (activeTab === 'available') return `${availableCount} ${availableCount === 1 ? 'disponível' : 'disponíveis'}`
+            return `${linkedCount + availableCount} exchanges`
+          })()}
+        </Text>
+      </View>
 
       {/* Content */}
       <ScrollView 
@@ -1031,108 +1023,144 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
           />
         }
       >
-        {activeTab === 'linked' ? (
-          linkedExchanges.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🔗</Text>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('home.noData')}</Text>
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {t('exchanges.connectModal')}
-              </Text>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: colors.surface, borderColor: colors.primary }]}
-                onPress={() => setActiveTab('available')}
-              >
-                <Text style={styles.primaryButtonText}>{t('exchanges.viewAvailable')}</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            // Ordenar exchanges: ativas primeiro, depois inativas
-            [...linkedExchanges]
-              .sort((a, b) => {
-                const aActive = a.is_active === true || a.status === 'active'
-                const bActive = b.is_active === true || b.status === 'active'
-                // Se A é ativo e B não é, A vem primeiro (retorna -1)
-                // Se B é ativo e A não é, B vem primeiro (retorna 1)
-                // Se ambos têm o mesmo status, mantém ordem original (retorna 0)
-                if (aActive && !bActive) return -1
-                if (!aActive && bActive) return 1
-                return 0
-              })
-              .map((linkedExchange, index) => (
-                <LinkedExchangeCard
-                  key={`${linkedExchange.exchange_id}_${index}_${refreshKey}`}
-                  linkedExchange={linkedExchange}
-                  index={index}
-                  colors={colors}
-                  t={t}
-                  onToggle={toggleExchange}
-                  onDelete={handleDelete}
-                  onPress={() => openDetailsModal(linkedExchange, 'linked')}
-                  isRefreshing={refreshing}
-                />
-              ))
-          )
-        ) : (
-          // Filtrar exchanges disponíveis para não mostrar as já conectadas
-          (() => {
-            // 🔍 Criar Set de IDs conectados para busca rápida O(1)
-            const linkedExchangeIds = new Set(
-              linkedExchanges.map(linked => linked.exchange_id)
-            )
+        {/* Linked Exchanges */}
+        {(activeTab === 'all' || activeTab === 'linked') && (
+          <>
+            {linkedExchanges.length === 0 && activeTab === 'linked' ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>🔗</Text>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('home.noData')}</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  {t('exchanges.connectModal')}
+                </Text>
+              </View>
+            ) : (
+              <>
+                {activeTab === 'all' && linkedExchanges.length > 0 && (
+                  <View style={[styles.sectionHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                    <View style={styles.sectionHeaderLeft}>
+                      <Ionicons name="link-outline" size={16} color={colors.text} />
+                      <Text style={[styles.sectionHeaderText, { color: colors.text }]}>
+                        Conectadas
+                      </Text>
+                    </View>
+                    <Text style={[styles.sectionHeaderCount, { color: colors.textSecondary }]}>
+                      {String(linkedExchanges.length)}
+                    </Text>
+                  </View>
+                )}
+                {[...linkedExchanges]
+                  .filter(ex => {
+                    if (!searchQuery) return true
+                    const q = searchQuery.toLowerCase()
+                    return (ex.name || '').toLowerCase().includes(q) ||
+                           (ex.ccxt_id || '').toLowerCase().includes(q)
+                  })
+                  .sort((a, b) => {
+                    const aActive = a.is_active === true || a.status === 'active'
+                    const bActive = b.is_active === true || b.status === 'active'
+                    if (aActive && !bActive) return -1
+                    if (!aActive && bActive) return 1
+                    return 0
+                  })
+                  .map((linkedExchange, index) => (
+                    <LinkedExchangeCard
+                      key={`${linkedExchange.exchange_id}_${index}_${refreshKey}`}
+                      linkedExchange={linkedExchange}
+                      index={index}
+                      colors={colors}
+                      t={t}
+                      onToggle={toggleExchange}
+                      onDelete={handleDelete}
+                      onPress={() => openDetailsModal(linkedExchange, 'linked')}
+                      isRefreshing={refreshing}
+                    />
+                  ))}
+              </>
+            )}
+          </>
+        )}
 
-            const filteredAvailable = availableExchanges.filter(
-              exchange => {
-                // Verificar se a exchange já está conectada usando o ID
-                const isLinkedById = linkedExchangeIds.has(exchange._id)
-                
-                // Fallback: verificar por nome e ccxt_id (caso o ID não bata)
-                const isLinkedByName = linkedExchanges.some(linked => 
-                  linked.name?.toLowerCase() === exchange.nome?.toLowerCase() ||
-                  linked.ccxt_id === exchange.ccxt_id
-                )
-
-                // Retorna true se NÃO estiver conectada (ou seja, disponível)
-                return !isLinkedById && !isLinkedByName
-              }
-            )
-            
-            // Se não houver exchanges disponíveis após filtrar
-            if (filteredAvailable.length === 0) {
-              return (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyIcon}>✅</Text>
-                  <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                    {t('exchanges.allConnected') || 'All exchanges connected'}
-                  </Text>
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                    {t('exchanges.allConnectedDescription') || 'You have already connected all available exchanges'}
-                  </Text>
-                </View>
+        {/* Available Exchanges */}
+        {(activeTab === 'all' || activeTab === 'available') && (
+          <>
+            {(() => {
+              const linkedExchangeIds = new Set(
+                linkedExchanges.map(linked => linked.exchange_id)
               )
-            }
 
-            return filteredAvailable.map((exchange) => {
-              const isLinked = linkedExchanges.some(
-                linked => 
-                  linked.name.toLowerCase() === exchange.nome.toLowerCase() ||
-                  linked.ccxt_id === exchange.ccxt_id
+              const filteredAvailable = availableExchanges.filter(
+                exchange => {
+                  const isLinkedById = linkedExchangeIds.has(exchange._id)
+                  const isLinkedByName = linkedExchanges.some(linked => 
+                    linked.name?.toLowerCase() === exchange.nome?.toLowerCase() ||
+                    linked.ccxt_id === exchange.ccxt_id
+                  )
+
+                  if (searchQuery) {
+                    const q = searchQuery.toLowerCase()
+                    const nameMatch = (exchange.nome || '').toLowerCase().includes(q) ||
+                                      (exchange.ccxt_id || '').toLowerCase().includes(q)
+                    if (!nameMatch) return false
+                  }
+
+                  return !isLinkedById && !isLinkedByName
+                }
               )
               
+              if (filteredAvailable.length === 0 && activeTab === 'available') {
+                return (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyIcon}>✅</Text>
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                      {t('exchanges.allConnected') || 'All exchanges connected'}
+                    </Text>
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                      {t('exchanges.allConnectedDescription') || 'You have already connected all available exchanges'}
+                    </Text>
+                  </View>
+                )
+              }
+
               return (
-                <AvailableExchangeCard
-                  key={exchange._id}
-                  exchange={exchange}
-                  isLinked={isLinked}
-                  colors={colors}
-                  t={t}
-                  onConnect={openConnectModal}
-                  onPress={() => openDetailsModal(exchange, 'available')}
-                  isRefreshing={refreshing}
-                />
+                <>
+                  {activeTab === 'all' && filteredAvailable.length > 0 && (
+                    <View style={[styles.sectionHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                      <View style={styles.sectionHeaderLeft}>
+                        <Ionicons name="globe-outline" size={16} color={colors.text} />
+                        <Text style={[styles.sectionHeaderText, { color: colors.text }]}>
+                          Disponíveis
+                        </Text>
+                      </View>
+                      <Text style={[styles.sectionHeaderCount, { color: colors.textSecondary }]}>
+                        {String(filteredAvailable.length)}
+                      </Text>
+                    </View>
+                  )}
+                  {filteredAvailable.map((exchange) => {
+                    const isLinked = linkedExchanges.some(
+                      linked => 
+                        linked.name.toLowerCase() === exchange.nome.toLowerCase() ||
+                        linked.ccxt_id === exchange.ccxt_id
+                    )
+                    
+                    return (
+                      <AvailableExchangeCard
+                        key={exchange._id}
+                        exchange={exchange}
+                        isLinked={isLinked}
+                        colors={colors}
+                        t={t}
+                        onConnect={openConnectModal}
+                        onPress={() => openDetailsModal(exchange, 'available')}
+                        isRefreshing={refreshing}
+                      />
+                    )
+                  })}
+                </>
               )
-            })
-          })()
+            })()}
+          </>
         )}
       </ScrollView>
 
@@ -1730,6 +1758,45 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                                   {detailsExchange.status === 'active' ? t('exchanges.active') : t('exchanges.inactive')}
                                 </Text>
                               </View>
+
+                              {/* API Key Expiry Info */}
+                              {detailsExchange.api_key_expiry_days != null && (
+                                <>
+                                  <View style={styles.detailsInfoRow}>
+                                    <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
+                                      API Key Validade:
+                                    </Text>
+                                    <Text style={[styles.detailsInfoValue, { 
+                                      color: detailsExchange.days_until_expiry != null && detailsExchange.days_until_expiry <= 0 
+                                        ? colors.danger 
+                                        : detailsExchange.days_until_expiry != null && detailsExchange.days_until_expiry <= 15 
+                                          ? colors.warning 
+                                          : colors.success 
+                                    }]}>
+                                      {detailsExchange.days_until_expiry != null && detailsExchange.days_until_expiry <= 0
+                                        ? `❌ ${t('exchanges.apiKeyExpired') || 'API Key expirada'}`
+                                        : detailsExchange.days_until_expiry != null && detailsExchange.days_until_expiry <= 15
+                                          ? `⚠️ ${(t('exchanges.apiKeyExpiresSoon') || 'Expira em {days} dias').replace('{days}', String(detailsExchange.days_until_expiry))}`
+                                          : `✅ ${detailsExchange.days_until_expiry} dias restantes`
+                                      }
+                                    </Text>
+                                  </View>
+                                  {detailsExchange.api_key_expires_at && (
+                                    <View style={styles.detailsInfoRow}>
+                                      <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
+                                        Expira em:
+                                      </Text>
+                                      <Text style={[styles.detailsInfoValue, { color: colors.textSecondary }]}>
+                                        {new Date(detailsExchange.api_key_expires_at).toLocaleDateString('pt-BR', {
+                                          day: '2-digit',
+                                          month: 'long',
+                                          year: 'numeric'
+                                        })}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </>
+                              )}
                             </>
                           ) : (
                             <>
@@ -2052,6 +2119,50 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Filters - mesmo padrão Orders
+  filtersContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
+    paddingVertical: 0,
+  },
+  typeFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  typeFilterChip: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  typeFilterText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
+  },
+  resultsCount: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.medium,
+    paddingVertical: 4,
+  },
   // Menu Modal Styles
   menuModalOverlay: {
     flex: 1,
@@ -2146,26 +2257,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  list: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 100, // Espaço extra no final para o scroll
-  },
-  card: {
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 0,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  cardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
+  iconText: {
+    fontSize: 20,
   },
   iconContainer: {
     width: 24,
@@ -2178,164 +2271,9 @@ const styles = StyleSheet.create({
     padding: 3,
     borderWidth: 0,
   },
-  iconText: {
-    fontSize: 20,
-  },
   exchangeIcon: {
     width: "100%",
     height: "100%",
-  },
-  exchangeNameContainer: {
-    flex: 1,
-  },
-  exchangeName: {
-    fontSize: typography.body,
-    fontWeight: "400",
-    marginBottom: 4,
-  },
-  // statusBadge, statusText, detailRow, detailLabel, detailValue movidos para seção de itemCard abaixo
-  statusBadgeActive: {
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.3)",
-  },
-  statusBadgeInactive: {
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusDotActive: {
-    // Cor definida dinamicamente via themedStyles
-  },
-  statusDotInactive: {
-    // Cor definida dinamicamente via themedStyles
-  },
-  statusTextActive: {
-  },
-  statusTextInactive: {
-  },
-  exchangeStatus: {
-    fontSize: 11,
-    fontWeight: "400",
-  },
-  statusActive: {
-  },
-  statusInactive: {
-  },
-  exchangeCountry: {
-    fontSize: 12,
-  },
-  // Toggle Button
-  toggleButton: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    padding: 2,
-    justifyContent: "center",
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  toggleButtonActive: {
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  toggleThumb: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleThumbActive: {
-    transform: [{ translateX: 20 }],
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  // Exchange Footer
-  exchangeFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  deleteButton: {
-    padding: 4,
-  },
-  deleteIcon: {
-    fontSize: 16,
-  },
-  cardDetails: {
-    marginTop: 12,
-    gap: 8,
-  },
-  // detailRow, detailLabel, detailValue movidos para seção de itemCard
-  connectedBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  connectedBadgeText: {
-    fontSize: typography.caption,
-    fontWeight: "400",
-  },
-  connectButton: {
-    paddingHorizontal: 20,  // 16→20 (mais padronizado)
-    paddingVertical: 12,     // 8→12 (minHeight 44px)
-    minHeight: 44,           // Padrão Secondary Button
-    borderRadius: 10,        // 8→10 (padrão Secondary)
-    borderWidth: 1,          // 2→1 (mais sutil)
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  connectButtonText: {
-    fontSize: typography.body,  // bodySmall→body (16px)
-    fontWeight: fontWeights.medium,  // '600'→medium
-  },
-  infoBox: {
-    marginTop: 12,
-    padding: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  infoIconContainer: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 8,
-  },
-  infoIconYellow: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  infoText: {
-    fontSize: 12,
-    flex: 1,
   },
   emptyState: {
     alignItems: "center",
@@ -2357,19 +2295,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     marginBottom: 24,
-  },
-  primaryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 14,    // 12→14 (minHeight 48px)
-    minHeight: 48,          // Padrão Primary Button
-    borderRadius: 12,       // 8→12 (padrão Home)
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    fontSize: typography.body,  // 14→16 (typography.body)
-    fontWeight: fontWeights.medium,  // '600'→medium (consistência)
   },
 
   // Modal styles
@@ -2782,263 +2707,134 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 20,
   },
-  // Estilos compactos para linked exchanges - padronizados igual GenericItemList (itemCard)
+  // Card compacto - mesmo padrão Orders
   compactCard: {
-    borderRadius: borderRadius.xl, // Aumentado de 12 para 20px (mais moderno)
-    padding: spacing.cardPaddingLarge, // Aumentado para 20px (mais espaçoso)
-    marginBottom: spacing.sm, // Usando design token (8px)
-    ...shadows.md, // Sombra média para melhor destaque
-  },
-  // Header do card (nome + badge)
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  itemHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  itemSymbol: {
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-    flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  // Detalhes (3 linhas)
-  itemDetails: {
-    gap: 6,
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  detailLabel: {
-    fontSize: 13,
-  },
-  detailValue: {
-    fontSize: 13,
-    flex: 1,
-    textAlign: 'right',
-  },
-  // Botões de ação
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  detailsButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    minHeight: 44,
-  },
-  detailsButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    minHeight: 44,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  compactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  compactIconContainer: {
-    width: 24,
-    height: 24,
     borderRadius: 12,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  compactIcon: {
-    width: '100%',
-    height: '100%',
-  },
-  compactName: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.medium,
-    flex: 1,
-  },
-  compactDate: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.regular,
-    width: 80,
-  },
-  compactToggle: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    padding: 2,
-    justifyContent: 'center',
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  compactToggleThumb: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    elevation: 2,
-  },
-  menuButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuIcon: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  menuDropdown: {
-    position: 'absolute',
-    right: 8,
-    top: 48,
-    borderRadius: 8,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
-    minWidth: 140,
-  },
-  deleteMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    justifyContent: 'center',
-  },
-  deleteMenuText: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.medium,
-  },
-  // Estilos para exchanges disponíveis (compacto) - padronizados igual GenericItemList (itemCard)
-  availableCard: {
-    borderRadius: 12,      // Igual itemCard do GenericItemList
-    padding: 14,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    overflow: 'hidden',
   },
-  availableRow: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     gap: 12,
   },
-  availableIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    overflow: 'hidden',
-    justifyContent: 'center',
+  cardLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
   },
-  availableIcon: {
+  typeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  typeIconImage: {
     width: '100%',
     height: '100%',
   },
-  availableName: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.medium,
+  typeIconText: {
+    fontSize: 14,
+  },
+  cardInfo: {
     flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
-  availableInfo: {
-    fontSize: typography.body,
-    marginLeft: 4,
-  },
-  infoIconButton: {
-    padding: 4,
-    position: 'relative',
-  },
-  passphraseTooltip: {
-    position: 'absolute',
-    bottom: -35,
-    left: -50,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    borderWidth: 1,
-    minWidth: 120,
-    zIndex: 9999,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  passphraseTooltipText: {
-    fontSize: typography.caption,
-    textAlign: 'center',
-  },
-  connectedBadgeCompact: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    minWidth: 24,
+  cardInfoTop: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
   },
-  connectedBadgeTextCompact: {
-    fontSize: typography.micro,
+  cardSymbol: {
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
-    letterSpacing: 0.2,
+    flexShrink: 1,
   },
-  connectBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  sideBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
     borderRadius: 4,
   },
-  connectBadgeText: {
-    fontSize: typography.micro,
+  sideBadgeText: {
+    fontSize: 9,
     fontWeight: fontWeights.bold,
-    letterSpacing: 0.2,
-    textAlign: 'center',
+  },
+  cardSubtext: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
+  },
+  cardRight: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    gap: 2,
+  },
+  cardValue: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+  },
+  // Ações do card (footer)
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1,
+  },
+  cardActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 5,
+  },
+  cardActionDivider: {
+    width: 1,
+    height: 16,
+  },
+  cardActionText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
+  },
+  connectFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 5,
+    borderTopWidth: 1,
+  },
+  // Section headers (para tab "Todas")
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionHeaderText: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+  },
+  sectionHeaderCount: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.medium,
   },
 })

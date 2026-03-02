@@ -21,8 +21,6 @@ import { useTokenMonitor } from "@/hooks/use-token-monitor"
 import { useOpenOrdersSync } from "@/hooks/useOpenOrdersSync"
 import { getExchangeId, getExchangeName, getTotalUsd, getExchangeBalances } from "@/lib/exchange-helpers"
 
-// ❌ CACHE REMOVIDO - Sempre busca dados frescos
-
 // Lista de stablecoins e moedas fiat que não devem ter variação e botão de trade
 const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD', 'USDD', 'BRL', 'EUR', 'USD']
 
@@ -128,7 +126,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
     exchangeName: string
     symbol: string
     currentPrice: number
-    balance: { token: number; usdt: number }
+    balance: { token: number; usdt: number; brl?: number }
   } | null>(null)
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null)
   const [openOrdersCount, setOpenOrdersCount] = useState<Record<string, number>>({})
@@ -889,7 +887,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                       exchangeName: externalSearchResult.exchangeName,
                       symbol: externalSearchResult.symbol,
                       currentPrice: externalSearchResult.price,
-                      balance: { token: 0, usdt: 0 }
+                      balance: { token: 0, usdt: 0, brl: 0 }
                     })
                     setTradeModalVisible(true)
                   }}
@@ -993,6 +991,9 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
             const usdtToken = sortedTokens.find(([sym]) => sym === 'USDT' || sym === 'usdt')
             const usdtBalance = usdtToken ? parseFloat((usdtToken[1].free || usdtToken[1].total || usdtToken[1].amount || 0).toString()) : 0
             
+            const brlToken = sortedTokens.find(([sym]) => sym === 'BRL' || sym === 'brl')
+            const brlBalance = brlToken ? parseFloat((brlToken[1].free || brlToken[1].total || brlToken[1].amount || 0).toString()) : 0
+            
             const exchangeId = getExchangeId(exchange)
             const exchangeName = getExchangeName(exchange)
             const tokenVariations = exchangeVariations[exchangeId]?.[symbol]
@@ -1009,6 +1010,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               priceUSD,         // number: preço em USD
               valueUSD,         // number: valor total em USD
               usdtBalance,      // number: saldo USDT da exchange
+              brlBalance,       // number: saldo BRL da exchange (para pares fiat)
               isStablecoin,     // boolean
               variation24h,     // number | undefined: variação 24h
               exchangeId,       // string
@@ -1021,58 +1023,80 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
 
           return (
             <View key={getExchangeId(exchange)} style={styles.exchangeSection}>
-              <View style={[styles.exchangeHeader, { backgroundColor: colors.card }]}>
-                <View style={styles.simpleExchangeTitleRow}>
-                  <Image 
-                    source={getExchangeLogo(getExchangeName(exchange))} 
-                    style={styles.simpleExchangeLogo}
-                    resizeMode="contain"
-                  />
-                  <Text style={[styles.simpleExchangeTitle, { color: colors.text }]}>
-                    {String(getExchangeName(exchange))}
+              {/* Exchange Header - mesmo estilo do header dos order cards */}
+              <View style={[styles.exchangeCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                <View style={[styles.exchangeCardHeader, { borderBottomColor: colors.border }]}>
+                  <View style={styles.exchangeCardLeft}>
+                    <Image 
+                      source={getExchangeLogo(getExchangeName(exchange))} 
+                      style={styles.exchangeCardLogo}
+                      resizeMode="contain"
+                    />
+                    <Text style={[styles.exchangeCardName, { color: colors.text }]}>
+                      {String(getExchangeName(exchange))}
+                    </Text>
+                  </View>
+                  <Text style={[styles.exchangeCardTotal, { color: colors.text }]}>
+                    {String(valuesHidden ? '****' : apiService.formatUSD(exchangeTotalUSD))}
                   </Text>
                 </View>
-                <Text style={[styles.simpleExchangeTotal, { color: colors.text }]}>
-                  {String(valuesHidden ? '****' : apiService.formatUSD(exchangeTotalUSD))}
-                </Text>
+
+                {/* Asset rows - inline como os order items */}
+                <View style={styles.exchangeCardBody}>
+                  {formattedAssets.map((asset: any, index: number) => (
+                    <BlinkingAssetCard
+                      key={asset.id}
+                      isAffected={recentlyAffectedSymbols.has(asset.symbol?.toUpperCase())}
+                      style={[
+                        styles.assetItemRow,
+                        { borderBottomColor: colors.border },
+                        index === formattedAssets.length - 1 && { borderBottomWidth: 0 },
+                      ]}
+                      onPress={() => {
+                        setSelectedToken({
+                          exchangeId: asset.exchangeId,
+                          symbol: asset.symbol
+                        })
+                        setTokenModalVisible(true)
+                      }}
+                    >
+                      {/* Symbol */}
+                      <View style={styles.assetSymbolContainer}>
+                        <Text style={[styles.assetSymbolText, { color: colors.text }]} numberOfLines={1}>
+                          {String(asset.symbol)}
+                        </Text>
+                      </View>
+
+                      {/* Variation badge */}
+                      {!asset.isStablecoin && asset.variation24h !== undefined ? (
+                        <View style={[styles.assetVariationBadge, { 
+                          backgroundColor: (asset.variation24h >= 0 ? colors.success : colors.danger) + '10' 
+                        }]}>
+                          <Text style={[styles.assetVariationText, { 
+                            color: asset.variation24h >= 0 ? colors.success : colors.danger 
+                          }]}>
+                            {String((asset.variation24h >= 0 ? '+' : '') + asset.variation24h.toFixed(1))}%
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={styles.assetVariationBadge}>
+                          <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.4 }]}>—</Text>
+                        </View>
+                      )}
+
+                      {/* Amount + Value inline */}
+                      <View style={styles.assetValuesContainer}>
+                        <Text style={[styles.assetAmountText, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {String(asset.amount)}
+                        </Text>
+                        <Text style={[styles.assetValueText, { color: colors.text }]} numberOfLines={1}>
+                          {String(valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD))}
+                        </Text>
+                      </View>
+                    </BlinkingAssetCard>
+                  ))}
+                </View>
               </View>
-              
-              {formattedAssets.map((asset: any) => (
-                <BlinkingAssetCard
-                  key={asset.id}
-                  isAffected={recentlyAffectedSymbols.has(asset.symbol?.toUpperCase())}
-                  style={[styles.simpleAssetCard, { backgroundColor: colors.card }]}
-                  onPress={() => {
-                    setSelectedToken({
-                      exchangeId: asset.exchangeId,
-                      symbol: asset.symbol
-                    })
-                    setTokenModalVisible(true)
-                  }}
-                >
-                  <View style={styles.simpleAssetInfo}>
-                    <Text style={[styles.simpleAssetSymbol, { color: colors.text }]}>
-                      {String(asset.symbol)}
-                    </Text>
-                    <Text style={[styles.simpleAssetAmount, { color: colors.textSecondary }]}>
-                      {String(asset.amount)} {String(asset.symbol)}
-                    </Text>
-                  </View>
-                  <View style={styles.simpleAssetRight}>
-                    <Text style={[styles.simpleAssetValue, { color: colors.text }]}>
-                      {String(valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD))}
-                    </Text>
-                    {!asset.isStablecoin && asset.variation24h !== undefined && (
-                      <Text style={[
-                        styles.simpleAssetVariation,
-                        { color: asset.variation24h >= 0 ? colors.success : colors.danger }
-                      ]}>
-                        {String((asset.variation24h >= 0 ? '+' : '') + asset.variation24h.toFixed(2))}%
-                      </Text>
-                    )}
-                  </View>
-                </BlinkingAssetCard>
-              ))}
             </View>
           )
         })}
@@ -1211,55 +1235,55 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 10,
     position: 'relative',
   },
   searchIcon: {
     position: 'absolute',
-    left: 12,
-    fontSize: 16,
+    left: 10,
+    fontSize: 14,
     zIndex: 1,
   },
   searchInput: {
     flex: 1,
-    height: 40,
-    borderRadius: 10,
-    paddingLeft: 36,
-    paddingRight: 36,
-    fontSize: 14,
+    height: 36,
+    borderRadius: 8,
+    paddingLeft: 32,
+    paddingRight: 32,
+    fontSize: 13,
     backgroundColor: 'rgba(128, 128, 128, 0.05)',
     borderWidth: 1,
   },
   clearButton: {
     position: 'absolute',
-    right: 12,
-    width: 20,
-    height: 20,
+    right: 10,
+    width: 18,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   clearIcon: {
-    fontSize: 14,
-    opacity: 0.6,
+    fontSize: 12,
+    opacity: 0.5,
   },
   // Resultado da busca externa
   externalSearchResult: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 10,
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
     borderWidth: 1,
   },
   searchingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    gap: 6,
+    paddingVertical: 3,
   },
   searchingText: {
-    fontSize: 13,
+    fontSize: 11,
   },
   tokenFoundContainer: {
-    gap: 10,
+    gap: 8,
   },
   tokenFoundHeader: {
     flexDirection: 'row',
@@ -1271,46 +1295,46 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tokenFoundSymbol: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   tokenFoundExchange: {
-    fontSize: 12,
+    fontSize: 11,
   },
   tokenFoundPrice: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   tokenFoundButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 6,
     alignItems: 'center',
   },
   tokenFoundButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   tokenNotFoundContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    gap: 6,
+    paddingVertical: 3,
   },
   tokenNotFoundText: {
-    fontSize: 13,
+    fontSize: 11,
     flex: 1,
   },
   tokenNotFoundSubtext: {
-    fontSize: 11,
-    opacity: 0.7,
-    marginTop: 4,
+    fontSize: 10,
+    opacity: 0.6,
+    marginTop: 3,
     textAlign: 'center',
   },
-  // Card Principal - DUPLICADO do Summary
+  // Card Principal
   container: {
-    borderRadius: 20,
-    padding: 14,
+    borderRadius: 14,
+    padding: 12,
     borderWidth: 0,
     shadowColor: "#000",
     shadowOffset: {
@@ -1318,19 +1342,19 @@ const styles = StyleSheet.create({
       height: 1,
     },
     shadowOpacity: 0.03,
-    shadowRadius: 10,
+    shadowRadius: 6,
     elevation: 1,
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  // Card de filtro - design compacto e integrado
+  // Card de filtro
   filterCard: {
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 12,
+    borderRadius: 10,
+    padding: 8,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 1,
   },
   headerRow: {
@@ -1342,7 +1366,7 @@ const styles = StyleSheet.create({
   filterDivider: {
     height: 1,
     backgroundColor: 'rgba(128, 128, 128, 0.1)',
-    marginVertical: 12,
+    marginVertical: 10,
   },
   valueContainer: {
     flexDirection: "column",
@@ -1359,9 +1383,9 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   refreshButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1458,28 +1482,98 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   exchangeSection: {
-    marginBottom: 24,
+    marginBottom: 14,
   },
-  exchangeHeader: {
+  exchangeCard: {
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  exchangeCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginBottom: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0.5,
+  },
+  exchangeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exchangeCardLogo: {
+    width: 20,
+    height: 20,
+  },
+  exchangeCardName: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+  },
+  exchangeCardTotal: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.semibold,
+  },
+  exchangeCardBody: {
+    // Container for asset rows inside the card
+  },
+  // Asset item row - compact inline like order items
+  assetItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0.5,
+    gap: 8,
+  },
+  assetSymbolContainer: {
+    minWidth: 52,
+  },
+  assetSymbolText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
+  },
+  assetVariationBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    minWidth: 42,
+    alignItems: 'center',
+  },
+  assetVariationText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.bold,
+  },
+  assetValuesContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  assetAmountText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.regular,
+    minWidth: 50,
+    textAlign: 'right',
+  },
+  assetValueText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
+    minWidth: 56,
+    textAlign: 'right',
   },
   list: {
-    gap: 10,
-    paddingHorizontal: 0,  // Removido padding - vem do container pai (HomeTabsLayout)
+    gap: 8,
+    paddingHorizontal: 0,
   },
   card: {
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 10,
+    padding: 12,
     borderWidth: 0,
   },
   cardMargin: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   cardContent: {
     flexDirection: "row",
@@ -1489,16 +1583,16 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   logoContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    padding: 3,
+    padding: 2,
     borderWidth: 0,
   },
   logoImage: {
@@ -1509,11 +1603,11 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
   },
   exchangeName: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
   },
   orderCount: {
-    fontSize: 13,
+    fontSize: 11,
   },
   exchangeNameRow: {
     flexDirection: "row",
@@ -1522,16 +1616,16 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   ordersBadge: {
-    paddingHorizontal: 10,      // -17% mais compacto
-    paddingVertical: 5,         // -17% mais fino
-    borderRadius: 8,            // +33% mais arredondado
-    marginLeft: 6,              // mantido
-    borderWidth: 0,             // sem borda - mais clean
-    shadowColor: '#000',        // sombra sutil
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginLeft: 5,
+    borderWidth: 0,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
   ordersBadgeText: {
     fontSize: typography.micro,
@@ -1576,10 +1670,10 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   tokensContainer: {
-    borderRadius: 0,            // sem bordas arredondadas 
-    padding: 12,                // padding para espaçamento dos cards
-    marginTop: 0,               
-    borderWidth: 0,             // sem borda - cards individuais tem suas próprias bordas
+    borderRadius: 0,
+    padding: 10,
+    marginTop: 0,
+    borderWidth: 0,
     overflow: 'hidden',
   },
   infoBox: {
@@ -1718,37 +1812,37 @@ const styles = StyleSheet.create({
   },
   // 🆕 Estilos compactos para layout horizontal simplificado - CARD DESIGN (igual aos cards de ordens)
   tokenItemCompact: {
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    padding: 14,
-    marginBottom: 8,
+    padding: 12,
+    marginBottom: 6,
   },
   tokenHeader: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   tokenTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 3,
   },
   tokenSymbol: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
   variationBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
   },
   variationText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   tokenDetails: {
-    gap: 6,
+    gap: 5,
   },
   tokenDetailRow: {
     flexDirection: 'row',
@@ -1756,29 +1850,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tokenDetailLabel: {
-    fontSize: 13,
+    fontSize: 11,
   },
   tokenDetailValue: {
-    fontSize: 13,
+    fontSize: 11,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+    gap: 6,
+    marginTop: 10,
   },
   detailsButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    minHeight: 44,
+    minHeight: 38,
   },
   detailsButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   tradeButton: {
@@ -1786,15 +1880,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    minHeight: 44,
+    minHeight: 38,
   },
   tradeButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   // 🆕 Estilos antigos para compatibilidade
@@ -1802,7 +1896,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   tokenSymbolCard: {
     fontSize: typography.body,
@@ -1810,53 +1904,53 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   variationBadgeCard: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
   },
   variationTextCard: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
   tokenDetailsRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 10,
+    gap: 10,
+    marginBottom: 8,
   },
   tokenFooterRow: {
-    marginTop: 4,
+    marginTop: 3,
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   tokenFooterButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: 38,
   },
   tokenFooterButtonText: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.semibold,
   },
   tradeButtonCard: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: 38,
   },
   tokenCompactRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,                    // +20% espaço entre elementos
+    gap: 10,
   },
   tokenSymbolCompact: {
     fontSize: typography.bodySmall,  // tamanho consistente com orders
@@ -1888,10 +1982,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   variationBadgeCompact: {
-    paddingHorizontal: 12,      // era 10 - um pouco mais largo
-    paddingVertical: 6,         // era 5 - um pouco mais alto
-    borderRadius: 8,            // mantido
-    minWidth: 72,               // era 68 - um pouco mais largo
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    minWidth: 64,
   },
   variationTextCompact: {
     fontSize: typography.caption, // era tiny - MAIOR
@@ -1992,14 +2086,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
   },
   tokenInfoModal: {
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 20,
-    minWidth: 280,
-    maxWidth: 340,
+    padding: 16,
+    minWidth: 260,
+    maxWidth: 320,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -2013,8 +2107,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: 12,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
   },
@@ -2033,18 +2127,18 @@ const styles = StyleSheet.create({
     marginRight: -4,
   },
   closeButtonText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: fontWeights.regular,
-    lineHeight: 24,
+    lineHeight: 20,
   },
   modalContent: {
-    gap: 12,
+    gap: 10,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   infoLabel: {
     fontSize: typography.body,
@@ -2058,20 +2152,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 48,
+    paddingHorizontal: 24,
+    paddingVertical: 36,
   },
   emptyStateTitle: {
     fontSize: typography.body,
     fontWeight: fontWeights.semibold,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   emptyStateDescription: {
     fontSize: typography.caption,
     fontWeight: fontWeights.regular,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   errorBadge: {
     paddingHorizontal: 6,
@@ -2118,57 +2212,8 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
     textAlign: 'center',
   },
-  // Estilos para listagem inline de assets (simple)
-  simpleExchangeSection: {
-    marginBottom: 16,
-  },
-  simpleExchangeTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  simpleExchangeLogo: {
-    width: 24,
-    height: 24,
-  },
-  simpleExchangeTitle: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.bold,
-  },
-  simpleExchangeTotal: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-  },
-  simpleAssetCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    marginTop: 8,
-    borderRadius: 8,
-  },
-  simpleAssetInfo: {
-    flex: 1,
-  },
-  simpleAssetSymbol: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-  },
-  simpleAssetAmount: {
-    fontSize: typography.caption,
-    marginTop: 2,
-  },
-  simpleAssetRight: {
-    alignItems: 'flex-end',
-  },
-  simpleAssetValue: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.medium,
-  },
-  simpleAssetVariation: {
-    fontSize: typography.caption,
-    marginTop: 2,
-  },
 })
+
+
 
 

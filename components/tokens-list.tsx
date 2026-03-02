@@ -23,28 +23,31 @@ export function TokensList({ exchange }: TokensListProps) {
   const [alertToken, setAlertToken] = useState<{ symbol: string; price: number } | null>(null)
   
   // Lista de stablecoins e moedas fiat
-  const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD', 'USDD', 'BRL', 'EUR', 'USD']
+  const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD', 'USDD', 'EUR', 'USD']
+  const FIAT_CURRENCIES = ['BRL', 'EUR', 'USD', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF']
   
   // ✅ Suporta ambas estruturas: balances (nova) e tokens (antiga)
   const balances = getExchangeBalances(exchange)
   
   // Filtra e ordena tokens: stablecoins por último, depois por variação, depois por valor
   const tokens = Object.entries(balances)
-    .filter(([_, token]) => {
+    .filter(([symbol, token]) => {
+      const total = parseFloat((token.amount || token.total || 0).toString())
       const valueUsd = parseFloat((token.value_usd || token.usd_value || 0).toString())
-      return valueUsd > 0
+      // Mostra se tem valor USD > 0 OU se é moeda fiat com saldo > 0
+      return valueUsd > 0 || (FIAT_CURRENCIES.includes(symbol.toUpperCase()) && total > 0)
     })
     .sort((a, b) => {
       const [symbolA, tokenA] = a
       const [symbolB, tokenB] = b
       
-      // Verifica se é stablecoin
-      const isStablecoinA = STABLECOINS.includes(symbolA.toUpperCase())
-      const isStablecoinB = STABLECOINS.includes(symbolB.toUpperCase())
+      // Verifica se é stablecoin ou fiat
+      const isStableOrFiatA = STABLECOINS.includes(symbolA.toUpperCase()) || FIAT_CURRENCIES.includes(symbolA.toUpperCase())
+      const isStableOrFiatB = STABLECOINS.includes(symbolB.toUpperCase()) || FIAT_CURRENCIES.includes(symbolB.toUpperCase())
       
-      // Stablecoins vão para o final
-      if (isStablecoinA && !isStablecoinB) return 1
-      if (!isStablecoinA && isStablecoinB) return -1
+      // Stablecoins e fiat vão para o final
+      if (isStableOrFiatA && !isStableOrFiatB) return 1
+      if (!isStableOrFiatA && isStableOrFiatB) return -1
       
       // Se ambos são ou não são stablecoins, verificar variações
       const hasVariationA = tokenA.change_1h !== null || tokenA.change_4h !== null || tokenA.change_24h !== null
@@ -97,6 +100,13 @@ export function TokensList({ exchange }: TokensListProps) {
         const amount = parseFloat((token.amount || token.total || 0).toString())
         const priceUSD = parseFloat((token.price_usd || 0).toString())
         const valueUSD = parseFloat((token.value_usd || token.usd_value || 0).toString())
+        const isFiat = FIAT_CURRENCIES.includes(symbol.toUpperCase())
+        // Para moedas fiat sem usd_value, mostra no símbolo nativo (ex: R$50.00)
+        const displayValue = valueUSD > 0 
+          ? apiService.formatUSD(valueUSD) 
+          : isFiat && amount > 0 
+            ? `${symbol === 'BRL' ? 'R$' : symbol + ' '}${amount.toFixed(2)}`
+            : apiService.formatUSD(0)
         const tokenAlerts = getAlertsForToken(symbol, exchangeId)
         const hasAlerts = tokenAlerts.length > 0
 
@@ -127,7 +137,7 @@ export function TokensList({ exchange }: TokensListProps) {
                   />
                 </TouchableOpacity>
                 <View style={styles.valueContainer}>
-                  <Text style={styles.value}>{apiService.formatUSD(valueUSD)}</Text>
+                  <Text style={styles.value}>{displayValue}</Text>
                   {priceUSD > 0 && (
                     <Text style={styles.price}>{apiService.formatUSD(priceUSD)}</Text>
                   )}
@@ -151,7 +161,7 @@ export function TokensList({ exchange }: TokensListProps) {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>{t('token.value')}</Text>
                 <Text style={styles.detailValue}>
-                  {apiService.formatUSD(valueUSD)}
+                  {displayValue}
                 </Text>
               </View>
             </View>

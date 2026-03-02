@@ -18,7 +18,7 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { useAuth } from "../contexts/AuthContext"
 import { useNotifications } from "../contexts/NotificationsContext"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { NotificationsModal } from "../components/NotificationsModal"
 import { ConfirmModal } from "../components/ConfirmModal"
 import { TabBar } from "../components/TabBar"
@@ -197,16 +197,16 @@ export function SettingsScreen({ navigation, route }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header padronizado */}
-      <Header 
-        title={t('settings.title')}
-        subtitle={activeTab === "profile" ? t('profile.subtitle') : t('settings.subtitle')}
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-      />
+  // Define o Header global para esta tela
+  useHeader({
+    title: t('settings.title'),
+    subtitle: activeTab === "profile" ? t('profile.subtitle') : t('settings.subtitle'),
+    onNotificationsPress,
+    unreadCount,
+  })
 
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Tabs: Perfil e Sistema */}
       <TabBar 
         tabs={[t('profile.title'), t('settings.systemTitle')]}
@@ -1247,7 +1247,7 @@ export function SettingsScreen({ navigation, route }: any) {
         cancelText={t('common.cancel')}
         confirmColor="#ef4444"
       />
-    </SafeAreaView>
+    </View>
   )
 }
 

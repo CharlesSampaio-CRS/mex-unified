@@ -1,19 +1,16 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native"
+import { View, Text, StyleSheet, ScrollView } from "react-native"
 import { memo } from "react"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
 
 export const TrophyScreen = memo(function TrophyScreen({ navigation }: any) {
   const { colors } = useTheme()
 
+  useHeader({ title: "Trophy", subtitle: "Recurso Trophy" })
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        title="Trophy"
-        subtitle="Recurso Trophy"
-      />
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.content}>
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>🏆 Trophy Feature</Text>
@@ -30,7 +27,7 @@ export const TrophyScreen = memo(function TrophyScreen({ navigation }: any) {
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Best strategies</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   )
 })
 

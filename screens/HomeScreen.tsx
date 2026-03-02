@@ -1,6 +1,6 @@
 import { StyleSheet, ScrollView, SafeAreaView, RefreshControl, View, TouchableOpacity, Text, Alert } from "react-native"
 import { useRef, useState, useCallback, memo } from "react"
-import { Header } from "../components/Header"
+import { useHeader } from "../contexts/HeaderContext"
 import { HomeVerticalLayout } from "../components/layouts/HomeVerticalLayout"
 import { HomeTabsLayout } from "../components/layouts/HomeTabsLayout"
 import { NotificationsModal } from "../components/NotificationsModal"
@@ -45,6 +45,12 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   const onNotificationsPress = useCallback(() => {
     setNotificationsModalVisible(true)
   }, [])
+
+  // Define o Header global para esta tela
+  useHeader({
+    onNotificationsPress,
+    unreadCount,
+  })
 
   // Busca removida do header - agora está dentro da lista de tokens
   // const onSearchPress = useCallback(() => {
@@ -100,21 +106,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   }
   
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header 
-        onNotificationsPress={onNotificationsPress}
-        unreadCount={unreadCount}
-        navigation={navigation}
-      />
-      {/* <View style={styles.testActions}>
-        <TouchableOpacity
-          style={[styles.testButton, { backgroundColor: colors.primary }]}
-          onPress={handleAddTestSnapshots}
-        >
-          <Text style={[styles.testButtonText, { color: colors.primaryText || '#fff' }]}>Adicionar snapshots 30d</Text>
-        </TouchableOpacity>
-      </View> */}
-      
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Layout tabs não precisa de ScrollView - ele já tem scroll interno */}
       {layout === 'tabs' ? (
         <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
@@ -168,7 +160,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
         }}
         order={selectedOrder}
       />
-    </SafeAreaView>
+    </View>
   )
 })
 
@@ -181,12 +173,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   testButton: {
-    padding: 12,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 6,
     alignItems: 'center',
   },
   testButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
 })
