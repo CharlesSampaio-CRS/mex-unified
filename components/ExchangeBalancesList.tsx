@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   // Columns
   colIcon: {
-    width: 22,
+    width: 20,
     alignItems: 'center',
   },
   colName: {
@@ -255,17 +255,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    marginRight: 2,
   },
   colAction: {
-    width: 38,
+    width: 32,
     alignItems: 'center',
   },
   colUsd: {
-    width: 72,
+    width: 62,
     alignItems: 'flex-end',
   },
   colBrl: {
-    width: 72,
+    width: 62,
     alignItems: 'flex-end',
   },
   icon: {
