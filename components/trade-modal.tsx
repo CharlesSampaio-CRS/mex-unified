@@ -333,7 +333,6 @@ export function TradeModal({
     }
   }, [visible, currentPrice, symbol, exchangeId])
 
-  const total = parseFloat(amount || '0') * parseFloat(price || '0')
   const isBuy = orderSide === 'buy'
 
   // 🔄 Par selecionado e quote currency derivada dinamicamente
@@ -349,6 +348,26 @@ export function TradeModal({
   // Detecta se o token clicado é a base do par (ex: clicou BTC, par BTC/USDT)
   const isTokenTheBase = symbolUpper === baseCurrency
 
+  // Quando o token clicado é a QUOTE (ex: clicou BRL, par BTC/BRL),
+  // o campo quantidade deve representar a quote currency (BRL),
+  // e o frontend converte para base currency antes de enviar ao backend.
+  // "amountCurrency" = moeda que o campo quantidade representa
+  const amountCurrency = isTokenTheQuote ? quoteCurrency : baseCurrency
+
+  // Total em quote currency:
+  // - Se amount está em base (caso normal): total = amount * price
+  // - Se amount está em quote (isTokenTheQuote): total = amount (já é em quote)
+  const amountNum_raw = parseFloat(amount || '0')
+  const priceNum_raw = parseFloat(price || '0')
+  const total = isTokenTheQuote ? amountNum_raw : (amountNum_raw * priceNum_raw)
+
+  // Quantidade em base currency para enviar ao CCXT (sempre requer base):
+  // - Se amount está em base: baseAmount = amount
+  // - Se amount está em quote: baseAmount = amount / price
+  const baseAmount = isTokenTheQuote 
+    ? (priceNum_raw > 0 ? amountNum_raw / priceNum_raw : 0)
+    : amountNum_raw
+
   // Saldo disponível depende do par selecionado E de qual side é o token clicado:
   // 
   // Token clicado é a BASE (ex: clicou BTC, par BTC/USDT):
@@ -356,8 +375,8 @@ export function TradeModal({
   //   - Venda: usa saldo do token clicado (BTC = balance.token)
   //
   // Token clicado é a QUOTE (ex: clicou BRL, par BTC/BRL):
-  //   - Compra: usa saldo do token clicado (BRL = balance.token) 
-  //   - Venda: usa saldo da base (BTC) → não disponível diretamente, mostra 0
+  //   - Compra: usa saldo do token clicado (BRL = balance.token) → quer gastar BRL para comprar base
+  //   - Venda: usa saldo do token clicado (BRL = balance.token) → quer vender BRL (dar BRL para receber base)
   const availableBalance = (() => {
     if (!orderSide) return 0
     
@@ -368,9 +387,8 @@ export function TradeModal({
         : balance.token
     } else if (isTokenTheQuote) {
       // Token clicado é a quote do par (ex: BRL → BTC/BRL, USDT → BTC/USDT)
-      return isBuy
-        ? balance.token  // Compra BTC usando BRL/USDT → saldo de BRL/USDT é balance.token
-        : 0              // Venda BTC → não temos saldo de BTC, mostra 0
+      // Tanto para compra quanto venda, o saldo relevante é o do token clicado (quote)
+      return balance.token
     }
     
     // Fallback
@@ -389,21 +407,20 @@ export function TradeModal({
   const handlePercentage = (percentage: number) => {
     if (!orderSide || !orderType) return
     setSelectedPercent(percentage)
-    if (isBuy) {
-      // Compra: usa % do saldo USDT
-      // Para 100%, usa apenas 99.5% para deixar margem para taxas e arredondamentos
-      const safePercentage = percentage === 100 ? 99.5 : percentage
-      const usdtAmount = (availableBalance * safePercentage) / 100
-      const tokenAmount = usdtAmount / parseFloat(price || '1')
-      
+    // Para 100%, usa apenas 99.5% para deixar margem para taxas e arredondamentos
+    const safePercentage = percentage === 100 ? 99.5 : percentage
+    const balanceToUse = (availableBalance * safePercentage) / 100
+
+    if (isTokenTheQuote) {
+      // Token clicado é a quote (ex: BRL) → quantidade em quote currency direto
+      setAmount(balanceToUse.toFixed(2))
+    } else if (isBuy) {
+      // Compra normal (amount em base): converte saldo quote → base
+      const tokenAmount = balanceToUse / parseFloat(price || '1')
       setAmount(tokenAmount.toFixed(8))
     } else {
-      // Venda: usa % do saldo de tokens
-      // Para 100%, usa apenas 99.5% para deixar margem de segurança
-      const safePercentage = percentage === 100 ? 99.5 : percentage
-      const tokenAmount = (availableBalance * safePercentage) / 100
-      
-      setAmount(tokenAmount.toFixed(8))
+      // Venda normal (amount em base): saldo já é em base
+      setAmount(balanceToUse.toFixed(8))
     }
   }
 
@@ -426,16 +443,12 @@ export function TradeModal({
     // Adiciona tolerância de 0.1% para erros de arredondamento
     const tolerance = availableBalance * 0.001
     
-    if (isBuy && total > (availableBalance + tolerance)) {
-      const balanceLabel = isBrlQuote 
+    // Validação de saldo: amount está na moeda do campo (amountCurrency)
+    if (amountVal > (availableBalance + tolerance)) {
+      const balanceLabel = amountCurrency === 'BRL'
         ? `R$ ${availableBalance.toFixed(2)} BRL`
-        : `${availableBalance.toFixed(4)} ${quoteCurrency}`
-      Alert.alert('Saldo Insuficiente', `Você precisa de ${balanceLabel}`)
-      return
-    }
-
-    if (!isBuy && amountVal > (availableBalance + tolerance)) {
-      Alert.alert('Saldo Insuficiente', `Você possui apenas ${availableBalance.toFixed(8)} ${baseCurrency}`)
+        : `${availableBalance.toFixed(amountCurrency === baseCurrency ? 8 : 4)} ${amountCurrency}`
+      Alert.alert('Saldo Insuficiente', `Disponível: ${balanceLabel}`)
       return
     }
 
@@ -456,6 +469,12 @@ export function TradeModal({
     const amountVal = parseFloat(amount)
     const priceVal = parseFloat(price)
 
+    // CCXT create_order espera amount em BASE currency sempre.
+    // Se o campo quantidade está em quote (isTokenTheQuote), converte para base.
+    const amountForApi = isTokenTheQuote
+      ? (priceVal > 0 ? amountVal / priceVal : 0)
+      : amountVal
+
     setCreateOrderLoading(true)
     setCreateOrderError(null)
 
@@ -468,7 +487,7 @@ export function TradeModal({
             user.id,
             exchangeId,
             tradingPair,
-            amountVal,
+            amountForApi,
             orderType,
             orderType === 'limit' ? priceVal : undefined
           )
@@ -476,7 +495,7 @@ export function TradeModal({
             user.id,
             exchangeId,
             tradingPair,
-            amountVal,
+            amountForApi,
             orderType,
             orderType === 'limit' ? priceVal : undefined
           )
@@ -493,7 +512,7 @@ export function TradeModal({
         notify.orderCreated(addNotification, {
           symbol: tradingPair,
           side: orderSide as 'buy' | 'sell',
-          amount: amountVal,
+          amount: amountForApi,
           price: priceVal,
           type: orderType!,
           exchange: exchangeName,
@@ -510,9 +529,9 @@ export function TradeModal({
             type: orderType as 'limit' | 'market',
             side: orderSide as 'buy' | 'sell',
             price: priceVal,
-            amount: amountVal,
+            amount: amountForApi,
             filled: 0,
-            remaining: amountVal,
+            remaining: amountForApi,
             status: 'open' as const,
             timestamp: Date.now(),
             datetime: new Date().toISOString(),
@@ -615,7 +634,11 @@ export function TradeModal({
                             borderColor: selectedPair === pair.symbol ? colors.primary : colors.border,
                           }
                         ]}
-                        onPress={() => setSelectedPair(pair.symbol)}
+                        onPress={() => {
+                          setSelectedPair(pair.symbol)
+                          setAmount('') // Limpa quantidade ao trocar par (moeda do campo muda)
+                          setSelectedPercent(null)
+                        }}
                       >
                         <Text style={{
                           fontSize: 13,
@@ -776,16 +799,15 @@ export function TradeModal({
             <View style={[styles.section, !typeSelected && styles.sectionDisabled]}>
               <View style={styles.labelRow}>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.stepLabel, { color: typeSelected ? colors.textSecondary : colors.border }]}>
-                  {orderType === 'limit' ? '4' : '3'}. Quantidade ({String(baseCurrency)})
+                  {orderType === 'limit' ? '4' : '3'}. Quantidade ({String(amountCurrency)})
                 </Text>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.balanceText, { color: typeSelected ? colors.textSecondary : colors.border }]}> 
-                  Disponível: {String(isBuy 
-                    ? (isBrlQuote 
-                        ? `R$ ${availableBalance.toFixed(2)} BRL` 
-                        : `${availableBalance.toFixed(4)} ${quoteCurrency}`)
-                    : (availableBalance > 0 
-                        ? `${availableBalance.toFixed(8)} ${baseCurrency}`
-                        : `-- ${baseCurrency}`)
+                  Disponível: {String(
+                    amountCurrency === 'BRL'
+                      ? `R$ ${availableBalance.toFixed(2)}`
+                      : availableBalance > 0
+                        ? `${availableBalance.toFixed(amountCurrency === baseCurrency ? 8 : 4)} ${amountCurrency}`
+                        : `-- ${amountCurrency}`
                   )}
                 </Text>
               </View>
@@ -852,10 +874,10 @@ export function TradeModal({
               <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.previewRow}>
                   <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
-                    Total {isBuy ? 'a Pagar' : 'a Receber'}
+                    Total {isBuy ? 'a Pagar' : 'a Receber'} ({String(quoteCurrency)})
                   </Text>
                   <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
-                    {isBrlQuote ? `R$ ${total.toFixed(2)}` : `$ ${apiService.formatUSD(total)}`}
+                    {quoteCurrency === 'BRL' ? `R$ ${total.toFixed(2)}` : `${apiService.formatUSD(total)} ${quoteCurrency}`}
                   </Text>
                 </View>
                 
@@ -863,7 +885,7 @@ export function TradeModal({
                   <>
                     <View style={styles.previewRow}>
                       <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
-                        Preço
+                        Preço ({String(quoteCurrency)})
                       </Text>
                       <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
                         {parseFloat(price || '0') < 0.01 
@@ -873,19 +895,32 @@ export function TradeModal({
                     </View>
                     <View style={styles.previewRow}>
                       <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
-                        Quantidade
+                        Qtd. base ({String(baseCurrency)})
                       </Text>
                       <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
                         {String((() => {
-                          const qty = parseFloat(amount || '0')
+                          const qty = baseAmount
                           if (qty === 0) return '0.00'
                           if (qty >= 1000000) return `${(qty / 1000000).toFixed(2)}Mi`
                           if (qty >= 1000) return `${(qty / 1000).toFixed(2)}K`
                           if (qty < 1) return qty.toFixed(8).replace(/\.?0+$/, '')
-                          return qty.toFixed(2)
+                          return qty.toFixed(4)
                         })())} {String(baseCurrency)}
                       </Text>
                     </View>
+                    {isTokenTheQuote && (
+                      <View style={styles.previewRow}>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
+                          Qtd. informada ({String(amountCurrency)})
+                        </Text>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
+                          {amountCurrency === 'BRL' 
+                            ? `R$ ${parseFloat(amount || '0').toFixed(2)}`
+                            : `${parseFloat(amount || '0').toFixed(4)} ${amountCurrency}`
+                          }
+                        </Text>
+                      </View>
+                    )}
                   </>
                 )}
               </View>
@@ -902,7 +937,7 @@ export function TradeModal({
                     ? 'Selecione Limit ou Market'
                     : !hasValidAmount 
                       ? 'Informe a quantidade'
-                      : `${isBuy ? 'Comprar' : 'Vender'} ${baseCurrency}`
+                      : `${isBuy ? 'Comprar' : 'Vender'} ${tradingPair}`
               
               return (
                 <TouchableOpacity
@@ -1004,11 +1039,28 @@ export function TradeModal({
                 <View style={styles.confirmRow}>
                   <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.quantity')}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
-                    {String(`${parseFloat(amount || '0') < 1 
-                      ? parseFloat(amount || '0').toFixed(8).replace(/\.?0+$/, '') 
-                      : parseFloat(amount || '0').toFixed(4)} ${baseCurrency}`)}
+                    {String(isTokenTheQuote
+                      ? (amountCurrency === 'BRL'
+                          ? `R$ ${parseFloat(amount || '0').toFixed(2)}`
+                          : `${parseFloat(amount || '0').toFixed(4)} ${amountCurrency}`)
+                      : `${parseFloat(amount || '0') < 1 
+                          ? parseFloat(amount || '0').toFixed(8).replace(/\.?0+$/, '') 
+                          : parseFloat(amount || '0').toFixed(4)} ${baseCurrency}`
+                    )}
                   </Text>
                 </View>
+
+                {/* Mostra conversão para base currency quando input é em quote */}
+                {isTokenTheQuote && baseAmount > 0 && (
+                  <View style={styles.confirmRow}>
+                    <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>≈ Base ({String(baseCurrency)})</Text>
+                    <Text style={[styles.confirmValue, { color: colors.textSecondary }]}>
+                      {String(baseAmount < 1 
+                        ? baseAmount.toFixed(8).replace(/\.?0+$/, '') 
+                        : baseAmount.toFixed(4))} {String(baseCurrency)}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Separador */}
                 <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
@@ -1018,7 +1070,7 @@ export function TradeModal({
                     {String(isBuy ? t('trade.totalToPay') : t('trade.totalToReceive'))}
                   </Text>
                   <Text style={[styles.confirmValueBold, { color: isBuy ? '#10b981' : '#ef4444' }]}>
-                    {String(isBrlQuote ? `R$ ${total.toFixed(2)}` : `$ ${apiService.formatUSD(total)}`)}
+                    {String(quoteCurrency === 'BRL' ? `R$ ${total.toFixed(2)}` : `${apiService.formatUSD(total)} ${quoteCurrency}`)}
                   </Text>
                 </View>
               </View>
