@@ -205,7 +205,32 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     fetchPairs()
   }
 
-  // Handle pair selection → fetch price then go to order step
+  // 📈 Busca o preço atual do par na exchange (reutilizável)
+  const fetchCurrentPrice = useCallback(async (pair?: PairInfo | null, exchange?: ExchangeItem | null) => {
+    const pairToUse = pair || selectedPair
+    const exchangeToUse = exchange || selectedExchange
+    if (!pairToUse || !exchangeToUse) return
+
+    const exId = exchangeToUse.exchange_id || (exchangeToUse as any)?._id || ''
+    if (!exId || !pairToUse.symbol) return
+
+    setPairPriceLoading(true)
+    try {
+      const result = await apiService.getPairTicker(exId, pairToUse.symbol)
+      if (result.success && result.ticker?.last > 0) {
+        const lastPrice = result.ticker.last
+        // Preço é sempre na quote currency do par (USD-based: USDT, BRL, USDC, etc.)
+        setPrice(lastPrice < 0.01 ? lastPrice.toFixed(10).replace(/\.?0+$/, '') : lastPrice.toString())
+        console.log(`💰 Preço atualizado: ${pairToUse.symbol} = ${lastPrice}`)
+      }
+    } catch (error: any) {
+      console.warn('⚠️ Could not fetch pair price:', error.message)
+    } finally {
+      setPairPriceLoading(false)
+    }
+  }, [selectedPair, selectedExchange])
+
+  // Handle pair selection → go to order step (preço será buscado pelo useEffect ao selecionar limit)
   const handleSelectPair = async (pair: PairInfo) => {
     setSelectedPair(pair)
     setOrderSide(null)
@@ -215,24 +240,14 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     setAmountInQuote(false)
     setCreateOrderError(null)
     setStep('order')
-
-    // 📈 Busca o preço atual do par na exchange
-    const exId = selectedExchange?.exchange_id || (selectedExchange as any)?._id || ''
-    if (exId && pair.symbol) {
-      setPairPriceLoading(true)
-      try {
-        const result = await apiService.getPairTicker(exId, pair.symbol)
-        if (result.success && result.ticker?.last > 0) {
-          const lastPrice = result.ticker.last
-          setPrice(lastPrice < 0.01 ? lastPrice.toFixed(10).replace(/\.?0+$/, '') : lastPrice.toString())
-        }
-      } catch (error: any) {
-        console.warn('⚠️ Could not fetch pair price:', error.message)
-      } finally {
-        setPairPriceLoading(false)
-      }
-    }
   }
+
+  // 🔄 AUTO-FETCH: Sempre que selecionar "limit", busca o preço atualizado
+  useEffect(() => {
+    if (orderType === 'limit' && selectedPair && selectedExchange) {
+      fetchCurrentPrice()
+    }
+  }, [orderType])
 
   // Go back one step
   const handleBack = () => {
@@ -877,9 +892,31 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
         {/* Price input (limit only) */}
         {typeSelected && orderType === 'limit' && (
           <>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
-              Preço ({quoteCurrency}) {pairPriceLoading ? '⏳' : ''}
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginBottom: 0 }]}>
+                Preço ({quoteCurrency}) {pairPriceLoading ? '⏳' : ''}
+              </Text>
+              {/* Botão refresh preço */}
+              <TouchableOpacity
+                onPress={() => fetchCurrentPrice()}
+                disabled={pairPriceLoading}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6,
+                  backgroundColor: colors.primary + '15',
+                  opacity: pairPriceLoading ? 0.5 : 1,
+                }}
+              >
+                {pairPriceLoading ? (
+                  <ActivityIndicator size={12} color={colors.primary} />
+                ) : (
+                  <Ionicons name="refresh-outline" size={14} color={colors.primary} />
+                )}
+                <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '500' }}>
+                  Atualizar
+                </Text>
+              </TouchableOpacity>
+            </View>
             <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.inputPrefix, { color: colors.textSecondary }]}>
                 {isBrlQuote ? 'R$' : '$'}
