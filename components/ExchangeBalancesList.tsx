@@ -37,7 +37,8 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
         const name = capitalizeExchangeName(ex.name || ex.exchange || 'Unknown')
         const value = typeof ex.total_usd === 'string' ? parseFloat(ex.total_usd) : (ex.total_usd || 0)
         const logo = getExchangeLogo(name)
-        return { name, value, logo }
+        const hasError = (ex as any).success === false
+        return { name, value, logo, hasError }
       })
       .sort((a, b) => b.value - a.value)
   }, [data])
@@ -96,6 +97,9 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
               <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
                 {ex.name}
               </Text>
+              {ex.hasError && (
+                <Text style={styles.errorIcon}>⚠️</Text>
+              )}
               <Text style={[styles.valueUsd, { color: colors.text }]}>
                 {hideValue(fmtUsd(ex.value))}
               </Text>
@@ -166,6 +170,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: fontWeights.regular,
     opacity: 0.45,
+  },
+  errorIcon: {
+    fontSize: 10,
+    opacity: 0.8,
   },
   valueUsd: {
     fontSize: 10,
