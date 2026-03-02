@@ -79,6 +79,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   const [orderType, setOrderType] = useState<OrderType | null>(null)
   const [amount, setAmount] = useState('')
   const [price, setPrice] = useState('')
+  const [amountInQuote, setAmountInQuote] = useState(false) // Toggle: digitar em quote (BRL/USDT) em vez de base (ETH/BTC)
   const [createOrderLoading, setCreateOrderLoading] = useState(false)
   const [createOrderError, setCreateOrderError] = useState<string | null>(null)
   const [confirmVisible, setConfirmVisible] = useState(false)
@@ -100,6 +101,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
       setOrderType(null)
       setAmount('')
       setPrice('')
+      setAmountInQuote(false)
       setCreateOrderLoading(false)
       setCreateOrderError(null)
       setConfirmVisible(false)
@@ -210,6 +212,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     setOrderType(null)
     setAmount('')
     setPrice('')
+    setAmountInQuote(false)
     setCreateOrderError(null)
     setStep('order')
 
@@ -249,6 +252,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
       setOrderType(null)
       setAmount('')
       setPrice('')
+      setAmountInQuote(false)
       setCreateOrderError(null)
     }
   }
@@ -267,18 +271,20 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   const isTokenTheBase = tokenUpper === baseCurrency
 
   // Quando o token é a QUOTE, o campo quantidade representa a quote currency
-  const amountCurrency = isTokenTheQuote ? quoteCurrency : baseCurrency
+  // OU quando o usuário ativou o toggle amountInQuote (ex: quer digitar em BRL/USDT)
+  const isAmountInQuote = isTokenTheQuote || amountInQuote
+  const amountCurrency = isAmountInQuote ? quoteCurrency : baseCurrency
 
   const amountNum = parseFloat(amount || '0')
   const priceNum = parseFloat(price || '0')
 
   // Total em quote currency:
   // - Se amount em base (caso normal): total = amount * price
-  // - Se amount em quote (isTokenTheQuote): total = amount (já é em quote)
-  const total = isTokenTheQuote ? amountNum : (amountNum * priceNum)
+  // - Se amount em quote (isAmountInQuote): total = amount (já é em quote)
+  const total = isAmountInQuote ? amountNum : (amountNum * priceNum)
 
   // Quantidade em base currency para enviar ao CCXT (sempre requer base):
-  const baseAmount = isTokenTheQuote
+  const baseAmount = isAmountInQuote
     ? (priceNum > 0 ? amountNum / priceNum : 0)
     : amountNum
 
@@ -310,22 +316,25 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     const balances = exchangeData.balances || exchangeData.tokens || {}
     
     // Determina qual currency precisa verificar:
-    // - Se isTokenTheQuote e está comprando: precisa do base (compra base com quote)
-    // - Se isTokenTheQuote e está vendendo: precisa do quote (vende quote por base)
-    // - Normal comprando: precisa do quote (compra base com quote) 
+    // - Se isAmountInQuote e está comprando: precisa do quote (gasta quote pra comprar base)
+    // - Se isAmountInQuote e está vendendo: precisa do quote (vende quote)
+    // - Normal comprando: precisa do quote (gasta quote pra comprar base) 
     // - Normal vendendo: precisa do base (vende base por quote)
     let relevantCurrency: string
     if (orderSide === 'buy') {
-      relevantCurrency = isTokenTheQuote ? baseCurrency : quoteCurrency
+      // Compra sempre gasta quote currency
+      relevantCurrency = quoteCurrency
     } else {
-      relevantCurrency = isTokenTheQuote ? quoteCurrency : baseCurrency
+      // Venda sempre gasta base currency (ou quote se isAmountInQuote)
+      relevantCurrency = isAmountInQuote ? quoteCurrency : baseCurrency
     }
     
     const token = balances[relevantCurrency] || balances[relevantCurrency?.toUpperCase()]
     if (!token) return 0
     
-    return parseFloat(token.free || '0') || (token.total || 0) - (parseFloat(token.used || token.locked || '0') || 0)
-  }, [balanceData, selectedExchange, selectedPair, orderSide, isTokenTheQuote, baseCurrency, quoteCurrency])
+    const free = typeof token.free === 'number' ? token.free : parseFloat(token.free || '0')
+    return free > 0 ? free : Math.max(0, (token.total || 0) - (typeof token.used === 'number' ? token.used : parseFloat(token.used || '0')))
+  }, [balanceData, selectedExchange, selectedPair, orderSide, isAmountInQuote, baseCurrency, quoteCurrency])
 
   // Calcula o amount com base na porcentagem do saldo disponível
   const handlePercentage = useCallback((pct: number) => {
@@ -339,34 +348,28 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     const portionValue = available * (pct / 100)
     
     if (orderSide === 'buy') {
-      // Comprando: saldo disponível está em quote currency
-      if (isTokenTheQuote) {
-        // Token é a quote → amount field já é em quote → converter para base
-        // Na verdade, amount está em amountCurrency que é quoteCurrency quando isTokenTheQuote
-        // Mas o saldo relevante é baseCurrency (comprar base com quote)
-        // Neste caso, saldo em base... definir amount direto
-        setAmount(portionValue.toFixed(8).replace(/\.?0+$/, ''))
+      if (isAmountInQuote) {
+        // Amount em quote (BRL/USDT): define direto o valor em quote
+        setAmount(portionValue < 1 ? portionValue.toFixed(8).replace(/\.?0+$/, '') : portionValue.toFixed(2))
       } else {
-        // Caso normal: saldo em quote, amount em base
-        // Se tem preço: amount_base = saldo_quote * pct / price
+        // Amount em base (ETH/BTC): precisa converter quote → base
         if (priceNum > 0) {
           const baseAmt = portionValue / priceNum
           setAmount(baseAmt.toFixed(8).replace(/\.?0+$/, ''))
         } else if (orderType === 'market') {
-          // Market order sem preço: mostra saldo em quote e deixa a exchange resolver
-          // Não consegue calcular sem preço — coloca nota
-          Alert.alert('Dica', `Saldo disponível: ${portionValue.toFixed(2)} ${quoteCurrency}\nPara calcular ${pct}% em ${baseCurrency}, defina o preço primeiro ou use ordem Limit.`)
-          return
+          // Market sem preço → sugere trocar para modo quote
+          setAmountInQuote(true)
+          setAmount(portionValue < 1 ? portionValue.toFixed(8).replace(/\.?0+$/, '') : portionValue.toFixed(2))
         } else {
           Alert.alert('Dica', `Defina o preço primeiro para calcular ${pct}% do saldo.`)
           return
         }
       }
     } else {
-      // Vendendo: saldo disponível está em base currency (ou quote se isTokenTheQuote)
+      // Venda: saldo em base (ou quote se isAmountInQuote)
       setAmount(portionValue.toFixed(8).replace(/\.?0+$/, ''))
     }
-  }, [getAvailableBalance, orderSide, isTokenTheQuote, priceNum, orderType, quoteCurrency, baseCurrency])
+  }, [getAvailableBalance, orderSide, isAmountInQuote, priceNum, orderType])
 
   // Handle submit → show confirm
   const handleSubmit = () => {
@@ -402,8 +405,8 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     const isBuy = orderSide === 'buy'
 
     // CCXT create_order espera amount em BASE currency sempre.
-    // Se o campo quantidade está em quote (isTokenTheQuote), converte para base.
-    const amountForApi = isTokenTheQuote
+    // Se o campo quantidade está em quote (isAmountInQuote), converte para base.
+    const amountForApi = isAmountInQuote
       ? (priceVal > 0 ? amountVal / priceVal : 0)
       : amountVal
 
@@ -897,13 +900,36 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
         {/* Amount input */}
         {typeSelected && (
           <>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
-              Quantidade ({amountCurrency})
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginBottom: 0 }]}>
+                Quantidade ({amountCurrency})
+              </Text>
+              {/* Toggle base/quote — só mostra se não é isTokenTheQuote (já fixo) */}
+              {!isTokenTheQuote && (
+                <TouchableOpacity 
+                  onPress={() => { setAmountInQuote(!amountInQuote); setAmount('') }}
+                  style={{ 
+                    flexDirection: 'row', alignItems: 'center', gap: 4,
+                    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6,
+                    backgroundColor: colors.primary + '15',
+                  }}
+                >
+                  <Ionicons name="swap-horizontal-outline" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '500' }}>
+                    {amountInQuote ? `Digitar em ${baseCurrency}` : `Digitar em ${quoteCurrency}`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {isAmountInQuote && (
+                <Text style={[styles.inputPrefix, { color: colors.textSecondary }]}>
+                  {isBrlQuote ? 'R$' : '$'}
+                </Text>
+              )}
               <TextInput
                 style={[styles.formInput, { color: colors.text }]}
-                placeholder="0.00000000"
+                placeholder={isAmountInQuote ? '0.00' : '0.00000000'}
                 placeholderTextColor={colors.textTertiary}
                 value={amount}
                 onChangeText={setAmount}
@@ -915,10 +941,16 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
               </Text>
             </View>
 
-            {/* Info: conversão quando token é a quote */}
-            {isTokenTheQuote && hasValidAmount && priceNum > 0 && (
+            {/* Info: conversão quando amount está em quote */}
+            {isAmountInQuote && hasValidAmount && priceNum > 0 && (
               <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
                 ≈ {apiService.formatTokenAmount(baseAmount.toFixed(8))} {baseCurrency}
+              </Text>
+            )}
+            {/* Info: conversão quando amount está em base */}
+            {!isAmountInQuote && hasValidAmount && priceNum > 0 && (
+              <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
+                ≈ {isBrlQuote ? 'R$ ' : '$ '}{apiService.formatUSD(total, total < 1 ? 6 : 2)} {quoteCurrency}
               </Text>
             )}
 
@@ -946,8 +978,8 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                   const avail = getAvailableBalance()
                   if (avail <= 0) return 'Saldo não disponível'
                   const curr = orderSide === 'buy' 
-                    ? (isTokenTheQuote ? baseCurrency : quoteCurrency)
-                    : (isTokenTheQuote ? quoteCurrency : baseCurrency)
+                    ? quoteCurrency
+                    : (isAmountInQuote ? quoteCurrency : baseCurrency)
                   return `Disponível: ${apiService.formatTokenAmount(avail.toFixed(8))} ${curr}`
                 })()}
               </Text>
@@ -961,8 +993,8 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
             <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>Total Estimado</Text>
             <Text style={[styles.totalValue, { color: colors.text }]}>
               {orderType === 'market'
-                ? `${apiService.formatTokenAmount(isTokenTheQuote ? baseAmount.toFixed(8) : amount)} ${baseCurrency} (preço de mercado)`
-                : isTokenTheQuote
+                ? `${apiService.formatTokenAmount(isAmountInQuote ? baseAmount.toFixed(8) : amount)} ${baseCurrency} (preço de mercado)`
+                : isAmountInQuote
                   ? `${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(amountNum, amountNum < 1 ? 6 : 2)} ${quoteCurrency}`
                   : `${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(total, total < 1 ? 6 : 2)} ${quoteCurrency}`
               }
@@ -1092,11 +1124,11 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
         title={orderSide === 'buy' ? '✅ Confirmar Compra' : '🔴 Confirmar Venda'}
         message={
           `${orderType === 'limit' ? 'LIMIT' : 'MARKET'} ${orderSide === 'buy' ? 'compra' : 'venda'} de ` +
-          (isTokenTheQuote
+          (isAmountInQuote
             ? `${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(amountNum, amountNum < 0.01 ? 8 : 2)} ${quoteCurrency} (≈ ${apiService.formatTokenAmount(baseAmount.toFixed(8))} ${baseCurrency})`
             : `${apiService.formatTokenAmount(amount)} ${baseCurrency}`) +
           (orderType === 'limit' ? `\nPreço: ${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(priceNum, priceNum < 0.01 ? 8 : 2)}` : '') +
-          (orderType === 'limit' && !isTokenTheQuote ? `\nTotal: ${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(total, total < 1 ? 6 : 2)} ${quoteCurrency}` : '') +
+          (orderType === 'limit' && !isAmountInQuote ? `\nTotal: ${isBrlQuote ? 'R$ ' : '$ '}${apiService.formatUSD(total, total < 1 ? 6 : 2)} ${quoteCurrency}` : '') +
           `\n\n📍 ${exchangeName} • ${tradingPair}`
         }
         confirmText={orderSide === 'buy' ? 'Comprar' : 'Vender'}
