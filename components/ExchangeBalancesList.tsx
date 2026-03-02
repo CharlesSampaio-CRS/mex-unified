@@ -28,6 +28,7 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
   const { hideValue } = usePrivacy()
   const { t } = useLanguage()
   const [expanded, setExpanded] = useState(false)
+  const [expandedError, setExpandedError] = useState<string | null>(null)
 
   const exchanges = useMemo(() => {
     if (!data?.exchanges || data.exchanges.length === 0) return []
@@ -38,7 +39,8 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
         const value = typeof ex.total_usd === 'string' ? parseFloat(ex.total_usd) : (ex.total_usd || 0)
         const logo = getExchangeLogo(name)
         const hasError = (ex as any).success === false
-        return { name, value, logo, hasError }
+        const error = (ex as any).error || ''
+        return { name, value, logo, hasError, error }
       })
       .sort((a, b) => b.value - a.value)
   }, [data])
@@ -84,29 +86,45 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
       {expanded && (
         <View style={styles.list}>
           {exchanges.map((ex) => (
-            <View key={ex.name} style={styles.row}>
-              {ex.logo ? (
-                <Image source={ex.logo} style={styles.icon} />
-              ) : (
-                <View style={[styles.iconFallback, { backgroundColor: colors.border }]}>
-                  <Text style={[styles.iconLetter, { color: colors.textSecondary }]}>
-                    {ex.name.charAt(0)}
+            <View key={ex.name}>
+              <View style={styles.row}>
+                {ex.logo ? (
+                  <Image source={ex.logo} style={styles.icon} />
+                ) : (
+                  <View style={[styles.iconFallback, { backgroundColor: colors.border }]}>
+                    <Text style={[styles.iconLetter, { color: colors.textSecondary }]}>
+                      {ex.name.charAt(0)}
+                    </Text>
+                  </View>
+                )}
+                <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {ex.name}
+                </Text>
+                {ex.hasError && (
+                  <TouchableOpacity
+                    onPress={() => setExpandedError(prev => prev === ex.name ? null : ex.name)}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.errorIcon}>⚠️</Text>
+                  </TouchableOpacity>
+                )}
+                <Text style={[styles.valueUsd, { color: colors.text }]}>
+                  {hideValue(fmtUsd(ex.value))}
+                </Text>
+                {usdToBrlRate ? (
+                  <Text style={[styles.valueBrl, { color: colors.textSecondary }]}>
+                    {hideValue(fmtBrl(ex.value * usdToBrlRate))}
+                  </Text>
+                ) : null}
+              </View>
+              {/* Mensagem de erro expandida */}
+              {ex.hasError && expandedError === ex.name && ex.error ? (
+                <View style={[styles.errorRow, { backgroundColor: 'rgba(239, 68, 68, 0.06)', borderColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                  <Text style={styles.errorText} numberOfLines={3}>
+                    {ex.error}
                   </Text>
                 </View>
-              )}
-              <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
-                {ex.name}
-              </Text>
-              {ex.hasError && (
-                <Text style={styles.errorIcon}>⚠️</Text>
-              )}
-              <Text style={[styles.valueUsd, { color: colors.text }]}>
-                {hideValue(fmtUsd(ex.value))}
-              </Text>
-              {usdToBrlRate ? (
-                <Text style={[styles.valueBrl, { color: colors.textSecondary }]}>
-                  {hideValue(fmtBrl(ex.value * usdToBrlRate))}
-                </Text>
               ) : null}
             </View>
           ))}
@@ -174,6 +192,21 @@ const styles = StyleSheet.create({
   errorIcon: {
     fontSize: 10,
     opacity: 0.8,
+  },
+  errorRow: {
+    marginLeft: 22,
+    marginTop: 2,
+    marginBottom: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  errorText: {
+    fontSize: 9,
+    fontWeight: fontWeights.regular,
+    color: '#ef4444',
+    lineHeight: 13,
   },
   valueUsd: {
     fontSize: 10,
