@@ -43,28 +43,38 @@ interface TokenData {
 }
 
 // ===== SKELETON =====
-const SkeletonTokensPieChart = memo(function SkeletonTokensPieChart({ colors }: { colors: any }) {
+const SkeletonTokensPieChart = memo(function SkeletonTokensPieChart({ colors, embedded }: { colors: any; embedded?: boolean }) {
+  const content = (
+    <>
+      <View style={styles.chartContainer}>
+        <View style={[styles.skeletonCircle, { 
+          width: BASE_CHART_SIZE * 2, 
+          height: BASE_CHART_SIZE * 2, 
+          borderRadius: BASE_CHART_SIZE,
+          borderWidth: STROKE_WIDTH,
+          borderColor: colors.surfaceSecondary,
+        }]} />
+      </View>
+      <View style={styles.legendContainer}>
+        {[1, 2, 3, 4].map((_, i) => (
+          <View key={i} style={styles.skeletonLegendItem}>
+            <View style={[styles.skeletonColor, { backgroundColor: colors.surfaceSecondary }]} />
+            <View style={[styles.skeletonText, { backgroundColor: colors.surfaceSecondary }]} />
+          </View>
+        ))}
+      </View>
+    </>
+  )
+
+  if (embedded) {
+    return <View style={styles.content}>{content}</View>
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
       <View style={styles.content}>
         <View style={{ width: 80, height: 14, borderRadius: 4, backgroundColor: colors.surfaceSecondary, opacity: 0.5 }} />
-        <View style={styles.chartContainer}>
-          <View style={[styles.skeletonCircle, { 
-            width: BASE_CHART_SIZE * 2, 
-            height: BASE_CHART_SIZE * 2, 
-            borderRadius: BASE_CHART_SIZE,
-            borderWidth: STROKE_WIDTH,
-            borderColor: colors.surfaceSecondary,
-          }]} />
-        </View>
-        <View style={styles.legendContainer}>
-          {[1, 2, 3, 4].map((_, i) => (
-            <View key={i} style={styles.skeletonLegendItem}>
-              <View style={[styles.skeletonColor, { backgroundColor: colors.surfaceSecondary }]} />
-              <View style={[styles.skeletonText, { backgroundColor: colors.surfaceSecondary }]} />
-            </View>
-          ))}
-        </View>
+        {content}
       </View>
     </View>
   )
@@ -90,11 +100,11 @@ const formatPercent = (value: number): string => {
   if (value >= 10) return value.toFixed(1)
   if (value >= 1) return value.toFixed(1)
   if (value >= 0.1) return value.toFixed(2)
-  return '<0.1'
+  return '0.1'
 }
 
 // ===== MAIN COMPONENT =====
-export const TokensPieChart = memo(function TokensPieChart() {
+export const TokensPieChart = memo(function TokensPieChart({ embedded }: { embedded?: boolean }) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { data, loading } = useBalance()
@@ -225,10 +235,9 @@ export const TokensPieChart = memo(function TokensPieChart() {
     })
   }, [chartData])
 
-  // Tamanho do gráfico
+  // Tamanho do gráfico (mesmo cálculo do ExchangesPieChart para consistência)
   const chartSize = useMemo(() => {
-    const maxSize = Math.min(screenWidth * 0.42, BASE_CHART_SIZE * 2)
-    return Math.max(MIN_CHART_SIZE * 2, maxSize)
+    return Math.max(MIN_CHART_SIZE, Math.min(BASE_CHART_SIZE, screenWidth - 80))
   }, [screenWidth])
 
   const radius = chartSize / 2
@@ -236,38 +245,50 @@ export const TokensPieChart = memo(function TokensPieChart() {
 
   // Loading
   if (loading) {
-    return <SkeletonTokensPieChart colors={colors} />
+    return <SkeletonTokensPieChart colors={colors} embedded={embedded} />
   }
 
   // Empty state
   if (chartData.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.card }]}>
-        <View style={styles.content}>
+    const emptyContent = (
+      <>
+        {!embedded && (
           <Text style={[styles.title, { color: colors.textSecondary }]}>
             DISTRIBUIÇÃO POR TOKEN
           </Text>
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              Nenhum token encontrado
-            </Text>
-          </View>
+        )}
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            Nenhum token encontrado
+          </Text>
+        </View>
+      </>
+    )
+
+    if (embedded) {
+      return <View style={styles.content}>{emptyContent}</View>
+    }
+
+    return (
+      <View style={[styles.container, { backgroundColor: colors.card }]}>
+        <View style={styles.content}>
+          {emptyContent}
         </View>
       </View>
     )
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
-      <View style={styles.content}>
-        {/* Título */}
+  const chartContent = (
+    <>
+      {!embedded && (
         <Text style={[styles.title, { color: colors.textSecondary }]}>
           DISTRIBUIÇÃO POR TOKEN
         </Text>
+      )}
 
-        {/* Gráfico */}
-        <View style={styles.chartContainer}>
-          <Svg
+      {/* Gráfico */}
+      <View style={styles.chartContainer}>
+        <Svg
             width={chartSize}
             height={chartSize}
             viewBox={`${-radius} ${-radius} ${chartSize} ${chartSize}`}
@@ -385,6 +406,17 @@ export const TokensPieChart = memo(function TokensPieChart() {
             )
           })}
         </View>
+    </>
+  )
+
+  if (embedded) {
+    return <View style={styles.content}>{chartContent}</View>
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
+      <View style={styles.content}>
+        {chartContent}
       </View>
     </View>
   )
@@ -450,15 +482,15 @@ const styles = StyleSheet.create({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    minHeight: 24,
+    gap: 5,
+    minHeight: 20,
     paddingVertical: 1,
     width: '100%',
   },
   legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   legendTextContainer: {
     flex: 1,
@@ -469,7 +501,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   legendName: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: fontWeights.medium,
     flex: 1,
     flexShrink: 1,
@@ -484,21 +516,21 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   legendPercentage: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: fontWeights.medium,
-    minWidth: 40,
-    maxWidth: 64,
+    minWidth: 36,
+    maxWidth: 56,
     textAlign: 'right',
     flexShrink: 0,
   },
   exchangeCountBadge: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: fontWeights.regular,
   },
   selectedIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   emptyState: {
     paddingVertical: 32,

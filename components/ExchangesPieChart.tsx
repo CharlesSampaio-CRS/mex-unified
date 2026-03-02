@@ -51,36 +51,47 @@ interface ExchangeData {
 }
 
 // Componente Skeleton para loading
-const SkeletonExchangesPieChart = memo(function SkeletonExchangesPieChart() {
+const SkeletonExchangesPieChart = memo(function SkeletonExchangesPieChart({ embedded }: { embedded?: boolean }) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { width } = useWindowDimensions()
   const chartSize = Math.max(MIN_CHART_SIZE, Math.min(BASE_CHART_SIZE, width - 80))
   
-  return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
-      <View style={styles.content}>
+  const content = (
+    <>
+      {!embedded && (
         <Text style={[styles.title, { color: colors.text }]}>
           {t('home.distribution') || 'Distribuição por Exchange'}
         </Text>
-        <View style={styles.chartContainer}>
-          {/* Círculo skeleton sem loading indicator */}
-          <View style={[styles.skeletonCircle, { backgroundColor: colors.surfaceSecondary, width: chartSize, height: chartSize, borderRadius: chartSize / 2 }]} />
-        </View>
-        <View style={styles.legendContainer}>
-          {[1, 2, 3].map((i) => (
-            <View key={i} style={styles.skeletonLegendItem}>
-              <View style={[styles.skeletonColor, { backgroundColor: colors.border }]} />
-              <View style={[styles.skeletonText, { backgroundColor: colors.border }]} />
-            </View>
-          ))}
-        </View>
+      )}
+      <View style={styles.chartContainer}>
+        <View style={[styles.skeletonCircle, { backgroundColor: colors.surfaceSecondary, width: chartSize, height: chartSize, borderRadius: chartSize / 2 }]} />
+      </View>
+      <View style={styles.legendContainer}>
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={styles.skeletonLegendItem}>
+            <View style={[styles.skeletonColor, { backgroundColor: colors.border }]} />
+            <View style={[styles.skeletonText, { backgroundColor: colors.border }]} />
+          </View>
+        ))}
+      </View>
+    </>
+  )
+
+  if (embedded) {
+    return <View style={styles.content}>{content}</View>
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
+      <View style={styles.content}>
+        {content}
       </View>
     </View>
   )
 })
 
-export const ExchangesPieChart = memo(function ExchangesPieChart() {
+export const ExchangesPieChart = memo(function ExchangesPieChart({ embedded }: { embedded?: boolean }) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { data, loading, error } = useBalance()
@@ -210,32 +221,45 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
   // Mostra skeleton apenas durante loading inicial (não durante refresh)
   // IMPORTANTE: Esse check deve vir DEPOIS de todos os hooks
   if (loading && !data && !error) {
-    return <SkeletonExchangesPieChart />
+    return <SkeletonExchangesPieChart embedded={embedded} />
   }
 
   if (chartData.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.card }]}>
-        <View style={styles.content}>
+    const emptyContent = (
+      <>
+        {!embedded && (
           <Text style={[styles.title, { color: colors.text }]}>
             {t('home.distribution') || 'Por Exchange'}
           </Text>
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {t('home.noExchangesConnected') || 'Nenhuma exchange conectada'}
-            </Text>
-          </View>
+        )}
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            {t('home.noExchangesConnected') || 'Nenhuma exchange conectada'}
+          </Text>
+        </View>
+      </>
+    )
+
+    if (embedded) {
+      return <View style={styles.content}>{emptyContent}</View>
+    }
+
+    return (
+      <View style={[styles.container, { backgroundColor: colors.card }]}>
+        <View style={styles.content}>
+          {emptyContent}
         </View>
       </View>
     )
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
-      <View style={styles.content}>
+  const chartContent = (
+    <>
+      {!embedded && (
         <Text style={[styles.title, { color: colors.text }]}>
           {t('home.distribution') || 'Distribuição por Exchange'}
         </Text>
+      )}
 
         <View style={styles.chartContainer}>
           {/* Gráfico de Pizza */}
@@ -346,7 +370,7 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
                     </Text>
                     {/* ⚠️ Indicador de erro */}
                     {item.hasError && (
-                      <Text style={{ fontSize: 12, opacity: opacity * 0.8 }}>⚠️</Text>
+                      <Text style={{ fontSize: 10, opacity: opacity * 0.8 }}>⚠️</Text>
                     )}
                   </View>
                   <Text style={[styles.legendPercentage, { color: colors.textSecondary, opacity }]} numberOfLines={1}>
@@ -360,6 +384,17 @@ export const ExchangesPieChart = memo(function ExchangesPieChart() {
             )
           })}
         </View>
+    </>
+  )
+
+  if (embedded) {
+    return <View style={styles.content}>{chartContent}</View>
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
+      <View style={styles.content}>
+        {chartContent}
       </View>
     </View>
   )
@@ -425,8 +460,8 @@ const styles = StyleSheet.create({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    minHeight: 24,
+    gap: 5,
+    minHeight: 20,
     paddingVertical: 1,
     width: '100%',
   },
@@ -446,9 +481,9 @@ const styles = StyleSheet.create({
     height: 20,
   },
   legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   legendTextContainer: {
     flex: 1,
@@ -459,17 +494,17 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   legendName: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: fontWeights.medium,
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
   },
   legendPercentage: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: fontWeights.medium,
-    minWidth: 40,
-    maxWidth: 64,
+    minWidth: 36,
+    maxWidth: 56,
     textAlign: 'right',
     flexShrink: 0,
   },
@@ -482,9 +517,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   selectedIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   emptyState: {
     paddingVertical: 32,
