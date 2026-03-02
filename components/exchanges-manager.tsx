@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, RefreshControl } from "react-native"
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
+import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
 import { exchangeService } from "@/services/exchange-service"
 import { AvailableExchange, LinkedExchange } from "@/types/api"
@@ -388,6 +389,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState<'available' | 'linked'>(initialTab)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   
   // Modal de conexão
   const [connectModalVisible, setConnectModalVisible] = useState(false)
@@ -1012,8 +1014,27 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       <TabBar 
         tabs={[t('exchanges.connected'), t('exchanges.available')]}
         activeTab={activeTab === 'linked' ? 0 : 1}
-        onTabChange={(index) => setActiveTab(index === 0 ? 'linked' : 'available')}
+        onTabChange={(index) => { setActiveTab(index === 0 ? 'linked' : 'available'); setSearchQuery(''); }}
       />
+
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { borderBottomColor: colors.border }]}>
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder={activeTab === 'linked' ? 'Buscar exchange conectada...' : 'Buscar exchange disponível...'}
+            placeholderTextColor={colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle-outline" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
       {/* Content */}
       <ScrollView 
@@ -1047,8 +1068,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
               </TouchableOpacity>
             </View>
           ) : (
-            // Ordenar exchanges: ativas primeiro, depois inativas
+            // Filtrar por busca, ordenar: ativas primeiro, depois inativas
             [...linkedExchanges]
+              .filter(ex => {
+                if (!searchQuery) return true
+                const q = searchQuery.toLowerCase()
+                return (ex.name || '').toLowerCase().includes(q) ||
+                       (ex.ccxt_id || '').toLowerCase().includes(q)
+              })
               .sort((a, b) => {
                 const aActive = a.is_active === true || a.status === 'active'
                 const bActive = b.is_active === true || b.status === 'active'
@@ -1091,6 +1118,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   linked.name?.toLowerCase() === exchange.nome?.toLowerCase() ||
                   linked.ccxt_id === exchange.ccxt_id
                 )
+
+                // Filtro de busca
+                if (searchQuery) {
+                  const q = searchQuery.toLowerCase()
+                  const nameMatch = (exchange.nome || '').toLowerCase().includes(q) ||
+                                    (exchange.ccxt_id || '').toLowerCase().includes(q)
+                  if (!nameMatch) return false
+                }
 
                 // Retorna true se NÃO estiver conectada (ou seja, disponível)
                 return !isLinkedById && !isLinkedByName
@@ -2051,6 +2086,28 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  // Search Bar
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
+    paddingVertical: 0,
   },
   // Menu Modal Styles
   menuModalOverlay: {
