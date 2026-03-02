@@ -64,8 +64,11 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
           text: t('deposit.openApp') || 'Abrir App',
           style: 'default',
           onPress: async () => {
-            // Determina URL da loja com base na plataforma
-            const storeUrl = Platform.OS === 'ios' ? config.appStoreUrl : config.playStoreUrl
+            // Fallback: busca pelo nome da exchange na loja
+            const searchTerm = encodeURIComponent(exchangeName)
+            const storeSearchUrl = Platform.OS === 'ios'
+              ? `https://apps.apple.com/search?term=${searchTerm}`
+              : `https://play.google.com/store/search?q=${searchTerm}&c=apps`
 
             try {
               // Tenta abrir o deep link do app primeiro
@@ -84,10 +87,10 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                   return
                 }
               }
-              // Fallback: abre a loja (App Store / Google Play)
-              await Linking.openURL(storeUrl)
+              // Fallback: busca na loja pelo nome da exchange
+              await Linking.openURL(storeSearchUrl)
             } catch (err) {
-              await Linking.openURL(storeUrl)
+              await Linking.openURL(storeSearchUrl)
             }
           },
         },
