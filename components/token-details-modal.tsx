@@ -189,17 +189,12 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
         ? await decryptData(exchange.api_passphrase_encrypted, user.id) 
         : undefined
       
-      // 3️⃣ Formatar o símbolo como par (ex: BTC -> BTC/USDT)
-      // NOTA: Não assume par BRL pois pode não existir na exchange
-      // O trade-modal busca dinamicamente os pares disponíveis
+      // 3️⃣ Formatar o símbolo
+      // Se já tem '/', envia como está (ex: BTC/USDT)
+      // Se é só base (ex: BTC), envia sem par — o backend tenta automaticamente
+      // USDT → BRL → USDC → BTC → ETH → EUR até encontrar um par válido
       const symbolUpper = symbol.toUpperCase()
-      let pair: string
-      if (symbol.includes('/')) {
-        pair = symbolUpper
-      } else {
-        // Padrão: TOKEN/USDT (funciona na maioria das exchanges)
-        pair = `${symbolUpper}/USDT`
-      }
+      const symbolToSend = symbolUpper // Backend resolves the pair automatically
       
       // 4️⃣ Chamar o endpoint /tokens/details (POST) com credenciais
       const response = await fetch(`${config.apiBaseUrl}/tokens/details`, {
@@ -217,7 +212,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
             passphrase: passphrase,
             is_active: exchange.is_active === 1,
           },
-          symbol: pair, // Ex: 'BTC/USDT', 'REKTCOIN/USDT'
+          symbol: symbolToSend, // Ex: 'BTC' (backend resolves pair) or 'BTC/USDT' (direct)
         }),
       })
       
@@ -503,7 +498,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                       </View>
                       <View style={styles.halfColumn}>
                         <Text style={[styles.label, { color: colors.textSecondary }]}>
-                          Quote (USDT)
+                          Quote ({tokenData.quote || 'USDT'})
                         </Text>
                         <Text style={[styles.value, { color: colors.text }]}>
                           ${formatVolume(tokenData.volume.quote_24h)}
