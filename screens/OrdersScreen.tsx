@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -17,6 +17,7 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { OpenOrder } from '@/types/orders';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
+import { getExchangeLogo } from '@/lib/exchange-logos';
 
 // Sub-componente com animação piscante para ordens sendo canceladas
 function AnimatedOrderCard({ 
@@ -577,11 +578,19 @@ export function OrdersScreen({ navigation }: any) {
           <View style={styles.ordersListContainer}>
             {filteredSections.map((section) => (
               <View key={section.exchangeId} style={styles.exchangeSection}>
-                <View style={styles.exchangeHeader}>
-                  <Text style={[styles.exchangeName, { color: colors.text }]}>
-                    {String(section.exchangeName)}
-                  </Text>
-                  <Text style={[styles.exchangeCount, { color: colors.textSecondary }]}>
+                {/* Exchange Header - mesmo estilo dos Assets */}
+                <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                  <View style={styles.exchangeCardLeft}>
+                    <Image 
+                      source={getExchangeLogo(section.exchangeName)} 
+                      style={styles.exchangeCardLogo}
+                      resizeMode="contain"
+                    />
+                    <Text style={[styles.exchangeCardName, { color: colors.text }]}>
+                      {String(section.exchangeName)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
                     {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
                   </Text>
                 </View>
@@ -694,20 +703,33 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   exchangeSection: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  exchangeHeader: {
+  // Exchange header card (mesmo padrão dos Assets)
+  exchangeCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 10,
   },
-  exchangeName: {
-    fontSize: typography.body,
+  exchangeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exchangeCardLogo: {
+    width: 20,
+    height: 20,
+  },
+  exchangeCardName: {
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
   },
-  exchangeCount: {
+  exchangeCardCount: {
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
