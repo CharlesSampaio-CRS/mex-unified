@@ -578,6 +578,10 @@ export function OrdersScreen({ navigation }: any) {
           <View style={styles.ordersListContainer}>
             {filteredSections.map((section) => (
               <View key={section.exchangeId} style={styles.exchangeSection}>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> a901486b45c5a3320ddabfbbc5a6b665da994be8
                 {/* Exchange Header - mesmo estilo dos Assets */}
                 <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                   <View style={styles.exchangeCardLeft}>
@@ -593,6 +597,32 @@ export function OrdersScreen({ navigation }: any) {
                   <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
                     {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
                   </Text>
+<<<<<<< HEAD
+=======
+=======
+                <View style={[styles.exchangeCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                  {/* Exchange Header */}
+                  <View style={[styles.exchangeCardHeader, { borderBottomColor: colors.border }]}>
+                    <View style={styles.exchangeCardLeft}>
+                      <Image 
+                        source={getExchangeLogo(section.exchangeName)} 
+                        style={styles.exchangeCardLogo}
+                        resizeMode="contain"
+                      />
+                      <Text style={[styles.exchangeCardName, { color: colors.text }]}>
+                        {String(section.exchangeName)}
+                      </Text>
+                    </View>
+                    <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
+                      {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
+                    </Text>
+                  </View>
+                  {/* Order Rows */}
+                  <View style={styles.exchangeCardBody}>
+                    {section.orders.map((order, index) => renderOrderRow(order, section.exchangeId, index, section.orders.length))}
+                  </View>
+>>>>>>> 733fb383f0bc3a95116a2d0025e2705205378ffe
+>>>>>>> a901486b45c5a3320ddabfbbc5a6b665da994be8
                 </View>
                 {section.orders.map(order => renderOrderCard(order, section.exchangeId))}
               </View>
@@ -703,6 +733,10 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   exchangeSection: {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> a901486b45c5a3320ddabfbbc5a6b665da994be8
     marginBottom: 20,
   },
   // Exchange header card (mesmo padrão dos Assets)
@@ -735,6 +769,16 @@ const styles = StyleSheet.create({
   },
   orderCard: {
     borderRadius: 16,
+<<<<<<< HEAD
+=======
+=======
+    marginBottom: 14,
+  },
+  // Exchange card container (mesmo padrão do AssetsList)
+  exchangeCard: {
+    borderRadius: 10,
+>>>>>>> 733fb383f0bc3a95116a2d0025e2705205378ffe
+>>>>>>> a901486b45c5a3320ddabfbbc5a6b665da994be8
     borderWidth: 1,
     marginBottom: 12,
     overflow: 'hidden',
