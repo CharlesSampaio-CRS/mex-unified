@@ -1827,6 +1827,69 @@ export const apiService = {
   async deleteStrategyTemplate(id: string) {
     return this.delete(`/strategy-templates/${id}`, TIMEOUTS.FAST);
   },
+
+  // ==========================================
+  // 🔄 TOKEN PAIRS - Pares disponíveis por exchange
+  // ==========================================
+
+  /**
+   * 🔄 Busca pares de trading disponíveis para um token em uma exchange
+   * Retorna apenas pares ativos no mercado spot
+   * @param exchangeId ID da exchange no MongoDB
+   * @param token Símbolo do token (ex: BTC, USDT, ETH)
+   * @returns Promise com lista de pares disponíveis
+   */
+  async getAvailablePairs(
+    exchangeId: string,
+    token: string
+  ): Promise<{
+    success: boolean
+    token: string
+    exchange: string
+    pairs: Array<{
+      symbol: string
+      base: string
+      quote: string
+      active: boolean
+      min_amount: number
+      min_cost: number
+    }>
+    count: number
+  }> {
+    try {
+      const accessToken = await secureStorage.getItemAsync('access_token');
+      
+      if (!accessToken) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/token-pairs`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            exchange_id: exchangeId,
+            token: token
+          }),
+        },
+        TIMEOUTS.SLOW
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('❌ Get Available Pairs Error:', error);
+      throw error;
+    }
+  },
 };
 
 // Export default para facilitar imports

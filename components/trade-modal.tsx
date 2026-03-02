@@ -21,6 +21,7 @@ interface TradeModalProps {
   balance?: {
     token: number
     usdt: number
+    brl?: number // Saldo BRL disponível (para pares USDT/BRL)
   }
   onOrderCreated?: () => void // Callback chamado após criar ordem com sucesso
   onBalanceUpdate?: () => void // Callback para atualizar balance/portfolio
@@ -36,7 +37,7 @@ export function TradeModal({
   exchangeName,
   symbol, 
   currentPrice,
-  balance = { token: 0, usdt: 0 },
+  balance = { token: 0, usdt: 0, brl: 0 },
   onOrderCreated,
   onBalanceUpdate
 }: TradeModalProps) {
@@ -57,6 +58,19 @@ export function TradeModal({
   const [createOrderError, setCreateOrderError] = useState<string | null>(null)
   const [selectedPercent, setSelectedPercent] = useState<number | null>(null)
   const [confirmVisible, setConfirmVisible] = useState(false)
+
+  // 🔄 Estados para pares disponíveis (dinâmico via API)
+  const [availablePairs, setAvailablePairs] = useState<Array<{
+    symbol: string
+    base: string
+    quote: string
+    active: boolean
+    min_amount: number
+    min_cost: number
+  }>>([])
+  const [selectedPair, setSelectedPair] = useState<string | null>(null)
+  const [pairsLoading, setPairsLoading] = useState(false)
+  const [pairsError, setPairsError] = useState<string | null>(null)
 
   // Calcula diferença percentual entre preço digitado e preço de mercado
   const calculatePriceDifference = (): { percentage: number; isHigher: boolean } | null => {
@@ -244,12 +258,124 @@ export function TradeModal({
       setCreateOrderError(null)
       setSelectedPercent(null)
       setConfirmVisible(false)
+
+      // Limpa estados de pares
+      setAvailablePairs([])
+      setSelectedPair(null)
+      setPairsError(null)
+
+      // 🔄 Busca pares disponíveis para este token na exchange
+      const fetchPairs = async () => {
+        setPairsLoading(true)
+        try {
+          const result = await apiService.getAvailablePairs(exchangeId, symbol)
+          if (result.success && result.pairs.length > 0) {
+            const sym = symbol.toUpperCase()
+            
+            // 1. Primeiro tenta pares onde o token é a BASE (ex: BTC → BTC/USDT, BTC/BRL)
+            let relevantPairs = result.pairs.filter(p => p.base === sym)
+            
+            // 2. Se não encontrou como base (ex: BRL, USDT, USDC são sempre QUOTE),
+            //    usa pares onde o token é a QUOTE (ex: BRL → BTC/BRL, ETH/BRL)
+            const isQuoteOnly = relevantPairs.length === 0
+            if (isQuoteOnly) {
+              relevantPairs = result.pairs.filter(p => p.quote === sym)
+            }
+            
+            // Prioriza pares com quote/base currencies comuns
+            const priorityOrder = ['USDT', 'BRL', 'USDC', 'BTC', 'ETH', 'EUR']
+            const sortedPairs = relevantPairs.sort((a, b) => {
+              // Se token é base, prioriza por quote (USDT > BRL > USDC)
+              // Se token é quote, prioriza por base (BTC > ETH > SOL)
+              const keyA = isQuoteOnly ? a.base : a.quote
+              const keyB = isQuoteOnly ? b.base : b.quote
+              const aIdx = priorityOrder.indexOf(keyA)
+              const bIdx = priorityOrder.indexOf(keyB)
+              const aPriority = aIdx >= 0 ? aIdx : 999
+              const bPriority = bIdx >= 0 ? bIdx : 999
+              return aPriority - bPriority
+            })
+
+            // Limita a 8 pares mais relevantes para não poluir a UI
+            const topPairs = sortedPairs.slice(0, 8)
+
+            setAvailablePairs(topPairs)
+            
+            // Auto-seleciona o primeiro par
+            if (topPairs.length > 0) {
+              setSelectedPair(topPairs[0].symbol)
+            }
+          } else {
+            // Nenhum par encontrado - mostra erro
+            setPairsError(`Nenhum par de trading ativo encontrado para ${symbol} nesta exchange`)
+          }
+        } catch (error: any) {
+          console.error('❌ Error fetching pairs:', error)
+          // Fallback: assume par padrão TOKEN/USDT
+          const fallbackPair = `${symbol.toUpperCase()}/USDT`
+          setSelectedPair(fallbackPair)
+          setAvailablePairs([{
+            symbol: fallbackPair,
+            base: symbol.toUpperCase(),
+            quote: 'USDT',
+            active: true,
+            min_amount: 0,
+            min_cost: 0
+          }])
+        } finally {
+          setPairsLoading(false)
+        }
+      }
+
+      if (symbol && exchangeId) {
+        fetchPairs()
+      }
     }
-  }, [visible, currentPrice])
+  }, [visible, currentPrice, symbol, exchangeId])
 
   const total = parseFloat(amount || '0') * parseFloat(price || '0')
   const isBuy = orderSide === 'buy'
-  const availableBalance = isBuy ? balance.usdt : (orderSide === 'sell' ? balance.token : 0)
+
+  // 🔄 Par selecionado e quote currency derivada dinamicamente
+  const symbolUpper = symbol.toUpperCase()
+  const selectedPairData = availablePairs.find(p => p.symbol === selectedPair)
+  const quoteCurrency = selectedPairData?.quote || 'USDT'
+  const baseCurrency = selectedPairData?.base || symbolUpper
+  const isBrlQuote = quoteCurrency === 'BRL'
+  const tradingPair = selectedPair || `${symbolUpper}/USDT`
+  
+  // Detecta se o token clicado é a quote do par (ex: clicou BRL, par BTC/BRL)
+  const isTokenTheQuote = symbolUpper === quoteCurrency
+  // Detecta se o token clicado é a base do par (ex: clicou BTC, par BTC/USDT)
+  const isTokenTheBase = symbolUpper === baseCurrency
+
+  // Saldo disponível depende do par selecionado E de qual side é o token clicado:
+  // 
+  // Token clicado é a BASE (ex: clicou BTC, par BTC/USDT):
+  //   - Compra: usa saldo da quote (USDT ou BRL)
+  //   - Venda: usa saldo do token clicado (BTC = balance.token)
+  //
+  // Token clicado é a QUOTE (ex: clicou BRL, par BTC/BRL):
+  //   - Compra: usa saldo do token clicado (BRL = balance.token) 
+  //   - Venda: usa saldo da base (BTC) → não disponível diretamente, mostra 0
+  const availableBalance = (() => {
+    if (!orderSide) return 0
+    
+    if (isTokenTheBase) {
+      // Token clicado é a base do par (caso normal: BTC → BTC/USDT)
+      return isBuy 
+        ? (isBrlQuote ? (balance.brl || 0) : balance.usdt)
+        : balance.token
+    } else if (isTokenTheQuote) {
+      // Token clicado é a quote do par (ex: BRL → BTC/BRL, USDT → BTC/USDT)
+      return isBuy
+        ? balance.token  // Compra BTC usando BRL/USDT → saldo de BRL/USDT é balance.token
+        : 0              // Venda BTC → não temos saldo de BTC, mostra 0
+    }
+    
+    // Fallback
+    return isBuy ? balance.usdt : balance.token
+  })()
 
   // ✅ UX Progressiva: controle de habilitação dos passos
   const sideSelected = orderSide !== null
@@ -258,7 +384,7 @@ export function TradeModal({
   const priceNum = parseFloat(price || '0')
   const hasValidAmount = amountNum > 0
   const hasValidPrice = orderType === 'market' || (orderType === 'limit' && priceNum > 0)
-  const isFormComplete = sideSelected && typeSelected && hasValidAmount && hasValidPrice && !createOrderLoading
+  const isFormComplete = sideSelected && typeSelected && hasValidAmount && hasValidPrice && !createOrderLoading && !pairsLoading && !pairsError && !!selectedPair
 
   const handlePercentage = (percentage: number) => {
     if (!orderSide || !orderType) return
@@ -301,12 +427,15 @@ export function TradeModal({
     const tolerance = availableBalance * 0.001
     
     if (isBuy && total > (availableBalance + tolerance)) {
-      Alert.alert('Saldo Insuficiente', `Você precisa de $ ${apiService.formatUSD(total)} USDT`)
+      const balanceLabel = isBrlQuote 
+        ? `R$ ${availableBalance.toFixed(2)} BRL`
+        : `${availableBalance.toFixed(4)} ${quoteCurrency}`
+      Alert.alert('Saldo Insuficiente', `Você precisa de ${balanceLabel}`)
       return
     }
 
     if (!isBuy && amountVal > (availableBalance + tolerance)) {
-      Alert.alert('Saldo Insuficiente', `Você possui apenas ${availableBalance.toFixed(8)} ${symbol}`)
+      Alert.alert('Saldo Insuficiente', `Você possui apenas ${availableBalance.toFixed(8)} ${baseCurrency}`)
       return
     }
 
@@ -331,7 +460,8 @@ export function TradeModal({
     setCreateOrderError(null)
 
     try {
-      const tradingPair = symbol.includes('/') ? symbol : `${symbol}/USDT`
+      // 🔄 Usa o par selecionado dinamicamente (já definido no estado)
+      // tradingPair vem do selectedPair ou fallback para TOKEN/USDT
       
       const result = isBuy
         ? await apiService.createBuyOrder(
@@ -406,7 +536,7 @@ export function TradeModal({
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
         setCreateOrderError(errorMsg);
         notify.orderError(addNotification, {
-          symbol,
+          symbol: tradingPair,
           action: 'Criar Ordem',
           error: errorMsg,
         })
@@ -415,7 +545,7 @@ export function TradeModal({
       const errorMsg = error.message || 'Não foi possível criar a ordem';
       setCreateOrderError(errorMsg);
       notify.orderError(addNotification, {
-        symbol,
+        symbol: tradingPair,
         action: 'Criar Ordem',
         error: errorMsg,
       })
@@ -436,7 +566,7 @@ export function TradeModal({
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View>
-              <Text style={[styles.title, { color: colors.text }]}>Trade {String(symbol.toUpperCase())}</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Trade {String(tradingPair || symbol.toUpperCase())}</Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
                 {String(exchangeName)} • {String(currentPrice < 0.01 
                   ? currentPrice.toFixed(10).replace(/\.?0+$/, '') 
@@ -449,9 +579,67 @@ export function TradeModal({
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* PASSO 1: Comprar/Vender — sempre habilitado, começa desmarcado */}
-            <View style={styles.section}>
-              <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>1. Selecione a operação</Text>
+            {/* 🔄 Seletor de Par de Trading (dinâmico) */}
+            {pairsLoading ? (
+              <View style={[styles.section, { alignItems: 'center', paddingVertical: 16 }]}>
+                <AnimatedLogoIcon size={24} />
+                <Text style={[styles.stepLabel, { color: colors.textSecondary, marginTop: 8 }]}>
+                  Buscando pares disponíveis...
+                </Text>
+              </View>
+            ) : pairsError ? (
+              <View style={[styles.section, { alignItems: 'center', paddingVertical: 16 }]}>
+                <Text style={{ fontSize: 28 }}>⚠️</Text>
+                <Text style={[styles.stepLabel, { color: '#ef4444', marginTop: 8, textAlign: 'center' }]}>
+                  {pairsError}
+                </Text>
+                <Text style={[{ color: colors.textSecondary, fontSize: 12, marginTop: 4, textAlign: 'center' }]}>
+                  Este token pode não estar disponível para trading nesta exchange
+                </Text>
+              </View>
+            ) : availablePairs.length > 1 ? (
+              <View style={styles.section}>
+                <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>Par de trading</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {availablePairs.map((pair) => (
+                      <TouchableOpacity
+                        key={pair.symbol}
+                        style={[
+                          {
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            backgroundColor: selectedPair === pair.symbol ? `${colors.primary}20` : colors.surface,
+                            borderColor: selectedPair === pair.symbol ? colors.primary : colors.border,
+                          }
+                        ]}
+                        onPress={() => setSelectedPair(pair.symbol)}
+                      >
+                        <Text style={{
+                          fontSize: 13,
+                          fontWeight: selectedPair === pair.symbol ? '700' : '500',
+                          color: selectedPair === pair.symbol ? colors.primary : colors.textSecondary,
+                        }}>
+                          {pair.symbol}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            ) : availablePairs.length === 1 ? (
+              <View style={[styles.section, { paddingVertical: 4 }]}>
+                <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
+                  Par: <Text style={{ color: colors.text, fontWeight: '700' }}>{tradingPair}</Text>
+                </Text>
+              </View>
+            ) : null}
+
+            {/* PASSO 1: Comprar/Vender — habilitado quando par está carregado */}
+            <View style={[styles.section, (pairsLoading || !!pairsError) && styles.sectionDisabled]}>
+              <Text style={[styles.stepLabel, { color: (!pairsLoading && !pairsError) ? colors.textSecondary : colors.border }]}>1. Selecione a operação</Text>
               <View style={styles.tabs}>
                 <TouchableOpacity
                   style={[
@@ -462,6 +650,7 @@ export function TradeModal({
                     }
                   ]}
                   onPress={() => { setOrderSide('buy'); setAmount(''); setSelectedPercent(null); }}
+                  disabled={pairsLoading || !!pairsError}
                 >
                   <Text style={[
                     styles.tabText,
@@ -480,6 +669,7 @@ export function TradeModal({
                     }
                   ]}
                   onPress={() => { setOrderSide('sell'); setAmount(''); setSelectedPercent(null); }}
+                  disabled={pairsLoading || !!pairsError}
                 >
                   <Text style={[
                     styles.tabText,
@@ -586,10 +776,17 @@ export function TradeModal({
             <View style={[styles.section, !typeSelected && styles.sectionDisabled]}>
               <View style={styles.labelRow}>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.stepLabel, { color: typeSelected ? colors.textSecondary : colors.border }]}>
-                  {orderType === 'limit' ? '4' : '3'}. Quantidade ({String(symbol)})
+                  {orderType === 'limit' ? '4' : '3'}. Quantidade ({String(baseCurrency)})
                 </Text>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.balanceText, { color: typeSelected ? colors.textSecondary : colors.border }]}> 
-                  Disponível: {String(availableBalance.toFixed(8))}
+                  Disponível: {String(isBuy 
+                    ? (isBrlQuote 
+                        ? `R$ ${availableBalance.toFixed(2)} BRL` 
+                        : `${availableBalance.toFixed(4)} ${quoteCurrency}`)
+                    : (availableBalance > 0 
+                        ? `${availableBalance.toFixed(8)} ${baseCurrency}`
+                        : `-- ${baseCurrency}`)
+                  )}
                 </Text>
               </View>
               <TextInput
@@ -658,7 +855,7 @@ export function TradeModal({
                     Total {isBuy ? 'a Pagar' : 'a Receber'}
                   </Text>
                   <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
-                    $ {apiService.formatUSD(total)}
+                    {isBrlQuote ? `R$ ${total.toFixed(2)}` : `$ ${apiService.formatUSD(total)}`}
                   </Text>
                 </View>
                 
@@ -686,7 +883,7 @@ export function TradeModal({
                           if (qty >= 1000) return `${(qty / 1000).toFixed(2)}K`
                           if (qty < 1) return qty.toFixed(8).replace(/\.?0+$/, '')
                           return qty.toFixed(2)
-                        })())} {String(symbol.toUpperCase())}
+                        })())} {String(baseCurrency)}
                       </Text>
                     </View>
                   </>
@@ -705,7 +902,7 @@ export function TradeModal({
                     ? 'Selecione Limit ou Market'
                     : !hasValidAmount 
                       ? 'Informe a quantidade'
-                      : `${isBuy ? 'Comprar' : 'Vender'} ${symbol}`
+                      : `${isBuy ? 'Comprar' : 'Vender'} ${baseCurrency}`
               
               return (
                 <TouchableOpacity
@@ -776,7 +973,7 @@ export function TradeModal({
                 <View style={styles.confirmRow}>
                   <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.pair')}</Text>
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
-                    {String(symbol.includes('/') ? symbol : `${symbol}/USDT`)}
+                    {String(tradingPair)}
                   </Text>
                 </View>
                 <View style={styles.confirmRow}>
@@ -795,9 +992,12 @@ export function TradeModal({
                   <View style={styles.confirmRow}>
                     <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.price')}</Text>
                     <Text style={[styles.confirmValue, { color: colors.text }]}>
-                      {String(`$ ${parseFloat(price || '0') < 0.01 
-                        ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
-                        : apiService.formatUSD(parseFloat(price || '0'))}`)}
+                      {String(isBrlQuote 
+                        ? `R$ ${parseFloat(price || '0').toFixed(2)}`
+                        : `$ ${parseFloat(price || '0') < 0.01 
+                          ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
+                          : apiService.formatUSD(parseFloat(price || '0'))}`
+                      )}
                     </Text>
                   </View>
                 )}
@@ -806,7 +1006,7 @@ export function TradeModal({
                   <Text style={[styles.confirmValue, { color: colors.text }]}>
                     {String(`${parseFloat(amount || '0') < 1 
                       ? parseFloat(amount || '0').toFixed(8).replace(/\.?0+$/, '') 
-                      : parseFloat(amount || '0').toFixed(4)} ${symbol.split('/')[0]}`)}
+                      : parseFloat(amount || '0').toFixed(4)} ${baseCurrency}`)}
                   </Text>
                 </View>
 
@@ -818,7 +1018,7 @@ export function TradeModal({
                     {String(isBuy ? t('trade.totalToPay') : t('trade.totalToReceive'))}
                   </Text>
                   <Text style={[styles.confirmValueBold, { color: isBuy ? '#10b981' : '#ef4444' }]}>
-                    {String(`$ ${apiService.formatUSD(total)}`)}
+                    {String(isBrlQuote ? `R$ ${total.toFixed(2)}` : `$ ${apiService.formatUSD(total)}`)}
                   </Text>
                 </View>
               </View>

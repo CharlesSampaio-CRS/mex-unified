@@ -39,7 +39,7 @@ export function AssetsScreen({ navigation }: any) {
     exchangeName: string;
     symbol: string;
     currentPrice: number;
-    balance: { token: number; usdt: number };
+    balance: { token: number; usdt: number; brl?: number };
   } | null>(null);
 
   const onNotificationsPress = useCallback(() => {
@@ -75,6 +75,9 @@ export function AssetsScreen({ navigation }: any) {
           const usdtData = balances['USDT'] || balances['usdt'];
           const usdtBalance = usdtData ? parseFloat((usdtData.free || 0).toString()) : 0;
 
+          const brlData = balances['BRL'] || balances['brl'];
+          const brlBalance = brlData ? parseFloat((brlData.free || 0).toString()) : 0;
+
           const tokenData = {
             id: `${exchangeId}-${symbolUpper}`,
             symbol: symbolUpper,
@@ -89,6 +92,7 @@ export function AssetsScreen({ navigation }: any) {
             exchangeName,
             isStablecoin: ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD'].includes(symbolUpper),
             usdtBalance,
+            brlBalance,
           };
 
           if (!exchangeMap.has(exchangeId)) {
@@ -426,7 +430,8 @@ export function AssetsScreen({ navigation }: any) {
                           currentPrice: item.priceUSD,
                           balance: {
                             token: item.free,
-                            usdt: item.usdtBalance
+                            usdt: item.usdtBalance,
+                            brl: item.brlBalance
                           }
                         });
                         setTradeModalVisible(true);

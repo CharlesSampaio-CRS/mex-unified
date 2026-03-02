@@ -190,7 +190,16 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
         : undefined
       
       // 3️⃣ Formatar o símbolo como par (ex: BTC -> BTC/USDT)
-      const pair = symbol.includes('/') ? symbol.toUpperCase() : `${symbol.toUpperCase()}/USDT`
+      // NOTA: Não assume par BRL pois pode não existir na exchange
+      // O trade-modal busca dinamicamente os pares disponíveis
+      const symbolUpper = symbol.toUpperCase()
+      let pair: string
+      if (symbol.includes('/')) {
+        pair = symbolUpper
+      } else {
+        // Padrão: TOKEN/USDT (funciona na maioria das exchanges)
+        pair = `${symbolUpper}/USDT`
+      }
       
       // 4️⃣ Chamar o endpoint /tokens/details (POST) com credenciais
       const response = await fetch(`${config.apiBaseUrl}/tokens/details`, {

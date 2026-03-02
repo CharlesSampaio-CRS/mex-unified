@@ -126,7 +126,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
     exchangeName: string
     symbol: string
     currentPrice: number
-    balance: { token: number; usdt: number }
+    balance: { token: number; usdt: number; brl?: number }
   } | null>(null)
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null)
   const [openOrdersCount, setOpenOrdersCount] = useState<Record<string, number>>({})
@@ -887,7 +887,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                       exchangeName: externalSearchResult.exchangeName,
                       symbol: externalSearchResult.symbol,
                       currentPrice: externalSearchResult.price,
-                      balance: { token: 0, usdt: 0 }
+                      balance: { token: 0, usdt: 0, brl: 0 }
                     })
                     setTradeModalVisible(true)
                   }}
@@ -991,6 +991,9 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
             const usdtToken = sortedTokens.find(([sym]) => sym === 'USDT' || sym === 'usdt')
             const usdtBalance = usdtToken ? parseFloat((usdtToken[1].free || usdtToken[1].total || usdtToken[1].amount || 0).toString()) : 0
             
+            const brlToken = sortedTokens.find(([sym]) => sym === 'BRL' || sym === 'brl')
+            const brlBalance = brlToken ? parseFloat((brlToken[1].free || brlToken[1].total || brlToken[1].amount || 0).toString()) : 0
+            
             const exchangeId = getExchangeId(exchange)
             const exchangeName = getExchangeName(exchange)
             const tokenVariations = exchangeVariations[exchangeId]?.[symbol]
@@ -1007,6 +1010,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
               priceUSD,         // number: preço em USD
               valueUSD,         // number: valor total em USD
               usdtBalance,      // number: saldo USDT da exchange
+              brlBalance,       // number: saldo BRL da exchange (para pares fiat)
               isStablecoin,     // boolean
               variation24h,     // number | undefined: variação 24h
               exchangeId,       // string
