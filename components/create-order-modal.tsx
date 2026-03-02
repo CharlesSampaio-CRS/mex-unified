@@ -12,7 +12,22 @@ import { notify } from '@/services/notify'
 import { getExchangeLogo } from '@/lib/exchange-logos'
 import { AnimatedLogoIcon } from '@/components/AnimatedLogoIcon'
 import { ConfirmModal } from '@/components/ConfirmModal'
-import { LinkedExchange } from '@/types/api'
+
+interface ExchangeItem {
+  exchange_id: string
+  exchange_type: string
+  exchange_name: string
+  is_active: boolean
+  logo?: string
+  icon?: string
+  country?: string
+  url?: string
+  created_at: string
+  linked_at: string
+  api_key_expiry_days?: number
+  days_until_expiry?: number
+  api_key_expires_at?: string
+}
 
 interface CreateOrderModalProps {
   visible: boolean
@@ -43,9 +58,9 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   const [step, setStep] = useState<Step>('exchange')
 
   // Step 1: Exchange selection
-  const [exchanges, setExchanges] = useState<LinkedExchange[]>([])
+  const [exchanges, setExchanges] = useState<ExchangeItem[]>([])
   const [exchangesLoading, setExchangesLoading] = useState(false)
-  const [selectedExchange, setSelectedExchange] = useState<LinkedExchange | null>(null)
+  const [selectedExchange, setSelectedExchange] = useState<ExchangeItem | null>(null)
 
   // Step 2: Token input
   const [tokenInput, setTokenInput] = useState('')
@@ -94,10 +109,11 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
     if (!user?.id) return
     setExchangesLoading(true)
     try {
-      const result = await apiService.getLinkedExchanges(user.id, true)
+      // Usa endpoint JWT: GET /api/v1/user/exchanges
+      const result = await apiService.getUserExchangesWithCredentials()
       if (result.success && result.exchanges) {
         // Only show active exchanges
-        const active = result.exchanges.filter(e => e.status === 'active' || e.is_active !== false)
+        const active = result.exchanges.filter((e: ExchangeItem) => e.is_active !== false)
         setExchanges(active)
       }
     } catch (error: any) {
@@ -163,7 +179,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   }
 
   // Handle exchange selection → go to token step
-  const handleSelectExchange = (exchange: LinkedExchange) => {
+  const handleSelectExchange = (exchange: ExchangeItem) => {
     setSelectedExchange(exchange)
     setTokenInput('')
     setAvailablePairs([])
@@ -218,8 +234,8 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   const baseCurrency = selectedPair?.base || ''
   const quoteCurrency = selectedPair?.quote || ''
   const isBrlQuote = quoteCurrency === 'BRL'
-  const exchangeName = selectedExchange?.name || ''
-  const exchangeId = selectedExchange?.exchange_id || selectedExchange?._id || ''
+  const exchangeName = selectedExchange?.exchange_name || ''
+  const exchangeId = selectedExchange?.exchange_id || ''
 
   const amountNum = parseFloat(amount || '0')
   const priceNum = parseFloat(price || '0')
@@ -382,10 +398,10 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
       ) : (
         <View style={styles.exchangeList}>
           {exchanges.map((exchange) => {
-            const logo = getExchangeLogo(exchange.name)
+            const logo = getExchangeLogo(exchange.exchange_name || exchange.exchange_type)
             return (
               <TouchableOpacity
-                key={exchange.exchange_id || exchange._id}
+                key={exchange.exchange_id}
                 style={[styles.exchangeItem, { 
                   backgroundColor: colors.surface, 
                   borderColor: colors.border 
@@ -403,7 +419,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                   </View>
                   <View>
                     <Text style={[styles.exchangeName, { color: colors.text }]}>
-                      {exchange.name}
+                      {exchange.exchange_name}
                     </Text>
                     <Text style={[styles.exchangeStatus, { color: colors.success }]}>
                       Conectada

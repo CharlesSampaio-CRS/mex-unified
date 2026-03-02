@@ -473,10 +473,20 @@ export function OrdersScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Results Count */}
-        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
-          {String(totals.count)} {String(totals.count === 1 ? 'ordem encontrada' : 'ordens encontradas')}
-        </Text>
+        {/* Results Count + New Order Button */}
+        <View style={styles.filterFooter}>
+          <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
+            {String(totals.count)} {String(totals.count === 1 ? 'ordem encontrada' : 'ordens encontradas')}
+          </Text>
+          <TouchableOpacity
+            style={[styles.newOrderButton, { borderColor: colors.primary }]}
+            onPress={() => setCreateOrderVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-outline" size={14} color={colors.primary} />
+            <Text style={[styles.newOrderText, { color: colors.primary }]}>Nova</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       
       <ScrollView
@@ -585,15 +595,6 @@ export function OrdersScreen({ navigation }: any) {
         visible={createOrderVisible}
         onClose={() => setCreateOrderVisible(false)}
       />
-
-      {/* FAB: Nova Ordem */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        activeOpacity={0.8}
-        onPress={() => setCreateOrderVisible(true)}
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -642,6 +643,24 @@ const styles = StyleSheet.create({
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
     paddingVertical: 4,
+  },
+  filterFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  newOrderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  newOrderText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
   },
   emptyState: {
     alignItems: 'center',
@@ -800,20 +819,5 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
   },
 });
