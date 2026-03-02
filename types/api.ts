@@ -83,6 +83,10 @@ export interface LinkedExchange {
   passphrase?: string;
   logo?: string;
   requires_passphrase?: boolean;
+  // API Key expiry
+  api_key_expiry_days?: number;   // Dias totais para expiração (ex: MEXC=90)
+  days_until_expiry?: number;     // Dias restantes até expirar
+  api_key_expires_at?: string;    // Data estimada de expiração (ISO 8601)
 }
 
 export interface LinkedExchangesResponse {

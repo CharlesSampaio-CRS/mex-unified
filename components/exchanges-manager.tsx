@@ -65,6 +65,22 @@ const LinkedExchangeCard = memo(({
   const isActive = linkedExchange.is_active === true || linkedExchange.status === 'active'
   const isDark = colors.isDark
 
+  // API Key expiry logic
+  const daysUntilExpiry = linkedExchange.days_until_expiry
+  const hasExpiry = daysUntilExpiry != null && linkedExchange.api_key_expiry_days != null
+  const isExpired = hasExpiry && daysUntilExpiry <= 0
+  const isExpiringSoon = hasExpiry && !isExpired && daysUntilExpiry <= 15
+
+  const expiryLabel = useMemo(() => {
+    if (!hasExpiry) return null
+    if (isExpired) return t('exchanges.apiKeyExpired') || 'API Key expirada'
+    if (isExpiringSoon) {
+      const label = t('exchanges.apiKeyExpiresSoon') || 'Expira em {days} dias'
+      return label.replace('{days}', String(daysUntilExpiry))
+    }
+    return null
+  }, [hasExpiry, isExpired, isExpiringSoon, daysUntilExpiry, t])
+
   const formattedDate = useMemo(() => {
     if (isRefreshing) return t('home.updating') || 'Updating...'
     if (!linkedExchange.linked_at) return t('exchanges.noDate') || 'N/A'
@@ -112,6 +128,19 @@ const LinkedExchangeCard = memo(({
                   {isActive ? 'ON' : 'OFF'}
                 </Text>
               </View>
+              {expiryLabel && (
+                <View style={[
+                  styles.sideBadge,
+                  { backgroundColor: isExpired ? colors.dangerLight : colors.warningLight, marginLeft: 4 }
+                ]}>
+                  <Text style={[
+                    styles.sideBadgeText,
+                    { color: isExpired ? colors.danger : colors.warning }
+                  ]}>
+                    {isExpired ? '🔴' : '⚠️'} {expiryLabel}
+                  </Text>
+                </View>
+              )}
             </View>
             <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
               {formattedDate}
@@ -311,7 +340,10 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         ccxt_id: ex.exchange_type || ex.ccxt_id,
         icon: ex.icon || ex.logo,
         status: ex.is_active ? 'active' : 'inactive',
-        linked_at: ex.created_at
+        linked_at: ex.created_at,
+        api_key_expiry_days: ex.api_key_expiry_days,
+        days_until_expiry: ex.days_until_expiry,
+        api_key_expires_at: ex.api_key_expires_at,
       }))
       setLinkedExchanges(mappedExchanges as any)
       // Buscar exchanges disponíveis (catálogo)
@@ -1726,6 +1758,45 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                                   {detailsExchange.status === 'active' ? t('exchanges.active') : t('exchanges.inactive')}
                                 </Text>
                               </View>
+
+                              {/* API Key Expiry Info */}
+                              {detailsExchange.api_key_expiry_days != null && (
+                                <>
+                                  <View style={styles.detailsInfoRow}>
+                                    <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
+                                      API Key Validade:
+                                    </Text>
+                                    <Text style={[styles.detailsInfoValue, { 
+                                      color: detailsExchange.days_until_expiry != null && detailsExchange.days_until_expiry <= 0 
+                                        ? colors.danger 
+                                        : detailsExchange.days_until_expiry != null && detailsExchange.days_until_expiry <= 15 
+                                          ? colors.warning 
+                                          : colors.success 
+                                    }]}>
+                                      {detailsExchange.days_until_expiry != null && detailsExchange.days_until_expiry <= 0
+                                        ? `❌ ${t('exchanges.apiKeyExpired') || 'API Key expirada'}`
+                                        : detailsExchange.days_until_expiry != null && detailsExchange.days_until_expiry <= 15
+                                          ? `⚠️ ${(t('exchanges.apiKeyExpiresSoon') || 'Expira em {days} dias').replace('{days}', String(detailsExchange.days_until_expiry))}`
+                                          : `✅ ${detailsExchange.days_until_expiry} dias restantes`
+                                      }
+                                    </Text>
+                                  </View>
+                                  {detailsExchange.api_key_expires_at && (
+                                    <View style={styles.detailsInfoRow}>
+                                      <Text style={[styles.detailsInfoLabel, { color: colors.textSecondary }]}>
+                                        Expira em:
+                                      </Text>
+                                      <Text style={[styles.detailsInfoValue, { color: colors.textSecondary }]}>
+                                        {new Date(detailsExchange.api_key_expires_at).toLocaleDateString('pt-BR', {
+                                          day: '2-digit',
+                                          month: 'long',
+                                          year: 'numeric'
+                                        })}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </>
+                              )}
                             </>
                           ) : (
                             <>
@@ -2682,6 +2753,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
   cardSymbol: {
     fontSize: typography.bodySmall,
