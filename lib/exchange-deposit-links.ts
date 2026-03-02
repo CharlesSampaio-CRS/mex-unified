@@ -2,9 +2,10 @@
  * Configuração de deep links para depósito nas exchanges.
  * Cada exchange pode ter:
  * - appScheme: URL scheme do app nativo (para tentar abrir direto)
- * - depositUrl: URL web para depósito (fallback)
- * - supportsBRL: se aceita depósito em BRL
- * - supportsPIX: se aceita PIX especificamente
+ * - appDepositUrl: deep link direto para seção de depósito
+ * - appStoreUrl: URL da App Store (iOS) para fallback
+ * - playStoreUrl: URL do Google Play (Android) para fallback
+ * - supportsBRL / supportsPIX: flags de suporte
  */
 
 export interface ExchangeDepositConfig {
@@ -16,8 +17,10 @@ export interface ExchangeDepositConfig {
   appScheme?: string
   /** Deep link direto para depósito no app (se suportado) */
   appDepositUrl?: string
-  /** URL web de depósito (fallback se app não está instalado) */
-  webDepositUrl: string
+  /** URL da App Store (iOS) — fallback se app não instalado */
+  appStoreUrl: string
+  /** URL do Google Play (Android) — fallback se app não instalado */
+  playStoreUrl: string
   /** Notas adicionais para o usuário */
   note?: string
 }
@@ -34,7 +37,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     supportsPIX: true,
     appScheme: 'bnc://',
     appDepositUrl: 'bnc://app.binance.com/payment/funds/deposit/fiat/BRL',
-    webDepositUrl: 'https://www.binance.com/pt-BR/fiat/deposit/BRL',
+    appStoreUrl: 'https://apps.apple.com/app/binance-buy-bitcoin-crypto/id1436799971',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.binance.dev',
     note: 'Depósito PIX instantâneo, sem taxas',
   },
   mexc: {
@@ -44,7 +48,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     supportsPIX: true,
     appScheme: 'mexc://',
     appDepositUrl: 'mexc://fiat/deposit?currency=BRL',
-    webDepositUrl: 'https://www.mexc.com/pt-BR/fiat/deposit/BRL',
+    appStoreUrl: 'https://apps.apple.com/app/mexc-buy-bitcoin-crypto/id1482189735',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.mexc.spot',
     note: 'Depósito PIX disponível',
   },
   novadax: {
@@ -54,7 +59,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     supportsPIX: true,
     appScheme: 'novadax://',
     appDepositUrl: 'novadax://deposit',
-    webDepositUrl: 'https://www.novadax.com.br/balances/deposit/BRL',
+    appStoreUrl: 'https://apps.apple.com/app/novadax/id1456419067',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.novadax.exchange',
     note: 'Exchange brasileira — PIX nativo',
   },
   bybit: {
@@ -64,7 +70,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     supportsPIX: true,
     appScheme: 'bybitapp://',
     appDepositUrl: 'bybitapp://fiat/deposit',
-    webDepositUrl: 'https://www.bybit.com/fiat/trade/otc/fiattocrypto/BRL/USDT',
+    appStoreUrl: 'https://apps.apple.com/app/bybit-buy-trade-crypto/id1488296980',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.bybit.app',
     note: 'Depósito via PIX (P2P)',
   },
   bitget: {
@@ -74,7 +81,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     supportsPIX: true,
     appScheme: 'bitget://',
     appDepositUrl: 'bitget://fiat/deposit',
-    webDepositUrl: 'https://www.bitget.com/pt-BR/express/buy?fiatCurrency=BRL',
+    appStoreUrl: 'https://apps.apple.com/app/bitget-buy-bitcoin-crypto/id1442778704',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.bitget.exchange',
     note: 'Compra com PIX via parceiro',
   },
   kucoin: {
@@ -84,7 +92,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     supportsPIX: true,
     appScheme: 'kucoin://',
     appDepositUrl: 'kucoin://fiat/deposit',
-    webDepositUrl: 'https://www.kucoin.com/pt/buy-crypto?fiat=BRL',
+    appStoreUrl: 'https://apps.apple.com/app/kucoin-buy-bitcoin-crypto/id1378956601',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.kubi.kucoin',
     note: 'Compra com PIX disponível',
   },
   okx: {
@@ -94,7 +103,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     supportsPIX: true,
     appScheme: 'okx://',
     appDepositUrl: 'okx://buy',
-    webDepositUrl: 'https://www.okx.com/pt-br/buy-crypto',
+    appStoreUrl: 'https://apps.apple.com/app/okx-buy-bitcoin-btc-crypto/id1327268470',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.okinc.okex.gp',
     note: 'PIX via P2P',
   },
   // Exchanges sem suporte a BRL
@@ -103,7 +113,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     name: 'Kraken',
     supportsBRL: false,
     supportsPIX: false,
-    webDepositUrl: 'https://www.kraken.com/u/funding',
+    appStoreUrl: 'https://apps.apple.com/app/kraken-buy-crypto-bitcoin/id1481947260',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.kraken.invest.app',
     note: 'Sem suporte a BRL/PIX',
   },
   coinbase: {
@@ -112,7 +123,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     supportsBRL: false,
     supportsPIX: false,
     appScheme: 'coinbase://',
-    webDepositUrl: 'https://www.coinbase.com/buy',
+    appStoreUrl: 'https://apps.apple.com/app/coinbase-buy-bitcoin-ether/id886427730',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.coinbase.android',
     note: 'Sem suporte a PIX',
   },
   coinex: {
@@ -120,7 +132,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     name: 'CoinEx',
     supportsBRL: false,
     supportsPIX: false,
-    webDepositUrl: 'https://www.coinex.com/asset/deposit',
+    appStoreUrl: 'https://apps.apple.com/app/coinex-buy-crypto-bitcoin/id1626498495',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.coinex.trade.play',
     note: 'Sem suporte a BRL',
   },
   gateio: {
@@ -128,7 +141,8 @@ export const exchangeDepositConfigs: Record<string, ExchangeDepositConfig> = {
     name: 'Gate.io',
     supportsBRL: false,
     supportsPIX: false,
-    webDepositUrl: 'https://www.gate.io/myaccount/deposit',
+    appStoreUrl: 'https://apps.apple.com/app/gate-io-buy-bitcoin-crypto/id1294998195',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.gateio.gateio',
     note: 'Sem suporte a BRL/PIX',
   },
 }
