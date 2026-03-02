@@ -317,65 +317,66 @@ export function OrdersScreen({ navigation }: any) {
         >
         {/* Header */}
         <View style={styles.cardHeader}>
-          <View style={styles.symbolSection}>
-            <View style={[
-              styles.typeIcon,
-              { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-            ]}>
-              <Ionicons 
-                name={isBuy ? 'arrow-up' : 'arrow-down'} 
-                size={20} 
-                color={isBuy ? colors.success : colors.danger}
-              />
-            </View>
-            <View>
-              <View style={styles.symbolWithPnl}>
-                <Text style={[styles.orderSymbol, { color: colors.text }]}>
-                  {String(order.symbol || 'N/A')}
-                </Text>
-                {hasPnl && (
-                  <View style={[
-                    styles.pnlBadge,
-                    { backgroundColor: isPnlPositive ? colors.successLight : colors.dangerLight }
-                  ]}>
-                    <Ionicons
-                      name={isPnlPositive ? 'caret-up' : 'caret-down'}
-                      size={10}
-                      color={isPnlPositive ? colors.success : colors.danger}
-                    />
-                    <Text style={[
-                      styles.pnlText,
-                      { color: isPnlPositive ? colors.success : colors.danger }
-                    ]}>
-                      {String(hideValue(`$${apiService.formatUSD(Math.abs(pnlValue), Math.abs(pnlValue) < 1 ? 4 : 2)}`))}
-                    </Text>
-                  </View>
-                )}
+          {/* Linha 1: Ícone + Símbolo + Valor total */}
+          <View style={styles.headerTopRow}>
+            <View style={styles.symbolSection}>
+              <View style={[
+                styles.typeIcon,
+                { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
+              ]}>
+                <Ionicons 
+                  name={isBuy ? 'arrow-up' : 'arrow-down'} 
+                  size={20} 
+                  color={isBuy ? colors.success : colors.danger}
+                />
               </View>
-              <View style={styles.badgeRow}>
-                <View style={[
-                  styles.typeBadge,
-                  { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-                ]}>
-                  <Text style={[
-                    styles.typeBadgeText,
-                    { color: isBuy ? colors.success : colors.danger }
-                  ]}>
-                    {String(isBuy ? 'COMPRA' : 'VENDA')}
-                  </Text>
-                </View>
-                <View style={[styles.typeBadge, { backgroundColor: colors.card }]}>
-                  <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>
-                    {String((order.type || 'LIMIT').toString().toUpperCase())}
-                  </Text>
-                </View>
-              </View>
+              <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
+                {String(order.symbol || 'N/A')}
+              </Text>
             </View>
-          </View>
-          <View style={styles.valueSection}>
-            <Text style={[styles.orderValue, { color: colors.text }]}>
+            <Text style={[styles.orderValue, { color: colors.text }]} numberOfLines={1}>
               {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
             </Text>
+          </View>
+
+          {/* Linha 2: Badges + PnL */}
+          <View style={styles.headerBottomRow}>
+            <View style={styles.badgeRow}>
+              <View style={[
+                styles.typeBadge,
+                { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
+              ]}>
+                <Text style={[
+                  styles.typeBadgeText,
+                  { color: isBuy ? colors.success : colors.danger }
+                ]}>
+                  {String(isBuy ? 'COMPRA' : 'VENDA')}
+                </Text>
+              </View>
+              <View style={[styles.typeBadge, { backgroundColor: colors.card }]}>
+                <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>
+                  {String((order.type || 'LIMIT').toString().toUpperCase())}
+                </Text>
+              </View>
+              {hasPnl && (
+                <View style={[
+                  styles.pnlBadge,
+                  { backgroundColor: isPnlPositive ? colors.successLight : colors.dangerLight }
+                ]}>
+                  <Ionicons
+                    name={isPnlPositive ? 'caret-up' : 'caret-down'}
+                    size={9}
+                    color={isPnlPositive ? colors.success : colors.danger}
+                  />
+                  <Text style={[
+                    styles.pnlText,
+                    { color: isPnlPositive ? colors.success : colors.danger }
+                  ]}>
+                    {String(hideValue(`$${apiService.formatUSD(Math.abs(pnlValue), Math.abs(pnlValue) < 1 ? 4 : 2)}`))}
+                  </Text>
+                </View>
+              )}
+            </View>
             {hasPnl && (
               <Text style={[styles.pnlPercent, { color: isPnlPositive ? colors.success : colors.danger }]}>
                 {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
@@ -740,34 +741,39 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardHeader: {
+    padding: 16,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 16,
-    paddingBottom: 12,
+    alignItems: 'center',
   },
   symbolSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     flex: 1,
+    marginRight: 12,
   },
   typeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   orderSymbol: {
-    fontSize: typography.caption,
+    fontSize: typography.body,
     fontWeight: fontWeights.bold,
+    flexShrink: 1,
   },
-  symbolWithPnl: {
+  headerBottomRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    paddingLeft: 42,
   },
   pnlBadge: {
     flexDirection: 'row',
@@ -788,26 +794,25 @@ const styles = StyleSheet.create({
   },
   badgeRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
+    flexWrap: 'wrap',
+    flex: 1,
   },
   typeBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    alignSelf: 'flex-start',
   },
   typeBadgeText: {
     fontSize: 9,
     fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
-  valueSection: {
-    alignItems: 'flex-end',
-  },
   orderValue: {
-    fontSize: typography.caption,
+    fontSize: typography.body,
     fontWeight: fontWeights.bold,
-    marginBottom: 2,
+    flexShrink: 0,
   },
   orderType: {
     fontSize: typography.micro,
