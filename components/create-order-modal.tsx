@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import { useOrders } from '@/contexts/OrdersContext'
 import { useBalance } from '@/contexts/BalanceContext'
+import { capitalizeExchangeName, getExchangeName, getExchangeId } from '@/lib/exchange-helpers'
 import { typography, fontWeights } from '@/lib/typography'
 import { apiService } from '@/services/api'
 import { notify } from '@/services/notify'
@@ -287,6 +288,85 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   const hasValidAmount = amountNum > 0
   const hasValidPrice = orderType === 'market' || (orderType === 'limit' && priceNum > 0)
   const isFormComplete = sideSelected && typeSelected && hasValidAmount && hasValidPrice && !createOrderLoading && !pairPriceLoading
+
+  // ============================================================
+  // Calcula o saldo disponível (free) para a currency relevante na exchange selecionada
+  // Compra: precisa de quote currency (ex: USDT, BRL)
+  // Venda: precisa de base currency (ex: BTC, ETH)
+  // ============================================================
+  const getAvailableBalance = useCallback((): number => {
+    if (!balanceData?.exchanges || !selectedExchange || !selectedPair) return 0
+    
+    const exId = selectedExchange.exchange_id || (selectedExchange as any)._id || ''
+    
+    // Encontra a exchange certa nos dados de balance
+    const exchangeData = balanceData.exchanges.find((ex: any) => {
+      const id = getExchangeId(ex)
+      return id === exId || id === selectedExchange.exchange_name?.toLowerCase()
+    })
+    
+    if (!exchangeData) return 0
+    
+    const balances = exchangeData.balances || exchangeData.tokens || {}
+    
+    // Determina qual currency precisa verificar:
+    // - Se isTokenTheQuote e está comprando: precisa do base (compra base com quote)
+    // - Se isTokenTheQuote e está vendendo: precisa do quote (vende quote por base)
+    // - Normal comprando: precisa do quote (compra base com quote) 
+    // - Normal vendendo: precisa do base (vende base por quote)
+    let relevantCurrency: string
+    if (orderSide === 'buy') {
+      relevantCurrency = isTokenTheQuote ? baseCurrency : quoteCurrency
+    } else {
+      relevantCurrency = isTokenTheQuote ? quoteCurrency : baseCurrency
+    }
+    
+    const token = balances[relevantCurrency] || balances[relevantCurrency?.toUpperCase()]
+    if (!token) return 0
+    
+    return parseFloat(token.free || '0') || (token.total || 0) - (parseFloat(token.used || token.locked || '0') || 0)
+  }, [balanceData, selectedExchange, selectedPair, orderSide, isTokenTheQuote, baseCurrency, quoteCurrency])
+
+  // Calcula o amount com base na porcentagem do saldo disponível
+  const handlePercentage = useCallback((pct: number) => {
+    const available = getAvailableBalance()
+    
+    if (available <= 0) {
+      Alert.alert('Saldo Indisponível', `Não há saldo suficiente na exchange para esta operação.\n\nAtualize seus saldos na tela principal.`)
+      return
+    }
+    
+    const portionValue = available * (pct / 100)
+    
+    if (orderSide === 'buy') {
+      // Comprando: saldo disponível está em quote currency
+      if (isTokenTheQuote) {
+        // Token é a quote → amount field já é em quote → converter para base
+        // Na verdade, amount está em amountCurrency que é quoteCurrency quando isTokenTheQuote
+        // Mas o saldo relevante é baseCurrency (comprar base com quote)
+        // Neste caso, saldo em base... definir amount direto
+        setAmount(portionValue.toFixed(8).replace(/\.?0+$/, ''))
+      } else {
+        // Caso normal: saldo em quote, amount em base
+        // Se tem preço: amount_base = saldo_quote * pct / price
+        if (priceNum > 0) {
+          const baseAmt = portionValue / priceNum
+          setAmount(baseAmt.toFixed(8).replace(/\.?0+$/, ''))
+        } else if (orderType === 'market') {
+          // Market order sem preço: mostra saldo em quote e deixa a exchange resolver
+          // Não consegue calcular sem preço — coloca nota
+          Alert.alert('Dica', `Saldo disponível: ${portionValue.toFixed(2)} ${quoteCurrency}\nPara calcular ${pct}% em ${baseCurrency}, defina o preço primeiro ou use ordem Limit.`)
+          return
+        } else {
+          Alert.alert('Dica', `Defina o preço primeiro para calcular ${pct}% do saldo.`)
+          return
+        }
+      }
+    } else {
+      // Vendendo: saldo disponível está em base currency (ou quote se isTokenTheQuote)
+      setAmount(portionValue.toFixed(8).replace(/\.?0+$/, ''))
+    }
+  }, [getAvailableBalance, orderSide, isTokenTheQuote, priceNum, orderType, quoteCurrency, baseCurrency])
 
   // Handle submit → show confirm
   const handleSubmit = () => {
@@ -847,15 +927,31 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
               {[25, 50, 75, 100].map((pct) => (
                 <TouchableOpacity
                   key={pct}
-                  style={[styles.percentChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  onPress={() => {
-                    Alert.alert('Dica', `Use ${pct}% do saldo disponível na exchange.\nPara cálculos automáticos, use o botão Trade na tela de Assets.`)
-                  }}
+                  style={[styles.percentChip, { 
+                    backgroundColor: colors.surface, 
+                    borderColor: colors.border,
+                  }]}
+                  onPress={() => handlePercentage(pct)}
+                  disabled={!orderSide}
                 >
                   <Text style={[styles.percentText, { color: colors.textSecondary }]}>{pct}%</Text>
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Available balance hint */}
+            {orderSide && (
+              <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
+                {(() => {
+                  const avail = getAvailableBalance()
+                  if (avail <= 0) return 'Saldo não disponível'
+                  const curr = orderSide === 'buy' 
+                    ? (isTokenTheQuote ? baseCurrency : quoteCurrency)
+                    : (isTokenTheQuote ? quoteCurrency : baseCurrency)
+                  return `Disponível: ${apiService.formatTokenAmount(avail.toFixed(8))} ${curr}`
+                })()}
+              </Text>
+            )}
           </>
         )}
 
