@@ -16,9 +16,6 @@ import { usePrivacy } from "@/contexts/PrivacyContext"
 import { capitalizeExchangeName, getExchangeName, getExchangeId } from "@/lib/exchange-helpers"
 import { apiService } from "@/services/api"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
-import { config } from "@/lib/config"
-import { exchangeService } from "@/services/exchange-service"
-import { decryptData } from "@/lib/encryption"
 
 interface TokenDetailsModalProps {
   visible: boolean
@@ -176,53 +173,17 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
       setLoading(true)
       setError(null)
       
-      // 1️⃣ Buscar a exchange do banco com credenciais
-      const exchange = await exchangeService.getExchangeById(exchangeId, user.id)
-      if (!exchange) {
-        throw new Error('Exchange não encontrada')
+      // 🔐 Usa endpoint secure — backend busca credenciais do MongoDB via JWT
+      // Não precisa descriptografar credenciais no frontend
+      const symbolToSend = symbol.toUpperCase()
+      
+      const response = await apiService.getTokenDetailsSecure(exchangeId, symbolToSend)
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao carregar detalhes do token')
       }
       
-      // 2️⃣ Descriptografar as credenciais
-      const apiKey = await decryptData(exchange.api_key_encrypted, user.id)
-      const apiSecret = await decryptData(exchange.api_secret_encrypted, user.id)
-      const passphrase = exchange.api_passphrase_encrypted 
-        ? await decryptData(exchange.api_passphrase_encrypted, user.id) 
-        : undefined
-      
-      // 3️⃣ Formatar o símbolo
-      // Se já tem '/', envia como está (ex: BTC/USDT)
-      // Se é só base (ex: BTC), envia sem par — o backend tenta automaticamente
-      // USDT → BRL → USDC → BTC → ETH → EUR até encontrar um par válido
-      const symbolUpper = symbol.toUpperCase()
-      const symbolToSend = symbolUpper // Backend resolves the pair automatically
-      
-      // 4️⃣ Chamar o endpoint /tokens/details (POST) com credenciais
-      const response = await fetch(`${config.apiBaseUrl}/tokens/details`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          exchange: {
-            exchange_id: exchangeId,
-            ccxt_id: exchange.exchange_type, // Ex: 'mexc', 'binance'
-            name: exchange.exchange_name,
-            api_key: apiKey,
-            api_secret: apiSecret,
-            passphrase: passphrase,
-            is_active: exchange.is_active === 1,
-          },
-          symbol: symbolToSend, // Ex: 'BTC' (backend resolves pair) or 'BTC/USDT' (direct)
-        }),
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Erro ao carregar detalhes do token')
-      }
-      
-      const data = await response.json()
-      setTokenData(data)
+      setTokenData(response)
     } catch (err: any) {
       console.error('❌ Erro ao carregar token:', err)
       setError(err.message || 'Erro ao carregar dados')

@@ -672,7 +672,44 @@ export const apiService = {
   },
 
   /**
-   * Busca todas as exchanges disponíveis para conexão
+   * 🔐 Busca detalhes do token via endpoint seguro (JWT + MongoDB credentials)
+   * Backend busca e descriptografa credenciais automaticamente
+   * Backend resolve o melhor par automaticamente (USDT → BRL → USDC → BTC → ETH → EUR)
+   * 
+   * @param exchangeId ID da exchange do usuário
+   * @param symbol Símbolo do token (ex: BTC, ETH, REKTCOIN) ou par (ex: BTC/USDT)
+   * @returns Promise com detalhes do token
+   */
+  async getTokenDetailsSecure(exchangeId: string, symbol: string): Promise<any> {
+    try {
+      const headers = await getAuthHeaders();
+      
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/token-details/secure`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            exchange_id: exchangeId,
+            symbol: symbol,
+          }),
+        },
+        TIMEOUTS.NORMAL
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
    * @param userId ID do usuário
    * @param forceRefresh Força atualização sem cache
    * @returns Promise com a lista de exchanges disponíveis
