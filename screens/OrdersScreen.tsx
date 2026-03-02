@@ -315,147 +315,79 @@ export function OrdersScreen({ navigation }: any) {
           onPress={() => handleOrderPress(order)}
           disabled={isCancelling}
         >
-        {/* Header */}
-        <View style={styles.cardHeader}>
-          {/* Linha 1: Ícone + Símbolo + Valor total */}
-          <View style={styles.headerTopRow}>
-            <View style={styles.symbolSection}>
+          {/* Linha única compacta */}
+          <View style={styles.cardRow}>
+            {/* Lado esquerdo: Ícone + Info */}
+            <View style={styles.cardLeft}>
               <View style={[
                 styles.typeIcon,
                 { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
               ]}>
                 <Ionicons 
-                  name={isBuy ? 'arrow-up' : 'arrow-down'} 
-                  size={20} 
+                  name={isBuy ? 'arrow-up-outline' : 'arrow-down-outline'} 
+                  size={16} 
                   color={isBuy ? colors.success : colors.danger}
                 />
               </View>
-              <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
-                {String(order.symbol || 'N/A')}
-              </Text>
-            </View>
-            <Text style={[styles.orderValue, { color: colors.text }]} numberOfLines={1}>
-              {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
-            </Text>
-          </View>
-
-          {/* Linha 2: Badges + PnL */}
-          <View style={styles.headerBottomRow}>
-            <View style={styles.badgeRow}>
-              <View style={[
-                styles.typeBadge,
-                { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-              ]}>
-                <Text style={[
-                  styles.typeBadgeText,
-                  { color: isBuy ? colors.success : colors.danger }
-                ]}>
-                  {String(isBuy ? 'COMPRA' : 'VENDA')}
+              <View style={styles.cardInfo}>
+                <View style={styles.cardInfoTop}>
+                  <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
+                    {String(order.symbol || 'N/A')}
+                  </Text>
+                  <View style={[
+                    styles.sideBadge,
+                    { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
+                  ]}>
+                    <Text style={[
+                      styles.sideBadgeText,
+                      { color: isBuy ? colors.success : colors.danger }
+                    ]}>
+                      {String(isBuy ? 'C' : 'V')}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {String(hideValue(`${apiService.formatTokenAmount(String(amount))} @ $${apiService.formatUSD(price, priceDecimals)}`))}
                 </Text>
               </View>
-              <View style={[styles.typeBadge, { backgroundColor: colors.card }]}>
-                <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>
+            </View>
+
+            {/* Lado direito: Valor + PnL */}
+            <View style={styles.cardRight}>
+              <Text style={[styles.orderValue, { color: colors.text }]} numberOfLines={1}>
+                {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
+              </Text>
+              {hasPnl ? (
+                <Text style={[styles.pnlText, { color: isPnlPositive ? colors.success : colors.danger }]} numberOfLines={1}>
+                  {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
+                </Text>
+              ) : (
+                <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
                   {String((order.type || 'LIMIT').toString().toUpperCase())}
                 </Text>
-              </View>
-              {hasPnl && (
-                <View style={[
-                  styles.pnlBadge,
-                  { backgroundColor: isPnlPositive ? colors.successLight : colors.dangerLight }
-                ]}>
-                  <Ionicons
-                    name={isPnlPositive ? 'caret-up' : 'caret-down'}
-                    size={9}
-                    color={isPnlPositive ? colors.success : colors.danger}
-                  />
-                  <Text style={[
-                    styles.pnlText,
-                    { color: isPnlPositive ? colors.success : colors.danger }
-                  ]}>
-                    {String(hideValue(`$${apiService.formatUSD(Math.abs(pnlValue), Math.abs(pnlValue) < 1 ? 4 : 2)}`))}
-                  </Text>
-                </View>
               )}
             </View>
-            {hasPnl && (
-              <Text style={[styles.pnlPercent, { color: isPnlPositive ? colors.success : colors.danger }]}>
-                {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
-              </Text>
-            )}
-          </View>
-        </View>
-
-        {/* Body */}
-        <View style={styles.cardBody}>
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-              Preço
-            </Text>
-            <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-              {String(hideValue(`$${apiService.formatUSD(price, priceDecimals)}`))}
-            </Text>
           </View>
 
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-              Quantidade
-            </Text>
-            <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-              {String(hideValue(apiService.formatTokenAmount(String(amount))))}
-            </Text>
-          </View>
-
-          {order.filled != null && Number(order.filled) > 0 && (
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                Executado
+          {/* Botão cancelar compacto */}
+          {!isCancelling ? (
+            <TouchableOpacity
+              style={[styles.cancelButton, { borderTopColor: colors.border }]}
+              onPress={() => handleCancelOrder(order, exchangeId)}
+            >
+              <Ionicons name="close-circle-outline" size={14} color={colors.danger} />
+              <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
+                Cancelar
               </Text>
-              <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                {String(hideValue(apiService.formatTokenAmount(String(order.filled))))}
-              </Text>
-            </View>
-          )}
-
-          {order.timestamp != null && order.timestamp > 0 && (
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>
-                Data
-              </Text>
-              <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
-                {String(new Date(order.timestamp).toLocaleDateString('pt-BR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }))}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Cancel Button */}
-        <TouchableOpacity
-          style={[styles.cancelButton, { borderTopColor: colors.border }]}
-          onPress={() => handleCancelOrder(order, exchangeId)}
-          disabled={isCancelling}
-        >
-          {isCancelling ? (
-            <>
-              <Ionicons name="hourglass-outline" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ) : (
+            <View style={[styles.cancelButton, { borderTopColor: colors.border }]}>
+              <Ionicons name="hourglass-outline" size={14} color={colors.textSecondary} />
               <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
                 Cancelando...
               </Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
-              <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
-                Cancelar Ordem
-              </Text>
-            </>
+            </View>
           )}
-        </TouchableOpacity>
         </TouchableOpacity>
       </AnimatedOrderCard>
     );
@@ -735,104 +667,71 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
   },
   orderCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 8,
     overflow: 'hidden',
   },
-  cardHeader: {
-    padding: 16,
-    paddingBottom: 10,
-    gap: 8,
-  },
-  headerTopRow: {
+  cardRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
   },
-  symbolSection: {
+  cardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
-    marginRight: 12,
+    minWidth: 0,
   },
   typeIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  cardInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  cardInfoTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   orderSymbol: {
-    fontSize: typography.body,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
     flexShrink: 1,
   },
-  headerBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingLeft: 42,
-  },
-  pnlBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  pnlText: {
-    fontSize: 10,
-    fontWeight: fontWeights.bold,
-  },
-  pnlPercent: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.bold,
-    marginTop: 1,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flexWrap: 'wrap',
-    flex: 1,
-  },
-  typeBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  sideBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
     borderRadius: 4,
   },
-  typeBadgeText: {
+  sideBadgeText: {
     fontSize: 9,
     fontWeight: fontWeights.bold,
-    letterSpacing: 0.3,
+  },
+  cardSubtext: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
+  },
+  cardRight: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    gap: 2,
   },
   orderValue: {
-    fontSize: typography.body,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
-    flexShrink: 0,
   },
-  orderType: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.medium,
-  },
-  cardBody: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 6,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  detailLabel: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.medium,
-  },
-  detailValue: {
+  pnlText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
   },
@@ -840,12 +739,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
+    paddingVertical: 8,
+    gap: 5,
     borderTopWidth: 1,
   },
   cancelButtonText: {
-    fontSize: typography.buttonSmall,
-    fontWeight: fontWeights.bold,
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
 });
