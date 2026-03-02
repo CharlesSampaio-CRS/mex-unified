@@ -14,18 +14,18 @@ export const DistributionCharts = memo(function DistributionCharts() {
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
       {/* Tabs */}
-      <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
+      <View style={styles.tabBar}>
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'exchanges' && [styles.activeTab, { backgroundColor: colors.primary }]
+            activeTab === 'exchanges' && [styles.activeTab, { borderBottomColor: colors.primary }]
           ]}
           onPress={() => setActiveTab('exchanges')}
           activeOpacity={0.7}
         >
           <Text style={[
             styles.tabText,
-            { color: activeTab === 'exchanges' ? '#fff' : colors.textSecondary }
+            { color: activeTab === 'exchanges' ? colors.text : colors.textSecondary }
           ]}>
             Exchanges
           </Text>
@@ -34,14 +34,14 @@ export const DistributionCharts = memo(function DistributionCharts() {
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'tokens' && [styles.activeTab, { backgroundColor: colors.primary }]
+            activeTab === 'tokens' && [styles.activeTab, { borderBottomColor: colors.primary }]
           ]}
           onPress={() => setActiveTab('tokens')}
           activeOpacity={0.7}
         >
           <Text style={[
             styles.tabText,
-            { color: activeTab === 'tokens' ? '#fff' : colors.textSecondary }
+            { color: activeTab === 'tokens' ? colors.text : colors.textSecondary }
           ]}>
             Tokens
           </Text>
@@ -73,19 +73,18 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    borderRadius: 10,
-    padding: 3,
     marginBottom: 10,
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderRadius: 8,
+    borderBottomWidth: 1.5,
   },
   tabText: {
     fontSize: 12,
