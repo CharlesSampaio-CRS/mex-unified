@@ -312,6 +312,11 @@ const translations = {
     'exchanges.taker': 'Taker',
     'exchanges.deposit': 'Depósito',
     'exchanges.withdraw': 'Saque',
+    // Deposit deep link
+    'deposit.label': 'Depositar',
+    'deposit.title': 'Depositar',
+    'deposit.confirmMessage': 'Você será redirecionado para o app da {exchange} para fazer um depósito.',
+    'deposit.openApp': 'Abrir App',
     'exchanges.confirmDelete': '⚠️ Confirmar Exclusão',
     'exchanges.confirmDisconnect': '⚠️ Confirmar Desconexão',
     'exchanges.qrSuccess': '✅ Sucesso!',
@@ -1118,6 +1123,11 @@ const translations = {
     'exchanges.taker': 'Taker',
     'exchanges.deposit': 'Deposit',
     'exchanges.withdraw': 'Withdrawal',
+    // Deposit deep link
+    'deposit.label': 'Deposit',
+    'deposit.title': 'Deposit',
+    'deposit.confirmMessage': 'You will be redirected to the {exchange} app to make a deposit.',
+    'deposit.openApp': 'Open App',
     'exchanges.confirmDelete': '⚠️ Confirm Deletion',
     'exchanges.confirmDisconnect': '⚠️ Confirm Disconnect',
     'exchanges.qrSuccess': '✅ Success!',
