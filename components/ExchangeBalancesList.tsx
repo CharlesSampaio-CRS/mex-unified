@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native'
+import { View, Text, StyleSheet, Image, TouchableOpacity, LayoutAnimation, Platform, UIManager, Linking, Alert } from 'react-native'
 import { memo, useMemo, useState, useCallback } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useBalance } from '@/contexts/BalanceContext'
@@ -6,6 +6,7 @@ import { usePrivacy } from '@/contexts/PrivacyContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 import { getExchangeLogo } from '@/lib/exchange-logos'
+import { getDepositConfig } from '@/lib/exchange-deposit-links'
 import { fontWeights } from '@/lib/typography'
 
 // Habilita LayoutAnimation no Android
@@ -40,10 +41,56 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
         const logo = getExchangeLogo(name)
         const hasError = (ex as any).success === false
         const error = (ex as any).error || ''
-        return { name, value, logo, hasError, error }
+        const ccxtId = (ex.name || ex.exchange || '').toLowerCase()
+        const depositConfig = getDepositConfig(ccxtId)
+        return { name, value, logo, hasError, error, ccxtId, depositConfig }
       })
       .sort((a, b) => b.value - a.value)
   }, [data])
+
+  const handleDeposit = useCallback(async (exchangeName: string, ccxtId: string) => {
+    const config = getDepositConfig(ccxtId)
+    if (!config) return
+
+    const message = (t('deposit.confirmMessage') || 'Você será redirecionado para o app da {exchange} para fazer um depósito.')
+      .replace('{exchange}', exchangeName)
+
+    Alert.alert(
+      `💰 ${t('deposit.title') || 'Depositar'}`,
+      message,
+      [
+        { text: t('common.cancel') || 'Cancelar', style: 'cancel' },
+        {
+          text: t('deposit.openApp') || 'Abrir App',
+          style: 'default',
+          onPress: async () => {
+            try {
+              // Tenta abrir o deep link do app primeiro
+              if (config.appDepositUrl) {
+                const canOpen = await Linking.canOpenURL(config.appDepositUrl)
+                if (canOpen) {
+                  await Linking.openURL(config.appDepositUrl)
+                  return
+                }
+              }
+              // Tenta o scheme do app
+              if (config.appScheme) {
+                const canOpen = await Linking.canOpenURL(config.appScheme)
+                if (canOpen) {
+                  await Linking.openURL(config.appScheme)
+                  return
+                }
+              }
+              // Fallback: abre a URL web
+              await Linking.openURL(config.webDepositUrl)
+            } catch (err) {
+              await Linking.openURL(config.webDepositUrl)
+            }
+          },
+        },
+      ]
+    )
+  }, [t])
 
   const toggle = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
@@ -100,6 +147,18 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                 <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
                   {ex.name}
                 </Text>
+                {ex.depositConfig && (
+                  <TouchableOpacity
+                    onPress={() => handleDeposit(ex.name, ex.ccxtId)}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                    style={styles.depositButton}
+                  >
+                    <Text style={[styles.depositText, { color: colors.success }]}>
+                      {t('deposit.label') || 'Depositar'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 {ex.hasError && (
                   <TouchableOpacity
                     onPress={() => setExpandedError(prev => prev === ex.name ? null : ex.name)}
@@ -219,5 +278,15 @@ const styles = StyleSheet.create({
     opacity: 0.35,
     minWidth: 54,
     textAlign: 'right',
+  },
+  depositButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 2,
+  },
+  depositText: {
+    fontSize: 9,
+    fontWeight: fontWeights.bold,
   },
 })

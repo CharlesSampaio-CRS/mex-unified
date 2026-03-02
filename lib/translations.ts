@@ -191,6 +191,11 @@ export const translations = {
     'exchanges.apiKeyExpired': 'API Key expirada',
     'exchanges.apiKeyExpiresSoon': 'Expira em {days} dias',
     'exchanges.apiKeyExpiresAt': 'API Key expira em {date}',
+    // Depósito
+    'deposit.label': 'Depositar',
+    'deposit.title': 'Depositar',
+    'deposit.confirmMessage': 'Você será redirecionado para o app da {exchange} para fazer um depósito.',
+    'deposit.openApp': 'Abrir App',
     'exchanges.resources': '⚡ Recursos',
     'exchanges.availableMarkets': '📈 Mercados Disponíveis',
     'exchanges.tradingFees': 'Taxas de Trading',
@@ -529,6 +534,11 @@ export const translations = {
     'exchanges.apiKeyExpired': 'API Key expired',
     'exchanges.apiKeyExpiresSoon': 'Expires in {days} days',
     'exchanges.apiKeyExpiresAt': 'API Key expires on {date}',
+    // Deposit
+    'deposit.label': 'Deposit',
+    'deposit.title': 'Deposit',
+    'deposit.confirmMessage': 'You will be redirected to the {exchange} app to make a deposit.',
+    'deposit.openApp': 'Open App',
     'exchanges.resources': '⚡ Resources',
     'exchanges.availableMarkets': '📈 Available Markets',
     'exchanges.tradingFees': 'Trading Fees',
