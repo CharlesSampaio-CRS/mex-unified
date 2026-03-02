@@ -240,6 +240,15 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
     return type === 'bid' ? '#10b981' : '#ef4444'
   }
 
+  // Retorna o símbolo correto da moeda quote (ex: R$, $, €)
+  const getQuoteSymbol = () => {
+    const quote = tokenData?.quote?.toUpperCase()
+    if (quote === 'BRL') return 'R$'
+    if (quote === 'EUR') return '€'
+    if (quote === 'BTC') return '₿'
+    return '$' // USDT, USDC, USD
+  }
+
   const formatDateTime = (timestamp: number) => {
     const date = new Date(timestamp)
     return date.toLocaleString('pt-BR', {
@@ -280,9 +289,10 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                   <>
                     <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
                       {capitalizeExchangeName(tokenData.exchange?.name || 'Exchange')}
+                      {tokenData.pair ? ` · ${tokenData.pair}` : ''}
                     </Text>
                     <Text style={[styles.modalPrice, { color: colors.primary }]}>
-                      ${formatPrice(tokenData.price?.current || '0')}
+                      {getQuoteSymbol()}{formatPrice(tokenData.price?.current || '0')}
                     </Text>
                   </>
                 )}
@@ -314,12 +324,15 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Totais do Usuário */}
                 {(userTotalAmount > 0 || userTotalValue > 0) && (
-                  <View style={[styles.section, { backgroundColor: colors.primary + '10', borderBottomColor: colors.cardBorder }]}>
+                  <View style={[styles.section, { backgroundColor: colors.primary + '08', borderBottomColor: colors.cardBorder }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      Seus Saldos
+                    </Text>
                     <View style={styles.userTotalContainer}>
                       <View style={styles.userTotalRow}>
                         <Text style={[styles.label, { color: colors.textSecondary }]}>{t('tokenDetails.totalQuantity')}</Text>
                         <Text style={[styles.value, { color: colors.text, fontWeight: '600' }]}>
-                          {hideValue(apiService.formatTokenAmount(userTotalAmount.toString()))}
+                          {hideValue(apiService.formatTokenAmount(userTotalAmount.toString()))} {symbol?.toUpperCase()}
                         </Text>
                       </View>
                       <View style={styles.userTotalRow}>
@@ -338,7 +351,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                     {t('token.priceVariation')}
                   </Text>
                   <View style={styles.changeContainer}>
-                    <View style={styles.changeItem}>
+                    <View style={[styles.changeItem, { backgroundColor: colors.surfaceSecondary || colors.card }]}>
                       <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>
                         1h
                       </Text>
@@ -351,7 +364,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         {formatPercent(tokenData.change?.['1h']?.price_change_percent)}
                       </Text>
                     </View>
-                    <View style={styles.changeItem}>
+                    <View style={[styles.changeItem, { backgroundColor: colors.surfaceSecondary || colors.card }]}>
                       <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>
                         4h
                       </Text>
@@ -364,7 +377,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         {formatPercent(tokenData.change?.['4h']?.price_change_percent)}
                       </Text>
                     </View>
-                    <View style={styles.changeItem}>
+                    <View style={[styles.changeItem, { backgroundColor: colors.surfaceSecondary || colors.card }]}>
                       <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>
                         24h
                       </Text>
@@ -392,7 +405,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                           Bid (Compra)
                         </Text>
                         <Text style={[styles.value, { color: getBidAskColor('bid') }]}>
-                          ${formatPrice(tokenData.price.bid)}
+                          {getQuoteSymbol()}{formatPrice(tokenData.price.bid)}
                         </Text>
                       </View>
                       <View style={styles.halfColumn}>
@@ -400,16 +413,16 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                           Ask (Venda)
                         </Text>
                         <Text style={[styles.value, { color: getBidAskColor('ask') }]}>
-                          ${formatPrice(tokenData.price.ask)}
+                          {getQuoteSymbol()}{formatPrice(tokenData.price.ask)}
                         </Text>
                       </View>
                     </View>
                     {tokenData.price.bid && tokenData.price.ask && (
-                      <View style={[styles.spreadRow, { borderTopColor: colors.border }]}>
+                      <View style={[styles.spreadRow, { borderTopColor: colors.cardBorder }]}>
                         <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>
                           Spread
                         </Text>
-                        <Text style={[styles.value, { color: colors.text }]}>
+                        <Text style={[styles.value, { color: colors.text, fontSize: 14 }]}>
                           {calculateSpread(tokenData.price.bid, tokenData.price.ask)}
                         </Text>
                       </View>
@@ -428,7 +441,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         Máxima
                       </Text>
                       <Text style={[styles.value, { color: colors.success }]}>
-                        ${formatPrice(tokenData.price?.high_24h || '0')}
+                        {getQuoteSymbol()}{formatPrice(tokenData.price?.high_24h || '0')}
                       </Text>
                     </View>
                     <View style={styles.halfColumn}>
@@ -436,7 +449,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         Mínima
                       </Text>
                       <Text style={[styles.value, { color: colors.danger }]}>
-                        ${formatPrice(tokenData.price?.low_24h || '0')}
+                        {getQuoteSymbol()}{formatPrice(tokenData.price?.low_24h || '0')}
                       </Text>
                     </View>
                   </View>
@@ -462,7 +475,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                           Quote ({tokenData.quote || 'USDT'})
                         </Text>
                         <Text style={[styles.value, { color: colors.text }]}>
-                          ${formatVolume(tokenData.volume.quote_24h)}
+                          {getQuoteSymbol()}{formatVolume(tokenData.volume.quote_24h)}
                         </Text>
                       </View>
                     </View>
@@ -486,9 +499,13 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                               {ex.exchangeName}
                             </Text>
                             <Text style={[styles.exchangeItemAmount, { color: colors.textSecondary }]}>
-                              {hideValue(apiService.formatTokenAmount(ex.amount.toString()))}
-                              {ex.used > 0 && ` (${hideValue(apiService.formatTokenAmount(ex.free.toString()))} livre / ${hideValue(apiService.formatTokenAmount(ex.used.toString()))} em uso)`}
+                              {hideValue(apiService.formatTokenAmount(ex.amount.toString()))} {symbol?.toUpperCase()}
                             </Text>
+                            {ex.used > 0 && (
+                              <Text style={[styles.exchangeItemAmount, { color: colors.textSecondary, fontSize: 11, marginTop: 2 }]}>
+                                {hideValue(apiService.formatTokenAmount(ex.free.toString()))} livre · {hideValue(apiService.formatTokenAmount(ex.used.toString()))} em uso
+                              </Text>
+                            )}
                           </View>
                           <Text style={[styles.exchangeItemValue, { color: colors.primary }]}>
                             {hideValue(`$${apiService.formatUSD(ex.valueUsd)}`)}
@@ -586,7 +603,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                               </Text>
                               <Text style={[styles.value, { color: colors.text }]}>
                                 {tokenData.market_info.limits.cost.min != null 
-                                  ? `$${apiService.formatUSD(tokenData.market_info.limits.cost.min)}` 
+                                  ? `${getQuoteSymbol()}${apiService.formatUSD(tokenData.market_info.limits.cost.min)}` 
                                   : 'N/A'}
                               </Text>
                             </View>
@@ -596,7 +613,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                               </Text>
                               <Text style={[styles.value, { color: colors.text }]}>
                                 {tokenData.market_info.limits.cost.max != null 
-                                  ? `$${apiService.formatUSD(tokenData.market_info.limits.cost.max)}` 
+                                  ? `${getQuoteSymbol()}${apiService.formatUSD(tokenData.market_info.limits.cost.max)}` 
                                   : 'Sem limite'}
                               </Text>
                             </View>
@@ -612,7 +629,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                               </Text>
                               <Text style={[styles.value, { color: colors.text }]}>
                                 {tokenData.market_info.limits.price.min != null 
-                                  ? `$${formatPrice(tokenData.market_info.limits.price.min)}` 
+                                  ? `${getQuoteSymbol()}${formatPrice(tokenData.market_info.limits.price.min)}` 
                                   : 'N/A'}
                               </Text>
                             </View>
@@ -622,7 +639,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                               </Text>
                               <Text style={[styles.value, { color: colors.text }]}>
                                 {tokenData.market_info.limits.price.max != null 
-                                  ? `$${formatPrice(tokenData.market_info.limits.price.max)}` 
+                                  ? `${getQuoteSymbol()}${formatPrice(tokenData.market_info.limits.price.max)}` 
                                   : 'Sem limite'}
                               </Text>
                             </View>
@@ -661,7 +678,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                 )}
 
                 {/* Última Atualização */}
-                <View style={[styles.section, { marginBottom: 20, borderBottomWidth: 0 }]}>
+                <View style={[styles.section, { paddingVertical: 20, borderBottomWidth: 0 }]}>
                   <Text style={[styles.lastUpdate, { color: colors.textSecondary }]}>
                     {t('common.updated')} {formatDateTime(tokenData.timestamp || Date.now())}
                   </Text>
@@ -699,11 +716,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     padding: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
   },
   headerLeft: {
     flex: 1,
-    gap: 4,
+    gap: 2,
   },
   modalTitle: {
     fontSize: 24,
@@ -711,14 +729,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
     opacity: 0.7,
+    marginTop: 2,
   },
   modalPrice: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 6,
   },
   closeButton: {
     padding: 4,
@@ -760,17 +779,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '400',
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 12,
+    letterSpacing: 0.3,
   },
   subsectionTitle: {
-    fontSize: 16,
-    fontWeight: '400',
+    fontSize: 14,
+    fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
   },
@@ -784,13 +805,13 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   userTotalContainer: {
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
   },
   userTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 28,
   },
   userTotalLabel: {
     fontSize: 15,
@@ -801,7 +822,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   exchangesListContainer: {
-    marginTop: 12,
     gap: 8,
   },
   exchangesListTitle: {
@@ -814,7 +834,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   exchangeItemLeft: {
     flex: 1,
@@ -831,42 +851,47 @@ const styles = StyleSheet.create({
   exchangeItemValue: {
     fontSize: 14,
     fontWeight: '600',
+    marginLeft: 8,
   },
   changeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
   },
   changeItem: {
     flex: 1,
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
   },
   changeLabel: {
-    fontSize: 14,
-    fontWeight: '300',
+    fontSize: 13,
+    fontWeight: '500',
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   changeValue: {
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
   },
   row: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   halfColumn: {
     flex: 1,
+    minWidth: 0,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '300',
+    fontSize: 13,
+    fontWeight: '400',
     marginBottom: 4,
   },
   value: {
-    fontSize: 17,
-    fontWeight: '400',
+    fontSize: 16,
+    fontWeight: '500',
   },
   spreadRow: {
     flexDirection: 'row',
@@ -874,8 +899,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
     paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   infoGrid: {
     flexDirection: 'row',
@@ -896,9 +920,10 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   lastUpdate: {
-    fontSize: 14,
-    fontWeight: '300',
+    fontSize: 12,
+    fontWeight: '400',
     textAlign: 'center',
+    opacity: 0.6,
   },
   limitsContainer: {
     marginTop: 4,
@@ -907,5 +932,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 28,
   },
 })
