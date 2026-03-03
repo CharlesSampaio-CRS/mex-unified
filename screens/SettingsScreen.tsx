@@ -85,6 +85,7 @@ export function SettingsScreen({ navigation, route }: any) {
   const [autoLockTime, setAutoLockTime] = useState('5') // minutos
   const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true)
   const [deviceIp, setDeviceIp] = useState<string>('Carregando...')
+  const [refreshing, setRefreshing] = useState(false)
 
   // Themed toggle styles (seguindo padrão do ExchangesList)
   const themedToggleStyles = useMemo(() => ({
@@ -198,6 +199,13 @@ export function SettingsScreen({ navigation, route }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    // Simula refresh — quando tiver endpoint de user profile, substituir
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    setRefreshing(false)
+  }, [])
+
   // Define o Header global para esta tela
   useHeader({
     title: t('settings.title'),
@@ -216,8 +224,8 @@ export function SettingsScreen({ navigation, route }: any) {
       />
 
       <CustomPullToRefreshScrollView 
-        refreshing={false}
-        onRefresh={() => {}}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >

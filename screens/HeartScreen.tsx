@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native"
-import { memo } from "react"
+import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
@@ -7,14 +7,21 @@ import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefresh
 
 export const HeartScreen = memo(function HeartScreen({ navigation }: any) {
   const { colors } = useTheme()
+  const [refreshing, setRefreshing] = useState(false)
 
   useHeader({ title: "Heart", subtitle: "Seus itens mais amados" })
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    setRefreshing(false)
+  }, [])
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <CustomPullToRefreshScrollView
-        refreshing={false}
-        onRefresh={() => {}}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         style={styles.content}
         showsVerticalScrollIndicator={false}
       >

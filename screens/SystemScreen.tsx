@@ -52,6 +52,7 @@ export function SystemScreen({ navigation }: any) {
   const [autoLockTime, setAutoLockTime] = useState('5')
   const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true)
   const [deviceIp, setDeviceIp] = useState<string>('Carregando...')
+  const [refreshing, setRefreshing] = useState(false)
 
   // Themed toggle styles
   const themedToggleStyles = useMemo(() => ({
@@ -120,6 +121,12 @@ export function SystemScreen({ navigation }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    setRefreshing(false)
+  }, [])
+
   // Define o Header global para esta tela
   useHeader({
     title: t('settings.systemTitle'),
@@ -131,8 +138,8 @@ export function SystemScreen({ navigation }: any) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <CustomPullToRefreshScrollView 
-        refreshing={false}
-        onRefresh={() => {}}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View,
   Text,
@@ -126,6 +126,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const [isProcessingOAuth, setIsProcessingOAuth] = useState(false) // 🆕 Estado para processar OAuth
   const hasTriedAutoAuth = useRef(false) // 🆕 Controla se já tentou auth automático
   const autoAuthCancelled = useRef(false) // 🆕 Indica se usuário cancelou o auto-auth
+  const [refreshing, setRefreshing] = useState(false)
 
   const isFullLoading = isLoading || isLoadingData
 
@@ -506,6 +507,12 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     },
   })
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    setRefreshing(false)
+  }, [])
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -513,8 +520,8 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <CustomPullToRefreshScrollView
-        refreshing={false}
-        onRefresh={() => {}}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}

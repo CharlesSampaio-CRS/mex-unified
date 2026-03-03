@@ -11,6 +11,9 @@ const INDICATOR_HEIGHT = 64;
  * Implementa pull-to-refresh 100% customizado sem RefreshControl nativo.
  * Detecta o gesto de pull via onScroll + overscroll negativo e exibe
  * o AnimatedLogoIcon como indicador visual.
+ *
+ * Enquanto `refreshing=true`, o indicador permanece visível e o conteúdo
+ * fica empurrado para baixo — só volta ao normal quando refreshing=false.
  */
 export function CustomPullToRefreshScrollView({
   refreshing,
@@ -23,42 +26,60 @@ export function CustomPullToRefreshScrollView({
 }: any) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-INDICATOR_HEIGHT)).current;
+  const contentPadding = useRef(new Animated.Value(0)).current;
   const isRefreshingRef = useRef(false);
   const canTriggerRef = useRef(true);
+  const scrollRef = useRef<ScrollView>(null);
 
   // Atualiza ref quando refreshing muda externamente
   useEffect(() => {
+    const wasRefreshing = isRefreshingRef.current;
     isRefreshingRef.current = refreshing;
+
     if (refreshing) {
-      // Mostra o indicador
+      // Mostra o indicador e empurra conteúdo para baixo
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.spring(translateY, {
           toValue: 0,
-          useNativeDriver: true,
+          useNativeDriver: false,
+          tension: 80,
+          friction: 8,
+        }),
+        Animated.spring(contentPadding, {
+          toValue: INDICATOR_HEIGHT,
+          useNativeDriver: false,
           tension: 80,
           friction: 8,
         }),
       ]).start();
-    } else {
-      // Esconde o indicador
+    } else if (wasRefreshing) {
+      // Acabou o refresh: esconde o indicador e volta o conteúdo ao normal
       canTriggerRef.current = true;
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
+          duration: 300,
+          useNativeDriver: false,
         }),
         Animated.timing(translateY, {
           toValue: -INDICATOR_HEIGHT,
-          duration: 250,
-          useNativeDriver: true,
+          duration: 300,
+          useNativeDriver: false,
         }),
-      ]).start();
+        Animated.timing(contentPadding, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        // Scroll suave de volta ao topo quando o refresh termina
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      });
     }
   }, [refreshing]);
 
@@ -108,12 +129,15 @@ export function CustomPullToRefreshScrollView({
       </Animated.View>
 
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={contentContainerStyle}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         {...rest}
       >
+        {/* Padding animado que empurra o conteúdo para baixo durante refresh */}
+        <Animated.View style={{ height: contentPadding }} />
         {children}
       </ScrollView>
     </View>

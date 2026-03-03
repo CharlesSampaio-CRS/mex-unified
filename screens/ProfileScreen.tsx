@@ -50,6 +50,7 @@ export function ProfileScreen({ navigation }: any) {
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false)
   const [logoutModalVisible, setLogoutModalVisible] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   // Handlers
   const handleLogout = () => {
@@ -86,6 +87,12 @@ export function ProfileScreen({ navigation }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    setRefreshing(false)
+  }, [])
+
   // Define o Header global para esta tela
   useHeader({
     title: t('profile.title'),
@@ -97,8 +104,8 @@ export function ProfileScreen({ navigation }: any) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <CustomPullToRefreshScrollView 
-        refreshing={false}
-        onRefresh={() => {}}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
