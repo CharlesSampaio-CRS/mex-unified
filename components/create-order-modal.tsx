@@ -32,6 +32,16 @@ interface ExchangeItem {
 interface CreateOrderModalProps {
   visible: boolean
   onClose: () => void
+  /** Dados para clonar uma ordem existente */
+  cloneData?: {
+    exchangeId: string
+    exchangeName: string
+    symbol: string       // par completo ex: "BTC/USDT"
+    side: 'buy' | 'sell'
+    type: 'market' | 'limit'
+    price: number
+    amount: number
+  }
 }
 
 type OrderType = 'market' | 'limit'
@@ -47,7 +57,7 @@ interface PairInfo {
   min_cost: number
 }
 
-export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
+export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderModalProps) {
   const { colors } = useTheme()
   const { user } = useAuth()
   const { addNotification } = useNotifications()
@@ -83,30 +93,63 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
   const [createOrderError, setCreateOrderError] = useState<string | null>(null)
   const [confirmVisible, setConfirmVisible] = useState(false)
 
-  // Reset everything on open
+  // Reset everything on open (or setup clone mode)
   useEffect(() => {
     if (visible) {
-      setStep('exchange')
+      // Sempre reseta estado base
       setExchanges([])
-      setSelectedExchange(null)
-      setTokenInput('')
       setAvailablePairs([])
       setPairsLoading(false)
       setPairsError(null)
-      setSelectedPair(null)
       setPairPriceLoading(false)
       setPairSearchFilter('')
-      setOrderSide(null)
-      setOrderType(null)
-      setAmount('')
-      setPrice('')
-      setAmountInQuote(false)
       setCreateOrderLoading(false)
       setCreateOrderError(null)
       setConfirmVisible(false)
+      setAmountInQuote(false)
 
-      // Fetch connected exchanges
-      fetchExchanges()
+      if (cloneData) {
+        // 🔁 Modo Clone: pula direto para o formulário com dados pré-preenchidos
+        const [base, quote] = cloneData.symbol.split('/')
+        setSelectedExchange({
+          exchange_id: cloneData.exchangeId,
+          exchange_name: cloneData.exchangeName,
+          exchange_type: '',
+          is_active: true,
+          created_at: '',
+          linked_at: '',
+        })
+        setTokenInput(base || '')
+        setSelectedPair({
+          symbol: cloneData.symbol,
+          base: base || '',
+          quote: quote || '',
+          active: true,
+          min_amount: 0,
+          min_cost: 0,
+        })
+        setOrderSide(cloneData.side)
+        setOrderType(cloneData.type)
+        setPrice(cloneData.price > 0 ? String(cloneData.price) : '')
+        setAmount(cloneData.amount > 0 ? String(cloneData.amount) : '')
+        setStep('order')
+
+        // Fetch exchanges em background (para o botão "voltar" funcionar)
+        fetchExchanges()
+      } else {
+        // Modo normal: inicia do início
+        setStep('exchange')
+        setSelectedExchange(null)
+        setTokenInput('')
+        setSelectedPair(null)
+        setOrderSide(null)
+        setOrderType(null)
+        setAmount('')
+        setPrice('')
+
+        // Fetch connected exchanges
+        fetchExchanges()
+      }
     }
   }, [visible])
 

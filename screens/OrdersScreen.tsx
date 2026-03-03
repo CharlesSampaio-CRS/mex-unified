@@ -80,6 +80,15 @@ export function OrdersScreen({ navigation }: any) {
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string } | null>(null);
   const [createOrderVisible, setCreateOrderVisible] = useState(false);
+  const [cloneOrderData, setCloneOrderData] = useState<{
+    exchangeId: string;
+    exchangeName: string;
+    symbol: string;
+    side: 'buy' | 'sell';
+    type: 'market' | 'limit';
+    price: number;
+    amount: number;
+  } | null>(null);
 
   const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
 
@@ -202,6 +211,21 @@ export function OrdersScreen({ navigation }: any) {
     setCancelConfirmVisible(true);
   }, [cancellingOrderIds]);
 
+  // 🔁 Clona uma ordem existente — abre CreateOrderModal com dados pré-preenchidos
+  const handleCloneOrder = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
+    const orderType = (order.type === 'market' || order.type === 'limit') ? order.type : 'limit';
+    setCloneOrderData({
+      exchangeId,
+      exchangeName,
+      symbol: order.symbol,
+      side: order.side,
+      type: orderType,
+      price: Number(order.price) || 0,
+      amount: Number(order.amount) || 0,
+    });
+    setCreateOrderVisible(true);
+  }, []);
+
   // Executa o cancelamento após confirmação
   const executeCancelOrder = useCallback(async () => {
     if (!orderToCancel) return;
@@ -264,7 +288,7 @@ export function OrdersScreen({ navigation }: any) {
   }, [orderToCancel, refresh, removeOrder, refreshBalance, addNotification]);
 
   // Renderiza order card
-  const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string) => {
+  const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
     if (!order || !order.id) return null;
     
     const orderId = String(order.id || '');
@@ -371,29 +395,47 @@ export function OrdersScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Botão cancelar compacto */}
-          {!isCancelling ? (
+          {/* Botões de ação: Clonar + Cancelar */}
+          <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
+            {/* Clonar */}
             <TouchableOpacity
-              style={[styles.cancelButton, { borderTopColor: colors.border }]}
-              onPress={() => handleCancelOrder(order, exchangeId)}
+              style={styles.actionButton}
+              onPress={() => handleCloneOrder(order, exchangeId, exchangeName)}
+              disabled={isCancelling}
             >
-              <Ionicons name="close-circle-outline" size={14} color={colors.danger} />
-              <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
-                Cancelar
+              <Ionicons name="copy-outline" size={14} color={colors.primary} />
+              <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+                Clonar
               </Text>
             </TouchableOpacity>
-          ) : (
-            <View style={[styles.cancelButton, { borderTopColor: colors.border }]}>
-              <Ionicons name="hourglass-outline" size={14} color={colors.textSecondary} />
-              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
-                Cancelando...
-              </Text>
-            </View>
-          )}
+
+            {/* Separador */}
+            <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
+
+            {/* Cancelar */}
+            {!isCancelling ? (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleCancelOrder(order, exchangeId)}
+              >
+                <Ionicons name="close-circle-outline" size={14} color={colors.danger} />
+                <Text style={[styles.actionButtonText, { color: colors.danger }]}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.actionButton}>
+                <Ionicons name="hourglass-outline" size={14} color={colors.textSecondary} />
+                <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
+                  Cancelando...
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </AnimatedOrderCard>
     );
-  }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder, tokenPrices]);
+  }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder, handleCloneOrder, tokenPrices]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -480,7 +522,7 @@ export function OrdersScreen({ navigation }: any) {
           </Text>
           <TouchableOpacity
             style={[styles.newOrderButton, { borderColor: colors.primary }]}
-            onPress={() => setCreateOrderVisible(true)}
+            onPress={() => { setCloneOrderData(null); setCreateOrderVisible(true); }}
             activeOpacity={0.7}
           >
             <Ionicons name="add-outline" size={14} color={colors.primary} />
@@ -514,7 +556,7 @@ export function OrdersScreen({ navigation }: any) {
             {!search && selectedType === 'All' && (
               <TouchableOpacity
                 style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
-                onPress={() => setCreateOrderVisible(true)}
+                onPress={() => { setCloneOrderData(null); setCreateOrderVisible(true); }}
                 activeOpacity={0.7}
               >
                 <Ionicons name="add-circle-outline" size={18} color="#fff" />
@@ -544,7 +586,7 @@ export function OrdersScreen({ navigation }: any) {
                     {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
                   </Text>
                 </View>
-                {section.orders.map(order => renderOrderCard(order, section.exchangeId))}
+                {section.orders.map(order => renderOrderCard(order, section.exchangeId, section.exchangeName))}
               </View>
             ))}
           </View>
@@ -586,7 +628,11 @@ export function OrdersScreen({ navigation }: any) {
       {/* Modal de Criação de Nova Ordem */}
       <CreateOrderModal
         visible={createOrderVisible}
-        onClose={() => setCreateOrderVisible(false)}
+        onClose={() => {
+          setCreateOrderVisible(false);
+          setCloneOrderData(null);
+        }}
+        cloneData={cloneOrderData || undefined}
       />
     </View>
   );
@@ -812,5 +858,26 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 5,
+  },
+  actionButtonText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
+  },
+  actionSeparator: {
+    width: 1,
+    height: 16,
   },
 });
