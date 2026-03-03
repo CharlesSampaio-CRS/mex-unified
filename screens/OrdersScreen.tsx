@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sideBadgeText: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.bold,
   },
   cardSubtext: {

@@ -8,6 +8,7 @@ import { NotificationsModal } from "../components/NotificationsModal"
 import { OpenOrdersModal } from "../components/open-orders-modal"
 import { OrderDetailsModal } from "../components/order-details-modal"
 import { useTheme } from "../contexts/ThemeContext"
+import { typography, fontWeights } from "../lib/typography"
 import { useBalance } from "../contexts/BalanceContext"
 import { useLayout } from "../contexts/LayoutContext"
 import { useNotifications } from "../contexts/NotificationsContext"
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   testButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
   },
 })

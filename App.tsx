@@ -6,6 +6,7 @@ import { ActivityIndicator, View, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
+import { typography, fontWeights } from "@/lib/typography"
 
 
 // Desabilitar warnings de desenvolvimento (mas manter erros)
@@ -199,8 +200,8 @@ function MainTabs() {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textSecondary,
           tabBarLabelStyle: {
-            fontSize: 10,
-            fontWeight: "400",
+            fontSize: typography.micro,
+            fontWeight: fontWeights.regular,
             marginTop: -2,
           },
           tabBarIconStyle: {

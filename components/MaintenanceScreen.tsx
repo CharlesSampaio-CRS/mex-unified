@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import Svg, { Path, Circle, Rect } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { typography, fontWeights } from '@/lib/typography'
 
 interface MaintenanceScreenProps {
   onRetry?: () => void
@@ -139,20 +140,20 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: typography.display,
+    fontWeight: fontWeights.semibold,
     marginBottom: 16,
     textAlign: 'center',
     letterSpacing: 0.3,
   },
   message: {
-    fontSize: 16,
+    fontSize: typography.h4,
     lineHeight: 24,
     textAlign: 'center',
     marginBottom: 12,
   },
   subMessage: {
-    fontSize: 14,
+    fontSize: typography.body,
     lineHeight: 20,
     textAlign: 'center',
     marginBottom: 32,
@@ -169,8 +170,8 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: '#3b82f6',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
     textAlign: 'center',
     letterSpacing: 0.3,
   },
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   contactText: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sideBadgeText: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.bold,
   },
   cardSubtext: {
@@ -844,12 +844,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   confirmTitle: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: typography.h3,
+    fontWeight: fontWeights.medium,
     textAlign: 'center',
   },
   confirmMessage: {
-    fontSize: 12,
+    fontSize: typography.caption,
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -868,15 +868,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   confirmButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
   },
   deleteConfirmButton: {
     backgroundColor: '#ef4444',
   },
   deleteConfirmButtonText: {
     color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
   },
 })

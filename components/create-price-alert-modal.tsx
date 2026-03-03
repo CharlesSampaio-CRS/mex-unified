@@ -18,6 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { typography, fontWeights } from '../lib/typography';
 import { useAlerts } from '../contexts/AlertsContext';
 import {
   AlertType,
@@ -571,8 +572,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.icon,
+    fontWeight: fontWeights.semibold,
   },
   closeButton: {
     padding: 4,
@@ -587,16 +588,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tokenSymbol: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: typography.display,
+    fontWeight: fontWeights.bold,
     marginBottom: 4,
   },
   tokenPrice: {
-    fontSize: 16,
+    fontSize: typography.h4,
     marginBottom: 2,
   },
   tokenExchange: {
-    fontSize: 12,
+    fontSize: typography.caption,
   },
   section: {
     marginBottom: 24,
@@ -608,8 +609,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
     marginBottom: 12,
   },
   buttonGroup: {
@@ -628,14 +629,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   optionButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
   },
   input: {
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    fontSize: 16,
+    fontSize: typography.h4,
   },
   textArea: {
     minHeight: 80,
@@ -655,12 +656,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   suggestionLabel: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     marginBottom: 2,
   },
   suggestionValue: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.semibold,
   },
   errorContainer: {
     padding: 12,
@@ -668,7 +669,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     marginBottom: 4,
   },
   preview: {
@@ -678,16 +679,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   previewLabel: {
-    fontSize: 12,
+    fontSize: typography.caption,
     marginBottom: 8,
   },
   previewText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
     marginBottom: 4,
   },
   previewFrequency: {
-    fontSize: 12,
+    fontSize: typography.caption,
   },
   footer: {
     flexDirection: 'row',
@@ -708,7 +709,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.bodyLarge,
+    fontWeight: fontWeights.semibold,
   },
 });

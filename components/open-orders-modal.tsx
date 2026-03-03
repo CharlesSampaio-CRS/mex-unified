@@ -808,7 +808,7 @@ export function OpenOrdersModal({
                               style={[styles.menuButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                               disabled={isCancelling}
                             >
-                              <Text style={{ color: colors.textSecondary, fontSize: 16, fontWeight: fontWeights.bold, lineHeight: 16 }}>
+                              <Text style={{ color: colors.textSecondary, fontSize: typography.h4, fontWeight: fontWeights.bold, lineHeight: 16 }}>
                                 ⋮
                               </Text>
                             </TouchableOpacity>
@@ -1438,7 +1438,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyIcon: {
-    fontSize: 64,
+    fontSize: typography.emojiHuge,
     marginBottom: 16,
     opacity: 0.3,
   },
@@ -1844,7 +1844,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   cancellingTextCompact: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
   },
 })

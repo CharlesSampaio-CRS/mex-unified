@@ -635,7 +635,7 @@ const evoStyles = StyleSheet.create({
     marginBottom: 2,
   },
   summaryArrow: {
-    fontSize: 11,
+    fontSize: typography.tiny,
   },
   summaryValue: {
     fontSize: typography.body,

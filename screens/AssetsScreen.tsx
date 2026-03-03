@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   typeIconText: {
-    fontSize: 12,
+    fontSize: typography.caption,
     fontWeight: fontWeights.bold,
   },
   cardInfo: {
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sideBadgeText: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.bold,
   },
   cardSubtext: {

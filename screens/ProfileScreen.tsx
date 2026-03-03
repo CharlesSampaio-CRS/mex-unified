@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   modalCloseIcon: {
-    fontSize: 22,
+    fontSize: typography.h1,
     fontWeight: fontWeights.light,
   },
   // Delete Account Modal
@@ -703,14 +703,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   deleteAccountModalTitle: {
-    fontSize: 20,
-    fontWeight: "500",
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.medium,
   },
   deleteAccountModalContent: {
     padding: 20,
   },
   deleteAccountWarningText: {
-    fontSize: 16,
+    fontSize: typography.h4,
     lineHeight: 24,
     marginBottom: 16,
   },
@@ -723,18 +723,18 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   deleteAccountWarningBullet: {
-    fontSize: 18,
+    fontSize: typography.icon,
     marginRight: 12,
-    fontWeight: "700",
+    fontWeight: fontWeights.bold,
   },
   deleteAccountWarningItemText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.body,
     lineHeight: 20,
   },
   deleteAccountConfirmText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
     marginBottom: 24,
     textAlign: "center",
   },
@@ -751,8 +751,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   deleteAccountCancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
   deleteAccountConfirmButton: {
     flex: 1,
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   deleteAccountConfirmButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
 })

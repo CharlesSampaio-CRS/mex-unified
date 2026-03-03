@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Platform } from
 import { Camera, CameraView } from 'expo-camera'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { typography, fontWeights } from '@/lib/typography'
 import Svg, { Path, Rect } from 'react-native-svg'
 
 interface QRScannerProps {
@@ -198,13 +199,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.semibold,
     color: '#fff',
     marginBottom: 8,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: typography.body,
     color: '#ccc',
     textAlign: 'center',
   },
@@ -228,10 +229,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(59, 130, 246, 0.4)',
   },
   hintText: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     color: '#60a5fa',
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   corner: {
     position: 'absolute',
@@ -283,11 +284,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
   footerHint: {
-    fontSize: 12,
+    fontSize: typography.caption,
     color: '#999',
     textAlign: 'center',
   },
@@ -299,8 +300,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.medium,
   },
   errorContainer: {
     borderRadius: 16,
@@ -310,12 +311,12 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.semibold,
     marginBottom: 8,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: typography.body,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
 })

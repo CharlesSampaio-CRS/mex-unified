@@ -250,8 +250,8 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '700' as const,
+    fontSize: typography.micro,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 0.5 },

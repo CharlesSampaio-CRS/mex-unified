@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { typography, fontWeights } from '@/lib/typography';
 import { PortfolioOverview } from '../PortfolioOverview';
 import { MarketOverview } from '../MarketOverview';
 import { TopGainersLosers } from '../TopGainersLosers';
@@ -57,7 +58,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   updatingText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.medium,
   },
 });

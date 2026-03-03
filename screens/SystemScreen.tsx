@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   modalCloseIcon: {
-    fontSize: 22,
+    fontSize: typography.h1,
     fontWeight: fontWeights.light,
   },
   modalSection: {
@@ -938,8 +938,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   aboutModalTitle: {
-    fontSize: 20,
-    fontWeight: "500",
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.medium,
   },
   aboutModalContent: {
     flex: 1,
@@ -978,8 +978,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   termsModalTitle: {
-    fontSize: 20,
-    fontWeight: "500",
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.medium,
   },
   termsModalContent: {
     flex: 1,

@@ -347,7 +347,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       marginBottom: 20,
     },
     logo: {
-      fontSize: 48,
+      fontSize: typography.emojiHuge,
       marginBottom: 16,
       textAlign: 'center',
     },
@@ -460,7 +460,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       justifyContent: 'center',
     },
     biometricIcon: {
-      fontSize: 20,
+      fontSize: typography.displaySmall,
       marginRight: 8,
     },
     biometricButtonText: {

@@ -203,12 +203,12 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.icon,
+    fontWeight: fontWeights.semibold,
   },
   closeButton: {
-    fontSize: 24,
-    fontWeight: '300',
+    fontSize: typography.display,
+    fontWeight: fontWeights.light,
   },
   modalContent: {
     padding: 20,
@@ -229,8 +229,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconName: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: typography.micro,
+    fontWeight: fontWeights.medium,
     textAlign: 'center',
   },
 })
