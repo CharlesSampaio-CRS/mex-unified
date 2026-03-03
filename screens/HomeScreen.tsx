@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, SafeAreaView, View, TouchableOpacity, Text, Alert } from "react-native"
+import { StyleSheet, ScrollView, RefreshControl, SafeAreaView, View, TouchableOpacity, Text, Alert } from "react-native"
 import { useRef, useState, useCallback, memo } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { HomeVerticalLayout } from "../components/layouts/HomeVerticalLayout"
@@ -15,7 +15,6 @@ import { useNotifications } from "../contexts/NotificationsContext"
 import { useAuth } from "../contexts/AuthContext"
 import { commonStyles } from "@/lib/layout"
 import { useBackendSnapshots } from "../hooks/useBackendSnapshots"
-import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView";
 
 export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   
@@ -106,9 +105,8 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
       {layout === 'tabs' ? (
         <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
       ) : (
-        <CustomPullToRefreshScrollView
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           contentContainerStyle={styles.scrollContent}
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
@@ -120,7 +118,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
             pnlLoading={pnlLoading}
             isUpdating={refreshing}
           />
-        </CustomPullToRefreshScrollView>
+        </ScrollView>
       )}
 
       <NotificationsModal 

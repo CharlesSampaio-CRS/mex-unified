@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Text as SvgText, Line } from 'react-native-svg';
@@ -19,7 +19,6 @@ import { getExchangeLogo } from '@/lib/exchange-logos';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 import { AnimatedLogoIcon } from '../components/AnimatedLogoIcon';
-import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 
 export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -299,9 +298,8 @@ export function AssetsScreen({ navigation }: any) {
         </View>
       </View>
       
-      <CustomPullToRefreshScrollView
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         {loading && assetsSections.length === 0 ? (
@@ -440,7 +438,7 @@ export function AssetsScreen({ navigation }: any) {
             ))}
           </View>
         )}
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
 
       {/* Modal de Detalhes do Token */}
       {selectedTokenForDetails && (

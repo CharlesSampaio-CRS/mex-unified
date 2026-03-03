@@ -1,6 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, TouchableOpacity } from "react-native"
 import { memo, useState, useCallback, useMemo, useEffect } from "react"
-import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgLinearGradient, Stop, ClipPath, Rect, G } from "react-native-svg"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
@@ -532,11 +531,10 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <CustomPullToRefreshScrollView
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshing={isRefreshing || refreshing}
-        onRefresh={handleRefresh}
+        refreshControl={<RefreshControl refreshing={isRefreshing || refreshing} onRefresh={handleRefresh} />}
       >
         {/* ═══ 1. EVOLUÇÃO DO PORTFÓLIO ═══ */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
@@ -603,7 +601,7 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
         <TokensPieChart embedded />
 
         <View style={{ height: 24 }} />
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
     </View>
   )
 })

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
 import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
@@ -7,7 +7,6 @@ import { typography, fontWeights } from "../lib/typography"
 import { apiService } from "../services/api"
 import { useFocusEffect } from "@react-navigation/native"
 import { AnimatedLogoIcon } from "../components/AnimatedLogoIcon"
-import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView"
 
 /** Tipo de um template vindo da API */
 interface TemplateConfig {
@@ -111,9 +110,8 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
           <AnimatedLogoIcon size={48} />
         </View>
       ) : (
-        <CustomPullToRefreshScrollView
-          refreshing={loading}
-          onRefresh={fetchTemplates}
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchTemplates} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 32 }}
         >
@@ -236,7 +234,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
             <Text style={{ fontSize: typography.displaySmall, color: colors.primary }}>→</Text>
           </TouchableOpacity>
 
-        </CustomPullToRefreshScrollView>
+        </ScrollView>
       )}
 
       {/* ── Modal Criar Template ── */}

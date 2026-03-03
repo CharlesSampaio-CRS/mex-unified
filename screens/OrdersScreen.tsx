@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -20,7 +20,6 @@ import { typography, fontWeights } from '@/lib/typography';
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { CreateOrderModal } from '@/components/create-order-modal';
 import { AnimatedLogoIcon } from '../components/AnimatedLogoIcon';
-import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 
 // Sub-componente com animação piscante para ordens sendo canceladas
 function AnimatedOrderCard({ 
@@ -491,9 +490,8 @@ export function OrdersScreen({ navigation }: any) {
         </View>
       </View>
       
-      <CustomPullToRefreshScrollView
-        refreshing={refreshing}
-        onRefresh={refresh}
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         {loading && filteredSections.length === 0 ? (
@@ -552,7 +550,7 @@ export function OrdersScreen({ navigation }: any) {
             ))}
           </View>
         )}
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
 
       {selectedOrder && (
         <OrderDetailsModal
