@@ -156,11 +156,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           console.log('✅ Token validado com sucesso no handler')
           
-          // Salvar tokens
+          // 🚀 OTIMIZAÇÃO: Salva access_token PRIMEIRO (necessário para chamadas de dados)
           await secureStorage.setItemAsync('access_token', access_token)
-          if (refresh_token) {
-            await secureStorage.setItemAsync('refresh_token', refresh_token)
-          }
           
           // Criar objeto user
           const userData = {
@@ -170,13 +167,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             authProvider: 'google' as const
           }
           
-          // Salvar user
-          await secureStorage.setItemAsync('user_data', JSON.stringify(userData))
-          await secureStorage.setItemAsync('user_id', user_id)
-          
+          // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento de dados
           console.log('✅ Setando usuário autenticado no estado (via evento)...')
-          // Atualizar estado
+          setIsLoadingData(true)
+          setHasValidToken(true)
           setUser(userData)
+          
+          // 🚀 Salva dados persistentes em PARALELO (não bloqueia)
+          Promise.all([
+            refresh_token 
+              ? secureStorage.setItemAsync('refresh_token', refresh_token)
+              : Promise.resolve(),
+            secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+            secureStorage.setItemAsync('user_id', user_id),
+          ]).catch(err => {
+            console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+          })
         } catch (error) {
           console.error('❌ Error processing OAuth callback:', error)
           // Limpa qualquer dado que possa ter sido salvo parcialmente
@@ -482,17 +488,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       const data = await response.json()
       
-      // Salva tokens
+      // 🚀 OTIMIZAÇÃO: Salva token de acesso PRIMEIRO (necessário para as chamadas de dados)
+      // e faz os demais saves em paralelo para não atrasar o carregamento
       await secureStorage.setItemAsync('access_token', data.token)
-      if (data.refresh_token) {
-        await secureStorage.setItemAsync('refresh_token', data.refresh_token)
-      }
       
-      // Salva dados do usuário
-      await secureStorage.setItemAsync('user_id', data.user.id)
-      await secureStorage.setItemAsync('user_email', data.user.email)
-      
-      const user: User = {
+      const userData: User = {
         id: data.user.id,
         email: data.user.email,
         name: data.user.name || email.split('@')[0],
@@ -500,16 +500,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authProvider: 'email'
       }
       
-      await saveUser(user)
-      
-      // Pequeno delay para garantir que o estado foi atualizado
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
+      // 🚀 IMEDIATAMENTE seta o usuário no estado para disparar o carregamento de dados
+      // BalanceContext e OrdersContext reagem ao user?.id via useEffect
       console.log('✅ Setando usuário autenticado no estado...')
       setHasValidToken(true)
-      setUser(user)
+      setUser(userData)
       
-      console.log('✅ Login completo!')
+      // 🚀 Salva dados persistentes em PARALELO (não bloqueia o carregamento)
+      Promise.all([
+        data.refresh_token 
+          ? secureStorage.setItemAsync('refresh_token', data.refresh_token) 
+          : Promise.resolve(),
+        secureStorage.setItemAsync('user_id', data.user.id),
+        secureStorage.setItemAsync('user_email', data.user.email),
+        secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+      ]).catch(err => {
+        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+      })
+      
+      console.log('✅ Login completo! Dados sendo carregados em background...')
     } catch (error) {
       console.error('Login error:', error)
       setHasValidToken(false)
@@ -661,16 +670,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 
                 const validationData = await verifyResponse.json()
                 
-                if (refresh_token) {
-                  await secureStorage.setItemAsync('refresh_token', refresh_token)
-                }
-                
-                // Salva dados do usuário
-                await secureStorage.setItemAsync('user_id', user_id)
-                await secureStorage.setItemAsync('user_email', email)
-                if (name) await secureStorage.setItemAsync('user_name', name)
-                
-                const user: User = {
+                // 🚀 OTIMIZAÇÃO: Seta usuário IMEDIATAMENTE para disparar carregamento
+                const userData: User = {
                   id: user_id,
                   email: email,
                   name: name || email.split('@')[0],
@@ -678,15 +679,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                   authProvider: 'google'
                 }
                 
-                await saveUser(user)
-                
-                // IMPORTANTE: Define isLoadingData ANTES de setUser para evitar flash da tela de login
                 setIsLoadingData(true)
-                
-                // Pequeno delay para garantir que o estado foi atualizado
-                await new Promise(resolve => setTimeout(resolve, 50))
                 setHasValidToken(true)
-                setUser(user)
+                setUser(userData)
+                
+                // 🚀 Salva dados persistentes em PARALELO (não bloqueia)
+                Promise.all([
+                  refresh_token 
+                    ? secureStorage.setItemAsync('refresh_token', refresh_token) 
+                    : Promise.resolve(),
+                  secureStorage.setItemAsync('user_id', user_id),
+                  secureStorage.setItemAsync('user_email', email),
+                  name ? secureStorage.setItemAsync('user_name', name) : Promise.resolve(),
+                  secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+                ]).catch(err => {
+                  console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+                })
+                
                 resolve()
               } catch (saveError) {
                 console.error('❌ Error validating or saving user data:', saveError)
@@ -809,15 +818,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             throw new Error('Invalid OAuth response from Kong')
           }
           
+          // 🚀 OTIMIZAÇÃO: Salva access_token PRIMEIRO (necessário para chamadas de dados)
           await secureStorage.setItemAsync('access_token', accessToken)
-          if (refreshToken) {
-            await secureStorage.setItemAsync('refresh_token', refreshToken)
-          }
-          await secureStorage.setItemAsync('user_id', userId)
-          await secureStorage.setItemAsync('user_email', email)
-          if (name) await secureStorage.setItemAsync('user_name', name)
           
-          const user: User = {
+          const userData: User = {
             id: userId,
             email: email,
             name: name || email.split('@')[0],
@@ -825,9 +829,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             authProvider: 'google'
           }
           
-          await saveUser(user)
-          setUser(user)
+          // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento
           setIsLoadingData(true)
+          setHasValidToken(true)
+          setUser(userData)
+          
+          // 🚀 Salva dados persistentes em PARALELO (não bloqueia)
+          Promise.all([
+            refreshToken 
+              ? secureStorage.setItemAsync('refresh_token', refreshToken) 
+              : Promise.resolve(),
+            secureStorage.setItemAsync('user_id', userId),
+            secureStorage.setItemAsync('user_email', email),
+            name ? secureStorage.setItemAsync('user_name', name) : Promise.resolve(),
+            secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+          ]).catch(err => {
+            console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+          })
         } else {
           throw new Error('OAuth cancelled or failed')
         }
@@ -857,15 +875,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authProvider: 'apple'
       }
       
-      await saveUser(mockUser)
-      
-      // Ativa o loading de dados após login bem-sucedido
+      // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento
       setIsLoadingData(true)
+      setHasValidToken(true)
+      setUser(mockUser)
       
-      // Aguarda um tick para garantir que isLoadingData seja propagado
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
-      // O loading será desativado pelo App.tsx quando os dados estiverem prontos
+      // Salva dados persistentes em background (não bloqueia)
+      saveUser(mockUser).catch(err => {
+        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+      })
     } catch (error) {
       console.error('Apple login error:', error)
       throw error
@@ -914,17 +932,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         throw new Error(errorMessage)
       }
 
-      // Salva tokens
+      // 🚀 OTIMIZAÇÃO: Salva token de acesso PRIMEIRO (necessário para as chamadas de dados)
       await secureStorage.setItemAsync('access_token', data.token)
-      if (data.refresh_token) {
-        await secureStorage.setItemAsync('refresh_token', data.refresh_token)
-      }
 
-      // Salva dados do usuário
-      await secureStorage.setItemAsync('user_id', data.user.id)
-      await secureStorage.setItemAsync('user_email', data.user.email)
-
-      const user: User = {
+      const userData: User = {
         id: data.user.id,
         email: data.user.email,
         name: data.user.name || email.split('@')[0],
@@ -932,19 +943,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authProvider: 'email'
       }
 
-      console.log('[REGISTER] Antes de saveUser:', user)
-      await saveUser(user)
-      console.log('[REGISTER] Depois de saveUser')
-
-      // Pequeno delay para garantir que o estado foi atualizado
-      await new Promise(resolve => setTimeout(resolve, 50))
-
-      console.log('[REGISTER] Antes de setUser')
+      // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento de dados
+      console.log('[REGISTER] Setando usuário no estado para carregar dados...')
       setHasValidToken(true)
-      setUser(user)
-      console.log('[REGISTER] Depois de setUser')
+      setUser(userData)
 
-      console.log('✅ Registro completo!')
+      // 🚀 Salva dados persistentes em PARALELO (não bloqueia)
+      Promise.all([
+        data.refresh_token 
+          ? secureStorage.setItemAsync('refresh_token', data.refresh_token) 
+          : Promise.resolve(),
+        secureStorage.setItemAsync('user_id', data.user.id),
+        secureStorage.setItemAsync('user_email', data.user.email),
+        secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+      ]).catch(err => {
+        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+      })
+
+      console.log('✅ Registro completo! Dados sendo carregados em background...')
     } catch (error) {
       console.error('Register error:', error)
       setHasValidToken(false)
