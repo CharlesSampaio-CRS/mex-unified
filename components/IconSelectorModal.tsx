@@ -18,7 +18,7 @@ const AVAILABLE_ICONS = [
   { id: 'diamond', name: 'Diamond', icon: 'diamond', screen: 'Diamond' },
   { id: 'target', name: 'Target', icon: 'target', screen: 'Target' },
   { id: 'flag', name: 'Flag', icon: 'flag', screen: 'Flag' },
-  { id: 'chart', name: 'Chart', icon: 'chart', screen: 'Chart' },
+  { id: 'chart', name: 'Analytics', icon: 'chart', screen: 'Analytics' },
   { id: 'robot', name: 'Strategies', icon: 'robot', screen: 'StrategyTemplates' },
   { id: 'bell', name: 'Alerts', icon: 'bell', screen: 'Favoritos' },
   { id: 'settings', name: 'Settings', icon: 'settings', screen: 'Settings' },

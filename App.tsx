@@ -39,7 +39,7 @@ import { CrownScreen } from "./screens/CrownScreen"
 import { DiamondScreen } from "./screens/DiamondScreen"
 import { TargetScreen } from "./screens/TargetScreen"
 import { FlagScreen } from "./screens/FlagScreen"
-import { ChartScreen } from "./screens/ChartScreen"
+import { AnalyticsScreen } from "./screens/AnalyticsScreen"
 import { StrategyTemplatesScreen } from "./screens/StrategyTemplatesScreen"
 import { Header } from "./components/Header"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
@@ -354,8 +354,8 @@ function MainTabs() {
           }}
         />
         <Tab.Screen
-          name="Chart"
-          component={ChartScreen}
+          name="Analytics"
+          component={AnalyticsScreen}
           options={{
             tabBarButton: () => null,
           }}
