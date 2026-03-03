@@ -8,6 +8,7 @@ import { useBalance } from "../contexts/BalanceContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
 import { useAuth } from "../contexts/AuthContext"
 import { apiService } from "../services/api"
+import { marketPriceService } from "../services/marketPriceService"
 import { useBackendSnapshots } from "../hooks/useBackendSnapshots"
 import { useCurrencyConversion } from "../hooks/use-currency-conversion"
 import { getExchangeBalances, getExchangeName } from "../lib/exchange-helpers"
@@ -18,6 +19,7 @@ import type { Balance } from "../types/api"
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CHART_W = SCREEN_WIDTH - 64
 const CHART_H = 140
+const COMP_CHART_H = 170
 const CHART_PAD = 16
 
 // ─── Tipos ──────────────────────────────────────────────────────
@@ -232,6 +234,249 @@ const EvolutionChart = memo(function EvolutionChart({
   )
 })
 
+// ─── Normalizar série para % relativo ───────────────────────────
+function normalizeToPercent(values: number[]): number[] {
+  if (values.length === 0) return []
+  const base = values[0]
+  if (base === 0) return values.map(() => 0)
+  return values.map(v => ((v - base) / base) * 100)
+}
+
+// Alinhar série de mercado com timestamps do portfólio
+function alignSeries(
+  marketTs: string[],
+  marketVals: number[],
+  portfolioTs: string[],
+): number[] {
+  if (marketTs.length === 0 || portfolioTs.length === 0) return []
+  const marketPairs = marketTs.map((ts, i) => ({ t: new Date(ts).getTime(), v: marketVals[i] }))
+  return portfolioTs.map(ts => {
+    const t = new Date(ts).getTime()
+    let closest = marketPairs[0]
+    let minD = Math.abs(t - closest.t)
+    for (let i = 1; i < marketPairs.length; i++) {
+      const d = Math.abs(t - marketPairs[i].t)
+      if (d < minD) { minD = d; closest = marketPairs[i] }
+    }
+    return closest.v
+  })
+}
+
+// ─── Gráfico Comparativo (Portfolio vs BTC vs ETH) ─────────────
+interface CompSeriesData {
+  values: number[]
+  timestamps: string[]
+}
+
+const COMP_COLORS = {
+  portfolio: '#8B5CF6', // roxo
+  btc: '#F7931A',      // laranja BTC
+  eth: '#627EEA',      // azul ETH
+}
+
+const ComparisonChart = memo(function ComparisonChart({
+  portfolioData,
+  btcData,
+  ethData,
+  colors,
+  isDark,
+  hideValue,
+  loading,
+}: {
+  portfolioData: CompSeriesData | null
+  btcData: CompSeriesData | null
+  ethData: CompSeriesData | null
+  colors: any
+  isDark: boolean
+  hideValue: (s: string) => string
+  loading: boolean
+}) {
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
+
+  // Precisamos ao menos do portfólio com 2 pontos
+  if (!portfolioData || portfolioData.values.length < 2) {
+    return (
+      <View style={[evoStyles.empty, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }]}>
+        <Text style={[evoStyles.emptyText, { color: colors.textTertiary }]}>
+          {loading ? 'Carregando comparação...' : 'Dados insuficientes'}
+        </Text>
+      </View>
+    )
+  }
+
+  // Normalizar portfólio
+  const portPct = normalizeToPercent(portfolioData.values)
+
+  // Alinhar e normalizar BTC/ETH aos timestamps do portfólio
+  const btcAligned = btcData ? alignSeries(btcData.timestamps, btcData.values, portfolioData.timestamps) : null
+  const ethAligned = ethData ? alignSeries(ethData.timestamps, ethData.values, portfolioData.timestamps) : null
+  const btcPct = btcAligned ? normalizeToPercent(btcAligned) : null
+  const ethPct = ethAligned ? normalizeToPercent(ethAligned) : null
+
+  // Calcular min/max global para todas as séries
+  const allValues = [
+    ...portPct,
+    ...(btcPct || []),
+    ...(ethPct || []),
+  ]
+  const globalMin = Math.min(...allValues)
+  const globalMax = Math.max(...allValues)
+  const range = globalMax - globalMin || 1
+
+  // Converter para pontos usando escala global
+  const toPoints = (pctValues: number[]) =>
+    pctValues.map((v, i) => ({
+      x: CHART_PAD + (i / Math.max(pctValues.length - 1, 1)) * (CHART_W - 2 * CHART_PAD),
+      y: 12 + ((globalMax - v) / range) * (COMP_CHART_H - 24),
+    }))
+
+  const portPoints = toPoints(portPct)
+  const btcPoints = btcPct ? toPoints(btcPct) : null
+  const ethPoints = ethPct ? toPoints(ethPct) : null
+
+  // Linha de 0%
+  const zeroY = 12 + ((globalMax - 0) / range) * (COMP_CHART_H - 24)
+
+  // Valores finais para a legenda
+  const portFinal = portPct[portPct.length - 1]
+  const btcFinal = btcPct ? btcPct[btcPct.length - 1] : null
+  const ethFinal = ethPct ? ethPct[ethPct.length - 1] : null
+
+  const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
+
+  // Seleção por toque
+  const selected = selectedIdx !== null ? {
+    port: portPct[selectedIdx],
+    btc: btcPct ? btcPct[selectedIdx] : null,
+    eth: ethPct ? ethPct[selectedIdx] : null,
+    point: portPoints[selectedIdx],
+    date: (() => {
+      const d = new Date(portfolioData.timestamps[selectedIdx])
+      return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' })
+    })(),
+  } : null
+
+  return (
+    <View>
+      {/* Legenda + valores finais */}
+      <View style={compStyles.legendRow}>
+        <View style={compStyles.legendItem}>
+          <View style={[compStyles.legendDot, { backgroundColor: COMP_COLORS.portfolio }]} />
+          <Text style={[compStyles.legendLabel, { color: colors.textSecondary }]}>Portfolio</Text>
+          <Text style={[compStyles.legendValue, { color: selected ? colors.text : (portFinal >= 0 ? colors.success : colors.danger) }]}>
+            {hideValue(fmtPct(selected ? selected.port : portFinal))}
+          </Text>
+        </View>
+        {btcPct && (
+          <View style={compStyles.legendItem}>
+            <View style={[compStyles.legendDot, { backgroundColor: COMP_COLORS.btc }]} />
+            <Text style={[compStyles.legendLabel, { color: colors.textSecondary }]}>BTC</Text>
+            <Text style={[compStyles.legendValue, { color: selected ? colors.text : (btcFinal! >= 0 ? colors.success : colors.danger) }]}>
+              {hideValue(fmtPct(selected && selected.btc !== null ? selected.btc : btcFinal!))}
+            </Text>
+          </View>
+        )}
+        {ethPct && (
+          <View style={compStyles.legendItem}>
+            <View style={[compStyles.legendDot, { backgroundColor: COMP_COLORS.eth }]} />
+            <Text style={[compStyles.legendLabel, { color: colors.textSecondary }]}>ETH</Text>
+            <Text style={[compStyles.legendValue, { color: selected ? colors.text : (ethFinal! >= 0 ? colors.success : colors.danger) }]}>
+              {hideValue(fmtPct(selected && selected.eth !== null ? selected.eth : ethFinal!))}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {selected && (
+        <Text style={[compStyles.touchDate, { color: colors.textTertiary }]}>{selected.date}</Text>
+      )}
+
+      {/* SVG */}
+      <Svg width={CHART_W} height={COMP_CHART_H} style={{ alignSelf: 'center' }}>
+        {/* Grid */}
+        {[0.25, 0.5, 0.75].map(frac => (
+          <Line
+            key={frac}
+            x1={CHART_PAD} y1={12 + frac * (COMP_CHART_H - 24)}
+            x2={CHART_W - CHART_PAD} y2={12 + frac * (COMP_CHART_H - 24)}
+            stroke={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
+            strokeWidth={1}
+          />
+        ))}
+
+        {/* Linha de 0% */}
+        {zeroY > 10 && zeroY < COMP_CHART_H - 10 && (
+          <Line
+            x1={CHART_PAD} y1={zeroY}
+            x2={CHART_W - CHART_PAD} y2={zeroY}
+            stroke={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
+            strokeWidth={1}
+            strokeDasharray="4,4"
+          />
+        )}
+
+        {/* ETH line */}
+        {ethPoints && (
+          <Path d={buildSmoothPath(ethPoints)} stroke={COMP_COLORS.eth} strokeWidth={1.5} fill="none" strokeLinecap="round" opacity={0.7} />
+        )}
+
+        {/* BTC line */}
+        {btcPoints && (
+          <Path d={buildSmoothPath(btcPoints)} stroke={COMP_COLORS.btc} strokeWidth={1.5} fill="none" strokeLinecap="round" opacity={0.7} />
+        )}
+
+        {/* Portfolio line (mais forte) */}
+        <Defs>
+          <SvgLinearGradient id="compPortGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor={COMP_COLORS.portfolio} stopOpacity={0.15} />
+            <Stop offset="100%" stopColor={COMP_COLORS.portfolio} stopOpacity={0} />
+          </SvgLinearGradient>
+        </Defs>
+        <Path d={buildAreaPath(portPoints, COMP_CHART_H)} fill="url(#compPortGrad)" />
+        <Path d={buildSmoothPath(portPoints)} stroke={COMP_COLORS.portfolio} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+
+        {/* Touch indicator */}
+        {selected && (
+          <>
+            <Line
+              x1={selected.point.x} y1={0}
+              x2={selected.point.x} y2={COMP_CHART_H}
+              stroke={colors.textTertiary} strokeWidth={0.5} strokeDasharray="3,3"
+            />
+            <Circle cx={selected.point.x} cy={selected.point.y} r={4} fill={COMP_COLORS.portfolio} />
+            {btcPoints && (
+              <Circle cx={btcPoints[selectedIdx!].x} cy={btcPoints[selectedIdx!].y} r={3} fill={COMP_COLORS.btc} />
+            )}
+            {ethPoints && (
+              <Circle cx={ethPoints[selectedIdx!].x} cy={ethPoints[selectedIdx!].y} r={3} fill={COMP_COLORS.eth} />
+            )}
+          </>
+        )}
+      </Svg>
+
+      {/* Eixo X */}
+      <View style={evoStyles.xAxis}>
+        <Text style={[evoStyles.xLabel, { color: colors.textTertiary }]}>
+          {(() => { const d = new Date(portfolioData.timestamps[0]); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' }) })()}
+        </Text>
+        <Text style={[evoStyles.xLabel, { color: colors.textTertiary }]}>
+          {(() => { const d = new Date(portfolioData.timestamps[portfolioData.timestamps.length - 1]); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' }) })()}
+        </Text>
+      </View>
+
+      {/* Touch overlay */}
+      <View
+        style={[evoStyles.touchOverlay, { height: COMP_CHART_H, top: 50 }]}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={(e) => setSelectedIdx(findNearestIdx(portPoints, e.nativeEvent.locationX))}
+        onResponderMove={(e) => setSelectedIdx(findNearestIdx(portPoints, e.nativeEvent.locationX))}
+        onResponderRelease={() => setSelectedIdx(null)}
+      />
+    </View>
+  )
+})
+
 // ─── COMPONENTE PRINCIPAL ───────────────────────────────────────
 export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any) {
   const { colors, isDark } = useTheme()
@@ -244,6 +489,9 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
   const [evolutionPeriod, setEvolutionPeriod] = useState<number>(7)
   const [evolutionData, setEvolutionData] = useState<{ values_usd: number[]; timestamps: string[] } | null>(null)
   const [evoLoading, setEvoLoading] = useState(false)
+  const [btcChartData, setBtcChartData] = useState<CompSeriesData | null>(null)
+  const [ethChartData, setEthChartData] = useState<CompSeriesData | null>(null)
+  const [compLoading, setCompLoading] = useState(false)
 
   // Total USD
   const totalValue = useMemo(() => {
@@ -270,17 +518,35 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
     setEvoLoading(false)
   }, [getEvolutionData])
 
+  // Carregar dados BTC/ETH para comparação
+  const loadComparison = useCallback(async (days: number) => {
+    setCompLoading(true)
+    try {
+      const [btc, eth] = await Promise.all([
+        marketPriceService.getChartData('BTC', days),
+        marketPriceService.getChartData('ETH', days),
+      ])
+      setBtcChartData(btc ? { values: btc.values, timestamps: btc.timestamps } : null)
+      setEthChartData(eth ? { values: eth.values, timestamps: eth.timestamps } : null)
+    } catch {
+      setBtcChartData(null)
+      setEthChartData(null)
+    }
+    setCompLoading(false)
+  }, [])
+
   useEffect(() => {
     loadEvolution(evolutionPeriod)
-  }, [evolutionPeriod, loadEvolution])
+    loadComparison(evolutionPeriod)
+  }, [evolutionPeriod, loadEvolution, loadComparison])
 
   // Refresh
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true)
     await Promise.all([refreshBalance(), refreshPnl()])
-    await loadEvolution(evolutionPeriod)
+    await Promise.all([loadEvolution(evolutionPeriod), loadComparison(evolutionPeriod)])
     setTimeout(() => setIsRefreshing(false), 300)
-  }, [refreshBalance, refreshPnl, loadEvolution, evolutionPeriod])
+  }, [refreshBalance, refreshPnl, loadEvolution, loadComparison, evolutionPeriod])
 
   // PnL períodos
   const pnlPeriods = useMemo(() => {
@@ -442,6 +708,24 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
               </Text>
             </View>
           )}
+        </View>
+
+        {/* ═══ 1.5. COMPARATIVO vs BTC / ETH ═══ */}
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Comparativo</Text>
+            <Text style={[compStyles.subtitle, { color: colors.textTertiary }]}>vs BTC & ETH</Text>
+          </View>
+
+          <ComparisonChart
+            portfolioData={evolutionData}
+            btcData={btcChartData}
+            ethData={ethChartData}
+            colors={colors}
+            isDark={isDark}
+            hideValue={hideValue}
+            loading={compLoading || evoLoading}
+          />
         </View>
 
         {/* ═══ 2. RESUMO DO PORTFÓLIO ═══ */}
@@ -670,6 +954,46 @@ const evoStyles = StyleSheet.create({
     left: 0,
     right: 0,
     height: CHART_H,
+  },
+})
+
+// ─── Comparison chart styles ────────────────────────────────────
+const compStyles = StyleSheet.create({
+  subtitle: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    gap: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendLabel: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.medium,
+  },
+  legendValue: {
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
+  },
+  touchDate: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
+    textAlign: 'center',
+    marginBottom: 4,
   },
 })
 
