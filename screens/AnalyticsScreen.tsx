@@ -3,32 +3,19 @@ import { memo, useState, useCallback, useMemo, useEffect } from "react"
 import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgLinearGradient, Stop, ClipPath, Rect, G } from "react-native-svg"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
-import { useLanguage } from "../contexts/LanguageContext"
 import { useBalance } from "../contexts/BalanceContext"
 import { usePrivacy } from "../contexts/PrivacyContext"
-import { useAuth } from "../contexts/AuthContext"
 import { apiService } from "../services/api"
 import { marketPriceService } from "../services/marketPriceService"
 import { useBackendSnapshots } from "../hooks/useBackendSnapshots"
-import { useCurrencyConversion } from "../hooks/use-currency-conversion"
-import { getExchangeBalances, getExchangeName } from "../lib/exchange-helpers"
 import { typography, fontWeights } from "../lib/typography"
-import { GradientCard } from "../components/GradientCard"
-import type { Balance } from "../types/api"
+import { TokensPieChart } from "../components/TokensPieChart"
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CHART_W = SCREEN_WIDTH - 64
 const CHART_H = 140
 const COMP_CHART_H = 170
 const CHART_PAD = 16
-
-// ─── Tipos ──────────────────────────────────────────────────────
-interface TokenPerformance {
-  symbol: string
-  exchange: string
-  value: number
-  change24h: number
-}
 
 // ─── Helpers SVG ────────────────────────────────────────────────
 
@@ -81,28 +68,6 @@ function findNearestIdx(points: { x: number }[], touchX: number): number {
   })
   return idx
 }
-
-// ─── Mini Sparkline ─────────────────────────────────────────────
-const Sparkline = memo(function Sparkline({
-  values,
-  width = 60,
-  height = 24,
-  color,
-}: {
-  values: number[]
-  width?: number
-  height?: number
-  color: string
-}) {
-  if (values.length < 2) return null
-  const points = valuesToPoints(values, width, height, 2, 3)
-  const d = buildSmoothPath(points)
-  return (
-    <Svg width={width} height={height}>
-      <Path d={d} stroke={color} strokeWidth={1.5} fill="none" />
-    </Svg>
-  )
-})
 
 // ─── Gráfico de Evolução ────────────────────────────────────────
 const EvolutionChart = memo(function EvolutionChart({
@@ -495,9 +460,7 @@ const ComparisonChart = memo(function ComparisonChart({
 // ─── COMPONENTE PRINCIPAL ───────────────────────────────────────
 export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any) {
   const { colors, isDark } = useTheme()
-  const { t } = useLanguage()
-  const { user } = useAuth()
-  const { data: balanceData, loading: balanceLoading, refresh: refreshBalance, refreshing } = useBalance()
+  const { data: balanceData, refresh: refreshBalance, refreshing } = useBalance()
   const { hideValue } = usePrivacy()
 
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -515,10 +478,7 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
   }, [balanceData])
 
   // PnL / Snapshots
-  const { pnl, snapshots, loading: pnlLoading, refresh: refreshPnl, getEvolutionData } = useBackendSnapshots(totalValue)
-
-  // BRL
-  const { brlValue } = useCurrencyConversion(totalValue)
+  const { refresh: refreshPnl, getEvolutionData } = useBackendSnapshots(totalValue)
 
   // Header
   useHeader({ title: "Analytics", subtitle: "Portfolio performance" })
@@ -562,106 +522,6 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
     await Promise.all([loadEvolution(evolutionPeriod), loadComparison(evolutionPeriod)])
     setTimeout(() => setIsRefreshing(false), 300)
   }, [refreshBalance, refreshPnl, loadEvolution, loadComparison, evolutionPeriod])
-
-  // PnL períodos
-  const pnlPeriods = useMemo(() => {
-    if (!pnl) return null
-    return [
-      { key: '24h', label: '24h', data: pnl.today },
-      { key: '7d', label: '7d', data: pnl.week },
-      { key: '14d', label: '14d', data: pnl.twoWeeks },
-      { key: '30d', label: '30d', data: pnl.month },
-    ].map(p => ({
-      ...p,
-      isProfit: (p.data.change ?? 0) >= 0,
-      color: (p.data.change ?? 0) === 0 ? colors.textTertiary : (p.data.change ?? 0) >= 0 ? colors.success : colors.danger,
-    }))
-  }, [pnl, colors])
-
-  // Sparkline data por período
-  const sparklineData = useMemo(() => {
-    if (!snapshots || snapshots.length < 2) return {} as Record<string, number[]>
-    const now = Date.now()
-    const periodDays: Record<string, number> = { '24h': 1, '7d': 7, '14d': 14, '30d': 30 }
-    const result: Record<string, number[]> = {}
-
-    for (const [key, days] of Object.entries(periodDays)) {
-      const cutoff = now - days * 24 * 60 * 60 * 1000
-      const filtered = snapshots
-        .filter(s => s.timestamp >= cutoff)
-        .sort((a, b) => a.timestamp - b.timestamp)
-        .map(s => s.total_usd)
-      if (filtered.length >= 2) {
-        const step = Math.max(1, Math.floor(filtered.length / 12))
-        result[key] = filtered.filter((_, i) => i % step === 0 || i === filtered.length - 1)
-      }
-    }
-    return result
-  }, [snapshots])
-
-  // Top Gainers / Losers
-  const tokenPerformance = useMemo(() => {
-    if (!balanceData?.exchanges) return { gainers: [] as TokenPerformance[], losers: [] as TokenPerformance[] }
-    const tokens: TokenPerformance[] = []
-    const stables = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'FDUSD', 'BRL', 'USD', 'EUR']
-
-    balanceData.exchanges.forEach(exchange => {
-      const balances = getExchangeBalances(exchange)
-      const exchangeName = getExchangeName(exchange)
-      Object.entries(balances).forEach(([symbol, bal]) => {
-        const b = bal as Balance
-        const value = b.usd_value ?? 0
-        const change = b.change_24h ?? 0
-        if (stables.includes(symbol.toUpperCase()) || value < 1) return
-        tokens.push({ symbol: symbol.toUpperCase(), exchange: exchangeName, value, change24h: change })
-      })
-    })
-
-    const sorted = [...tokens].sort((a, b) => b.change24h - a.change24h)
-    return {
-      gainers: sorted.filter(t => t.change24h > 0).slice(0, 5),
-      losers: sorted.filter(t => t.change24h < 0).sort((a, b) => a.change24h - b.change24h).slice(0, 5),
-    }
-  }, [balanceData])
-
-  // Distribuição por exchange
-  const exchangeDistribution = useMemo(() => {
-    if (!balanceData?.exchanges || totalValue === 0) return []
-    return balanceData.exchanges
-      .map(ex => {
-        const val = typeof ex.total_usd === 'string' ? parseFloat(ex.total_usd) : (ex.total_usd || 0)
-        return {
-          name: getExchangeName(ex),
-          value: val,
-          percent: (val / totalValue) * 100,
-          tokenCount: Object.keys(getExchangeBalances(ex)).length,
-        }
-      })
-      .filter(e => e.value > 0)
-      .sort((a, b) => b.value - a.value)
-  }, [balanceData, totalValue])
-
-  // Concentração
-  const concentration = useMemo(() => {
-    if (!balanceData?.exchanges || totalValue === 0) return { top1: 0, top3: 0, top5: 0, totalTokens: 0, topSymbol: '' }
-    const allTokens: { symbol: string; value: number }[] = []
-    balanceData.exchanges.forEach(ex => {
-      const balances = getExchangeBalances(ex)
-      Object.entries(balances).forEach(([symbol, bal]) => {
-        const v = (bal as Balance).usd_value ?? 0
-        if (v > 0) {
-          const existing = allTokens.find(t => t.symbol === symbol.toUpperCase())
-          if (existing) existing.value += v
-          else allTokens.push({ symbol: symbol.toUpperCase(), value: v })
-        }
-      })
-    })
-    const sorted = allTokens.sort((a, b) => b.value - a.value)
-    const top1 = sorted.length >= 1 ? (sorted[0].value / totalValue) * 100 : 0
-    const top3 = sorted.slice(0, 3).reduce((s, t) => s + t.value, 0) / totalValue * 100
-    const top5 = sorted.slice(0, 5).reduce((s, t) => s + t.value, 0) / totalValue * 100
-    return { top1, top3, top5, totalTokens: sorted.length, topSymbol: sorted[0]?.symbol || '' }
-  }, [balanceData, totalValue])
 
   // ── RENDER ──
   const periods = [7, 15, 30]
@@ -743,170 +603,8 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
           />
         </View>
 
-        {/* ═══ 2. RESUMO DO PORTFÓLIO ═══ */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <View style={styles.portfolioRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 4 }]}>Portfolio</Text>
-              <Text style={[styles.portfolioValue, { color: colors.text }]}>
-                {hideValue(`$${apiService.formatUSD(totalValue)}`)}
-              </Text>
-              {brlValue ? (
-                <Text style={[styles.portfolioBrl, { color: colors.textSecondary }]}>
-                  {hideValue(`R$ ${apiService.formatUSD(brlValue)}`)}
-                </Text>
-              ) : null}
-            </View>
-            <View style={styles.statsCompact}>
-              <View style={styles.statChip}>
-                <Text style={[styles.statChipValue, { color: colors.text }]}>{exchangeDistribution.length}</Text>
-                <Text style={[styles.statChipLabel, { color: colors.textTertiary }]}>exchanges</Text>
-              </View>
-              <View style={styles.statChip}>
-                <Text style={[styles.statChipValue, { color: colors.text }]}>{concentration.totalTokens}</Text>
-                <Text style={[styles.statChipLabel, { color: colors.textTertiary }]}>tokens</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* ═══ 3. PERFORMANCE (PnL + sparklines) ═══ */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Performance</Text>
-
-          {pnlPeriods ? (
-            <View style={styles.pnlGrid}>
-              {pnlPeriods.map(p => {
-                const change = p.data.change ?? 0
-                const changePct = p.data.changePercent ?? 0
-                const arrow = change === 0 ? '━' : p.isProfit ? '▲' : '▼'
-                const sparkValues = sparklineData[p.key]
-                return (
-                  <View key={p.key} style={styles.pnlItemWrapper}>
-                    <GradientCard
-                      style={[
-                        styles.pnlItem,
-                        { borderWidth: 1, borderColor: change === 0 ? colors.border : p.isProfit ? `${colors.success}15` : `${colors.danger}15` },
-                      ]}
-                    >
-                      <View style={styles.pnlTop}>
-                        <Text style={[styles.pnlLabel, { color: colors.textTertiary }]}>{p.label}</Text>
-                        {sparkValues && sparkValues.length >= 2 && (
-                          <Sparkline values={sparkValues} width={48} height={18} color={p.color} />
-                        )}
-                      </View>
-                      <View style={styles.pnlValueRow}>
-                        <Text style={[styles.pnlArrow, { color: p.color }]}>{arrow}</Text>
-                        <Text style={[styles.pnlValue, { color: change === 0 ? colors.text : p.color }]}>
-                          {hideValue(`$${apiService.formatUSD(Math.abs(change))}`)}
-                        </Text>
-                      </View>
-                      <Text style={[styles.pnlPercent, { color: p.color }]}>
-                        {hideValue(change === 0 ? '0.00%' : `${Math.abs(changePct).toFixed(2)}%`)}
-                      </Text>
-                    </GradientCard>
-                  </View>
-                )
-              })}
-            </View>
-          ) : (
-            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>Aguardando dados...</Text>
-          )}
-        </View>
-
-        {/* ═══ 4. CONCENTRAÇÃO ═══ */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Concentração</Text>
-          {[
-            { label: 'Top 1', sublabel: concentration.topSymbol, value: concentration.top1 },
-            { label: 'Top 3', sublabel: 'tokens', value: concentration.top3 },
-            { label: 'Top 5', sublabel: 'tokens', value: concentration.top5 },
-          ].map((item) => (
-            <View key={item.label} style={styles.concentrationRow}>
-              <View style={styles.concentrationLabelGroup}>
-                <Text style={[styles.concentrationLabel, { color: colors.textSecondary }]}>{item.label}</Text>
-                <Text style={[styles.concentrationSub, { color: colors.textTertiary }]}>{item.sublabel}</Text>
-              </View>
-              <View style={styles.concentrationBarContainer}>
-                <View style={[styles.barBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                  <View
-                    style={[styles.barFill, {
-                      width: `${Math.min(item.value, 100)}%`,
-                      backgroundColor: item.value > 70 ? colors.warning : colors.primary,
-                    }]}
-                  />
-                </View>
-              </View>
-              <Text style={[styles.concentrationPercent, { color: colors.text }]}>
-                {hideValue(`${(item.value ?? 0).toFixed(1)}%`)}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {/* ═══ 5. TOP MOVERS (lado a lado) ═══ */}
-        {(tokenPerformance.gainers.length > 0 || tokenPerformance.losers.length > 0) && (
-          <View style={styles.moversRow}>
-            <View style={[styles.moversCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.sectionTitle, { color: colors.success }]}>▲ Gainers</Text>
-              {tokenPerformance.gainers.length > 0 ? tokenPerformance.gainers.map((token, idx) => (
-                <View key={`g-${token.symbol}-${idx}`} style={styles.moverRow}>
-                  <Text style={[styles.moverSymbol, { color: colors.text }]} numberOfLines={1}>{token.symbol}</Text>
-                  <Text style={[styles.moverChange, { color: colors.success }]}>
-                    {hideValue(`+${(token.change24h ?? 0).toFixed(1)}%`)}
-                  </Text>
-                </View>
-              )) : (
-                <Text style={[styles.emptySmall, { color: colors.textTertiary }]}>—</Text>
-              )}
-            </View>
-            <View style={[styles.moversCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.sectionTitle, { color: colors.danger }]}>▼ Losers</Text>
-              {tokenPerformance.losers.length > 0 ? tokenPerformance.losers.map((token, idx) => (
-                <View key={`l-${token.symbol}-${idx}`} style={styles.moverRow}>
-                  <Text style={[styles.moverSymbol, { color: colors.text }]} numberOfLines={1}>{token.symbol}</Text>
-                  <Text style={[styles.moverChange, { color: colors.danger }]}>
-                    {hideValue(`${(token.change24h ?? 0).toFixed(1)}%`)}
-                  </Text>
-                </View>
-              )) : (
-                <Text style={[styles.emptySmall, { color: colors.textTertiary }]}>—</Text>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* ═══ 6. ALOCAÇÃO POR EXCHANGE ═══ */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Alocação por Exchange</Text>
-          {exchangeDistribution.map((ex, index) => (
-            <View key={ex.name} style={styles.exchangeRow}>
-              <View style={styles.exchangeInfo}>
-                <Text style={[styles.exchangeName, { color: colors.text }]}>{ex.name}</Text>
-                <Text style={[styles.exchangeTokens, { color: colors.textTertiary }]}>{ex.tokenCount} tokens</Text>
-              </View>
-              <View style={styles.exchangeBarContainer}>
-                <View style={[styles.barBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                  <View
-                    style={[styles.barFill, {
-                      width: `${Math.min(ex.percent, 100)}%`,
-                      backgroundColor: colors.primary,
-                      opacity: 1 - (index * 0.12),
-                    }]}
-                  />
-                </View>
-              </View>
-              <View style={styles.exchangeValues}>
-                <Text style={[styles.exchangeValue, { color: colors.text }]}>
-                  {hideValue(`$${apiService.formatUSD(ex.value)}`)}
-                </Text>
-                <Text style={[styles.exchangePercent, { color: colors.textSecondary }]}>
-                  {hideValue(`${(ex.percent ?? 0).toFixed(1)}%`)}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
+        {/* ═══ 2. DISTRIBUIÇÃO POR TOKEN (Pizza) ═══ */}
+        <TokensPieChart embedded />
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -1061,75 +759,4 @@ const styles = StyleSheet.create({
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
-
-  // Portfolio
-  portfolioRow: { flexDirection: 'row', alignItems: 'center' },
-  portfolioValue: {
-    fontSize: typography.display,
-    fontWeight: fontWeights.bold,
-    letterSpacing: -0.5,
-  },
-  portfolioBrl: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.regular,
-    marginTop: 2,
-  },
-  statsCompact: { gap: 6, alignItems: 'flex-end' },
-  statChip: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  statChipValue: { fontSize: typography.h4, fontWeight: fontWeights.semibold },
-  statChipLabel: { fontSize: typography.micro, fontWeight: fontWeights.regular },
-
-  // PnL
-  pnlGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  pnlItemWrapper: { width: (SCREEN_WIDTH - 56) / 2 - 4 },
-  pnlItem: { padding: 12, borderRadius: 12 },
-  pnlTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  pnlLabel: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.medium,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-  },
-  pnlValueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  pnlArrow: { fontSize: 10 },
-  pnlValue: { fontSize: typography.body, fontWeight: fontWeights.semibold },
-  pnlPercent: { fontSize: typography.micro, fontWeight: fontWeights.regular, marginTop: 2 },
-  emptyText: { fontSize: typography.bodySmall, textAlign: 'center', paddingVertical: 16 },
-
-  // Concentração
-  concentrationRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  concentrationLabelGroup: { width: 70 },
-  concentrationLabel: { fontSize: typography.caption, fontWeight: fontWeights.medium },
-  concentrationSub: { fontSize: typography.micro, fontWeight: fontWeights.regular },
-  concentrationBarContainer: { flex: 1 },
-  barBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  barFill: { height: '100%' as any, borderRadius: 3 },
-  concentrationPercent: { fontSize: typography.caption, fontWeight: fontWeights.medium, width: 48, textAlign: 'right' },
-
-  // Movers
-  moversRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  moversCard: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  moverRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5 },
-  moverSymbol: { flex: 1, fontSize: typography.bodySmall, fontWeight: fontWeights.medium },
-  moverChange: { fontSize: typography.caption, fontWeight: fontWeights.medium },
-  emptySmall: { fontSize: typography.bodySmall, textAlign: 'center', paddingVertical: 8 },
-
-  // Exchange
-  exchangeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 },
-  exchangeInfo: { width: 80 },
-  exchangeName: { fontSize: typography.bodySmall, fontWeight: fontWeights.medium },
-  exchangeTokens: { fontSize: typography.micro, fontWeight: fontWeights.regular, marginTop: 1 },
-  exchangeBarContainer: { flex: 1 },
-  exchangeValues: { alignItems: 'flex-end', width: 80 },
-  exchangeValue: { fontSize: typography.bodySmall, fontWeight: fontWeights.regular },
-  exchangePercent: { fontSize: typography.micro, fontWeight: fontWeights.regular, marginTop: 1 },
 })
