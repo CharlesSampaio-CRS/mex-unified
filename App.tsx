@@ -44,7 +44,7 @@ import { StrategyTemplatesScreen } from "./screens/StrategyTemplatesScreen"
 import { Header } from "./components/Header"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
-import { BalanceProvider } from "./contexts/BalanceContext"
+import { BalanceProvider, useBalance } from "./contexts/BalanceContext"
 import { CacheInvalidationProvider } from "./contexts/CacheInvalidationContext"
 import { OrdersProvider } from "./contexts/OrdersContext"
 import { LayoutProvider } from "./contexts/LayoutContext"
@@ -271,10 +271,12 @@ function MainTabs() {
 // App Navigator - decide entre Auth ou Main baseado no login
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth()
+  const { loading: isLoadingData, data: balanceData } = useBalance()
   const { colors, isDark } = useTheme()
 
   // Init do app (verificando token salvo, restaurando sessão)
-  if (isLoading) {
+  // OU autenticado mas dados iniciais ainda carregando (pós-login)
+  if (isLoading || (isAuthenticated && isLoadingData && !balanceData)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <AnimatedLogoIcon size={48} />
