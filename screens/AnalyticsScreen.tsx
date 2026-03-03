@@ -348,7 +348,10 @@ const ComparisonChart = memo(function ComparisonChart({
   const btcFinal = btcPct ? btcPct[btcPct.length - 1] : null
   const ethFinal = ethPct ? ethPct[ethPct.length - 1] : null
 
-  const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
+  const fmtPct = (v: number | null | undefined) => {
+    const n = v ?? 0
+    return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
+  }
 
   // Seleção por toque
   const selected = selectedIdx !== null ? {
@@ -570,8 +573,8 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
       { key: '30d', label: '30d', data: pnl.month },
     ].map(p => ({
       ...p,
-      isProfit: p.data.change >= 0,
-      color: p.data.change === 0 ? colors.textTertiary : p.data.change >= 0 ? colors.success : colors.danger,
+      isProfit: (p.data.change ?? 0) >= 0,
+      color: (p.data.change ?? 0) === 0 ? colors.textTertiary : (p.data.change ?? 0) >= 0 ? colors.success : colors.danger,
     }))
   }, [pnl, colors])
 
@@ -774,14 +777,16 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
           {pnlPeriods ? (
             <View style={styles.pnlGrid}>
               {pnlPeriods.map(p => {
-                const arrow = p.data.change === 0 ? '━' : p.isProfit ? '▲' : '▼'
+                const change = p.data.change ?? 0
+                const changePct = p.data.changePercent ?? 0
+                const arrow = change === 0 ? '━' : p.isProfit ? '▲' : '▼'
                 const sparkValues = sparklineData[p.key]
                 return (
                   <View key={p.key} style={styles.pnlItemWrapper}>
                     <GradientCard
                       style={[
                         styles.pnlItem,
-                        { borderWidth: 1, borderColor: p.data.change === 0 ? colors.border : p.isProfit ? `${colors.success}15` : `${colors.danger}15` },
+                        { borderWidth: 1, borderColor: change === 0 ? colors.border : p.isProfit ? `${colors.success}15` : `${colors.danger}15` },
                       ]}
                     >
                       <View style={styles.pnlTop}>
@@ -792,12 +797,12 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
                       </View>
                       <View style={styles.pnlValueRow}>
                         <Text style={[styles.pnlArrow, { color: p.color }]}>{arrow}</Text>
-                        <Text style={[styles.pnlValue, { color: p.data.change === 0 ? colors.text : p.color }]}>
-                          {hideValue(`$${apiService.formatUSD(Math.abs(p.data.change))}`)}
+                        <Text style={[styles.pnlValue, { color: change === 0 ? colors.text : p.color }]}>
+                          {hideValue(`$${apiService.formatUSD(Math.abs(change))}`)}
                         </Text>
                       </View>
                       <Text style={[styles.pnlPercent, { color: p.color }]}>
-                        {hideValue(p.data.change === 0 ? '0.00%' : `${Math.abs(p.data.changePercent).toFixed(2)}%`)}
+                        {hideValue(change === 0 ? '0.00%' : `${Math.abs(changePct).toFixed(2)}%`)}
                       </Text>
                     </GradientCard>
                   </View>
@@ -833,7 +838,7 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
                 </View>
               </View>
               <Text style={[styles.concentrationPercent, { color: colors.text }]}>
-                {hideValue(`${item.value.toFixed(1)}%`)}
+                {hideValue(`${(item.value ?? 0).toFixed(1)}%`)}
               </Text>
             </View>
           ))}
@@ -848,7 +853,7 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
                 <View key={`g-${token.symbol}-${idx}`} style={styles.moverRow}>
                   <Text style={[styles.moverSymbol, { color: colors.text }]} numberOfLines={1}>{token.symbol}</Text>
                   <Text style={[styles.moverChange, { color: colors.success }]}>
-                    {hideValue(`+${token.change24h.toFixed(1)}%`)}
+                    {hideValue(`+${(token.change24h ?? 0).toFixed(1)}%`)}
                   </Text>
                 </View>
               )) : (
@@ -861,7 +866,7 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
                 <View key={`l-${token.symbol}-${idx}`} style={styles.moverRow}>
                   <Text style={[styles.moverSymbol, { color: colors.text }]} numberOfLines={1}>{token.symbol}</Text>
                   <Text style={[styles.moverChange, { color: colors.danger }]}>
-                    {hideValue(`${token.change24h.toFixed(1)}%`)}
+                    {hideValue(`${(token.change24h ?? 0).toFixed(1)}%`)}
                   </Text>
                 </View>
               )) : (
@@ -896,7 +901,7 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
                   {hideValue(`$${apiService.formatUSD(ex.value)}`)}
                 </Text>
                 <Text style={[styles.exchangePercent, { color: colors.textSecondary }]}>
-                  {hideValue(`${ex.percent.toFixed(1)}%`)}
+                  {hideValue(`${(ex.percent ?? 0).toFixed(1)}%`)}
                 </Text>
               </View>
             </View>
