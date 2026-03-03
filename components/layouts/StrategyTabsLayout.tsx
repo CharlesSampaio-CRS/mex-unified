@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView } from 'react-native';
-import { CustomPullToRefreshScrollView } from '../CustomPullToRefreshScrollView';
+import { View, ScrollView, RefreshControl } from 'react-native';
 import { TabBar } from '../TabBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -32,10 +31,9 @@ export const StrategyTabsLayout: React.FC<StrategyTabsLayoutProps> = ({
       </View>
 
       {/* Conteúdo scrollável */}
-      <CustomPullToRefreshScrollView
+      <ScrollView
         style={{ flex: 1 }}
-        refreshing={refreshing}
-        onRefresh={onRefresh || (() => {})}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh || (() => {})} />}
         showsVerticalScrollIndicator={false}
       >
         {/* Renderiza todas as abas, mas oculta as inativas */}
@@ -46,7 +44,7 @@ export const StrategyTabsLayout: React.FC<StrategyTabsLayoutProps> = ({
         <View style={{ paddingTop: 16, paddingHorizontal: 16, display: activeTab === 1 ? 'flex' : 'none' }}>
           {executionsContent}
         </View>
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
     </View>
   );
 };

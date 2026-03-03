@@ -3,8 +3,7 @@
  * Mostra tokens marcados como favoritos pelo usuário
  */
 
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native"
-import { CustomPullToRefreshScrollView } from './CustomPullToRefreshScrollView';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from "react-native"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "@/contexts/ThemeContext"
@@ -190,10 +189,9 @@ export function WatchlistFavorites() {
   const loading = watchlistLoading || balanceLoading
 
   return (
-    <CustomPullToRefreshScrollView
+    <ScrollView
       style={styles.container}
-      refreshing={refreshing}
-      onRefresh={handleRefresh}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       showsVerticalScrollIndicator={false}
     >
       {/* Empty State */}
@@ -426,7 +424,7 @@ export function WatchlistFavorites() {
           }}
         />
       )}
-    </CustomPullToRefreshScrollView>
+    </ScrollView>
   )
 }
 

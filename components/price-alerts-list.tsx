@@ -9,9 +9,9 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import { CustomPullToRefreshScrollView } from './CustomPullToRefreshScrollView';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -170,10 +170,9 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
   }, [filteredAlerts]);
 
   return (
-    <CustomPullToRefreshScrollView
+    <ScrollView
       style={styles.container}
-      refreshing={refreshing}
-      onRefresh={handleRefresh}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       showsVerticalScrollIndicator={false}
     >
       {/* Status do Monitoramento */}
@@ -376,7 +375,7 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
         onClose={() => setCreateModalVisible(false)}
         symbol=""
       />
-    </CustomPullToRefreshScrollView>
+    </ScrollView>
   );
 }
 

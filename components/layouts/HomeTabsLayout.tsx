@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, ScrollView, Text } from 'react-native';
-import { CustomPullToRefreshScrollView } from '../CustomPullToRefreshScrollView';
+import { View, ScrollView, RefreshControl, Text } from 'react-native';
 import { PortfolioOverview } from '../PortfolioOverview';
 import { MarketOverview } from '../MarketOverview';
 import { TopGainersLosers } from '../TopGainersLosers';
@@ -22,10 +21,9 @@ export const HomeTabsLayout: React.FC<HomeTabsLayoutProps> = ({ pnl, pnlLoading 
   return (
     <View style={{ flex: 1 }}>
       {/* Conteúdo scrollável - apenas Summary */}
-      <CustomPullToRefreshScrollView
+      <ScrollView
         style={{ flex: 1 }}
-        refreshing={refreshing}
-        onRefresh={refreshBalance}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshBalance} />}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: 16, paddingTop: 16, paddingHorizontal: 16 }}>
@@ -33,7 +31,7 @@ export const HomeTabsLayout: React.FC<HomeTabsLayoutProps> = ({ pnl, pnlLoading 
           <MarketOverview />
           <TopGainersLosers />
         </View>
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
     </View>
   );
 };
