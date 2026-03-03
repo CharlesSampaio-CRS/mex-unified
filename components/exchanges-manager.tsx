@@ -16,7 +16,7 @@ import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
 import { spacing, borderRadius, shadows } from "@/lib/layout"
 import { getExchangeLogo } from "@/lib/exchange-logos"
-import Svg, { Path } from "react-native-svg"
+
 import { encryptExchangeCredentials } from "@/lib/encryption"
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 
@@ -1305,10 +1305,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                           style={[styles.qrButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleOpenQRScanner('apiKey')}
                         >
-                          <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                            <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
-                          </Svg>
+                          <Ionicons name="qr-code-outline" size={18} color={colors.textInverse} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -1332,10 +1329,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                           style={[styles.qrButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleOpenQRScanner('apiSecret')}
                         >
-                          <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                            <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
-                          </Svg>
+                          <Ionicons name="qr-code-outline" size={18} color={colors.textInverse} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -1360,10 +1354,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             style={[styles.qrButton, { backgroundColor: colors.primary }]}
                             onPress={() => handleOpenQRScanner('passphrase')}
                           >
-                            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                              <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
-                            </Svg>
+                            <Ionicons name="qr-code-outline" size={18} color={colors.textInverse} />
                           </TouchableOpacity>
                         </View>
                       </View>

@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar"
 import { ActivityIndicator, View, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context"
-import Svg, { Path, Rect, Circle } from "react-native-svg"
+import { Ionicons } from "@expo/vector-icons"
 
 
 // Desabilitar warnings de desenvolvimento (mas manter erros)
@@ -452,117 +452,35 @@ export default function App() {
   )
 }
 
-// Simple icon components
+// Icon components usando Ionicons (fonte única)
 const HomeIcon = ({ color }: { color: string }) => (
-  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke={color} strokeWidth="1.8" />
-  </Svg>
+  <Ionicons name="home-outline" size={22} color={color} />
 )
 
 const WalletIcon = ({ color }: { color: string }) => (
-  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <Path 
-      d="M19 7H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" 
-      stroke={color} 
-      strokeWidth="1.8" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-    <Path 
-      d="M3 9V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3" 
-      stroke={color} 
-      strokeWidth="1.8" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-    <Circle cx="16" cy="14" r="1.5" fill={color} />
-  </Svg>
+  <Ionicons name="wallet-outline" size={22} color={color} />
 )
 
 const ExchangeIcon = ({ color }: { color: string }) => (
-  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <Path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" stroke={color} strokeWidth="1.8" />
-  </Svg>
+  <Ionicons name="swap-horizontal-outline" size={22} color={color} />
 )
 
 const RobotIcon = ({ color }: { color: string }) => (
-  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <Rect x="5" y="11" width="14" height="10" rx="2" stroke={color} strokeWidth="1.8" />
-    <Circle cx="9" cy="16" r="1" fill={color} />
-    <Circle cx="15" cy="16" r="1" fill={color} />
-    <Path d="M9 19h6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <Path d="M12 3v5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <Circle cx="12" cy="3" r="1" fill={color} />
-    <Path d="M5 14h2M17 14h2" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </Svg>
+  <Ionicons name="hardware-chip-outline" size={22} color={color} />
 )
 
 const OrdersIcon = ({ color }: { color: string }) => (
-  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <Path 
-      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" 
-      stroke={color} 
-      strokeWidth="1.8" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-    <Path 
-      d="M14 2v6h6" 
-      stroke={color} 
-      strokeWidth="1.8" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-    <Path 
-      d="M9 13h6M9 17h6" 
-      stroke={color} 
-      strokeWidth="1.8" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="document-text-outline" size={22} color={color} />
 )
 
 const StarIcon = ({ color }: { color: string }) => (
-  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <Path 
-      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" 
-      stroke={color} 
-      strokeWidth="1.8" 
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="star-outline" size={22} color={color} />
 )
 
 const NotificationsIcon = ({ color }: { color: string }) => (
-  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <Path 
-      d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" 
-      stroke={color} 
-      strokeWidth="1.8" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-    <Path 
-      d="M13.73 21a2 2 0 0 1-3.46 0" 
-      stroke={color} 
-      strokeWidth="1.8" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="notifications-outline" size={22} color={color} />
 )
 
 const SettingsIcon = ({ color }: { color: string }) => (
-  <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <Circle cx="6" cy="12" r="2" stroke={color} strokeWidth="1.8" />
-    <Circle cx="18" cy="6" r="2" stroke={color} strokeWidth="1.8" />
-    <Circle cx="18" cy="18" r="2" stroke={color} strokeWidth="1.8" />
-    <Path
-      d="M8 12h13M3 12h2M8 6h8M3 18h12"
-      stroke={color}
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    />
-  </Svg>
+  <Ionicons name="options-outline" size={22} color={color} />
 )
