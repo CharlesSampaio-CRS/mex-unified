@@ -372,7 +372,7 @@ const ComparisonChart = memo(function ComparisonChart({
         <View style={compStyles.legendItem}>
           <View style={[compStyles.legendDot, { backgroundColor: COMP_COLORS.portfolio }]} />
           <Text style={[compStyles.legendLabel, { color: colors.textSecondary }]}>Portfolio</Text>
-          <Text style={[compStyles.legendValue, { color: selected ? colors.text : (portFinal >= 0 ? colors.success : colors.danger) }]}>
+          <Text numberOfLines={1} style={[compStyles.legendValue, { color: selected ? colors.text : (portFinal >= 0 ? colors.success : colors.danger) }]}>
             {hideValue(fmtPct(selected ? selected.port : portFinal))}
           </Text>
         </View>
@@ -380,7 +380,7 @@ const ComparisonChart = memo(function ComparisonChart({
           <View style={compStyles.legendItem}>
             <View style={[compStyles.legendDot, { backgroundColor: COMP_COLORS.btc }]} />
             <Text style={[compStyles.legendLabel, { color: colors.textSecondary }]}>BTC</Text>
-            <Text style={[compStyles.legendValue, { color: selected ? colors.text : (btcFinal! >= 0 ? colors.success : colors.danger) }]}>
+            <Text numberOfLines={1} style={[compStyles.legendValue, { color: selected ? colors.text : (btcFinal! >= 0 ? colors.success : colors.danger) }]}>
               {hideValue(fmtPct(selected && selected.btc !== null ? selected.btc : btcFinal!))}
             </Text>
           </View>
@@ -389,7 +389,7 @@ const ComparisonChart = memo(function ComparisonChart({
           <View style={compStyles.legendItem}>
             <View style={[compStyles.legendDot, { backgroundColor: COMP_COLORS.eth }]} />
             <Text style={[compStyles.legendLabel, { color: colors.textSecondary }]}>ETH</Text>
-            <Text style={[compStyles.legendValue, { color: selected ? colors.text : (ethFinal! >= 0 ? colors.success : colors.danger) }]}>
+            <Text numberOfLines={1} style={[compStyles.legendValue, { color: selected ? colors.text : (ethFinal! >= 0 ? colors.success : colors.danger) }]}>
               {hideValue(fmtPct(selected && selected.eth !== null ? selected.eth : ethFinal!))}
             </Text>
           </View>
@@ -987,24 +987,30 @@ const compStyles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
     gap: 8,
+    flexWrap: 'wrap',
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 1,
+    minWidth: 0,
   },
   legendDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
+    flexShrink: 0,
   },
   legendLabel: {
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
+    flexShrink: 0,
   },
   legendValue: {
     fontSize: typography.caption,
     fontWeight: fontWeights.semibold,
+    flexShrink: 1,
   },
   touchDate: {
     fontSize: typography.micro,
