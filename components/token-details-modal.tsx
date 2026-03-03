@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
-} from "react-native"
+ActivityIndicator } from "react-native"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useAuth } from "@/contexts/AuthContext"
@@ -16,7 +16,6 @@ import { usePrivacy } from "@/contexts/PrivacyContext"
 import { capitalizeExchangeName, getExchangeName, getExchangeId } from "@/lib/exchange-helpers"
 import { typography, fontWeights } from "@/lib/typography"
 import { apiService } from "@/services/api"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
 interface TokenDetailsModalProps {
   visible: boolean
@@ -304,7 +303,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
             </View>
             {loading ? (
               <View style={styles.loadingContainer}>
-                <AnimatedLogoIcon size={40} />
+                <ActivityIndicator size="small" />
                 <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                   {t('common.loading')}
                 </Text>

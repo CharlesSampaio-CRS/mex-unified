@@ -1,4 +1,4 @@
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Alert, Animated } from "react-native"
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Alert, Animated, ActivityIndicator } from "react-native"
 import React, { useState, useEffect, useRef } from "react"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
@@ -9,7 +9,6 @@ import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
 import { notify } from "../services/notify"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
 interface OpenOrdersModalProps {
   visible: boolean
@@ -668,7 +667,7 @@ export function OpenOrdersModal({
                       activeOpacity={loading ? 1 : 0.7}
                     >
                       {loading ? (
-                        <AnimatedLogoIcon size={16} />
+                        <ActivityIndicator size="small" />
                       ) : (
                         <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
                       )}
@@ -684,7 +683,7 @@ export function OpenOrdersModal({
                     disabled={cancellingAll}
                   >
                     {cancellingAll ? (
-                      <AnimatedLogoIcon size={14} />
+                      <ActivityIndicator size="small" />
                     ) : (
                       <Text style={[styles.cancelAllButtonText, { color: '#ef4444' }]}>
                         {t('orders.cancelAll')}
@@ -705,7 +704,7 @@ export function OpenOrdersModal({
             <ScrollView style={styles.modalContent}>
               {loading ? (
                 <View style={styles.loadingContainer}>
-                  <AnimatedLogoIcon size={48} />
+                  <ActivityIndicator size="small" />
                   <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                     {t('orders.loading')}
                   </Text>
@@ -749,7 +748,7 @@ export function OpenOrdersModal({
                     >
                       {isCancelling && (
                         <View style={styles.cancellingOverlayCompact}>
-                          <AnimatedLogoIcon size={20} />
+                          <ActivityIndicator size="small" />
                           <Text style={[styles.cancellingTextCompact, { color: colors.textSecondary }]}>
                             {t('orders.cancelingOrder')}
                           </Text>
@@ -869,7 +868,7 @@ export function OpenOrdersModal({
                 {/* Mostra loading enquanto cancela */}
                 {cancelLoading && (
                   <View style={styles.loadingContainer}>
-                    <AnimatedLogoIcon />
+                    <ActivityIndicator size="small" />
                     <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                       {t('orders.cancelingOrder')}
                     </Text>
@@ -1026,7 +1025,7 @@ export function OpenOrdersModal({
                 {/* Mostra loading enquanto cancela todas */}
                 {cancelAllLoading && (
                   <View style={styles.loadingContainer}>
-                    <AnimatedLogoIcon />
+                    <ActivityIndicator size="small" />
                     <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                       {t('orders.cancelingAllOrders')}
                     </Text>

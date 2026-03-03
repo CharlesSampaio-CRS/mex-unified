@@ -14,11 +14,10 @@ import {
   Platform,
   Keyboard,
   Switch,
-} from "react-native"
+ActivityIndicator } from "react-native"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBackendStrategies, CreateStrategyRequest } from "@/hooks/useBackendStrategies"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
 import { apiService } from "@/services/api"
 import { config } from "@/lib/config"
@@ -298,7 +297,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         {t("strategy.selectExchangeDesc")}
       </Text>
       {loadingExchanges ? (
-        <View style={styles.loadingContainer}><AnimatedLogoIcon size={48} /></View>
+        <View style={styles.loadingContainer}><ActivityIndicator size="small" /></View>
       ) : exchanges.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={{ fontSize: typography.emojiHuge, marginBottom: 12 }}>📭</Text>
@@ -343,7 +342,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
       )}
       {loadingTokens ? (
         <View style={styles.loadingContainer}>
-          <AnimatedLogoIcon size={48} />
+          <ActivityIndicator size="small" />
           <Text style={{ color: colors.textSecondary, marginTop: 12 }}>{t('common.loadingTokens')}</Text>
         </View>
       ) : token && !showTokenList ? (
@@ -780,7 +779,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                     onPress={handleCreateStrategy}
                     disabled={!canCreate || loading}
                   >
-                    {loading ? <AnimatedLogoIcon size={24} /> : (
+                    {loading ? <ActivityIndicator size="small" /> : (
                       <Text style={styles.buttonTextPrimary}>{t('strategy.createNew')}</Text>
                     )}
                   </TouchableOpacity>

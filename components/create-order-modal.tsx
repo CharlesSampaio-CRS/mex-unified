@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image } from 'react-native'
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image, ActivityIndicator } from 'react-native'
 import { useState, useEffect, useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -11,7 +11,6 @@ import { typography, fontWeights } from '@/lib/typography'
 import { apiService } from '@/services/api'
 import { notify } from '@/services/notify'
 import { getExchangeLogo } from '@/lib/exchange-logos'
-import { AnimatedLogoIcon } from '@/components/AnimatedLogoIcon'
 import { ConfirmModal } from '@/components/ConfirmModal'
 
 interface ExchangeItem {
@@ -525,7 +524,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
 
       {exchangesLoading ? (
         <View style={styles.loadingContainer}>
-          <AnimatedLogoIcon size={28} />
+          <ActivityIndicator size="small" />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
             Carregando exchanges...
           </Text>
@@ -697,7 +696,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
 
       {pairsLoading ? (
         <View style={styles.loadingContainer}>
-          <AnimatedLogoIcon size={28} />
+          <ActivityIndicator size="small" />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
             Buscando pares para {tokenInput.toUpperCase()}...
           </Text>
@@ -908,7 +907,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                 }}
               >
                 {pairPriceLoading ? (
-                  <AnimatedLogoIcon size={12} />
+                  <ActivityIndicator size="small" />
                 ) : (
                   <Ionicons name="refresh-outline" size={14} color={colors.primary} />
                 )}
@@ -1063,7 +1062,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
             activeOpacity={0.7}
           >
             {createOrderLoading ? (
-              <AnimatedLogoIcon size={20} />
+              <ActivityIndicator size="small" />
             ) : (
               <>
                 <Ionicons

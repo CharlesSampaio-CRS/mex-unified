@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable } from 'react-native'
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, ActivityIndicator } from 'react-native'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -9,7 +9,6 @@ import { useBalance } from '@/contexts/BalanceContext'
 import { typography, fontWeights } from '@/lib/typography'
 import { apiService } from '@/services/api'
 import { notify } from '@/services/notify'
-import { AnimatedLogoIcon } from '@/components/AnimatedLogoIcon'
 
 interface TradeModalProps {
   visible: boolean
@@ -620,7 +619,7 @@ export function TradeModal({
             {/* 🔄 Seletor de Par de Trading (dinâmico) */}
             {pairsLoading ? (
               <View style={[styles.section, { alignItems: 'center', paddingVertical: 16 }]}>
-                <AnimatedLogoIcon size={24} />
+                <ActivityIndicator size="small" />
                 <Text style={[styles.stepLabel, { color: colors.textSecondary, marginTop: 8 }]}>
                   Buscando pares disponíveis...
                 </Text>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Animated, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -19,7 +19,6 @@ import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { CreateOrderModal } from '@/components/create-order-modal';
-import { AnimatedLogoIcon } from '../components/AnimatedLogoIcon';
 
 // Sub-componente com animação piscante para ordens sendo canceladas
 function AnimatedOrderCard({ 
@@ -496,7 +495,7 @@ export function OrdersScreen({ navigation }: any) {
       >
         {loading && filteredSections.length === 0 ? (
           <View style={styles.emptyState}>
-            <AnimatedLogoIcon size={40} />
+            <ActivityIndicator size="small" />
             <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}> 
               Carregando ordens...
             </Text>

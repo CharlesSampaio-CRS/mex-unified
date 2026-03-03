@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native"
 import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
@@ -6,7 +6,6 @@ import { useLanguage } from "../contexts/LanguageContext"
 import { typography, fontWeights } from "../lib/typography"
 import { apiService } from "../services/api"
 import { useFocusEffect } from "@react-navigation/native"
-import { AnimatedLogoIcon } from "../components/AnimatedLogoIcon"
 
 /** Tipo de um template vindo da API */
 interface TemplateConfig {
@@ -107,7 +106,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
     <View style={[styles.container, { backgroundColor: colors.background }]}> 
       {loading ? (
         <View style={styles.center}>
-          <AnimatedLogoIcon size={48} />
+          <ActivityIndicator size="small" />
         </View>
       ) : (
         <ScrollView
@@ -455,7 +454,7 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
                 activeOpacity={0.7}
               >
                 {saving ? (
-                  <AnimatedLogoIcon size={20} />
+                  <ActivityIndicator size="small" />
                 ) : (
                   <Text style={styles.saveBtnText}>💾 Salvar Template</Text>
                 )}

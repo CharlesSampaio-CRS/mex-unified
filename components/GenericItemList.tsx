@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AnimatedLogoIcon } from './AnimatedLogoIcon';
 import { GradientCard } from './GradientCard';
 import { typography, fontWeights } from '../lib/typography';
 
@@ -102,7 +101,7 @@ export function GenericItemList<T extends GenericItem>({
               </Text>
               {section.loading ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <AnimatedLogoIcon size={16} />
+                  <ActivityIndicator size="small" />
                   <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
                     {t('common.loading')}
                   </Text>
@@ -117,7 +116,7 @@ export function GenericItemList<T extends GenericItem>({
             {/* Loading state */}
             {section.loading ? (
               <View style={[styles.loadingContainer, { backgroundColor: colors.surface }]}>
-                <AnimatedLogoIcon size={24} />
+                <ActivityIndicator size="small" />
                 <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                   {t('common.loading')}
                 </Text>
@@ -214,7 +213,7 @@ export function GenericItemList<T extends GenericItem>({
                           >
                             {isProcessing ? (
                               <>
-                                <AnimatedLogoIcon size={16} />
+                                <ActivityIndicator size="small" />
                                 <Text style={[styles.actionButtonText, { color: colors.success }]}>
                                   {config.buttons.secondary.loadingText || 'Processando...'}
                                 </Text>

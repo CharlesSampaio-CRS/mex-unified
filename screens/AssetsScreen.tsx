@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Text as SvgText, Line } from 'react-native-svg';
@@ -18,7 +18,6 @@ import { getExchangeBalances, getExchangeId, getExchangeName, capitalizeExchange
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
-import { AnimatedLogoIcon } from '../components/AnimatedLogoIcon';
 
 export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -304,7 +303,7 @@ export function AssetsScreen({ navigation }: any) {
       >
         {loading && assetsSections.length === 0 ? (
           <View style={styles.emptyState}>
-            <AnimatedLogoIcon size={40} />
+            <ActivityIndicator size="small" />
             <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}> 
               Carregando assets...
             </Text>

@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { marketPriceService } from '../services/marketPriceService';
-import { AnimatedLogoIcon } from './AnimatedLogoIcon';
 import { PortfolioChart } from './PortfolioChart';
 import { typography, fontWeights } from '@/lib/typography';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -198,7 +197,7 @@ export const MarketOverview: React.FC = () => {
           </Text>
         </View>
         <View style={styles.loadingContainer}>
-          <AnimatedLogoIcon size={32} />
+          <ActivityIndicator size="small" />
         </View>
       </View>
     );
@@ -245,7 +244,7 @@ export const MarketOverview: React.FC = () => {
           activeOpacity={refreshing ? 1 : 0.7}
         >
           {refreshing ? (
-            <AnimatedLogoIcon size={20} />
+            <ActivityIndicator size="small" />
           ) : (
             <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
           )}
@@ -340,7 +339,7 @@ export const MarketOverview: React.FC = () => {
                   <View style={styles.chartSection}>
                     {loadingChart ? (
                       <View style={styles.chartLoading}>
-                        <AnimatedLogoIcon size={32} />
+                        <ActivityIndicator size="small" />
                       </View>
                     ) : chartData ? (
                       <PortfolioChart

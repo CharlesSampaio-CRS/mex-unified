@@ -12,11 +12,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
-} from "react-native"
+ActivityIndicator } from "react-native"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBackendStrategies, Strategy, UpdateStrategyRequest } from "@/hooks/useBackendStrategies"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
 
 interface EditStrategyModalProps {
@@ -354,7 +353,7 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                 onPress={handleSave}
                 disabled={!canSave || loading}
               >
-                {loading ? <AnimatedLogoIcon size={24} /> : (
+                {loading ? <ActivityIndicator size="small" /> : (
                   <Text style={styles.buttonTextPrimary}>💾 Salvar</Text>
                 )}
               </TouchableOpacity>

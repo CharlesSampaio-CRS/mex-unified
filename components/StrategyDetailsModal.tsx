@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform
-} from 'react-native'
+ActivityIndicator } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -21,7 +21,6 @@ import { apiService } from '@/services/api'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 import { typography, fontWeights } from '@/lib/typography'
 import { EditStrategyModal } from './edit-strategy-modal'
-import { AnimatedLogoIcon } from './AnimatedLogoIcon'
 
 interface StrategyDetailsModalProps {
   visible: boolean
@@ -900,7 +899,7 @@ export function StrategyDetailsModal({
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <AnimatedLogoIcon size={40} />
+          <ActivityIndicator size="small" />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('common.loading')}...</Text>
         </View>
       )
@@ -1171,7 +1170,7 @@ export function StrategyDetailsModal({
                     activeOpacity={0.7}
                   >
                     {ticking ? (
-                      <AnimatedLogoIcon size={20} />
+                      <ActivityIndicator size="small" />
                     ) : (
                       <Text style={[styles.footerButtonText, { color: colors.primary }]}>⚡ Tick</Text>
                     )}

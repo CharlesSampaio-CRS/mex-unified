@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, RefreshControl, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, RefreshControl, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator } from "react-native"
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
@@ -9,7 +9,6 @@ import { useBalance } from "@/contexts/BalanceContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useCacheInvalidation } from "@/contexts/CacheInvalidationContext"
 import { QRScanner } from "./QRScanner"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
 import { spacing } from "@/lib/layout"
 
@@ -1370,7 +1369,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     disabled={connecting}
                   >
                     {connecting ? (
-                      <AnimatedLogoIcon size={20} />
+                      <ActivityIndicator size="small" />
                     ) : (
                       <Text style={[styles.submitButtonText, { color: colors.primary }]}>{t('exchanges.connect')}</Text>
                     )}
@@ -1436,7 +1435,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   disabled={toggleLoading}
                 >
                   {toggleLoading ? (
-                    <AnimatedLogoIcon size={24} />
+                    <ActivityIndicator size="small" />
                   ) : (
                     <Text style={[styles.confirmModalButtonText, { color: '#ffffff' }]}>
                       {toggleExchangeNewStatus === 'active' ? t('exchanges.activate') : t('exchanges.deactivate')}
@@ -1513,7 +1512,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   disabled={confirmLoading}
                 >
                   {confirmLoading ? (
-                    <AnimatedLogoIcon size={24} />
+                    <ActivityIndicator size="small" />
                   ) : (
                     <Text style={[styles.confirmModalButtonText, { color: '#ffffff' }]}>
                       {confirmAction === 'delete' ? t('exchanges.delete') : t('exchanges.disconnect')}
@@ -1600,7 +1599,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                       
                       {loadingDetails ? (
                         <View style={styles.detailsLoadingContainer}>
-                          <AnimatedLogoIcon size={32} />
+                          <ActivityIndicator size="small" />
                           <Text style={[styles.detailsLoadingText, { color: colors.textSecondary }]}>
                             {t('exchanges.loadingDetails')}
                           </Text>
