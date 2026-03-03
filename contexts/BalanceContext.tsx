@@ -33,9 +33,16 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
   const onBalanceLoadedCallbackRef = useRef<(() => void) | null>(null) // 🆕 Callback para notificar quando carrega
 
   const fetchBalances = useCallback(async (forceRefresh = false, silent = false) => {
-    // 🔒 PROTEÇÃO ATÔMICA: Verifica E marca o lock numa única operação
+    // 🔒 PROTEÇÃO: Se já está buscando...
     if (isFetchingRef.current) {
-      console.log('⏭️ [BalanceContext] Fetch já em andamento, ignorando...')
+      // Se é um refresh forçado pelo usuário (pull-to-refresh), garante que refreshing=true
+      // para que o componente mostre o loading enquanto o fetch atual termina
+      if (forceRefresh && !silent) {
+        console.log('🔄 [BalanceContext] Fetch em andamento, mas forceRefresh=true — aguardando...')
+        setRefreshing(true)
+      } else {
+        console.log('⏭️ [BalanceContext] Fetch já em andamento, ignorando...')
+      }
       return
     }
     
