@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useBalance } from '@/contexts/BalanceContext'
 import { typography, fontWeights } from '@/lib/typography'
 import { AnimatedLogoIcon } from './AnimatedLogoIcon'
 
@@ -12,7 +13,9 @@ interface LoadingProgressProps {
 export function LoadingProgress({ visible }: LoadingProgressProps) {
   const { colors, isDark } = useTheme()
   const { t } = useLanguage()
+  const { data: balanceData, loading: balanceLoading } = useBalance()
   const [currentStep, setCurrentStep] = useState(0)
+  const prevStepRef = useRef(0)
   
   const steps = [
     { key: 'loading.authenticating' },
@@ -119,36 +122,50 @@ export function LoadingProgress({ visible }: LoadingProgressProps) {
     }
   }, [currentStep, visible])
 
-  // Progressão dos steps com tempo mínimo entre cada um
+  // Progressão dos steps baseada no estado REAL dos dados
   useEffect(() => {
     if (!visible) {
       setCurrentStep(0)
+      prevStepRef.current = 0
       return
     }
 
-    // Avança steps gradualmente para dar feedback visual
-    const stepDurations = [500, 800, 1000, 800, 500] // Duração mínima de cada step
-    let currentIndex = 0
-    const timers: ReturnType<typeof setTimeout>[] = []
+    // Calcula step real baseado no estado dos dados
+    let realStep = 0
 
-    const scheduleNext = () => {
-      if (currentIndex < steps.length - 1) { // -1 para não avançar além do último
-        const timer = setTimeout(() => {
-          currentIndex++
-          setCurrentStep(currentIndex)
-          scheduleNext()
-        }, stepDurations[currentIndex] || 800)
-        
-        timers.push(timer)
+    // Step 0: Authenticating (sempre passa rápido — login já concluiu se visible=true)
+    // Step 0→1 é controlado pelo timer de 400ms abaixo
+
+    if (balanceData !== null && !balanceLoading) {
+      // Dados prontos! Pula para "quase pronto"
+      realStep = 4
+    } else if (balanceLoading) {
+      // Está carregando balances ativamente
+      realStep = 2
+    }
+    // Se !balanceLoading && balanceData === null → ainda não começou ou está no começo
+    // Nesse caso mantém o step atual (controlado pelo timer de 400ms)
+
+    // Steps só avançam, nunca voltam (evita flicker)
+    if (realStep > prevStepRef.current) {
+      prevStepRef.current = realStep
+      setCurrentStep(realStep)
+    }
+  }, [visible, balanceLoading, balanceData])
+
+  // Step 0 → 1 com delay mínimo para dar feedback visual de "autenticando"
+  useEffect(() => {
+    if (!visible) return
+
+    // Garante que step 0 (authenticating) aparece por pelo menos 400ms
+    const timer = setTimeout(() => {
+      if (prevStepRef.current < 1) {
+        prevStepRef.current = 1
+        setCurrentStep(1)
       }
-    }
+    }, 400)
 
-    // Inicia a progressão
-    scheduleNext()
-
-    return () => {
-      timers.forEach(timer => clearTimeout(timer))
-    }
+    return () => clearTimeout(timer)
   }, [visible])
 
   if (!visible) return null

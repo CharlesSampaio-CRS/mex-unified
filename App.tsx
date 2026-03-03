@@ -67,13 +67,7 @@ function DataLoader({ children, onDataReady }: { children: React.ReactNode, onDa
   const { data: balanceData, loading: balanceLoading, error: balanceError, refresh: refreshBalance } = useBalance()
   const hasCalledRef = useRef(false)
   const [showMaintenance, setShowMaintenance] = useState(false)
-
-  // 🚀 REMOVED: Não precisa mais forçar refresh automático!
-  // O pré-carregamento no login + BalanceContext já carregam os dados automaticamente
-  // Isso elimina a chamada duplicada após login
-  
-  // ❌ REMOVED: refreshOrders não é mais necessário aqui
-  // OrdersContext agora usa callback onBalanceLoaded para carregar automaticamente
+  const mountTimeRef = useRef(Date.now())
 
   // Detecta erros críticos de API (erro ao carregar balance = API offline)
   const isCriticalError = balanceError !== null && !balanceLoading
@@ -87,50 +81,60 @@ function DataLoader({ children, onDataReady }: { children: React.ReactNode, onDa
       return
     }
 
-    // ✅ NOVO: Considera dados prontos quando:
+    // ✅ Considera dados prontos quando:
     // 1. Loading terminou (!balanceLoading)
     // 2. E: (tem dados OU tem erro OU usuário novo sem exchanges)
+    // 3. E: pelo menos 1s desde que montou (evita flash se dados já estavam em cache)
     const balanceReady = !balanceLoading && (
       balanceData !== null ||  // Tem dados
-      balanceError !== null ||  // Tem erro (vai mostrar mensagem)
-      (balanceData as any)?.exchanges?.length === 0  // Usuário novo sem exchanges (válido!)
+      balanceError !== null    // Tem erro (vai mostrar mensagem)
     )
 
-    // ❌ REMOVIDO: Não carrega orders aqui! OrdersContext já faz isso via callback onBalanceLoaded
-    // if (balanceReady && !hasLoadedOrdersRef.current) {
-    //   hasLoadedOrdersRef.current = true
-    //   console.log('✅ Balance carregado, iniciando carregamento de orders...')
-    //   refreshOrders().catch(err => {
-    //     console.error('❌ Erro ao carregar orders:', err)
-    //   })
-    // }
+    // Tempo mínimo de loading visual: 1.5s (para que o usuário veja a animação)
+    const elapsedMs = Date.now() - mountTimeRef.current
+    const MIN_LOADING_TIME = 1500
 
-    console.log('🔍 [DataLoadingManager] Estado atual:', {
+    console.log('🔍 [DataLoader] Estado atual:', {
       balanceLoading,
       hasBalanceData: !!balanceData,
       hasBalanceError: !!balanceError,
       balanceReady,
+      elapsedMs,
       hasCalledRef: hasCalledRef.current
     })
 
-    // Chama onDataReady quando balance terminou de carregar
+    // Chama onDataReady quando balance terminou E tempo mínimo passou
     if (balanceReady && !hasCalledRef.current) {
-      console.log('✅ [DataLoadingManager] Balance pronto, chamando onDataReady()')
-      hasCalledRef.current = true
-      onDataReady()
+      if (elapsedMs >= MIN_LOADING_TIME) {
+        console.log('✅ [DataLoader] Dados prontos, chamando onDataReady()')
+        hasCalledRef.current = true
+        onDataReady()
+      } else {
+        // Espera o tempo restante para dar feedback visual adequado
+        const remaining = MIN_LOADING_TIME - elapsedMs
+        console.log(`⏳ [DataLoader] Dados prontos, aguardando ${remaining}ms para feedback visual`)
+        const timer = setTimeout(() => {
+          if (!hasCalledRef.current) {
+            console.log('✅ [DataLoader] Tempo mínimo atingido, chamando onDataReady()')
+            hasCalledRef.current = true
+            onDataReady()
+          }
+        }, remaining)
+        return () => clearTimeout(timer)
+      }
     }
   }, [balanceLoading, balanceData, balanceError, onDataReady, isCriticalError, showMaintenance])
 
   // Timeout de segurança: se demorar mais de 8 segundos, finaliza o loading
   useEffect(() => {
-    console.log('⏰ [DataLoadingManager] Timeout de 8s iniciado')
+    console.log('⏰ [DataLoader] Timeout de segurança de 10s iniciado')
     const timeout = setTimeout(() => {
       if (!hasCalledRef.current) {
-        console.warn('⏰ [DataLoadingManager] TIMEOUT! Forçando onDataReady() após 8s')
+        console.warn('⏰ [DataLoader] TIMEOUT! Forçando onDataReady() após 10s')
         hasCalledRef.current = true
         onDataReady()
       }
-    }, 8000) // 8 segundos (otimizado)
+    }, 10000) // 10s timeout de segurança (acima do MIN_LOADING_TIME + tempo de API)
 
     return () => clearTimeout(timeout)
   }, [onDataReady])
@@ -396,14 +400,14 @@ function AppNavigator() {
           {!isLoadingData ? (
             <MainTabs />
           ) : (
-            // LoadingProgress overlay (z-index 9999) cobre tudo — fundo invisível
+            // Fundo vazio enquanto LoadingProgress cobre tudo (z-index 9999)
             <View style={{ flex: 1, backgroundColor: colors.background }} />
           )}
           
-          {/* DataLoader monitora em segundo plano DURANTE o carregamento após login */}
+          {/* DataLoader monitora dados em segundo plano e chama setLoadingDataComplete quando pronto */}
           {isLoadingData && (
             <DataLoader onDataReady={setLoadingDataComplete}>
-              <View />
+              <></>
             </DataLoader>
           )}
         </>

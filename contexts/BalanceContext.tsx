@@ -185,7 +185,10 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       })
     } else if (!user?.id) {
       hasFetchedInitialRef.current = false
+      setData(null)
+      setError(null)
       setLoading(false)
+      setRefreshing(false)
     }
   }, [user?.id])
 
