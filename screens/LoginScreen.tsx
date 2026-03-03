@@ -122,10 +122,11 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const hasProcessedOAuth = useRef(false)
-  const [isProcessingOAuth, setIsProcessingOAuth] = useState(false) // 🆕 Estado para processar OAuth
-  const hasTriedAutoAuth = useRef(false) // 🆕 Controla se já tentou auth automático
-  const autoAuthCancelled = useRef(false) // 🆕 Indica se usuário cancelou o auto-auth
+  const [isProcessingOAuth, setIsProcessingOAuth] = useState(false)
+  const hasTriedAutoAuth = useRef(false)
+  const autoAuthCancelled = useRef(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   const isFullLoading = isLoading
 
@@ -267,14 +268,24 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       }
     }
   }, [])
-  
-  // 🆕 Se está processando OAuth, mostra loading (AppNavigator não intercepta neste caso)
-  if (isProcessingOAuth) {
+
+  // Mensagens dinâmicas de loading (mesmas do AppNavigator → transição seamless)
+  const loadingMessages = [
+    t('loading.validating'),
+    t('loading.connecting'),
+    t('loading.syncExchanges'),
+    t('loading.loadingPortfolio'),
+    t('loading.almostReady'),
+  ]
+
+  // 🆕 Se está fazendo login, mostra tela full-screen idêntica ao AppNavigator
+  // isLoggingIn é setado ANTES de chamar login() → sem flash
+  if (isLoggingIn || isProcessingOAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <AnimatedLogoIcon 
           size={48} 
-          messages={[t('auth.completingLogin')]}
+          messages={isProcessingOAuth ? [t('auth.completingLogin')] : loadingMessages}
           textColor={colors.text}
           fontSize={14}
         />
@@ -287,17 +298,21 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       return
     }
 
+    setIsLoggingIn(true)
     try {
       await login(email, password)
     } catch (error: any) {
       console.error('❌ Erro no login:', error)
+      setIsLoggingIn(false)
     }
   }
 
   const handleBiometricLogin = async () => {
+    setIsLoggingIn(true)
     try {
       await loginWithBiometric()
     } catch (error: any) {
+      setIsLoggingIn(false)
       // Se usuário cancelou, não mostra erro (comportamento esperado)
       if (
         error?.name === 'BiometricCancelError' ||
@@ -583,16 +598,10 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
           style={[
             styles.loginButton, 
             { backgroundColor: colors.surface, borderColor: '#3b82f6' },
-            isFullLoading && styles.loginButtonDisabled
           ]}
           onPress={handleLogin}
-          disabled={isFullLoading}
         >
-          {isFullLoading ? (
-            <AnimatedLogoIcon size={24} />
-          ) : (
-            <Text style={styles.loginButtonText}>{t('login.signIn')}</Text>
-          )}
+          <Text style={styles.loginButtonText}>{t('login.signIn')}</Text>
         </TouchableOpacity>
 
         {biometricAvailable && isBiometricEnabled && (

@@ -355,6 +355,7 @@ export const translations = {
     'settings.deleteAccount': 'Excluir Conta',
 
     // Loading Messages (tela de loading pós-login)
+    'loading.validating': 'Validando login...',
     'loading.connecting': 'Conectando...',
     'loading.syncExchanges': 'Sincronizando exchanges...',
     'loading.loadingPortfolio': 'Carregando portfólio...',
@@ -704,6 +705,7 @@ export const translations = {
     'settings.deleteAccount': 'Delete Account',
 
     // Loading Messages (post-login loading screen)
+    'loading.validating': 'Validating login...',
     'loading.connecting': 'Connecting...',
     'loading.syncExchanges': 'Syncing exchanges...',
     'loading.loadingPortfolio': 'Loading portfolio...',

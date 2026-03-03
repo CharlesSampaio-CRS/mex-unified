@@ -804,6 +804,7 @@ const translations = {
     'genericList.items': 'itens',
 
     // Loading Messages (tela de loading pós-login)
+    'loading.validating': 'Validando login...',
     'loading.connecting': 'Conectando...',
     'loading.syncExchanges': 'Sincronizando exchanges...',
     'loading.loadingPortfolio': 'Carregando portfólio...',
@@ -1600,6 +1601,7 @@ const translations = {
     'genericList.items': 'items',
 
     // Loading Messages (post-login loading screen)
+    'loading.validating': 'Validating login...',
     'loading.connecting': 'Connecting...',
     'loading.syncExchanges': 'Syncing exchanges...',
     'loading.loadingPortfolio': 'Loading portfolio...',

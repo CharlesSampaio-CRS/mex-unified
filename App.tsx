@@ -278,6 +278,7 @@ function AppNavigator() {
 
   // Mensagens dinâmicas que rotacionam durante o loading pós-login
   const loadingMessages = useMemo(() => [
+    t('loading.validating'),
     t('loading.connecting'),
     t('loading.syncExchanges'),
     t('loading.loadingPortfolio'),
