@@ -7,6 +7,7 @@ import { typography, fontWeights } from "../lib/typography"
 import { apiService } from "../services/api"
 import { useFocusEffect } from "@react-navigation/native"
 import { AnimatedLogoIcon } from "../components/AnimatedLogoIcon"
+import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView"
 
 /** Tipo de um template vindo da API */
 interface TemplateConfig {
@@ -110,7 +111,12 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
           <AnimatedLogoIcon size={48} />
         </View>
       ) : (
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+        <CustomPullToRefreshScrollView
+          refreshing={loading}
+          onRefresh={fetchTemplates}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 32 }}
+        >
 
           {/* ── Lista de templates da API ── */}
           {templates.map((tpl) => {
@@ -230,7 +236,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
             <Text style={{ fontSize: typography.displaySmall, color: colors.primary }}>→</Text>
           </TouchableOpacity>
 
-        </ScrollView>
+        </CustomPullToRefreshScrollView>
       )}
 
       {/* ── Modal Criar Template ── */}

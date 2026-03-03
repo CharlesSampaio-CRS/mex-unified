@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native"
+import { View, Text, StyleSheet } from "react-native"
 import { memo } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
+import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView"
 
 export const DiamondScreen = memo(function DiamondScreen({ navigation }: any) {
   const { colors } = useTheme()
@@ -11,7 +12,12 @@ export const DiamondScreen = memo(function DiamondScreen({ navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.content}>
+      <CustomPullToRefreshScrollView
+        refreshing={false}
+        onRefresh={() => {}}
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>💎 Diamond Feature</Text>
           <Text style={[styles.description, { color: colors.textSecondary }]}>
@@ -26,7 +32,7 @@ export const DiamondScreen = memo(function DiamondScreen({ navigation }: any) {
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Long-term holds</Text>
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Premium portfolio</Text>
         </View>
-      </ScrollView>
+      </CustomPullToRefreshScrollView>
     </View>
   )
 })

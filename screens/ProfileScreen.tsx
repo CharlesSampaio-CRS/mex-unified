@@ -22,6 +22,7 @@ import { NotificationsModal } from "../components/NotificationsModal"
 import { ConfirmModal } from "../components/ConfirmModal"
 import { typography, fontWeights } from "../lib/typography"
 import { commonStyles, spacing, borderRadius, shadows, borders, sizes } from "@/lib/layout"
+import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView"
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg"
 
 export function ProfileScreen({ navigation }: any) {
@@ -95,8 +96,9 @@ export function ProfileScreen({ navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView 
-        style={styles.scrollView} 
+      <CustomPullToRefreshScrollView 
+        refreshing={false}
+        onRefresh={() => {}}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -372,7 +374,7 @@ export function ProfileScreen({ navigation }: any) {
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
-      </ScrollView>
+      </CustomPullToRefreshScrollView>
 
       {/* Modais */}
       <NotificationsModal 
