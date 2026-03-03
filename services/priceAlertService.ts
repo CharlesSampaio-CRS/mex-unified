@@ -12,6 +12,7 @@ import {
   AlertFrequency,
   AlertStatus
 } from '../types/alerts';
+import { apiService } from './api';
 
 const ALERTS_STORAGE_KEY = '@cryptohub:price_alerts';
 const PRICE_CACHE_KEY = '@cryptohub:price_cache';
@@ -92,11 +93,17 @@ class PriceAlertService {
 
       console.log(`[PriceAlerts] 🔍 Verificando ${alerts.length} alertas...`);
 
-      // Agrupa alertas por símbolo para otimizar busca de preços
-      const symbolsToCheck = [...new Set(alerts.map(a => a.symbol))];
-      
-      // Busca preços atuais (implementar integração com API)
-      const currentPrices = await this.fetchCurrentPrices(symbolsToCheck);
+      // Agrupa alertas por exchangeId+symbol para otimizar chamadas à API
+      const alertsByKey = new Map<string, TokenAlert[]>();
+      for (const alert of alerts) {
+        const key = `${alert.exchangeId || 'global'}:${alert.symbol}`;
+        const group = alertsByKey.get(key) || [];
+        group.push(alert);
+        alertsByKey.set(key, group);
+      }
+
+      // Busca preço real de cada exchange+symbol via API (usa credenciais do usuário)
+      const currentPrices = await this.fetchCurrentPricesFromExchanges(alertsByKey);
 
       // Verifica cada alerta
       for (const alert of alerts) {
@@ -115,17 +122,20 @@ class PriceAlertService {
    * Verifica um alerta específico
    */
   private async checkAlert(alert: TokenAlert, currentPrices: Map<string, number>) {
-    const currentPrice = currentPrices.get(alert.symbol);
+    // Key combina exchangeId + symbol para buscar o preço correto da corretora
+    const priceKey = `${alert.exchangeId || 'global'}:${alert.symbol}`;
+    const currentPrice = currentPrices.get(priceKey);
     
     if (!currentPrice) {
-      console.warn(`[PriceAlerts] ⚠️ Preço de ${alert.symbol} não disponível`);
+      console.warn(`[PriceAlerts] ⚠️ Preço de ${alert.symbol} (${alert.exchangeId || 'global'}) não disponível`);
       return;
     }
 
-    const previousPrice = this.priceCache[alert.symbol]?.price;
+    const cacheKey = `${alert.exchangeId || ''}:${alert.symbol}`;
+    const previousPrice = this.priceCache[cacheKey]?.price;
     
     // Atualiza cache
-    this.priceCache[alert.symbol] = {
+    this.priceCache[cacheKey] = {
       price: currentPrice,
       timestamp: Date.now(),
     };
@@ -393,23 +403,51 @@ class PriceAlertService {
   }
 
   /**
-   * Busca preços atuais dos tokens (mock - implementar integração real)
+   * Busca preços reais das corretoras via API (usa credenciais/secret do usuário)
+   * Agrupa por exchangeId+symbol para otimizar chamadas
+   * Chama POST /token-pairs/ticker que busca via CCXT com api_key/secret decriptados
    */
-  private async fetchCurrentPrices(symbols: string[]): Promise<Map<string, number>> {
-    // TODO: Implementar integração com API real
-    // Por enquanto, retorna preços mock
+  private async fetchCurrentPricesFromExchanges(
+    alertsByKey: Map<string, TokenAlert[]>
+  ): Promise<Map<string, number>> {
     const prices = new Map<string, number>();
     
-    // Simula busca de preços
-    for (const symbol of symbols) {
-      // Aqui você deve chamar sua API real
-      // const price = await apiService.getTokenPrice(symbol);
+    const fetchPromises: Promise<void>[] = [];
+    
+    for (const [key, alerts] of alertsByKey) {
+      const [exchangeId, symbol] = key.split(':');
+      const alert = alerts[0]; // Pega dados do primeiro alerta do grupo
       
-      // Mock temporário
-      const mockPrice = this.priceCache[symbol]?.price || 100;
-      prices.set(symbol, mockPrice);
+      if (!exchangeId || exchangeId === 'global') {
+        console.warn(`[PriceAlerts] ⚠️ Alerta ${symbol} sem exchangeId, ignorando`);
+        continue;
+      }
+
+      // Par de trading padrão: SYMBOL/USDT
+      const tradingPair = symbol.includes('/') ? symbol : `${symbol}/USDT`;
+
+      const promise = (async () => {
+        try {
+          const result = await apiService.getPairTicker(exchangeId, tradingPair);
+          
+          if (result.success && result.ticker.last > 0) {
+            prices.set(key, result.ticker.last);
+            console.log(`[PriceAlerts] ✅ ${symbol} @ ${result.exchange}: $${result.ticker.last}`);
+          } else {
+            console.warn(`[PriceAlerts] ⚠️ Ticker inválido para ${symbol} na exchange ${exchangeId}`);
+          }
+        } catch (error: any) {
+          console.error(`[PriceAlerts] ❌ Erro ao buscar preço de ${symbol} (${exchangeId}):`, error.message);
+        }
+      })();
+
+      fetchPromises.push(promise);
     }
 
+    // Busca todos os preços em paralelo
+    await Promise.allSettled(fetchPromises);
+
+    console.log(`[PriceAlerts] 📊 ${prices.size}/${alertsByKey.size} preços obtidos das corretoras`);
     return prices;
   }
 
