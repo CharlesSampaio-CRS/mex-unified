@@ -38,6 +38,7 @@ export function AssetsScreen({ navigation }: any) {
   const [selectedTokenForDetails, setSelectedTokenForDetails] = useState<{ exchangeId: string; symbol: string } | null>(null);
   const [tradeModalVisible, setTradeModalVisible] = useState(false);
   const [alertModalVisible, setAlertModalVisible] = useState(false);
+  const [newAlertModalVisible, setNewAlertModalVisible] = useState(false);
   const [selectedTokenForAlert, setSelectedTokenForAlert] = useState<{
     symbol: string;
     price: number;
@@ -287,33 +288,43 @@ export function AssetsScreen({ navigation }: any) {
           </ScrollView>
         )}
 
-        {/* Results Count + Hide Zero Toggle */}
+        {/* Results Count + Hide Zero Toggle + Nova Alert */}
         <View style={styles.resultsCount}>
           <Text style={[styles.resultsCountText, { color: colors.textSecondary }]}>
             {totals.totalAssets} {totals.totalAssets === 1 ? 'ativo encontrado' : 'ativos encontrados'}
           </Text>
-          <TouchableOpacity
-            style={[styles.zeroToggle, {
-              backgroundColor: hideZero ? `${colors.primary}12` : colors.surface,
-              borderColor: hideZero ? `${colors.primary}40` : colors.border,
-            }]}
-            onPress={toggleHideZeroBalances}
-            activeOpacity={0.7}
-          >
-            {hideZero ? (
-              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={colors.primary}>0</SvgText>
-                <Line x1="6" y1="18" x2="18" y2="6" stroke={colors.primary} strokeWidth="2.5" strokeLinecap="round" />
-              </Svg>
-            ) : (
-              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={colors.textSecondary}>0</SvgText>
-              </Svg>
-            )}
-            <Text style={[styles.zeroToggleText, { color: hideZero ? colors.primary : colors.textSecondary }]}>
-              {hideZero ? 'Zeros ocultos' : 'Mostrar zeros'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.filterActions}>
+            <TouchableOpacity
+              style={[styles.newAlertButton, { borderColor: colors.primary }]}
+              onPress={() => setNewAlertModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-outline" size={14} color={colors.primary} />
+              <Text style={[styles.newAlertText, { color: colors.primary }]}>Nova</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.zeroToggle, {
+                backgroundColor: hideZero ? `${colors.primary}12` : colors.surface,
+                borderColor: hideZero ? `${colors.primary}40` : colors.border,
+              }]}
+              onPress={toggleHideZeroBalances}
+              activeOpacity={0.7}
+            >
+              {hideZero ? (
+                <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={colors.primary}>0</SvgText>
+                  <Line x1="6" y1="18" x2="18" y2="6" stroke={colors.primary} strokeWidth="2.5" strokeLinecap="round" />
+                </Svg>
+              ) : (
+                <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <SvgText x="12" y="17" textAnchor="middle" fontSize="17" fontWeight="bold" fill={colors.textSecondary}>0</SvgText>
+                </Svg>
+              )}
+              <Text style={[styles.zeroToggleText, { color: hideZero ? colors.primary : colors.textSecondary }]}>
+                {hideZero ? 'Zeros ocultos' : 'Mostrar zeros'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
       
@@ -556,7 +567,7 @@ export function AssetsScreen({ navigation }: any) {
         onClose={() => setNotificationsModalVisible(false)}
       />
 
-      {/* Modal de Criar Alerta */}
+      {/* Modal de Criar Alerta (por token) */}
       {selectedTokenForAlert && (
         <CreateAlertModal
           visible={alertModalVisible}
@@ -570,6 +581,19 @@ export function AssetsScreen({ navigation }: any) {
           exchangeName={selectedTokenForAlert.exchangeName}
         />
       )}
+
+      {/* Modal de Novo Alerta (genérico - escolher exchange + token) */}
+      <CreateAlertModal
+        visible={newAlertModalVisible}
+        onClose={() => setNewAlertModalVisible(false)}
+        exchanges={availableExchanges}
+        exchangeId={selectedExchange !== 'All' ? selectedExchange : undefined}
+        exchangeName={
+          selectedExchange !== 'All'
+            ? availableExchanges.find(e => e.id === selectedExchange)?.name
+            : undefined
+        }
+      />
     </View>
   );
 }
@@ -637,6 +661,24 @@ const styles = StyleSheet.create({
   zeroToggleText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
+  },
+  filterActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  newAlertButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  newAlertText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
   emptyState: {
     alignItems: 'center',

@@ -3,7 +3,7 @@
  * Permite ao usuário configurar alertas baseados em condições de preço
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,14 @@ import {
   TextInput,
   ScrollView,
   Switch,
-ActivityIndicator } from 'react-native';
+  Image,
+  ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { typography, fontWeights } from '../lib/typography';
 import { useAlerts } from '../contexts/AlertsContext';
+import { getExchangeLogo } from '../lib/exchange-logos';
 import {
   AlertType,
   AlertCondition,
@@ -29,26 +31,56 @@ import {
   getAlertFrequencyLabel,
 } from '../types/alerts';
 
+interface ExchangeOption {
+  id: string;
+  name: string;
+}
+
 interface CreateAlertModalProps {
   visible: boolean;
   onClose: () => void;
-  symbol: string;
+  symbol?: string;
   currentPrice?: number;
   exchangeId?: string;
   exchangeName?: string;
+  /** Lista de exchanges disponíveis (para modo criação sem token pré-selecionado) */
+  exchanges?: ExchangeOption[];
 }
 
 export function CreateAlertModal({
   visible,
   onClose,
-  symbol,
+  symbol: symbolProp,
   currentPrice,
-  exchangeId,
-  exchangeName,
+  exchangeId: exchangeIdProp,
+  exchangeName: exchangeNameProp,
+  exchanges,
 }: CreateAlertModalProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { addAlert } = useAlerts();
+
+  // Modo: se symbol foi passado, mostra info do token; se não, mostra seletor de exchange + input de token
+  const isGenericMode = !symbolProp;
+
+  // Estados locais para exchange/token (modo genérico)
+  const [localSymbol, setLocalSymbol] = useState('');
+  const [localExchangeId, setLocalExchangeId] = useState(exchangeIdProp || '');
+  const [localExchangeName, setLocalExchangeName] = useState(exchangeNameProp || '');
+
+  // Valores derivados
+  const symbol = symbolProp || localSymbol.trim().toUpperCase();
+  const exchangeId = isGenericMode ? localExchangeId : exchangeIdProp;
+  const exchangeName = isGenericMode ? localExchangeName : exchangeNameProp;
+
+  // Sincroniza props quando modal abre
+  useEffect(() => {
+    if (visible) {
+      if (exchangeIdProp) setLocalExchangeId(exchangeIdProp);
+      if (exchangeNameProp) setLocalExchangeName(exchangeNameProp);
+      if (!symbolProp) setLocalSymbol('');
+    }
+  }, [visible, exchangeIdProp, exchangeNameProp, symbolProp]);
 
   // Estados do formulário
   const [alertType, setAlertType] = useState<AlertType>('price');
@@ -69,14 +101,34 @@ export function CreateAlertModal({
     setCustomMessage('');
     setUseCustomMessage(false);
     setErrors([]);
+    setLocalSymbol('');
+    setLocalExchangeId(exchangeIdProp || '');
+    setLocalExchangeName(exchangeNameProp || '');
     onClose();
-  }, [onClose]);
+  }, [onClose, exchangeIdProp, exchangeNameProp]);
+
+  // Seleciona exchange (modo genérico)
+  const handleSelectExchange = useCallback((ex: ExchangeOption) => {
+    setLocalExchangeId(ex.id);
+    setLocalExchangeName(ex.name);
+  }, []);
 
   // Cria o alerta
   const handleCreate = useCallback(async () => {
     try {
       setLoading(true);
       setErrors([]);
+
+      // Validação do modo genérico
+      if (isGenericMode) {
+        const genErrors: string[] = [];
+        if (!localExchangeId) genErrors.push('Selecione uma corretora');
+        if (!localSymbol.trim()) genErrors.push('Digite o símbolo do token');
+        if (genErrors.length > 0) {
+          setErrors(genErrors);
+          return;
+        }
+      }
 
       const numericValue = parseFloat(value);
 
@@ -88,7 +140,7 @@ export function CreateAlertModal({
         alertType,
         condition,
         value: numericValue,
-        basePrice: alertType === 'percentage' ? currentPrice : undefined,  // ✅ Define basePrice para alertas de porcentagem
+        basePrice: alertType === 'percentage' ? currentPrice : undefined,
         frequency,
         message: useCustomMessage ? customMessage : undefined,
       };
@@ -115,13 +167,16 @@ export function CreateAlertModal({
       setLoading(false);
     }
   }, [
+    isGenericMode,
+    localExchangeId,
+    localSymbol,
     symbol,
     exchangeId,
     exchangeName,
     alertType,
     condition,
     value,
-    currentPrice,           // ✅ Adiciona currentPrice nas dependências
+    currentPrice,
     frequency,
     customMessage,
     useCustomMessage,
@@ -171,22 +226,108 @@ export function CreateAlertModal({
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Token Info */}
-            <View style={[styles.tokenInfo, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.tokenSymbol, { color: colors.text }]}>
-                {symbol}
-              </Text>
-              {currentPrice && (
-                <Text style={[styles.tokenPrice, { color: colors.textSecondary }]}>
-                  {t('alerts.currentPrice')} ${currentPrice.toFixed(2)}
+            {/* Modo genérico: Seletor de Exchange + Input de Token */}
+            {isGenericMode ? (
+              <>
+                {/* Exchange Selector */}
+                {exchanges && exchanges.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      📊 Corretora
+                    </Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.exchangeScroll}>
+                      <View style={styles.exchangeChips}>
+                        {exchanges.map((ex) => {
+                          const isSelected = localExchangeId === ex.id;
+                          const logo = getExchangeLogo(ex.id);
+                          return (
+                            <TouchableOpacity
+                              key={ex.id}
+                              style={[
+                                styles.exchangeChip,
+                                {
+                                  borderColor: isSelected ? colors.primary : colors.border,
+                                  backgroundColor: isSelected ? `${colors.primary}15` : colors.surface,
+                                  borderWidth: isSelected ? 2 : 1,
+                                },
+                              ]}
+                              onPress={() => handleSelectExchange(ex)}
+                            >
+                              {logo && (
+                                <Image source={logo} style={styles.exchangeChipLogo} />
+                              )}
+                              <Text
+                                style={[
+                                  styles.exchangeChipText,
+                                  {
+                                    color: isSelected ? colors.primary : colors.textSecondary,
+                                    fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular,
+                                  },
+                                ]}
+                              >
+                                {ex.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </ScrollView>
+                  </View>
+                )}
+
+                {/* Token Input */}
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    🪙 Token
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        color: colors.text,
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    placeholder="Ex: BTC, ETH, SOL..."
+                    placeholderTextColor={colors.textTertiary}
+                    value={localSymbol}
+                    onChangeText={setLocalSymbol}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+                  {localSymbol.trim() !== '' && (
+                    <View style={[styles.tokenPreviewBadge, { backgroundColor: `${colors.primary}15` }]}>
+                      <Text style={[styles.tokenPreviewText, { color: colors.primary }]}>
+                        {localSymbol.trim().toUpperCase()}/USDT
+                      </Text>
+                      {localExchangeName ? (
+                        <Text style={[styles.tokenPreviewExchange, { color: colors.textSecondary }]}>
+                          na {localExchangeName}
+                        </Text>
+                      ) : null}
+                    </View>
+                  )}
+                </View>
+              </>
+            ) : (
+              /* Modo com token pré-selecionado: Token Info */
+              <View style={[styles.tokenInfo, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.tokenSymbol, { color: colors.text }]}>
+                  {symbol}
                 </Text>
-              )}
-              {exchangeName && (
-                <Text style={[styles.tokenExchange, { color: colors.textTertiary }]}>
-                  {exchangeName}
-                </Text>
-              )}
-            </View>
+                {currentPrice && (
+                  <Text style={[styles.tokenPrice, { color: colors.textSecondary }]}>
+                    {t('alerts.currentPrice')} ${currentPrice.toFixed(2)}
+                  </Text>
+                )}
+                {exchangeName && (
+                  <Text style={[styles.tokenExchange, { color: colors.textTertiary }]}>
+                    {exchangeName}
+                  </Text>
+                )}
+              </View>
+            )}
 
             {/* Tipo de Alerta */}
             <View style={styles.section}>
@@ -504,7 +645,7 @@ export function CreateAlertModal({
                 {t('alerts.previewAlert')}
               </Text>
               <Text style={[styles.previewText, { color: colors.text }]}>
-                {getAlertIcon(condition)} {symbol} {formatAlertCondition({
+                {getAlertIcon(condition)} {symbol || '???'} {formatAlertCondition({
                   condition,
                   value: parseFloat(value) || 0,
                   alertType,
@@ -710,5 +851,43 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: typography.bodyLarge,
     fontWeight: fontWeights.semibold,
+  },
+  exchangeScroll: {
+    marginBottom: 4,
+  },
+  exchangeChips: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  exchangeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  exchangeChipLogo: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  exchangeChipText: {
+    fontSize: typography.bodySmall,
+  },
+  tokenPreviewBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  tokenPreviewText: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
+  },
+  tokenPreviewExchange: {
+    fontSize: typography.caption,
   },
 });
