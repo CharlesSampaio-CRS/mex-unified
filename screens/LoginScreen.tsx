@@ -268,30 +268,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     }
   }, [])
   
-  // Mensagens dinâmicas (mesmas do AppNavigator para transição seamless)
-  const loadingMessages = [
-    t('loading.connecting'),
-    t('loading.syncExchanges'),
-    t('loading.loadingPortfolio'),
-    t('loading.almostReady'),
-  ]
-
-  // 🆕 Se está fazendo login (email/senha ou biometria), mostra tela full-screen
-  // idêntica ao AppNavigator loading → transição imperceptível
-  if (isFullLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <AnimatedLogoIcon 
-          size={48} 
-          messages={loadingMessages}
-          textColor={colors.text}
-          fontSize={14}
-        />
-      </View>
-    )
-  }
-
-  // 🆕 Se está processando OAuth, não renderiza nada (evita flash da tela de login)
+  // 🆕 Se está processando OAuth, mostra loading (AppNavigator não intercepta neste caso)
   if (isProcessingOAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
