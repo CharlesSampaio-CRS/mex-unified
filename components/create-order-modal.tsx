@@ -704,7 +704,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
         </View>
       ) : pairsError ? (
         <View style={styles.emptyContainer}>
-          <Text style={{ fontSize: 32 }}>⚠️</Text>
+          <Text style={{ fontSize: typography.displayLarge }}>⚠️</Text>
           <Text style={[styles.emptyText, { color: '#ef4444' }]}>{pairsError}</Text>
           <TouchableOpacity
             style={[styles.retryButton, { borderColor: colors.border }]}
@@ -732,7 +732,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
             }]}>
               <Ionicons name="search-outline" size={16} color={colors.textTertiary} />
               <TextInput
-                style={{ flex: 1, fontSize: 14, color: colors.text, paddingVertical: 2 }}
+                style={{ flex: 1, fontSize: typography.body, color: colors.text, paddingVertical: 2 }}
                 placeholder="Buscar par... (ex: BTC, ETH, SOL)"
                 placeholderTextColor={colors.textTertiary}
                 value={pairSearchFilter}
@@ -744,7 +744,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                   <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
-              <Text style={{ fontSize: 11, color: colors.textTertiary }}>
+              <Text style={{ fontSize: typography.tiny, color: colors.textTertiary }}>
                 {availablePairs.length} pares
               </Text>
             </View>
@@ -912,7 +912,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                 ) : (
                   <Ionicons name="refresh-outline" size={14} color={colors.primary} />
                 )}
-                <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '500' }}>
+                <Text style={{ fontSize: typography.tiny, color: colors.primary, fontWeight: fontWeights.medium }}>
                   Atualizar
                 </Text>
               </TouchableOpacity>
@@ -952,7 +952,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                   }}
                 >
                   <Ionicons name="swap-horizontal-outline" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '500' }}>
+                  <Text style={{ fontSize: typography.tiny, color: colors.primary, fontWeight: fontWeights.medium }}>
                     {amountInQuote ? `Digitar em ${baseCurrency}` : `Digitar em ${quoteCurrency}`}
                   </Text>
                 </TouchableOpacity>
@@ -980,13 +980,13 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
 
             {/* Info: conversão quando amount está em quote */}
             {isAmountInQuote && hasValidAmount && priceNum > 0 && (
-              <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
+              <Text style={{ fontSize: typography.tiny, color: colors.textTertiary, marginTop: 2 }}>
                 ≈ {apiService.formatTokenAmount(baseAmount.toFixed(8))} {baseCurrency}
               </Text>
             )}
             {/* Info: conversão quando amount está em base */}
             {!isAmountInQuote && hasValidAmount && priceNum > 0 && (
-              <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
+              <Text style={{ fontSize: typography.tiny, color: colors.textTertiary, marginTop: 2 }}>
                 ≈ {isBrlQuote ? 'R$ ' : '$ '}{apiService.formatUSD(total, total < 1 ? 6 : 2)} {quoteCurrency}
               </Text>
             )}
@@ -1010,7 +1010,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
 
             {/* Available balance hint */}
             {orderSide && (
-              <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
+              <Text style={{ fontSize: typography.tiny, color: colors.textTertiary, marginTop: 2 }}>
                 {(() => {
                   const avail = getAvailableBalance()
                   if (avail <= 0) return 'Saldo não disponível'
@@ -1249,7 +1249,7 @@ const styles = StyleSheet.create({
   },
   stepBadgeText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
   },
   stepTitle: {

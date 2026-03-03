@@ -301,9 +301,9 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         <View style={styles.loadingContainer}><AnimatedLogoIcon size={48} /></View>
       ) : exchanges.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={{ fontSize: 48, marginBottom: 12 }}>📭</Text>
-          <Text style={{ fontSize: 16, color: colors.text }}>{t('strategy.noExchanges')}</Text>
-          <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>
+          <Text style={{ fontSize: typography.emojiHuge, marginBottom: 12 }}>📭</Text>
+          <Text style={{ fontSize: typography.h4, color: colors.text }}>{t('strategy.noExchanges')}</Text>
+          <Text style={{ fontSize: typography.body, color: colors.textSecondary, textAlign: 'center' }}>
             {t('strategy.connectExchange')}
           </Text>
         </View>
@@ -323,10 +323,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
               }}
               activeOpacity={0.7}
             >
-              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>
+              <Text style={{ fontSize: typography.h4, fontWeight: fontWeights.medium, color: colors.text }}>
                 {capitalizeExchangeName(exchange.name)}
               </Text>
-              <Text style={{ color: "#10b981", fontSize: 12 }}>● {t('strategy.connected')}</Text>
+              <Text style={{ color: "#10b981", fontSize: typography.caption }}>● {t('strategy.connected')}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -356,21 +356,21 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
               backgroundColor: `${colors.primary}08`, flexDirection: 'row', alignItems: 'center', gap: 12,
             }}
           >
-            <Text style={{ fontSize: 32 }}>🪙</Text>
+            <Text style={{ fontSize: typography.displayLarge }}>🪙</Text>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 22, fontWeight: '700', color: colors.primary, letterSpacing: 1 }}>{token}</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{t('strategy.tapToChange')}</Text>
+              <Text style={{ fontSize: typography.h1, fontWeight: fontWeights.bold, color: colors.primary, letterSpacing: 1 }}>{token}</Text>
+              <Text style={{ fontSize: typography.caption, color: colors.textSecondary, marginTop: 2 }}>{t('strategy.tapToChange')}</Text>
             </View>
-            <Text style={{ fontSize: 18, color: colors.textSecondary }}>✏️</Text>
+            <Text style={{ fontSize: typography.icon, color: colors.textSecondary }}>✏️</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View style={{ flex: 1 }}>
           <View style={[styles.searchInputWrapper, { borderColor: colors.border, backgroundColor: colors.background, marginBottom: 6 }]}>
-            <Text style={{ fontSize: 16 }}>🔍</Text>
+            <Text style={{ fontSize: typography.h4 }}>🔍</Text>
             <TextInput
               ref={tokenInputRef}
-              style={{ flex: 1, fontSize: 17, color: colors.text, paddingVertical: 0 }}
+              style={{ flex: 1, fontSize: typography.h3, color: colors.text, paddingVertical: 0 }}
               placeholder={t('strategy.searchToken')}
               placeholderTextColor={colors.textSecondary}
               value={tokenSearchQuery}
@@ -380,11 +380,11 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
             />
             {tokenSearchQuery.length > 0 && (
               <TouchableOpacity onPress={() => { setTokenSearchQuery(""); tokenInputRef.current?.focus() }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 18 }}>✕</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: typography.icon }}>✕</Text>
               </TouchableOpacity>
             )}
           </View>
-          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 6, paddingHorizontal: 4 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: typography.caption, marginBottom: 6, paddingHorizontal: 4 }}>
             {tokenSearchQuery ? `${filteredTokens.length} resultado${filteredTokens.length !== 1 ? 's' : ''}` : `${tokens.length} tokens`}
           </Text>
           <FlatList
@@ -405,18 +405,18 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                   onPress={() => { setToken(sym); setTokenSearchQuery(""); setShowTokenList(false); Keyboard.dismiss() }}
                   activeOpacity={0.5}
                 >
-                  <Text style={{ fontSize: 17, marginRight: 12 }}>🪙</Text>
-                  <Text style={{ flex: 1, fontSize: 17, fontWeight: isSelected ? '600' : '400', color: isSelected ? colors.primary : colors.text }}>
+                  <Text style={{ fontSize: typography.h3, marginRight: 12 }}>🪙</Text>
+                  <Text style={{ flex: 1, fontSize: typography.h3, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? colors.primary : colors.text }}>
                     {sym}
                   </Text>
-                  {isSelected && <Text style={{ color: colors.primary, fontSize: 18, fontWeight: '600' }}>✓</Text>}
+                  {isSelected && <Text style={{ color: colors.primary, fontSize: typography.icon, fontWeight: fontWeights.semibold }}>✓</Text>}
                 </TouchableOpacity>
               )
             }}
             ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: 0.4 }} />}
             ListEmptyComponent={
               <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 15 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: typography.bodyLarge }}>
                   {tokenSearchQuery ? `Nenhum resultado para "${tokenSearchQuery}"` : 'Nenhum token disponivel'}
                 </Text>
               </View>
@@ -474,10 +474,10 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           </Text>
           {ia > 0 && bp > 0 && (
             <View style={{ marginTop: 6, padding: 8, backgroundColor: '#f59e0b10', borderRadius: 6, borderWidth: 1, borderColor: '#f59e0b30' }}>
-              <Text style={{ fontSize: 12, color: '#f59e0b', fontWeight: '600' }}>
+              <Text style={{ fontSize: typography.caption, color: '#f59e0b', fontWeight: fontWeights.semibold }}>
                 🔒 Double-check ativo: ~{(ia / bp).toFixed(4)} moedas
               </Text>
-              <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+              <Text style={{ fontSize: typography.tiny, color: colors.textSecondary, marginTop: 2 }}>
                 Venda só executa se ${ia.toFixed(2)} realmente der lucro no momento do trigger.
               </Text>
             </View>
@@ -495,7 +495,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
             keyboardType="decimal-pad"
           />
           {bp > 0 && triggerPrice > 0 && (
-            <Text style={{ fontSize: 12, color: '#10b981', marginTop: 6, fontWeight: '500' }}>
+            <Text style={{ fontSize: typography.caption, color: '#10b981', marginTop: 6, fontWeight: fontWeights.medium }}>
               Trigger: ${triggerPrice.toFixed(4)} (base + {tp}% + {fee}% fee)
             </Text>
           )}
@@ -512,7 +512,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
             />
           </View>
           {!stopLossEnabled && (
-            <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>
+            <Text style={{ fontSize: typography.caption, color: colors.textSecondary, fontStyle: 'italic' }}>
               Stop loss desativado — a estratégia nunca vende por queda de preço (hold).
             </Text>
           )}
@@ -528,7 +528,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 keyboardType="decimal-pad"
               />
               {bp > 0 && stopLossPrice > 0 && (
-                <Text style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: '500' }}>
+                <Text style={{ fontSize: typography.caption, color: '#ef4444', marginTop: 6, fontWeight: fontWeights.medium }}>
                   Stop: ${stopLossPrice.toFixed(4)} (base - {sl}%)
                 </Text>
               )}
@@ -540,7 +540,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: dcaEnabled ? 12 : 0 }}>
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={[styles.fieldLabel, { color: colors.text, marginBottom: 2 }]}>📉 DCA (Compra na Queda)</Text>
-              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+              <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>
                 Compra mais quando o preço cai, baixando o preço médio
               </Text>
             </View>
@@ -557,7 +557,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           {dcaEnabled && (
             <View style={{ gap: 12 }}>
               <View>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Valor por compra (USD)</Text>
+                <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Valor por compra (USD)</Text>
                 <TextInput
                   style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   placeholder="36.00"
@@ -566,12 +566,12 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                   onChangeText={(v) => setDcaBuyAmountUsd(v.replace(/[^0-9.]/g, ''))}
                   keyboardType="decimal-pad"
                 />
-                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                <Text style={{ fontSize: typography.tiny, color: colors.textSecondary, marginTop: 4 }}>
                   Quanto comprar a cada queda (ex: $36)
                 </Text>
               </View>
               <View>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Queda para acionar (%)</Text>
+                <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Queda para acionar (%)</Text>
                 <TextInput
                   style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   placeholder="5.0"
@@ -582,7 +582,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                 />
               </View>
               <View>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Máx. de compras DCA</Text>
+                <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Máx. de compras DCA</Text>
                 <TextInput
                   style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   placeholder="3"
@@ -591,13 +591,13 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                   onChangeText={(v) => setDcaMaxBuys(v.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
                 />
-                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                <Text style={{ fontSize: typography.tiny, color: colors.textSecondary, marginTop: 4 }}>
                   Máx investido: ${((parseFloat(dcaBuyAmountUsd) || 0) * (parseInt(dcaMaxBuys) || 3) + ia).toFixed(2)}
                 </Text>
               </View>
               {bp > 0 && ia > 0 && (parseFloat(dcaBuyAmountUsd) || 0) > 0 && (
                 <View style={{ padding: 10, backgroundColor: '#3b82f610', borderRadius: 8, borderWidth: 1, borderColor: '#3b82f630' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#3b82f6', marginBottom: 4 }}>📊 Simulação DCA</Text>
+                  <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: '#3b82f6', marginBottom: 4 }}>📊 Simulação DCA</Text>
                   {Array.from({ length: parseInt(dcaMaxBuys) || 3 }).map((_, i) => {
                     const dcaAmt = parseFloat(dcaBuyAmountUsd) || 0
                     const dcaTrig = parseFloat(dcaTriggerPercent) || 5
@@ -606,7 +606,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                     const totalQty = ia / bp + Array.from({ length: i + 1 }).reduce<number>((sum, _, j) => sum + dcaAmt / (bp * Math.pow(1 - dcaTrig / 100, j + 1)), 0)
                     const avgPrice = totalInvested / (totalQty as number)
                     return (
-                      <Text key={i} style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                      <Text key={i} style={{ fontSize: typography.tiny, color: colors.textSecondary, marginTop: 2 }}>
                         DCA #{i + 1}: a ${dcaPrice.toFixed(2)} → médio ${avgPrice.toFixed(2)} (total: ${totalInvested.toFixed(0)})
                       </Text>
                     )
@@ -641,11 +641,11 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
           </View>
           {gradualSell && (
             <View style={{ gap: 12 }}>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+              <Text style={{ fontSize: typography.caption, color: colors.textSecondary }}>
                 4 lotes de 25% cada, com timer entre vendas
               </Text>
               <View>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Gradual Take (%)</Text>
+                <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Gradual Take (%)</Text>
                 <TextInput
                   style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   placeholder="2.0"
@@ -654,12 +654,12 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                   onChangeText={(v) => setGradualTakePercent(v.replace(/[^0-9.]/g, ''))}
                   keyboardType="decimal-pad"
                 />
-                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                <Text style={{ fontSize: typography.tiny, color: colors.textSecondary, marginTop: 4 }}>
                   Step de preco entre cada lote gradual
                 </Text>
               </View>
               <View>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Timer entre lotes (min)</Text>
+                <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Timer entre lotes (min)</Text>
                 <TextInput
                   style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   placeholder="15"
@@ -689,34 +689,34 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         </View>
 
         <View style={[styles.summaryCard, { backgroundColor: `${colors.primary}10`, borderColor: colors.primary + '30' }]}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: 8 }}>📋 Resumo</Text>
+          <Text style={{ fontSize: typography.bodySmall, fontWeight: fontWeights.semibold, color: colors.primary, marginBottom: 8 }}>📋 Resumo</Text>
           <View style={{ gap: 4 }}>
-            <Text style={{ fontSize: 12, color: colors.text }}>
+            <Text style={{ fontSize: typography.caption, color: colors.text }}>
               {token.includes('/') ? token.split('/')[0] : token} — {getSelectedExchangeName()}
             </Text>
-            <Text style={{ fontSize: 12, color: colors.text }}>
+            <Text style={{ fontSize: typography.caption, color: colors.text }}>
               Preço de Compra: {bp > 0 ? `$${bp.toFixed(4)}` : '🔄 Auto (buscar da exchange)'}
             </Text>
             {ia > 0 && (
-              <Text style={{ fontSize: 12, color: '#f59e0b' }}>
+              <Text style={{ fontSize: typography.caption, color: '#f59e0b' }}>
                 💵 Investido: ${ia.toFixed(2)} {bp > 0 ? `(~${(ia / bp).toFixed(4)} moedas)` : ''} — Double-check ativo
               </Text>
             )}
-            <Text style={{ fontSize: 12, color: '#10b981' }}>
+            <Text style={{ fontSize: typography.caption, color: '#10b981' }}>
               Trigger (TP): {triggerPrice > 0 ? `$${triggerPrice.toFixed(4)}` : '—'} (+{tp}% + {fee}% fee)
             </Text>
-            <Text style={{ fontSize: 12, color: '#ef4444' }}>
+            <Text style={{ fontSize: typography.caption, color: '#ef4444' }}>
               Stop Loss: {stopLossEnabled ? (stopLossPrice > 0 ? `$${stopLossPrice.toFixed(4)} (-${sl}%)` : `(-${sl}%)`) : '🚫 Desativado'}
             </Text>
             {dcaEnabled && (
-              <Text style={{ fontSize: 12, color: '#3b82f6' }}>
+              <Text style={{ fontSize: typography.caption, color: '#3b82f6' }}>
                 📉 DCA: ${dcaBuyAmountUsd || '0'}/compra, queda {dcaTriggerPercent}%, máx {dcaMaxBuys}x
               </Text>
             )}
-            <Text style={{ fontSize: 12, color: colors.text }}>
+            <Text style={{ fontSize: typography.caption, color: colors.text }}>
               Gradual: {gradualSell ? `4 lotes, timer ${timerGradualMin}min, step ${gradualTakePercent}%` : 'OFF'}
             </Text>
-            <Text style={{ fontSize: 12, color: colors.text }}>
+            <Text style={{ fontSize: typography.caption, color: colors.text }}>
               Expiracao: {timeExecutionMin}min ({((parseInt(timeExecutionMin) || 120) / 60).toFixed(1)}h)
             </Text>
           </View>
@@ -818,14 +818,14 @@ const styles = StyleSheet.create({
   searchInputWrapper: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: 14, height: 50, paddingHorizontal: 14, gap: 10 },
   fieldGroup: { marginBottom: 20 },
   fieldCard: { marginBottom: 20, borderWidth: 1, borderRadius: 14, padding: 16 },
-  fieldLabel: { fontSize: 15, fontWeight: '600', marginBottom: 8 },
-  fieldInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18, fontWeight: '600' },
-  fieldHint: { fontSize: 12, marginTop: 6, fontStyle: 'italic' },
+  fieldLabel: { fontSize: typography.bodyLarge, fontWeight: fontWeights.semibold, marginBottom: 8 },
+  fieldInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: typography.icon, fontWeight: fontWeights.semibold },
+  fieldHint: { fontSize: typography.caption, marginTop: 6, fontStyle: 'italic' },
   summaryCard: { padding: 14, borderRadius: 12, borderWidth: 0.5, marginTop: 8 },
   footer: { flexDirection: "row", gap: 12, padding: 20, borderTopWidth: 1 },
   button: { flex: 1, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", minHeight: 48 },
   buttonSecondary: { borderWidth: 1 },
   buttonPrimary: {},
-  buttonText: { fontSize: 14, fontWeight: "400" },
-  buttonTextPrimary: { color: "#1a1a1a", fontSize: 14, fontWeight: "500" },
+  buttonText: { fontSize: typography.body, fontWeight: fontWeights.regular },
+  buttonTextPrimary: { color: "#1a1a1a", fontSize: typography.body, fontWeight: fontWeights.medium },
 })

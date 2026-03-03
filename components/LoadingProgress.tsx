@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { typography, fontWeights } from '@/lib/typography'
 import { AnimatedLogoIcon } from './AnimatedLogoIcon'
 
 interface LoadingProgressProps {
@@ -263,8 +264,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   stepText: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
     marginBottom: 16,
     letterSpacing: 0.3,
   },

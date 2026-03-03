@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useBalance } from "@/contexts/BalanceContext"
 import { usePrivacy } from "@/contexts/PrivacyContext"
 import { capitalizeExchangeName, getExchangeName, getExchangeId } from "@/lib/exchange-helpers"
+import { typography, fontWeights } from "@/lib/typography"
 import { apiService } from "@/services/api"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
@@ -331,13 +332,13 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                     <View style={styles.userTotalContainer}>
                       <View style={styles.userTotalRow}>
                         <Text style={[styles.label, { color: colors.textSecondary }]}>{t('tokenDetails.totalQuantity')}</Text>
-                        <Text style={[styles.value, { color: colors.text, fontWeight: '600' }]}>
+                        <Text style={[styles.value, { color: colors.text, fontWeight: fontWeights.semibold }]}>
                           {hideValue(apiService.formatTokenAmount(userTotalAmount.toString()))} {symbol?.toUpperCase()}
                         </Text>
                       </View>
                       <View style={styles.userTotalRow}>
                         <Text style={[styles.label, { color: colors.textSecondary }]}>{t('tokenDetails.totalValueUsd')}</Text>
-                        <Text style={[styles.value, { color: colors.primary, fontWeight: '700', fontSize: 16 }]}>
+                        <Text style={[styles.value, { color: colors.primary, fontWeight: fontWeights.bold, fontSize: typography.h4 }]}>
                           {hideValue(`$${apiService.formatUSD(userTotalValue)}`)}
                         </Text>
                       </View>
@@ -422,7 +423,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                         <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>
                           Spread
                         </Text>
-                        <Text style={[styles.value, { color: colors.text, fontSize: 14 }]}>
+                        <Text style={[styles.value, { color: colors.text, fontSize: typography.body }]}>
                           {calculateSpread(tokenData.price.bid, tokenData.price.ask)}
                         </Text>
                       </View>
@@ -502,7 +503,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
                               {hideValue(apiService.formatTokenAmount(ex.amount.toString()))} {symbol?.toUpperCase()}
                             </Text>
                             {ex.used > 0 && (
-                              <Text style={[styles.exchangeItemAmount, { color: colors.textSecondary, fontSize: 11, marginTop: 2 }]}>
+                              <Text style={[styles.exchangeItemAmount, { color: colors.textSecondary, fontSize: typography.tiny, marginTop: 2 }]}>
                                 {hideValue(apiService.formatTokenAmount(ex.free.toString()))} livre · {hideValue(apiService.formatTokenAmount(ex.used.toString()))} em uso
                               </Text>
                             )}
@@ -724,27 +725,27 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: typography.display,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.5,
   },
   modalSubtitle: {
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
     opacity: 0.7,
     marginTop: 2,
   },
   modalPrice: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: typography.h1,
+    fontWeight: fontWeights.semibold,
     marginTop: 6,
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
-    fontSize: 26,
-    fontWeight: '300',
+    fontSize: typography.display,
+    fontWeight: fontWeights.light,
   },
   loadingContainer: {
     paddingVertical: 40,
@@ -752,16 +753,16 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    fontWeight: '300',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.light,
   },
   errorContainer: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   errorText: {
-    fontSize: 18,
-    fontWeight: '400',
+    fontSize: typography.icon,
+    fontWeight: fontWeights.regular,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -772,8 +773,8 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: '#1a1a1a',
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: typography.icon,
+    fontWeight: fontWeights.medium,
   },
   content: {
     flex: 1,
@@ -784,25 +785,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
     marginBottom: 12,
     letterSpacing: 0.3,
   },
   subsectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
     marginTop: 16,
     marginBottom: 8,
   },
   priceValue: {
-    fontSize: 26,
-    fontWeight: '500',
+    fontSize: typography.display,
+    fontWeight: fontWeights.medium,
     marginBottom: 4,
   },
   pairText: {
-    fontSize: 16,
-    fontWeight: '300',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.light,
   },
   userTotalContainer: {
     gap: 10,
@@ -814,19 +815,19 @@ const styles = StyleSheet.create({
     minHeight: 28,
   },
   userTotalLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.bodyLarge,
+    fontWeight: fontWeights.medium,
   },
   userTotalValue: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
   exchangesListContainer: {
     gap: 8,
   },
   exchangesListTitle: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
     marginBottom: 4,
   },
   exchangeItem: {
@@ -840,17 +841,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exchangeItemName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
     marginBottom: 4,
   },
   exchangeItemAmount: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.regular,
   },
   exchangeItemValue: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
     marginLeft: 8,
   },
   changeContainer: {
@@ -866,15 +867,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   changeLabel: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
     marginBottom: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   changeValue: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
   row: {
     flexDirection: 'row',
@@ -885,13 +886,13 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
     marginBottom: 4,
   },
   value: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.medium,
   },
   spreadRow: {
     flexDirection: 'row',
@@ -911,17 +912,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   infoLabel: {
-    fontSize: 13,
-    fontWeight: '300',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.light,
     marginBottom: 4,
   },
   infoValue: {
-    fontSize: 16,
-    fontWeight: '400',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.regular,
   },
   lastUpdate: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.regular,
     textAlign: 'center',
     opacity: 0.6,
   },

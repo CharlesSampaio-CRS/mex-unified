@@ -426,20 +426,20 @@ const styles = StyleSheet.create({
     // Estilo aplicado dinamicamente
   },
   periodButtonText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
   chartWrapper: {
     overflow: 'hidden',         // Garante que a linha não saia do wrapper
     borderRadius: 8,
   },
   emptyText: {
-    fontSize: 12,  // Texto vazio (reduzido de 14px)
+    fontSize: typography.caption,
     fontWeight: fontWeights.regular,
     opacity: 0.7,
   },
   chartLabel: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -465,13 +465,13 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   tooltipValue: {
-    fontSize: 12,  // Valor tooltip (reduzido de 14px)
+    fontSize: typography.caption,
     fontWeight: fontWeights.semibold,
     letterSpacing: -0.3,
     textAlign: 'center',
   },
   tooltipDate: {
-    fontSize: 11,  // Data tooltip (reduzido de 12px)
+    fontSize: typography.tiny,
     fontWeight: fontWeights.regular,
     opacity: 0.7,
   },

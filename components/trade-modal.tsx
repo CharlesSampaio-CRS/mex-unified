@@ -627,11 +627,11 @@ export function TradeModal({
               </View>
             ) : pairsError ? (
               <View style={[styles.section, { alignItems: 'center', paddingVertical: 16 }]}>
-                <Text style={{ fontSize: 28 }}>⚠️</Text>
+                <Text style={{ fontSize: typography.emoji }}>⚠️</Text>
                 <Text style={[styles.stepLabel, { color: '#ef4444', marginTop: 8, textAlign: 'center' }]}>
                   {pairsError}
                 </Text>
-                <Text style={[{ color: colors.textSecondary, fontSize: 12, marginTop: 4, textAlign: 'center' }]}>
+                <Text style={[{ color: colors.textSecondary, fontSize: typography.caption, marginTop: 4, textAlign: 'center' }]}>
                   Este token pode não estar disponível para trading nesta exchange
                 </Text>
               </View>
@@ -641,7 +641,7 @@ export function TradeModal({
                   <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
                     Par de trading {pairPriceLoading ? '⏳' : ''}
                   </Text>
-                  <Text style={[{ fontSize: 11, color: colors.textTertiary }]}>
+                  <Text style={[{ fontSize: typography.tiny, color: colors.textTertiary }]}>
                     {availablePairs.length} pares
                   </Text>
                 </View>
@@ -660,9 +660,9 @@ export function TradeModal({
                     marginBottom: 2,
                     gap: 6,
                   }]}>
-                    <Text style={{ color: colors.textTertiary, fontSize: 14 }}>🔍</Text>
+                    <Text style={{ color: colors.textTertiary, fontSize: typography.body }}>🔍</Text>
                     <TextInput
-                      style={{ flex: 1, fontSize: 13, color: colors.text, paddingVertical: 2 }}
+                      style={{ flex: 1, fontSize: typography.bodySmall, color: colors.text, paddingVertical: 2 }}
                       placeholder="Buscar par... (ex: BTC, ETH)"
                       placeholderTextColor={colors.textTertiary}
                       value={pairSearch}
@@ -671,7 +671,7 @@ export function TradeModal({
                     />
                     {pairSearch.length > 0 && (
                       <TouchableOpacity onPress={() => setPairSearch('')}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>✕</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: typography.body }}>✕</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -709,8 +709,8 @@ export function TradeModal({
                         }}
                       >
                         <Text style={{
-                          fontSize: 13,
-                          fontWeight: selectedPair === pair.symbol ? '700' : '500',
+                          fontSize: typography.bodySmall,
+                          fontWeight: selectedPair === pair.symbol ? fontWeights.bold : fontWeights.medium,
                           color: selectedPair === pair.symbol ? colors.primary : colors.textSecondary,
                         }}>
                           {pair.symbol}
@@ -723,7 +723,7 @@ export function TradeModal({
             ) : availablePairs.length === 1 ? (
               <View style={[styles.section, { paddingVertical: 4 }]}>
                 <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
-                  Par: <Text style={{ color: colors.text, fontWeight: '700' }}>{tradingPair}</Text>
+                  Par: <Text style={{ color: colors.text, fontWeight: fontWeights.bold }}>{tradingPair}</Text>
                   {pairPriceLoading ? ' ⏳' : ''}
                 </Text>
               </View>
@@ -1066,7 +1066,7 @@ export function TradeModal({
             <View style={[styles.confirmContainer, { backgroundColor: colors.card }]}>
               {/* Header */}
               <View style={[styles.confirmHeader, { borderBottomColor: colors.border }]}>
-                <Text style={{ fontSize: 28 }}>{isBuy ? '🟢' : '🔴'}</Text>
+                <Text style={{ fontSize: typography.emoji }}>{isBuy ? '🟢' : '🔴'}</Text>
                 <Text style={[styles.confirmTitle, { color: colors.text }]}>
                   {t('trade.confirmOrder')}
                 </Text>
@@ -1206,7 +1206,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   closeButtonText: {
-    fontSize: 22,
+    fontSize: typography.h1,
     fontWeight: fontWeights.light,
   },
   content: {
@@ -1262,8 +1262,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   priceDifferenceText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0.3,
   },
   balanceText: {

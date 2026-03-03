@@ -5,6 +5,7 @@ import { useBalance } from '../contexts/BalanceContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 import { capitalizeExchangeName } from '../lib/exchange-helpers';
+import { typography, fontWeights } from '../lib/typography';
 
 interface TokenWithChange {
   symbol: string;
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   emptyText: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     fontStyle: 'italic',
   },
   header: {
@@ -409,8 +410,8 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
   },
   tokensList: {
     gap: 3,
@@ -435,20 +436,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tokenSymbol: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
     marginBottom: 1,
   },
   tokenExchange: {
-    fontSize: 10,
+    fontSize: typography.micro,
   },
   tokenRight: {
     alignItems: 'flex-end',
     gap: 2,
   },
   tokenPrice: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.medium,
     marginBottom: 1,
   },
   changeContainer: {
@@ -457,8 +458,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   changeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
   // Botão Ver mais
   viewMoreButton: {
@@ -472,8 +473,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   viewMoreText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
   },
   // Modal
   modalOverlay: {
@@ -510,15 +511,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: typography.bodyLarge,
+    fontWeight: fontWeights.bold,
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
-    fontSize: 20,
-    fontWeight: '300',
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.light,
   },
   modalContent: {
     flexGrow: 1,
@@ -535,7 +536,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   footerText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.medium,
   },
 });
