@@ -407,7 +407,7 @@ export function ProfileScreen({ navigation }: any) {
               {/* Content */}
               <View style={styles.deleteAccountModalContent}>
                 <Text style={[styles.deleteAccountWarningText, { color: colors.text }]}>
-                  Esta ação é <Text style={{ fontWeight: '700', color: colors.danger }}>irreversível</Text> e resultará em:
+                  Esta ação é <Text style={{ fontWeight: fontWeights.bold, color: colors.danger }}>irreversível</Text> e resultará em:
                 </Text>
 
                 <View style={styles.deleteAccountWarningList}>

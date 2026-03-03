@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '700' as const,
+    fontSize: typography.icon,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.5,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 0.5 },

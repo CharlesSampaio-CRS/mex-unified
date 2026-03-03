@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useEffect } from 'react'
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
 import { useBalance } from '../contexts/BalanceContext'
 import { useLanguage } from '../contexts/LanguageContext'
+import { typography, fontWeights } from '@/lib/typography'
 
 interface PnLCardProps {
   userId: string
@@ -203,13 +204,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: typography.h3,
+    fontWeight: fontWeights.bold,
     color: '#1F2937',
     marginBottom: 3,
   },
   subtitle: {
-    fontSize: 10,
+    fontSize: typography.micro,
     color: '#6B7280',
   },
   currentBalance: {
@@ -220,13 +221,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   currentLabel: {
-    fontSize: 12,
+    fontSize: typography.caption,
     color: '#6B7280',
     marginBottom: 6,
   },
   currentValue: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: typography.display,
+    fontWeight: fontWeights.bold,
     color: '#1F2937',
   },
   liveIndicator: {
@@ -237,8 +238,8 @@ const styles = StyleSheet.create({
   },
   liveText: {
     color: '#10b981',
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: typography.badge,
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0.4,
   },
   refreshingIndicator: {
@@ -248,8 +249,8 @@ const styles = StyleSheet.create({
   },
   refreshingText: {
     color: '#10b981',
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: typography.badge,
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0.4,
     marginLeft: 3,
   },
@@ -268,23 +269,23 @@ const styles = StyleSheet.create({
     borderColor: '#EF4444',
   },
   pnlPeriod: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
     color: '#6B7280',
     marginBottom: 6,
   },
   pnlChange: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.bold,
     marginBottom: 3,
   },
   pnlPercent: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
     marginBottom: 6,
   },
   previousValue: {
-    fontSize: 10,
+    fontSize: typography.micro,
     color: '#6B7280',
     marginTop: 3,
   },
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    fontSize: 12,
+    fontSize: typography.caption,
     color: '#6B7280',
   },
   errorContainer: {
@@ -302,11 +303,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorIcon: {
-    fontSize: 40,
+    fontSize: typography.emojiLarge,
     marginBottom: 10,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: typography.caption,
     color: '#6B7280',
     textAlign: 'center',
   },

@@ -14,6 +14,7 @@ import { useAlerts } from "@/contexts/AlertsContext"
 import { useOrders } from "@/contexts/OrdersContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { apiService } from "@/services/api"
+import { typography, fontWeights } from "@/lib/typography"
 import { CreateAlertModal } from "./create-price-alert-modal"
 import { TokenDetailsModal } from "./token-details-modal"
 import { TradeModal } from "./trade-modal"
@@ -451,13 +452,13 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.icon,
+    fontWeight: fontWeights.semibold,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: typography.body,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -467,8 +468,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   variationText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
   },
   exchangeBadge: {
     paddingHorizontal: 8,
@@ -478,8 +479,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   exchangeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
   },
   noBalanceTag: {
@@ -491,7 +492,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   noBalanceText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.medium,
   },
 })
