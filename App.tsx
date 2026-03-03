@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
@@ -271,15 +272,29 @@ function MainTabs() {
 // App Navigator - decide entre Auth ou Main baseado no login
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth()
-  const { loading: isLoadingData, data: balanceData } = useBalance()
+  const { data: balanceData } = useBalance()
   const { colors, isDark } = useTheme()
+  const { t } = useLanguage()
+
+  // Mensagens dinâmicas que rotacionam durante o loading pós-login
+  const loadingMessages = useMemo(() => [
+    t('loading.connecting'),
+    t('loading.syncExchanges'),
+    t('loading.loadingPortfolio'),
+    t('loading.almostReady'),
+  ], [t])
 
   // Init do app (verificando token salvo, restaurando sessão)
-  // OU autenticado mas dados iniciais ainda carregando (pós-login)
-  if (isLoading || (isAuthenticated && isLoadingData && !balanceData)) {
+  // OU autenticado mas ainda sem dados (aguarda primeiro fetchBalances completar)
+  if (isLoading || (isAuthenticated && !balanceData)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <AnimatedLogoIcon size={48} />
+        <AnimatedLogoIcon 
+          size={48} 
+          messages={isAuthenticated ? loadingMessages : undefined}
+          textColor={colors.text}
+          fontSize={14}
+        />
       </View>
     )
   }
