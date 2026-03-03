@@ -314,10 +314,10 @@ export const ExchangesPieChart = memo(function ExchangesPieChart({ embedded }: {
                 </Text>
                 {selectedData.hasError ? (
                   <>
-                    <Text style={[styles.centerValue, { color: '#EF4444', fontSize: 16 }]}>
+                    <Text style={[styles.centerValue, { color: '#EF4444', fontSize: typography.h4 }]}>
                       {t('chart.error')}
                     </Text>
-                    <Text style={[styles.centerPercentage, { color: colors.textSecondary, fontSize: 10, textAlign: 'center' }]} numberOfLines={2}>
+                    <Text style={[styles.centerPercentage, { color: colors.textSecondary, fontSize: typography.micro, textAlign: 'center' }]} numberOfLines={2}>
                       {t('chart.fetchError')}
                     </Text>
                   </>
@@ -370,7 +370,7 @@ export const ExchangesPieChart = memo(function ExchangesPieChart({ embedded }: {
                     </Text>
                     {/* ⚠️ Indicador de erro */}
                     {item.hasError && (
-                      <Text style={{ fontSize: 10, opacity: opacity * 0.8 }}>⚠️</Text>
+                      <Text style={{ fontSize: typography.micro, opacity: opacity * 0.8 }}>⚠️</Text>
                     )}
                   </View>
                   <Text style={[styles.legendPercentage, { color: colors.textSecondary, opacity }]} numberOfLines={1}>
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.regular,
     letterSpacing: 0.5,
     opacity: 0.5,
@@ -437,19 +437,19 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   centerLabel: {
-    fontSize: 12, // Reduzido
+    fontSize: typography.caption, // Reduzido
     fontWeight: fontWeights.regular, // light→regular
     letterSpacing: -1,
     textAlign: 'center',
   },
   centerValue: {
-    fontSize: 10, // Reduzido
+    fontSize: typography.micro, // Reduzido
     fontWeight: fontWeights.regular,
     marginTop: 6, // 4→6
     textAlign: 'center',
   },
   centerPercentage: {
-    fontSize: 8, // Reduzido
+    fontSize: typography.pico, // Reduzido
     fontWeight: fontWeights.regular,
     marginTop: 4, // 2→4
     textAlign: 'center',
@@ -494,14 +494,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   legendName: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
   },
   legendPercentage: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     minWidth: 36,
     maxWidth: 56,

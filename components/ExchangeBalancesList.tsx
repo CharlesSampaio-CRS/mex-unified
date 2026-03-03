@@ -7,7 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 import { getExchangeLogo } from '@/lib/exchange-logos'
 import { getDepositConfig } from '@/lib/exchange-deposit-links'
-import { fontWeights } from '@/lib/typography'
+import { typography, fontWeights } from '@/lib/typography'
 
 // Habilita LayoutAnimation no Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -227,12 +227,12 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     flex: 1,
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     opacity: 0.4,
   },
   chevron: {
-    fontSize: 16,
+    fontSize: typography.h4,
     opacity: 0.5,
   },
   // Table layout
@@ -282,17 +282,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconLetter: {
-    fontSize: 8,
+    fontSize: typography.pico,
     fontWeight: fontWeights.semibold,
   },
   name: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     opacity: 0.45,
     flexShrink: 1,
   },
   errorIcon: {
-    fontSize: 10,
+    fontSize: typography.micro,
     opacity: 0.8,
   },
   errorRow: {
@@ -305,18 +305,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   errorText: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.regular,
     color: '#ef4444',
     lineHeight: 13,
   },
   valueUsd: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.light,
     opacity: 0.65,
   },
   valueBrl: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.light,
     opacity: 0.35,
   },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   depositText: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.bold,
   },
 })

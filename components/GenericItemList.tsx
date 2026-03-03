@@ -170,7 +170,7 @@ export function GenericItemList<T extends GenericItem>({
                           <Text style={[
                             styles.detailValue,
                             { color: colors.text },
-                            detail.bold && { fontWeight: '600' }
+                            detail.bold && { fontWeight: fontWeights.semibold }
                           ]}>
                             {detail.value}
                           </Text>

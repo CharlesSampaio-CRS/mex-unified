@@ -24,6 +24,7 @@ import {
   getAlertFrequencyLabel,
 } from '../types/alerts';
 import { CreateAlertModal } from './create-price-alert-modal';
+import { typography, fontWeights } from '@/lib/typography';
 import { GenericItemList } from './GenericItemList';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -403,8 +404,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   monitoringText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
   },
   emptyState: {
     alignItems: 'center',
@@ -412,13 +413,13 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.icon,
+    fontWeight: fontWeights.semibold,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: typography.body,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -428,8 +429,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyStateButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.bodyLarge,
+    fontWeight: fontWeights.semibold,
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -437,18 +438,18 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
   },
   alertIcon: {
-    fontSize: 20,
+    fontSize: typography.displaySmall,
   },
   alertSubtitle: {
     gap: 8,
   },
   conditionText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.body,
+    fontWeight: fontWeights.medium,
   },
   alertMeta: {
     flexDirection: 'row',
@@ -461,7 +462,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: typography.caption,
   },
   customMessage: {
     flexDirection: 'row',
@@ -472,7 +473,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   customMessageText: {
-    fontSize: 12,
+    fontSize: typography.caption,
     flex: 1,
   },
 });
