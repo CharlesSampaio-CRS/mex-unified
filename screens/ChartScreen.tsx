@@ -1,9 +1,8 @@
-import { View, Text, StyleSheet } from "react-native"
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from "react-native"
 import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
-import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView"
 
 export const ChartScreen = memo(function ChartScreen({ navigation }: any) {
   const { colors } = useTheme()
@@ -20,9 +19,8 @@ export const ChartScreen = memo(function ChartScreen({ navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <CustomPullToRefreshScrollView
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         style={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -40,7 +38,7 @@ export const ChartScreen = memo(function ChartScreen({ navigation }: any) {
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Pattern recognition</Text>
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Custom indicators</Text>
         </View>
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
     </View>
   )
 })

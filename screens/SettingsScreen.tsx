@@ -2,6 +2,7 @@ import {
   Text, 
   StyleSheet, 
   ScrollView, 
+  RefreshControl,
   View, 
   TouchableOpacity, 
   Alert, 
@@ -25,7 +26,6 @@ import { TabBar } from "../components/TabBar"
 import { LogoIcon } from "../components/LogoIcon"
 import { typography, fontWeights } from "../lib/typography"
 import { commonStyles, spacing, borderRadius, shadows, borders, sizes } from "@/lib/layout"
-import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView"
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg"
 
 export function SettingsScreen({ navigation, route }: any) {
@@ -223,9 +223,8 @@ export function SettingsScreen({ navigation, route }: any) {
         onTabChange={(index) => setActiveTab(index === 0 ? "profile" : "system")}
       />
 
-      <CustomPullToRefreshScrollView 
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -783,7 +782,7 @@ export function SettingsScreen({ navigation, route }: any) {
         <View style={{ height: 40 }} />
           </>
         )}
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
 
       {/* Modais */}
       <NotificationsModal 

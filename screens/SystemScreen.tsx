@@ -2,6 +2,7 @@ import {
   Text, 
   StyleSheet, 
   ScrollView, 
+  RefreshControl,
   View, 
   TouchableOpacity, 
   Alert, 
@@ -21,7 +22,6 @@ import { NotificationsModal } from "../components/NotificationsModal"
 import { LogoIcon } from "../components/LogoIcon"
 import { typography, fontWeights } from "../lib/typography"
 import { commonStyles, spacing, borderRadius, shadows, borders, sizes } from "@/lib/layout"
-import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView"
 import Svg, { Path, Circle } from "react-native-svg"
 
 export function SystemScreen({ navigation }: any) {
@@ -137,9 +137,8 @@ export function SystemScreen({ navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <CustomPullToRefreshScrollView 
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -401,7 +400,7 @@ export function SystemScreen({ navigation }: any) {
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
 
       {/* Modais */}
       <NotificationsModal 
