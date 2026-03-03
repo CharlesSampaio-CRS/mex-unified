@@ -11,7 +11,6 @@ import { currencyService } from "@/services/currencyService"
 import { SkeletonPortfolioOverview } from "./SkeletonLoaders"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { PortfolioChart } from "./PortfolioChart"
-import { DistributionCharts } from "./DistributionCharts"
 import { ExchangeBalancesList } from "./ExchangeBalancesList"
 import { GradientCard } from "./GradientCard"
 import { typography, fontWeights } from "@/lib/typography"
@@ -383,12 +382,6 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
           onPeriodChange={handlePeriodChange}
           currentPeriod={evolutionPeriod}
         />
-
-        {/* Espaçamento entre os gráficos */}
-        <View style={{ marginTop: 16 }} />
-
-        {/* Distribuição com abas: Exchanges / Tokens */}
-        <DistributionCharts />
       </LinearGradient>
   )
 })
