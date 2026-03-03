@@ -18,6 +18,8 @@ import { getExchangeBalances, getExchangeId, getExchangeName, capitalizeExchange
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
+import { AnimatedLogoIcon } from '../components/AnimatedLogoIcon';
+import { CustomRefreshIndicator } from '../components/CustomRefreshIndicator';
 
 export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -310,6 +312,9 @@ export function AssetsScreen({ navigation }: any) {
             tintColor={colors.primary}
             colors={[colors.primary]}
             progressBackgroundColor={colors.surface}
+            // Custom indicator
+            // @ts-ignore
+            customIndicator={<CustomRefreshIndicator />}
           />
         }
       >
