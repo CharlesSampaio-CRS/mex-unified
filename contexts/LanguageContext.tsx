@@ -802,6 +802,12 @@ const translations = {
     'genericList.noTokenInExchange': 'Nenhum token nesta exchange',
     'genericList.item': 'item',
     'genericList.items': 'itens',
+
+    // Loading Messages (tela de loading pós-login)
+    'loading.connecting': 'Conectando...',
+    'loading.syncExchanges': 'Sincronizando exchanges...',
+    'loading.loadingPortfolio': 'Carregando portfólio...',
+    'loading.almostReady': 'Quase pronto...',
   },
   'en-US': {
     // Navigation
@@ -1592,6 +1598,12 @@ const translations = {
     'genericList.noTokenInExchange': 'No tokens in this exchange',
     'genericList.item': 'item',
     'genericList.items': 'items',
+
+    // Loading Messages (post-login loading screen)
+    'loading.connecting': 'Connecting...',
+    'loading.syncExchanges': 'Syncing exchanges...',
+    'loading.loadingPortfolio': 'Loading portfolio...',
+    'loading.almostReady': 'Almost ready...',
   }
 }
 
