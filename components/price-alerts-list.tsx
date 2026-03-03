@@ -57,10 +57,11 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
   // Refresh
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refreshAlerts();
-    // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-    await new Promise(resolve => setTimeout(resolve, 300));
-    setRefreshing(false);
+    try {
+      await refreshAlerts();
+    } finally {
+      setRefreshing(false);
+    }
   }, [refreshAlerts]);
 
   // Toggle alerta

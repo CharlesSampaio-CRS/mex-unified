@@ -34,7 +34,6 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   // Hook para snapshots e PNL do MongoDB
   const { pnl, loading: pnlLoading, refresh: refreshPnl, saveSnapshot } = useBackendSnapshots(totalUSD)
   
-  const [isUpdating, setIsUpdating] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   // const [searchModalVisible, setSearchModalVisible] = useState(false) // Busca removida - agora está dentro da lista
   const [openOrdersModalVisible, setOpenOrdersModalVisible] = useState(false)
@@ -84,17 +83,11 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     setOrderDetailsModalVisible(true)
   }, [])
 
-  // Refresh completo: apenas balances
+  // Refresh completo: balances + PnL
   const handleRefresh = useCallback(async () => {
     console.log('🔄 [HomeScreen] Atualizando balances...')
-    setIsUpdating(true)
-    try {
-      await refreshBalance()
-      console.log('✅ [HomeScreen] Balances atualizados')
-    } finally {
-      // Mantém isUpdating true até que os dados sejam realmente carregados
-      setTimeout(() => setIsUpdating(false), 300)
-    }
+    await refreshBalance()
+    console.log('✅ [HomeScreen] Balances atualizados')
   }, [refreshBalance])
   
   // Renderizar layout baseado na escolha do usuário
@@ -103,7 +96,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
       case 'tabs':
         return <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
       default:
-        return <HomeVerticalLayout pnl={pnl} pnlLoading={pnlLoading} isUpdating={isUpdating} />
+        return <HomeVerticalLayout pnl={pnl} pnlLoading={pnlLoading} isUpdating={refreshing} />
     }
   }
   
@@ -114,7 +107,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
         <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
       ) : (
         <CustomPullToRefreshScrollView
-          refreshing={isUpdating || refreshing}
+          refreshing={refreshing}
           onRefresh={handleRefresh}
           contentContainerStyle={styles.scrollContent}
           style={styles.scrollView}
@@ -125,7 +118,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
           <HomeVerticalLayout 
             pnl={pnl}
             pnlLoading={pnlLoading}
-            isUpdating={isUpdating}
+            isUpdating={refreshing}
           />
         </CustomPullToRefreshScrollView>
       )}

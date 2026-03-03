@@ -516,12 +516,15 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
     loadComparison(evolutionPeriod)
   }, [evolutionPeriod, loadEvolution, loadComparison])
 
-  // Refresh
+  // Refresh — aguarda todos os dados carregarem antes de encerrar
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true)
-    await Promise.all([refreshBalance(), refreshPnl()])
-    await Promise.all([loadEvolution(evolutionPeriod), loadComparison(evolutionPeriod)])
-    setTimeout(() => setIsRefreshing(false), 300)
+    try {
+      await Promise.all([refreshBalance(), refreshPnl()])
+      await Promise.all([loadEvolution(evolutionPeriod), loadComparison(evolutionPeriod)])
+    } finally {
+      setIsRefreshing(false)
+    }
   }, [refreshBalance, refreshPnl, loadEvolution, loadComparison, evolutionPeriod])
 
   // ── RENDER ──

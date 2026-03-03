@@ -35,13 +35,12 @@ interface TokenData {
 export function WatchlistFavorites() {
   const { colors } = useTheme()
   const { watchlist, removeToken, loading: watchlistLoading } = useWatchlist()
-  const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance()
+  const { data: balanceData, loading: balanceLoading, refresh: refreshBalance, refreshing } = useBalance()
   const { hideValue } = usePrivacy()
   const { getAlertsForToken } = useAlerts()
   const { refresh: refreshOrders } = useOrders()
   const { t } = useLanguage()
   
-  const [refreshing, setRefreshing] = useState(false)
   const [alertModalVisible, setAlertModalVisible] = useState(false)
   const [selectedToken, setSelectedToken] = useState<{ symbol: string; price: number; exchangeId?: string; exchangeName?: string } | null>(null)
   const [tokenModalVisible, setTokenModalVisible] = useState(false)
@@ -57,11 +56,7 @@ export function WatchlistFavorites() {
 
   // Refresh
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true)
     await refreshBalance()
-    // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-    await new Promise(resolve => setTimeout(resolve, 300))
-    setRefreshing(false)
   }, [refreshBalance])
 
   // Remover favorito

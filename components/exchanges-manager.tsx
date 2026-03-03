@@ -396,8 +396,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     } catch (error) {
       console.error(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
     } finally {
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      await new Promise(resolve => setTimeout(resolve, 300))
       setRefreshing(false)
     }
   }, [activeTab, fetchExchanges])

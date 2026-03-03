@@ -91,9 +91,6 @@ export const MarketOverview: React.FC = () => {
       console.error('[MarketOverview] ❌ Erro ao carregar dados:', err);
       setError('Erro ao carregar dados do mercado');
     } finally {
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       setLoading(false);
       setRefreshing(false);
     }

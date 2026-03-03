@@ -24,12 +24,11 @@ import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefresh
 export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { t } = useLanguage();
-  const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance();
+  const { data: balanceData, loading: balanceLoading, refresh: refreshBalance, refreshing } = useBalance();
   const { hideValue, hideZeroBalances: hideZero, toggleHideZeroBalances } = usePrivacy();
   const { unreadCount } = useNotifications();
   const { refresh: refreshOrders } = useOrders();
   
-  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedExchange, setSelectedExchange] = useState<string>('All');
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
@@ -48,12 +47,9 @@ export function AssetsScreen({ navigation }: any) {
     setNotificationsModalVisible(true);
   }, []);
 
-  // Refresh
+  // Refresh — usa refreshing gerenciado pelo BalanceContext
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
     await refreshBalance();
-    await new Promise(resolve => setTimeout(resolve, 300));
-    setRefreshing(false);
   }, [refreshBalance]);
 
   // Transform data to GenericItemList format - Grouped by Exchange
