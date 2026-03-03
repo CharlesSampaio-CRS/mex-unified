@@ -13,12 +13,12 @@ import {
   TextInput,
   ScrollView,
   Switch,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { typography, fontWeights } from '../lib/typography';
+import { AnimatedLogoIcon } from './AnimatedLogoIcon';
 import { useAlerts } from '../contexts/AlertsContext';
 import {
   AlertType,
@@ -540,7 +540,7 @@ export function CreateAlertModal({
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <AnimatedLogoIcon size={20} />
               ) : (
                 <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
                   {t('alerts.createButton')}

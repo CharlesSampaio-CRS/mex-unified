@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
 import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
@@ -6,6 +6,7 @@ import { useLanguage } from "../contexts/LanguageContext"
 import { typography, fontWeights } from "../lib/typography"
 import { apiService } from "../services/api"
 import { useFocusEffect } from "@react-navigation/native"
+import { AnimatedLogoIcon } from "../components/AnimatedLogoIcon"
 
 /** Tipo de um template vindo da API */
 interface TemplateConfig {
@@ -450,7 +451,7 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
                 activeOpacity={0.7}
               >
                 {saving ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <AnimatedLogoIcon size={20} />
                 ) : (
                   <Text style={styles.saveBtnText}>💾 Salvar Template</Text>
                 )}

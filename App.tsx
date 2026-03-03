@@ -2,7 +2,7 @@ import { NavigationContainer } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
-import { ActivityIndicator, View, LogBox } from "react-native"
+import { View, LogBox } from "react-native"
 import { useEffect, useRef, useState } from "react"
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
@@ -56,6 +56,7 @@ import { AlertsProvider } from "./contexts/AlertsContext"
 import { WatchlistProvider } from "./contexts/WatchlistContext"
 import { HeaderProvider } from "./contexts/HeaderContext"
 import { LoadingProgress } from "./components/LoadingProgress"
+import { AnimatedLogoIcon } from "./components/AnimatedLogoIcon"
 import { MaintenanceScreen } from "./components/MaintenanceScreen"
 
 const Tab = createBottomTabNavigator()
@@ -381,7 +382,7 @@ function AppNavigator() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <AnimatedLogoIcon size={48} />
       </View>
     )
   }
@@ -397,7 +398,7 @@ function AppNavigator() {
           ) : (
             // Durante carregamento de dados, mostra tela de loading ao invés de voltar pro login
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-              <ActivityIndicator size="large" color="#3b82f6" />
+              <AnimatedLogoIcon size={48} />
             </View>
           )}
           

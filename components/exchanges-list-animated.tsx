@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, Image } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from "react-native"
 import { useState, useRef, useEffect } from "react"
 import { useBalance } from "@/contexts/BalanceContext"
 import { useTheme } from "@/contexts/ThemeContext"
@@ -6,6 +6,7 @@ import { apiService } from "@/services/api"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { typography, fontWeights } from "@/lib/typography"
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
+import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
 // Mapeamento dos nomes das exchanges para os arquivos de imagem
 const exchangeLogos: Record<string, any> = {
@@ -178,7 +179,7 @@ export function ExchangesListAnimated() {
       <View style={styles.container}>
         <Text style={styles.title}>Exchanges</Text>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size={40} color="#3b82f6" />
+          <AnimatedLogoIcon size={40} />
         </View>
       </View>
     )

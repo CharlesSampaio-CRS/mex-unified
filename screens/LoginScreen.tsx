@@ -9,7 +9,6 @@ import {
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native'
 import Svg, { Path, Circle, Line, Defs, Filter, FeGaussianBlur, FeMerge, FeMergeNode } from 'react-native-svg'
 import { useAuth } from '@/contexts/AuthContext'

@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useMemo, useRef, useEffect } from 'react'
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { useBalance } from '../contexts/BalanceContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { typography, fontWeights } from '@/lib/typography'
+import { AnimatedLogoIcon } from './AnimatedLogoIcon'
 
 interface PnLCardProps {
   userId: string
@@ -128,7 +129,7 @@ export default function PnLCard({ userId, refreshTrigger }: PnLCardProps) {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <AnimatedLogoIcon size={32} />
           <Text style={styles.loadingText}>{t('pnl.calculating')}</Text>
         </View>
       </View>
@@ -156,7 +157,7 @@ export default function PnLCard({ userId, refreshTrigger }: PnLCardProps) {
         <View style={styles.liveIndicator}>
           {balanceLoading ? (
             <View style={styles.refreshingIndicator}>
-              <ActivityIndicator size="small" color="#10b981" />
+              <AnimatedLogoIcon size={14} />
               <Text style={styles.refreshingText}>{t('pnl.updating')}</Text>
             </View>
           ) : (

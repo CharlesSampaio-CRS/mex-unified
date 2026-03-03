@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { marketPriceService } from '../services/marketPriceService';
@@ -201,7 +201,7 @@ export const MarketOverview: React.FC = () => {
           </Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <AnimatedLogoIcon size={32} />
         </View>
       </View>
     );
@@ -343,7 +343,7 @@ export const MarketOverview: React.FC = () => {
                   <View style={styles.chartSection}>
                     {loadingChart ? (
                       <View style={styles.chartLoading}>
-                        <ActivityIndicator size="large" color={colors.primary} />
+                        <AnimatedLogoIcon size={32} />
                       </View>
                     ) : chartData ? (
                       <PortfolioChart

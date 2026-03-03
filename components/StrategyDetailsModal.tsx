@@ -6,7 +6,6 @@ import {
   Modal, 
   TouchableOpacity, 
   ScrollView, 
-  ActivityIndicator,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform
@@ -22,6 +21,7 @@ import { apiService } from '@/services/api'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 import { typography, fontWeights } from '@/lib/typography'
 import { EditStrategyModal } from './edit-strategy-modal'
+import { AnimatedLogoIcon } from './AnimatedLogoIcon'
 
 interface StrategyDetailsModalProps {
   visible: boolean
@@ -900,7 +900,7 @@ export function StrategyDetailsModal({
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <AnimatedLogoIcon size={40} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('common.loading')}...</Text>
         </View>
       )
@@ -1171,7 +1171,7 @@ export function StrategyDetailsModal({
                     activeOpacity={0.7}
                   >
                     {ticking ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
+                      <AnimatedLogoIcon size={20} />
                     ) : (
                       <Text style={[styles.footerButtonText, { color: colors.primary }]}>⚡ Tick</Text>
                     )}

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '../contexts/ThemeContext'
@@ -17,6 +16,7 @@ import { typography, fontWeights } from '../lib/typography'
 import { getExchangeBalances, getExchangeId, getExchangeName } from '../lib/exchange-helpers'
 import { TokenDetailsModal } from './token-details-modal'
 import { apiService } from '../services/api'
+import { AnimatedLogoIcon } from './AnimatedLogoIcon'
 
 // Icon components usando Ionicons (fonte única)
 const CloseIcon = ({ color }: { color: string }) => (
@@ -325,7 +325,7 @@ export function TokenSearchModal({ visible, onClose }: TokenSearchModalProps) {
               <View style={styles.resultsContainer}>
                 {(loading || searchingCoinGecko) ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={colors.primary} />
+                    <AnimatedLogoIcon size={16} />
                     <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                       {searchingCoinGecko ? '🦎 Buscando na CoinGecko...' : t('common.loading')}
                     </Text>

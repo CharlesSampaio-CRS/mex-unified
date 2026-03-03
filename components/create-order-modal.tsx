@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image } from 'react-native'
 import { useState, useEffect, useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -908,7 +908,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
                 }}
               >
                 {pairPriceLoading ? (
-                  <ActivityIndicator size={12} color={colors.primary} />
+                  <AnimatedLogoIcon size={12} />
                 ) : (
                   <Ionicons name="refresh-outline" size={14} color={colors.primary} />
                 )}
@@ -1063,7 +1063,7 @@ export function CreateOrderModal({ visible, onClose }: CreateOrderModalProps) {
             activeOpacity={0.7}
           >
             {createOrderLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <AnimatedLogoIcon size={20} />
             ) : (
               <>
                 <Ionicons

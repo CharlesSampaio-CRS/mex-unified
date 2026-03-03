@@ -1,4 +1,4 @@
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator, Animated } from "react-native"
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Alert, Animated } from "react-native"
 import React, { useState, useEffect, useRef } from "react"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"

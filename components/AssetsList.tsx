@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Pressable, Modal, TextInput, Animated } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, Pressable, Modal, TextInput, Animated } from "react-native"
 import React, { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
@@ -20,6 +20,7 @@ import { typography, fontWeights } from "@/lib/typography"
 import { useTokenMonitor } from "@/hooks/use-token-monitor"
 import { useOpenOrdersSync } from "@/hooks/useOpenOrdersSync"
 import { getExchangeId, getExchangeName, getTotalUsd, getExchangeBalances } from "@/lib/exchange-helpers"
+import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 
 // Lista de stablecoins e moedas fiat que não devem ter variação e botão de trade
 const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD', 'USDD', 'BRL', 'EUR', 'USD']
@@ -856,7 +857,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           <View style={[styles.externalSearchResult, { backgroundColor: colors.background, borderColor: colors.border }]}>
             {searchingExchange ? (
               <View style={styles.searchingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <AnimatedLogoIcon size={16} />
                 <Text style={[styles.searchingText, { color: colors.textSecondary }]}>
                   {t('assets.searchingExchanges').replace('{query}', searchQuery.toUpperCase())}
                 </Text>
