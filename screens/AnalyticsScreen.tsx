@@ -718,7 +718,7 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
           </View>
 
           <ComparisonChart
-            portfolioData={evolutionData}
+            portfolioData={evolutionData ? { values: evolutionData.values_usd, timestamps: evolutionData.timestamps } : null}
             btcData={btcChartData}
             ethData={ethChartData}
             colors={colors}
