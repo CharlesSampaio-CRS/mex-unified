@@ -54,7 +54,6 @@ import { NotificationsProvider } from "./contexts/NotificationsContext"
 import { AlertsProvider } from "./contexts/AlertsContext"
 import { WatchlistProvider } from "./contexts/WatchlistContext"
 import { HeaderProvider } from "./contexts/HeaderContext"
-import { LoadingProgress } from "./components/LoadingProgress"
 import { AnimatedLogoIcon } from "./components/AnimatedLogoIcon"
 
 const Tab = createBottomTabNavigator()
@@ -271,19 +270,8 @@ function MainTabs() {
 
 // App Navigator - decide entre Auth ou Main baseado no login
 function AppNavigator() {
-  const { isAuthenticated, isLoading, isLoadingData, setLoadingDataComplete } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
   const { colors, isDark } = useTheme()
-
-  // Se está carregando dados pós-login, vai direto pro LoadingProgress
-  // (evita flash do spinner genérico entre login → loading de dados)
-  if (isAuthenticated && isLoadingData) {
-    return (
-      <NavigationContainer>
-        <StatusBar style={isDark ? "light" : "dark"} />
-        <LoadingProgress onComplete={setLoadingDataComplete} />
-      </NavigationContainer>
-    )
-  }
 
   // Init do app (verificando token salvo, restaurando sessão)
   if (isLoading) {
@@ -297,11 +285,7 @@ function AppNavigator() {
   return (
     <NavigationContainer>
       <StatusBar style={isDark ? "light" : "dark"} />
-      {isAuthenticated ? (
-        <MainTabs />
-      ) : (
-        <AuthStack />
-      )}
+      {isAuthenticated ? <MainTabs /> : <AuthStack />}
     </NavigationContainer>
   )
 }

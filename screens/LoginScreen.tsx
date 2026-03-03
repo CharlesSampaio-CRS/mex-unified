@@ -116,7 +116,6 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     isBiometricEnabled,
     isAutoLoginEnabled,
     isLoading,
-    isLoadingData,
   } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -128,7 +127,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const autoAuthCancelled = useRef(false) // 🆕 Indica se usuário cancelou o auto-auth
   const [refreshing, setRefreshing] = useState(false)
 
-  const isFullLoading = isLoading || isLoadingData
+  const isFullLoading = isLoading
 
   // 🔐 AUTO-AUTH: Tenta FaceID automaticamente quando tela carrega
   useEffect(() => {
@@ -146,9 +145,8 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       if (
         biometricAvailable && 
         isBiometricEnabled && 
-        isAutoLoginEnabled &&  // ← Verifica configuração
-        !isLoading && 
-        !isLoadingData
+        isAutoLoginEnabled &&
+        !isLoading
       ) {
         hasTriedAutoAuth.current = true
         console.log('🔐 Tentando autenticação automática com biometria...')
@@ -174,7 +172,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     }
     
     tryAutoAuth()
-  }, [biometricAvailable, isBiometricEnabled, isAutoLoginEnabled, isLoading, isLoadingData])
+  }, [biometricAvailable, isBiometricEnabled, isAutoLoginEnabled, isLoading])
 
   // 🔐 Detecta parâmetros OAuth na URL quando LoginScreen carrega
   useEffect(() => {

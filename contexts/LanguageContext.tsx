@@ -597,14 +597,6 @@ const translations = {
     // Exchange Alerts
     'alert.exchangeInactive': 'Exchange Inativa',
     
-    // Loading Progress
-    'loading.title': 'Preparando tudo para você',
-    'loading.authenticating': 'Autenticando usuário',
-    'loading.fetchingExchanges': 'Buscando corretoras conectadas',
-    'loading.loadingBalances': 'Carregando saldos',
-    'loading.calculatingPortfolio': 'Calculando portfólio',
-    'loading.almostReady': 'Quase pronto!',
-    
     // Auth (OAuth)
     'auth.completingLogin': 'Concluindo login...',
     
@@ -1397,14 +1389,6 @@ const translations = {
     
     // Exchange Alerts
     'alert.exchangeInactive': 'Inactive Exchange',
-    
-    // Loading Progress
-    'loading.title': 'Getting everything ready',
-    'loading.authenticating': 'Authenticating user',
-    'loading.fetchingExchanges': 'Fetching connected exchanges',
-    'loading.loadingBalances': 'Loading balances',
-    'loading.calculatingPortfolio': 'Calculating portfolio',
-    'loading.almostReady': 'Almost ready!',
     
     // Auth (OAuth)
     'auth.completingLogin': 'Completing login...',

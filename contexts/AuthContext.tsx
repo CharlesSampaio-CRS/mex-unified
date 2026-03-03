@@ -17,7 +17,6 @@ interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  isLoadingData: boolean
   isAuthenticated: boolean
   biometricAvailable: boolean
   biometricType: string | null
@@ -32,9 +31,6 @@ interface AuthContextType {
   registerWithApple: () => Promise<void>
   logout: () => Promise<void>
   deleteAccount: () => Promise<void>
-  
-  // Loading control
-  setLoadingDataComplete: () => void
   
   // Biometric settings
   enableBiometric: () => Promise<boolean>
@@ -64,7 +60,6 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingData, setIsLoadingData] = useState(false)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [biometricType, setBiometricType] = useState<string | null>(null)
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false)
@@ -169,7 +164,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento de dados
           console.log('✅ Setando usuário autenticado no estado (via evento)...')
-          setIsLoadingData(true)
           setHasValidToken(true)
           setUser(userData)
           
@@ -325,7 +319,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             if (data.valid) {
               console.log('✅ Access token válido - sessão restaurada')
               setHasValidToken(true)
-              setIsLoadingData(true)
               setUser(parsedUser)
               return true
             }
@@ -340,7 +333,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (newToken) {
         console.log('✅ Sessão restaurada via refresh token')
         setHasValidToken(true)
-        setIsLoadingData(true)
         setUser(parsedUser)
         return true
       }
@@ -467,7 +459,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true)
-      setIsLoadingData(true)
       
       // Chama API real de login
       const response = await fetch(`${config.kongBaseUrl}/auth/login`, {
@@ -522,7 +513,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('Login error:', error)
       setHasValidToken(false)
-      setIsLoadingData(false)
       throw error
     } finally {
       setIsLoading(false)
@@ -536,9 +526,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (!biometricAvailable || !isBiometricEnabled) {
         throw new Error('Biometric authentication not available or not enabled')
       }
-
-      // Define isLoadingData ANTES de autenticar para evitar flash
-      setIsLoadingData(true)
       
       // 🔐 BIOMETRIA = DESBLOQUEIO LOCAL (não chama servidor!)
       // Apenas verifica que o dono do celular está presente
@@ -558,7 +545,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (!userData) {
           console.error('❌ Dados do usuário não encontrados')
-          setIsLoadingData(false)
           throw new Error('Dados do usuário não encontrados. Faça login novamente.')
         }
         
@@ -577,14 +563,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         // Se refresh token também expirou (>30 dias), precisa login completo
         console.log('⚠️ Sessão expirada (refresh token vencido) - precisa login completo')
-        setIsLoadingData(false)
         throw new Error('Sua sessão expirou. Faça login novamente.')
         
         // O loading será desativado pelo App.tsx quando os dados estiverem prontos
       } else {
         // ❌ Usuário cancelou ou falhou a autenticação
         console.log('👤 Usuário cancelou a autenticação biométrica')
-        setIsLoadingData(false)
         
         // Cria erro específico para cancelamento
         const cancelError = new Error('User canceled biometric authentication')
@@ -593,7 +577,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     } catch (error: any) {
       console.error('Biometric login error:', error)
-      setIsLoadingData(false)
       
       // Se já é um erro de cancelamento, apenas repropaga
       if (error.name === 'BiometricCancelError') {
@@ -679,7 +662,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                   authProvider: 'google'
                 }
                 
-                setIsLoadingData(true)
                 setHasValidToken(true)
                 setUser(userData)
                 
@@ -830,7 +812,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
           
           // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento
-          setIsLoadingData(true)
           setHasValidToken(true)
           setUser(userData)
           
@@ -876,7 +857,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento
-      setIsLoadingData(true)
       setHasValidToken(true)
       setUser(mockUser)
       
@@ -895,7 +875,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const register = async (email: string, password: string, name: string) => {
     try {
       setIsLoading(true)
-      setIsLoadingData(true)
 
       // Chama API real de registro
       const registerPayload = {
@@ -964,7 +943,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('Register error:', error)
       setHasValidToken(false)
-      setIsLoadingData(false)
       throw error
     } finally {
       setIsLoading(false)
@@ -1022,7 +1000,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null)
       setHasValidToken(false)
       setIsBiometricEnabled(false)
-      setIsLoadingData(false)
       setIsLoading(false)
       
       console.log('✅ Logout completo - todos os dados limpos')
@@ -1139,14 +1116,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const setLoadingDataComplete = () => {
-    setIsLoadingData(false)
-  }
-
   const value: AuthContextType = {
     user,
     isLoading,
-    isLoadingData,
     isAuthenticated: !!user,
     biometricAvailable,
     biometricType,
@@ -1162,8 +1134,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     registerWithApple,
     logout,
     deleteAccount,
-    
-    setLoadingDataComplete,
     
     enableBiometric,
     disableBiometric,
