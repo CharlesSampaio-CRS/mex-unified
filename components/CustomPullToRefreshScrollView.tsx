@@ -37,6 +37,9 @@ export function CustomPullToRefreshScrollView({
     isRefreshingRef.current = refreshing;
 
     if (refreshing) {
+      // Força scroll ao topo imediatamente ao iniciar refresh
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+
       // Mostra o indicador e empurra conteúdo para baixo
       Animated.parallel([
         Animated.timing(opacity, {
@@ -134,6 +137,7 @@ export function CustomPullToRefreshScrollView({
         contentContainerStyle={contentContainerStyle}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        scrollEnabled={!refreshing}
         {...rest}
       >
         {/* Padding animado que empurra o conteúdo para baixo durante refresh */}
