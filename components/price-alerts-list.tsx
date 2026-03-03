@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { CustomPullToRefreshScrollView } from './CustomPullToRefreshScrollView';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -168,18 +169,11 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
   }, [filteredAlerts]);
 
   return (
-    <ScrollView
+    <CustomPullToRefreshScrollView
       style={styles.container}
+      refreshing={refreshing}
+      onRefresh={handleRefresh}
       showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-          progressBackgroundColor={colors.surface}
-        />
-      }
     >
       {/* Status do Monitoramento */}
       <View style={[styles.monitoringStatus, { backgroundColor: colors.surface }]}>
@@ -381,7 +375,7 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
         onClose={() => setCreateModalVisible(false)}
         symbol=""
       />
-    </ScrollView>
+    </CustomPullToRefreshScrollView>
   );
 }
 

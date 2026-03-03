@@ -18,6 +18,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { LinearGradient } from 'expo-linear-gradient'
 import { typography, fontWeights } from '@/lib/typography'
 import { AnimatedLogoIcon } from '@/components/AnimatedLogoIcon'
+import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 import { config } from '@/lib/config'
 
 interface LoginScreenProps {
@@ -512,7 +513,9 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <ScrollView
+      <CustomPullToRefreshScrollView
+        refreshing={false}
+        onRefresh={() => {}}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}
@@ -646,7 +649,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </CustomPullToRefreshScrollView>
     </KeyboardAvoidingView>
   )
 }

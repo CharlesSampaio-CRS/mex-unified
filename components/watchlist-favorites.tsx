@@ -4,6 +4,7 @@
  */
 
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from "react-native"
+import { CustomPullToRefreshScrollView } from './CustomPullToRefreshScrollView';
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "@/contexts/ThemeContext"
@@ -193,18 +194,11 @@ export function WatchlistFavorites() {
   const loading = watchlistLoading || balanceLoading
 
   return (
-    <ScrollView
+    <CustomPullToRefreshScrollView
       style={styles.container}
+      refreshing={refreshing}
+      onRefresh={handleRefresh}
       showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-          progressBackgroundColor={colors.surface}
-        />
-      }
     >
       {/* Empty State */}
       {loading && favoriteSections.length === 0 ? (
@@ -436,7 +430,7 @@ export function WatchlistFavorites() {
           }}
         />
       )}
-    </ScrollView>
+    </CustomPullToRefreshScrollView>
   )
 }
 

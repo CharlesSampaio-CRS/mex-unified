@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, RefreshControl } from "react-native"
+import { CustomPullToRefreshScrollView } from './CustomPullToRefreshScrollView';
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
@@ -1008,20 +1009,13 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       </View>
 
       {/* Content */}
-      <ScrollView 
+      <CustomPullToRefreshScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-            progressBackgroundColor={colors.surface}
-          />
-        }
       >
         {/* Linked Exchanges */}
         {(activeTab === 'all' || activeTab === 'linked') && (
@@ -1162,7 +1156,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
             })()}
           </>
         )}
-      </ScrollView>
+      </CustomPullToRefreshScrollView>
 
       {/* Modal de Menu de Opções */}
       <Modal

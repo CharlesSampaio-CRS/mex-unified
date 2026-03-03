@@ -1,4 +1,5 @@
 import { Text, StyleSheet, ScrollView, View, TouchableOpacity, Modal, RefreshControl, KeyboardAvoidingView, Platform, TextInput } from "react-native"
+import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect, useCallback, useMemo } from "react"
@@ -353,18 +354,11 @@ export function StrategyScreen({ navigation, route }: any) {
         </View>
       </View>
 
-      <ScrollView
+      <CustomPullToRefreshScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressBackgroundColor={colors.surface}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         {filteredStrategies.length === 0 ? (
           <View style={styles.emptyState}>
@@ -510,7 +504,7 @@ export function StrategyScreen({ navigation, route }: any) {
             })}
           </View>
         )}
-      </ScrollView>
+      </CustomPullToRefreshScrollView>
 
       {/* Toggle Confirmation Modal */}
       <Modal

@@ -20,7 +20,7 @@ import { typography, fontWeights } from '@/lib/typography';
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { CreateOrderModal } from '@/components/create-order-modal';
 import { AnimatedLogoIcon } from '../components/AnimatedLogoIcon';
-import { CustomRefreshIndicator } from '../components/CustomRefreshIndicator';
+import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 
 // Sub-componente com animação piscante para ordens sendo canceladas
 function AnimatedOrderCard({ 
@@ -491,20 +491,10 @@ export function OrdersScreen({ navigation }: any) {
         </View>
       </View>
       
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressBackgroundColor={colors.surface}
-            // Custom indicator
-            // @ts-ignore
-            customIndicator={<CustomRefreshIndicator />}
-          />
-        }
+      <CustomPullToRefreshScrollView
+        refreshing={refreshing}
+        onRefresh={refresh}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
         {loading && filteredSections.length === 0 ? (
           <View style={styles.emptyState}>
@@ -562,7 +552,7 @@ export function OrdersScreen({ navigation }: any) {
             ))}
           </View>
         )}
-      </ScrollView>
+      </CustomPullToRefreshScrollView>
 
       {selectedOrder && (
         <OrderDetailsModal

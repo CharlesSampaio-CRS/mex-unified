@@ -19,7 +19,7 @@ import { getExchangeLogo } from '@/lib/exchange-logos';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 import { AnimatedLogoIcon } from '../components/AnimatedLogoIcon';
-import { CustomRefreshIndicator } from '../components/CustomRefreshIndicator';
+import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 
 export function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -303,20 +303,10 @@ export function AssetsScreen({ navigation }: any) {
         </View>
       </View>
       
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressBackgroundColor={colors.surface}
-            // Custom indicator
-            // @ts-ignore
-            customIndicator={<CustomRefreshIndicator />}
-          />
-        }
+      <CustomPullToRefreshScrollView
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
         {loading && assetsSections.length === 0 ? (
           <View style={styles.emptyState}>
@@ -454,7 +444,7 @@ export function AssetsScreen({ navigation }: any) {
             ))}
           </View>
         )}
-      </ScrollView>
+      </CustomPullToRefreshScrollView>
 
       {/* Modal de Detalhes do Token */}
       {selectedTokenForDetails && (

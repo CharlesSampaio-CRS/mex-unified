@@ -15,6 +15,7 @@ import { useNotifications } from "../contexts/NotificationsContext"
 import { useAuth } from "../contexts/AuthContext"
 import { commonStyles } from "@/lib/layout"
 import { useBackendSnapshots } from "../hooks/useBackendSnapshots"
+import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView";
 
 export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   
@@ -112,28 +113,21 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
       {layout === 'tabs' ? (
         <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
       ) : (
-        <ScrollView
-          style={styles.scrollView}
+        <CustomPullToRefreshScrollView
+          refreshing={isUpdating || refreshing}
+          onRefresh={handleRefresh}
           contentContainerStyle={styles.scrollContent}
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={true}
           keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl
-              refreshing={isUpdating || refreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-              progressBackgroundColor={colors.surface}
-            />
-          }
         >
           <HomeVerticalLayout 
             pnl={pnl}
             pnlLoading={pnlLoading}
             isUpdating={isUpdating}
           />
-        </ScrollView>
+        </CustomPullToRefreshScrollView>
       )}
 
       <NotificationsModal 
