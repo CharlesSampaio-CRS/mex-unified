@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from "react-native"
 import { memo, useState, useCallback, useMemo, useEffect } from "react"
 import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgLinearGradient, Stop, ClipPath, Rect, G } from "react-native-svg"

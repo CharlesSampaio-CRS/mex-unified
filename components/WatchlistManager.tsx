@@ -3,7 +3,7 @@
  * Tela com abas: Favoritos | Alertas
  */
 
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useState, useCallback, useMemo } from "react"
 import { Ionicons } from "@expo/vector-icons"

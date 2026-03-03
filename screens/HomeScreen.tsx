@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, SafeAreaView, RefreshControl, View, TouchableOpacity, Text, Alert } from "react-native"
+import { StyleSheet, ScrollView, SafeAreaView, View, TouchableOpacity, Text, Alert } from "react-native"
 import { useRef, useState, useCallback, memo } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { HomeVerticalLayout } from "../components/layouts/HomeVerticalLayout"

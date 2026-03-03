@@ -1,4 +1,4 @@
-import { Text, StyleSheet, ScrollView, View, TouchableOpacity, Modal, RefreshControl, KeyboardAvoidingView, Platform, TextInput } from "react-native"
+import { Text, StyleSheet, ScrollView, View, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, TextInput } from "react-native"
 import { CustomPullToRefreshScrollView } from '../components/CustomPullToRefreshScrollView';
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"

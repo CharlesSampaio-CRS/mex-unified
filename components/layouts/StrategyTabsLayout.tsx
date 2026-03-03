@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, RefreshControl } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { CustomPullToRefreshScrollView } from '../CustomPullToRefreshScrollView';
 import { TabBar } from '../TabBar';
 import { useTheme } from '../../contexts/ThemeContext';

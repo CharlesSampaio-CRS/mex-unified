@@ -3,7 +3,7 @@
  * Mostra tokens marcados como favoritos pelo usuário
  */
 
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native"
 import { CustomPullToRefreshScrollView } from './CustomPullToRefreshScrollView';
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { Ionicons } from "@expo/vector-icons"

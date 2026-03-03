@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, ScrollView, RefreshControl, Text } from 'react-native';
+import { View, ScrollView, Text } from 'react-native';
 import { CustomPullToRefreshScrollView } from '../CustomPullToRefreshScrollView';
 import { PortfolioOverview } from '../PortfolioOverview';
 import { MarketOverview } from '../MarketOverview';

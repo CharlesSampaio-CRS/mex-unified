@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, RefreshControl, ScrollView, View } from 'react-native';
+import { Animated, Platform, RefreshControl, ScrollView, View } from 'react-native';
 import { AnimatedLogoIcon } from './AnimatedLogoIcon';
 
 /**
@@ -78,9 +78,17 @@ export function CustomPullToRefreshScrollView({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
+            // Esconde completamente o spinner nativo do iOS/Android
             tintColor="transparent"
             colors={['transparent']}
             progressBackgroundColor="transparent"
+            // iOS: remove o espaço extra que o indicador nativo ocupa
+            {...(Platform.OS === 'ios' ? { 
+              progressViewOffset: -100,
+            } : {
+              // Android: empurra o indicador nativo para fora da tela
+              progressViewOffset: -1000,
+            })}
           />
         }
         {...rest}

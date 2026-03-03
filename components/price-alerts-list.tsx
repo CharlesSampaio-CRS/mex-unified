@@ -10,7 +10,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  RefreshControl,
 } from 'react-native';
 import { CustomPullToRefreshScrollView } from './CustomPullToRefreshScrollView';
 import { Ionicons } from '@expo/vector-icons';
