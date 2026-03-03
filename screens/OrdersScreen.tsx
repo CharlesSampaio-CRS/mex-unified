@@ -19,6 +19,8 @@ import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { CreateOrderModal } from '@/components/create-order-modal';
+import { AnimatedLogoIcon } from '../components/AnimatedLogoIcon';
+import { CustomRefreshIndicator } from '../components/CustomRefreshIndicator';
 
 // Sub-componente com animação piscante para ordens sendo canceladas
 function AnimatedOrderCard({ 
@@ -498,6 +500,9 @@ export function OrdersScreen({ navigation }: any) {
             tintColor={colors.primary}
             colors={[colors.primary]}
             progressBackgroundColor={colors.surface}
+            // Custom indicator
+            // @ts-ignore
+            customIndicator={<CustomRefreshIndicator />}
           />
         }
       >
