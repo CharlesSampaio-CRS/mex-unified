@@ -274,6 +274,18 @@ function AppNavigator() {
   const { isAuthenticated, isLoading, isLoadingData, setLoadingDataComplete } = useAuth()
   const { colors, isDark } = useTheme()
 
+  // Se está carregando dados pós-login, vai direto pro LoadingProgress
+  // (evita flash do spinner genérico entre login → loading de dados)
+  if (isAuthenticated && isLoadingData) {
+    return (
+      <NavigationContainer>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <LoadingProgress onComplete={setLoadingDataComplete} />
+      </NavigationContainer>
+    )
+  }
+
+  // Init do app (verificando token salvo, restaurando sessão)
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
@@ -286,11 +298,7 @@ function AppNavigator() {
     <NavigationContainer>
       <StatusBar style={isDark ? "light" : "dark"} />
       {isAuthenticated ? (
-        isLoadingData ? (
-          <LoadingProgress onComplete={setLoadingDataComplete} />
-        ) : (
-          <MainTabs />
-        )
+        <MainTabs />
       ) : (
         <AuthStack />
       )}
