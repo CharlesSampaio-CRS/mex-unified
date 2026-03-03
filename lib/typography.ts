@@ -29,6 +29,8 @@ export const typography = {
   caption: 12,  // Labels, descrições, helper text
   tiny: 11,     // Metadados, timestamps, contadores
   micro: 10,    // Badges, tags, variações de preço
+  badge: 9,     // Badges compactos, status indicators
+  pico: 8,      // Labels ultra-compactos (gráficos, PnL cards)
   
   // ========================================
   // VALORES NUMÉRICOS (Display)

@@ -353,6 +353,13 @@ export const translations = {
     'settings.biometricDisabled': 'desabilitado',
     'settings.biometricError': 'Erro ao configurar biometria',
     'settings.deleteAccount': 'Excluir Conta',
+
+    // Loading Messages (tela de loading pós-login)
+    'loading.validating': 'Validando login...',
+    'loading.connecting': 'Conectando...',
+    'loading.syncExchanges': 'Sincronizando exchanges...',
+    'loading.loadingPortfolio': 'Carregando portfólio...',
+    'loading.almostReady': 'Quase pronto...',
   },
   'en-US': {
     // Navigation
@@ -696,6 +703,13 @@ export const translations = {
     'settings.biometricDisabled': 'disabled',
     'settings.biometricError': 'Error configuring biometric',
     'settings.deleteAccount': 'Delete Account',
+
+    // Loading Messages (post-login loading screen)
+    'loading.validating': 'Validating login...',
+    'loading.connecting': 'Connecting...',
+    'loading.syncExchanges': 'Syncing exchanges...',
+    'loading.loadingPortfolio': 'Loading portfolio...',
+    'loading.almostReady': 'Almost ready...',
   }
 } as const
 

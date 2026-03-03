@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.regular,
     letterSpacing: 0.5,
     opacity: 0.5,
@@ -459,19 +459,19 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   centerLabel: {
-    fontSize: 12,
+    fontSize: typography.caption,
     fontWeight: fontWeights.regular,
     letterSpacing: -1,
     textAlign: 'center',
   },
   centerValue: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     marginTop: 6,
     textAlign: 'center',
   },
   centerPercentage: {
-    fontSize: 8,
+    fontSize: typography.pico,
     fontWeight: fontWeights.regular,
     marginTop: 4,
     textAlign: 'center',
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   legendName: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     flex: 1,
     flexShrink: 1,
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   legendPercentage: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     minWidth: 36,
     maxWidth: 56,
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   exchangeCountBadge: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.regular,
   },
   selectedIndicator: {

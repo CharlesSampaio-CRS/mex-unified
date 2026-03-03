@@ -2,6 +2,7 @@ import {
   Text, 
   StyleSheet, 
   ScrollView, 
+  RefreshControl,
   View, 
   TouchableOpacity, 
   Alert, 
@@ -84,6 +85,7 @@ export function SettingsScreen({ navigation, route }: any) {
   const [autoLockTime, setAutoLockTime] = useState('5') // minutos
   const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true)
   const [deviceIp, setDeviceIp] = useState<string>('Carregando...')
+  const [refreshing, setRefreshing] = useState(false)
 
   // Themed toggle styles (seguindo padrão do ExchangesList)
   const themedToggleStyles = useMemo(() => ({
@@ -197,6 +199,13 @@ export function SettingsScreen({ navigation, route }: any) {
     setNotificationsModalVisible(true)
   }, [])
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    // Simula refresh — quando tiver endpoint de user profile, substituir
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    setRefreshing(false)
+  }, [])
+
   // Define o Header global para esta tela
   useHeader({
     title: t('settings.title'),
@@ -214,8 +223,8 @@ export function SettingsScreen({ navigation, route }: any) {
         onTabChange={(index) => setActiveTab(index === 0 ? "profile" : "system")}
       />
 
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -1111,7 +1120,7 @@ export function SettingsScreen({ navigation, route }: any) {
               {/* Content */}
               <View style={styles.deleteAccountModalContent}>
                 <Text style={[styles.deleteAccountWarningText, { color: colors.text }]}>
-                  Esta ação é <Text style={{ fontWeight: '700', color: colors.danger }}>irreversível</Text> e resultará em:
+                  Esta ação é <Text style={{ fontWeight: fontWeights.bold, color: colors.danger }}>irreversível</Text> e resultará em:
                 </Text>
 
                 <View style={styles.deleteAccountWarningList}>
@@ -1565,7 +1574,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   modalCloseIcon: {
-    fontSize: 22,
+    fontSize: typography.h1,
     fontWeight: fontWeights.light,
   },
   securityModalContent: {
@@ -1592,8 +1601,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   aboutModalTitle: {
-    fontSize: 20,
-    fontWeight: "500",
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.medium,
   },
   aboutModalContent: {
     flex: 1,
@@ -1619,8 +1628,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   termsModalTitle: {
-    fontSize: 20,
-    fontWeight: "500",
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.medium,
   },
   termsModalContent: {
     flex: 1,
@@ -1646,14 +1655,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   deleteAccountModalTitle: {
-    fontSize: 20,
-    fontWeight: "500",
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.medium,
   },
   deleteAccountModalContent: {
     padding: 20,
   },
   deleteAccountWarningText: {
-    fontSize: 16,
+    fontSize: typography.h4,
     lineHeight: 24,
     marginBottom: 16,
   },
@@ -1666,18 +1675,18 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   deleteAccountWarningBullet: {
-    fontSize: 18,
+    fontSize: typography.icon,
     marginRight: 12,
-    fontWeight: "700",
+    fontWeight: fontWeights.bold,
   },
   deleteAccountWarningItemText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.body,
     lineHeight: 20,
   },
   deleteAccountConfirmText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
     marginBottom: 24,
     textAlign: "center",
   },
@@ -1694,8 +1703,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   deleteAccountCancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
   deleteAccountConfirmButton: {
     flex: 1,
@@ -1706,8 +1715,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   deleteAccountConfirmButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
   },
   // ===== Estilos do Profile Tab =====
   logoutButtonInline: {

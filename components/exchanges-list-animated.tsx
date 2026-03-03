@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, Image } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, ActivityIndicator } from "react-native"
 import { useState, useRef, useEffect } from "react"
 import { useBalance } from "@/contexts/BalanceContext"
 import { useTheme } from "@/contexts/ThemeContext"
 import { apiService } from "@/services/api"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { typography, fontWeights } from "@/lib/typography"
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 
 // Mapeamento dos nomes das exchanges para os arquivos de imagem
@@ -177,7 +178,7 @@ export function ExchangesListAnimated() {
       <View style={styles.container}>
         <Text style={styles.title}>Exchanges</Text>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size={40} color="#3b82f6" />
+          <ActivityIndicator size="small" />
         </View>
       </View>
     )
@@ -238,16 +239,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 15,
-    fontWeight: "400",
+    fontSize: typography.bodyLarge,
+    fontWeight: fontWeights.regular,
   },
   addButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   addButtonText: {
-    fontSize: 13,
-    fontWeight: "400",
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
     color: "#3b82f6",
   },
   list: {
@@ -288,27 +289,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   logoFallback: {
-    fontSize: 20,
+    fontSize: typography.displaySmall,
   },
   exchangeName: {
-    fontSize: 14,
-    fontWeight: "400",
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
     marginBottom: 2,
   },
   assetsCount: {
-    fontSize: 12,
+    fontSize: typography.caption,
     color: "#6b7280",
   },
   rightSection: {
     alignItems: "flex-end",
   },
   balance: {
-    fontSize: 14,
-    fontWeight: "400",
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
     marginBottom: 2,
   },
   expandIcon: {
-    fontSize: 12,
+    fontSize: typography.caption,
     color: "#6b7280",
   },
   tokensContainer: {
@@ -320,15 +321,15 @@ const styles = StyleSheet.create({
     borderColor: "#e3f2fd",
   },
   tokensTitle: {
-    fontSize: 13,
-    fontWeight: "400",
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
     color: "#9ca3af",
     marginBottom: 12,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   noTokensText: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     color: "#6b7280",
     textAlign: "center",
     paddingVertical: 8,
@@ -356,8 +357,8 @@ const styles = StyleSheet.create({
     borderColor: "#3b82f6",
   },
   tokenSymbol: {
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: typography.caption,
+    fontWeight: fontWeights.medium,
     color: "#3b82f6",
     letterSpacing: 0.5,
   },
@@ -365,17 +366,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tokenAmount: {
-    fontSize: 13,
-    fontWeight: "400",
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
     marginBottom: 2,
   },
   tokenPrice: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     color: "#6b7280",
   },
   tokenValue: {
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: typography.body,
+    fontWeight: fontWeights.medium,
   },
   tokenValueZero: {
     color: "#6b7280",
@@ -386,7 +387,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   errorText: {
-    fontSize: 14,
+    fontSize: typography.body,
     color: "#ef4444",
     textAlign: "center",
     padding: 20,

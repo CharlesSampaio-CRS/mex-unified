@@ -31,20 +31,10 @@ export const StrategyTabsLayout: React.FC<StrategyTabsLayoutProps> = ({
       </View>
 
       {/* Conteúdo scrollável */}
-      <ScrollView 
-        style={{ flex: 1 }} 
+      <ScrollView
+        style={{ flex: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh || (() => {})} />}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          onRefresh ? (
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-              progressBackgroundColor={colors.surface}
-            />
-          ) : undefined
-        }
       >
         {/* Renderiza todas as abas, mas oculta as inativas */}
         <View style={{ paddingTop: 16, paddingHorizontal: 16, display: activeTab === 0 ? 'flex' : 'none' }}>

@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyIcon: {
-    fontSize: 64,
+    fontSize: typography.emojiHuge,
     marginBottom: 16,
     opacity: 0.3,
   },
@@ -422,8 +422,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   categoryTabText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
+    fontSize: typography.caption,
+    fontWeight: fontWeights.medium,
   },
   categoryBadge: {
     minWidth: 18,
@@ -434,8 +434,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   categoryBadgeText: {
-    fontSize: 10,
-    fontWeight: '600' as const,
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
   // Category tag on each notification
   categoryTag: {
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   categoryTagText: {
-    fontSize: 10,
-    fontWeight: '400' as const,
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
   },
 })

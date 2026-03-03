@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { marketPriceService } from '../services/marketPriceService';
-import { AnimatedLogoIcon } from './AnimatedLogoIcon';
 import { PortfolioChart } from './PortfolioChart';
 import { typography, fontWeights } from '@/lib/typography';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -91,9 +90,6 @@ export const MarketOverview: React.FC = () => {
       console.error('[MarketOverview] ❌ Erro ao carregar dados:', err);
       setError('Erro ao carregar dados do mercado');
     } finally {
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       setLoading(false);
       setRefreshing(false);
     }
@@ -201,7 +197,7 @@ export const MarketOverview: React.FC = () => {
           </Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="small" />
         </View>
       </View>
     );
@@ -248,7 +244,7 @@ export const MarketOverview: React.FC = () => {
           activeOpacity={refreshing ? 1 : 0.7}
         >
           {refreshing ? (
-            <AnimatedLogoIcon size={20} />
+            <ActivityIndicator size="small" />
           ) : (
             <Text style={[styles.refreshIcon, { color: colors.primary }]}>↻</Text>
           )}
@@ -343,7 +339,7 @@ export const MarketOverview: React.FC = () => {
                   <View style={styles.chartSection}>
                     {loadingChart ? (
                       <View style={styles.chartLoading}>
-                        <ActivityIndicator size="large" color={colors.primary} />
+                        <ActivityIndicator size="small" />
                       </View>
                     ) : chartData ? (
                       <PortfolioChart
@@ -355,7 +351,7 @@ export const MarketOverview: React.FC = () => {
                       <View style={styles.chartLoading}>
                         <Text style={[styles.errorText, { color: colors.textSecondary, textAlign: 'center' }]}>
                           ⚠️ {t('market.chartUnavailable')}{'\n'}
-                          <Text style={{ fontSize: 11 }}>
+                          <Text style={{ fontSize: typography.tiny }}>
                             {t('market.apiTemporary')}
                           </Text>
                         </Text>
@@ -441,11 +437,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 12,
+    fontSize: typography.caption,
     fontWeight: fontWeights.semibold,
   },
   updateTime: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
     marginTop: 2,
     opacity: 0.6,
@@ -461,7 +457,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   refreshIcon: {
-    fontSize: 14,
+    fontSize: typography.body,
     fontWeight: fontWeights.light,
     opacity: 0.5,
   },
@@ -476,7 +472,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -487,7 +483,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.semibold,
   },
   scrollContent: {
@@ -503,19 +499,19 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tokenSymbol: {
-    fontSize: 12,
+    fontSize: typography.caption,
     fontWeight: fontWeights.semibold,
     marginBottom: 1,
   },
   tokenName: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
   },
   tokenBody: {
     marginBottom: 4,
   },
   tokenPrice: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.medium,
   },
   tokenFooter: {
@@ -531,7 +527,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   changeText: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
   // Modal styles
@@ -553,7 +549,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 15,
+    fontSize: typography.bodyLarge,
     fontWeight: fontWeights.semibold,
     flex: 1,
   },
@@ -564,12 +560,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailLabel: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.medium,
     marginBottom: 6,
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: typography.body,
     fontWeight: fontWeights.semibold,
   },
   detailRow: {
@@ -583,7 +579,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   infoText: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     lineHeight: 18,
   },
   chartSection: {

@@ -597,14 +597,6 @@ const translations = {
     // Exchange Alerts
     'alert.exchangeInactive': 'Exchange Inativa',
     
-    // Loading Progress
-    'loading.title': 'Preparando tudo para você',
-    'loading.authenticating': 'Autenticando usuário',
-    'loading.fetchingExchanges': 'Buscando corretoras conectadas',
-    'loading.loadingBalances': 'Carregando saldos',
-    'loading.calculatingPortfolio': 'Calculando portfólio',
-    'loading.almostReady': 'Quase pronto!',
-    
     // Auth (OAuth)
     'auth.completingLogin': 'Concluindo login...',
     
@@ -810,6 +802,13 @@ const translations = {
     'genericList.noTokenInExchange': 'Nenhum token nesta exchange',
     'genericList.item': 'item',
     'genericList.items': 'itens',
+
+    // Loading Messages (tela de loading pós-login)
+    'loading.validating': 'Validando login...',
+    'loading.connecting': 'Conectando...',
+    'loading.syncExchanges': 'Sincronizando exchanges...',
+    'loading.loadingPortfolio': 'Carregando portfólio...',
+    'loading.almostReady': 'Quase pronto...',
   },
   'en-US': {
     // Navigation
@@ -1398,14 +1397,6 @@ const translations = {
     // Exchange Alerts
     'alert.exchangeInactive': 'Inactive Exchange',
     
-    // Loading Progress
-    'loading.title': 'Getting everything ready',
-    'loading.authenticating': 'Authenticating user',
-    'loading.fetchingExchanges': 'Fetching connected exchanges',
-    'loading.loadingBalances': 'Loading balances',
-    'loading.calculatingPortfolio': 'Calculating portfolio',
-    'loading.almostReady': 'Almost ready!',
-    
     // Auth (OAuth)
     'auth.completingLogin': 'Completing login...',
     
@@ -1608,6 +1599,13 @@ const translations = {
     'genericList.noTokenInExchange': 'No tokens in this exchange',
     'genericList.item': 'item',
     'genericList.items': 'items',
+
+    // Loading Messages (post-login loading screen)
+    'loading.validating': 'Validating login...',
+    'loading.connecting': 'Connecting...',
+    'loading.syncExchanges': 'Syncing exchanges...',
+    'loading.loadingPortfolio': 'Loading portfolio...',
+    'loading.almostReady': 'Almost ready...',
   }
 }
 

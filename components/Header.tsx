@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from "react-native"
 import { useEffect, useRef, memo, useState } from "react"
 import { useNavigation } from "@react-navigation/native"
-import Svg, { Path, Circle } from "react-native-svg"
+import { Ionicons } from "@expo/vector-icons"
 import { typography, fontWeights } from "../lib/typography"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
@@ -11,86 +11,25 @@ import { useHeaderConfig } from "../contexts/HeaderContext"
 import { LogoIcon } from "./LogoIcon"
 import { IconSelectorModal } from "./IconSelectorModal"
 
-// Eye Icon (valores visíveis)
+// Icon components usando Ionicons (fonte única)
 const EyeIcon = ({ color }: { color: string }) => (
-  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 5C7 5 2.73 8.11 1 12.5 2.73 16.89 7 20 12 20s9.27-3.11 11-7.5C21.27 8.11 17 5 12 5z"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth="2" />
-  </Svg>
+  <Ionicons name="eye-outline" size={16} color={color} />
 )
 
-// Eye Off Icon (valores ocultos)
 const EyeOffIcon = ({ color }: { color: string }) => (
-  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M3 3l18 18M10.5 10.677a2.5 2.5 0 0 0 3.323 3.323"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M7.362 7.561C5.68 8.74 4.279 10.42 3 12.5c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.85M12 5c.87 0 1.71.09 2.52.26M19.82 15.13C21.16 13.73 22.27 12.23 23 12.5c-.73-1.84-1.84-3.34-3.18-4.37"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="eye-off-outline" size={16} color={color} />
 )
 
-// Bell Icon (notificações)
 const BellIcon = ({ color }: { color: string }) => (
-  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="notifications-outline" size={16} color={color} />
 )
 
-// Search Icon (lupa para pesquisa)
 const SearchIcon = ({ color }: { color: string }) => (
-  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <Circle 
-      cx="11" 
-      cy="11" 
-      r="8" 
-      stroke={color} 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-    <Path
-      d="m21 21-4.35-4.35"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="search-outline" size={16} color={color} />
 )
 
-// Grid Icon (quadradinho para seleção de ícones)
 const GridIcon = ({ color }: { color: string }) => (
-  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="grid-outline" size={16} color={color} />
 )
 
 interface HeaderProps {
@@ -108,16 +47,7 @@ interface HeaderProps {
 
 // User Icon (perfil)
 const UserIcon = ({ color }: { color: string }) => (
-  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Circle cx="12" cy="7" r="4" stroke={color} strokeWidth="2" />
-  </Svg>
+  <Ionicons name="person-outline" size={16} color={color} />
 )
 
 export const Header = memo(function Header({ 
@@ -320,8 +250,8 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '700' as const,
+    fontSize: typography.micro,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 0.5 },

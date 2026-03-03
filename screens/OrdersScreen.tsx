@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Animated, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -490,20 +490,13 @@ export function OrdersScreen({ navigation }: any) {
       </View>
       
       <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressBackgroundColor={colors.surface}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
         {loading && filteredSections.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            <ActivityIndicator size="small" />
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}> 
               Carregando ordens...
             </Text>
           </View>
@@ -788,7 +781,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sideBadgeText: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.bold,
   },
   cardSubtext: {

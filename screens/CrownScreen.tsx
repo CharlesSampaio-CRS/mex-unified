@@ -1,17 +1,28 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native"
-import { memo } from "react"
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from "react-native"
+import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
-
 export const CrownScreen = memo(function CrownScreen({ navigation }: any) {
   const { colors } = useTheme()
+  const [refreshing, setRefreshing] = useState(false)
 
   useHeader({ title: "Crown", subtitle: "Recurso Crown" })
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    setRefreshing(false)
+  }, [])
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.content}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>👑 Crown Feature</Text>
           <Text style={[styles.description, { color: colors.textSecondary }]}>

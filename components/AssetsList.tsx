@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Pressable, Modal, TextInput, Animated } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, Pressable, Modal, TextInput, Animated, ActivityIndicator } from "react-native"
 import React, { useState, useCallback, useMemo, memo, useRef, useEffect } from "react"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
@@ -856,7 +856,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           <View style={[styles.externalSearchResult, { backgroundColor: colors.background, borderColor: colors.border }]}>
             {searchingExchange ? (
               <View style={styles.searchingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" />
                 <Text style={[styles.searchingText, { color: colors.textSecondary }]}>
                   {t('assets.searchingExchanges').replace('{query}', searchQuery.toUpperCase())}
                 </Text>
@@ -1241,7 +1241,7 @@ const styles = StyleSheet.create({
   searchIcon: {
     position: 'absolute',
     left: 10,
-    fontSize: 14,
+    fontSize: typography.body,
     zIndex: 1,
   },
   searchInput: {
@@ -1250,7 +1250,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingLeft: 32,
     paddingRight: 32,
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     backgroundColor: 'rgba(128, 128, 128, 0.05)',
     borderWidth: 1,
   },
@@ -1263,7 +1263,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   clearIcon: {
-    fontSize: 12,
+    fontSize: typography.caption,
     opacity: 0.5,
   },
   // Resultado da busca externa
@@ -1280,7 +1280,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   searchingText: {
-    fontSize: 11,
+    fontSize: typography.tiny,
   },
   tokenFoundContainer: {
     gap: 8,
@@ -1295,15 +1295,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tokenFoundSymbol: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
   },
   tokenFoundExchange: {
-    fontSize: 11,
+    fontSize: typography.tiny,
   },
   tokenFoundPrice: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
   },
   tokenFoundButton: {
     paddingVertical: 6,
@@ -1312,8 +1312,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tokenFoundButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
   },
   tokenNotFoundContainer: {
     flexDirection: 'row',
@@ -1322,11 +1322,11 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   tokenNotFoundText: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     flex: 1,
   },
   tokenNotFoundSubtext: {
-    fontSize: 10,
+    fontSize: typography.micro,
     opacity: 0.6,
     marginTop: 3,
     textAlign: 'center',
@@ -1603,11 +1603,11 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
   },
   exchangeName: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.semibold,
   },
   orderCount: {
-    fontSize: 11,
+    fontSize: typography.tiny,
   },
   exchangeNameRow: {
     flexDirection: "row",
@@ -1827,8 +1827,8 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   tokenSymbol: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0.2,
   },
   variationBadge: {
@@ -1837,8 +1837,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   variationText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: typography.micro,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.4,
   },
   tokenDetails: {
@@ -1850,10 +1850,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tokenDetailLabel: {
-    fontSize: 11,
+    fontSize: typography.tiny,
   },
   tokenDetailValue: {
-    fontSize: 11,
+    fontSize: typography.tiny,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1872,8 +1872,8 @@ const styles = StyleSheet.create({
     minHeight: 38,
   },
   detailsButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
   },
   tradeButton: {
     flex: 1,
@@ -1888,8 +1888,8 @@ const styles = StyleSheet.create({
     minHeight: 38,
   },
   tradeButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
   },
   // 🆕 Estilos antigos para compatibilidade
   tokenHeaderRow: {
@@ -1909,7 +1909,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   variationTextCard: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.bold,
     letterSpacing: 0.3,
   },
@@ -2127,7 +2127,7 @@ const styles = StyleSheet.create({
     marginRight: -4,
   },
   closeButtonText: {
-    fontSize: 20,
+    fontSize: typography.displaySmall,
     fontWeight: fontWeights.regular,
     lineHeight: 20,
   },

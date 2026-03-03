@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   icon: {
-    fontSize: 40,
+    fontSize: typography.emojiLarge,
   },
   title: {
     fontSize: typography.h4,

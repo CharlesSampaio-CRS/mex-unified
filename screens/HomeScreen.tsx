@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, SafeAreaView, RefreshControl, View, TouchableOpacity, Text, Alert } from "react-native"
+import { StyleSheet, ScrollView, RefreshControl, SafeAreaView, View, TouchableOpacity, Text, Alert } from "react-native"
 import { useRef, useState, useCallback, memo } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { HomeVerticalLayout } from "../components/layouts/HomeVerticalLayout"
@@ -8,6 +8,7 @@ import { NotificationsModal } from "../components/NotificationsModal"
 import { OpenOrdersModal } from "../components/open-orders-modal"
 import { OrderDetailsModal } from "../components/order-details-modal"
 import { useTheme } from "../contexts/ThemeContext"
+import { typography, fontWeights } from "../lib/typography"
 import { useBalance } from "../contexts/BalanceContext"
 import { useLayout } from "../contexts/LayoutContext"
 import { useNotifications } from "../contexts/NotificationsContext"
@@ -32,7 +33,6 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   // Hook para snapshots e PNL do MongoDB
   const { pnl, loading: pnlLoading, refresh: refreshPnl, saveSnapshot } = useBackendSnapshots(totalUSD)
   
-  const [isUpdating, setIsUpdating] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   // const [searchModalVisible, setSearchModalVisible] = useState(false) // Busca removida - agora está dentro da lista
   const [openOrdersModalVisible, setOpenOrdersModalVisible] = useState(false)
@@ -82,17 +82,11 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     setOrderDetailsModalVisible(true)
   }, [])
 
-  // Refresh completo: apenas balances
+  // Refresh completo: balances + PnL
   const handleRefresh = useCallback(async () => {
     console.log('🔄 [HomeScreen] Atualizando balances...')
-    setIsUpdating(true)
-    try {
-      await refreshBalance()
-      console.log('✅ [HomeScreen] Balances atualizados')
-    } finally {
-      // Mantém isUpdating true até que os dados sejam realmente carregados
-      setTimeout(() => setIsUpdating(false), 300)
-    }
+    await refreshBalance()
+    console.log('✅ [HomeScreen] Balances atualizados')
   }, [refreshBalance])
   
   // Renderizar layout baseado na escolha do usuário
@@ -101,7 +95,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
       case 'tabs':
         return <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
       default:
-        return <HomeVerticalLayout pnl={pnl} pnlLoading={pnlLoading} isUpdating={isUpdating} />
+        return <HomeVerticalLayout pnl={pnl} pnlLoading={pnlLoading} isUpdating={refreshing} />
     }
   }
   
@@ -112,25 +106,17 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
         <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
       ) : (
         <ScrollView
-          style={styles.scrollView}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           contentContainerStyle={styles.scrollContent}
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={true}
           keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl
-              refreshing={isUpdating || refreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-              progressBackgroundColor={colors.surface}
-            />
-          }
         >
           <HomeVerticalLayout 
             pnl={pnl}
             pnlLoading={pnlLoading}
-            isUpdating={isUpdating}
+            isUpdating={refreshing}
           />
         </ScrollView>
       )}
@@ -178,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   testButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
   },
 })

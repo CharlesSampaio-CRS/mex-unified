@@ -492,7 +492,7 @@ export function SignUpScreen({ navigation }: SignUpScreenProps) {
     },
     termsLink: {
       color: '#3b82f6',
-      fontWeight: '400',
+      fontWeight: fontWeights.regular,
     },
   })
 

@@ -350,8 +350,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   title: {
-    fontSize: 14,  // Título chart (reduzido de 16px)
-    fontWeight: '600',
+    fontSize: typography.body,  // Título chart (reduzido de 16px)
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0.3,
   },
   barsContainer: {
@@ -391,20 +391,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconPlaceholderText: {
-    fontSize: 11,  // Placeholder icon (reduzido de 12px)
-    fontWeight: '600',
+    fontSize: typography.tiny,  // Placeholder icon (reduzido de 12px)
+    fontWeight: fontWeights.semibold,
   },
   exchangeName: {
-    fontSize: 13,  // Nome exchange (reduzido de 14px - padrão compacto)
-    fontWeight: '600',
+    fontSize: typography.bodySmall,  // Nome exchange (reduzido de 14px - padrão compacto)
+    fontWeight: fontWeights.semibold,
   },
   exchangeValue: {
-    fontSize: 13,  // Valor já está no padrão ✓
-    fontWeight: '600',
+    fontSize: typography.bodySmall,  // Valor já está no padrão ✓
+    fontWeight: fontWeights.semibold,
   },
   exchangePercent: {
-    fontSize: 11,  // Percentual (reduzido de 12px)
-    fontWeight: '700',
+    fontSize: typography.tiny,  // Percentual (reduzido de 12px)
+    fontWeight: fontWeights.bold,
   },
   progressBarBackground: {
     height: 6,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   errorText: {
-    fontSize: 10,
+    fontSize: typography.micro,
     flex: 1,
   },
   emptyContainer: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    fontSize: 13,  // Texto vazio (reduzido de 14px)
+    fontSize: typography.bodySmall,  // Texto vazio (reduzido de 14px)
     textAlign: 'center',
   },
   skeletonBar: {

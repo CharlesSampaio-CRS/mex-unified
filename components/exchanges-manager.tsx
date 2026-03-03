@@ -1,23 +1,17 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, RefreshControl } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, RefreshControl, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator } from "react-native"
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
-import { exchangeService } from "@/services/exchange-service"
 import { AvailableExchange, LinkedExchange } from "@/types/api"
-import { config } from "@/lib/config"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useBalance } from "@/contexts/BalanceContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useCacheInvalidation } from "@/contexts/CacheInvalidationContext"
 import { QRScanner } from "./QRScanner"
-import { LogoIcon } from "./LogoIcon"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
-import { spacing, borderRadius, shadows } from "@/lib/layout"
-import { getExchangeLogo } from "@/lib/exchange-logos"
-import Svg, { Path } from "react-native-svg"
-import { encryptExchangeCredentials } from "@/lib/encryption"
+import { spacing } from "@/lib/layout"
+
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 
 // Mapeamento dos logos locais das exchanges
@@ -400,8 +394,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     } catch (error) {
       console.error(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
     } finally {
-      // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-      await new Promise(resolve => setTimeout(resolve, 300))
       setRefreshing(false)
     }
   }, [activeTab, fetchExchanges])
@@ -828,7 +820,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     tab: { borderBottomColor: 'transparent' },
     tabActive: { borderBottomColor: colors.primary },
     tabText: { color: colors.textSecondary },
-    tabTextActive: { color: colors.text, fontWeight: '600' },
+    tabTextActive: { color: colors.text, fontWeight: fontWeights.semibold },
     
     // Status
     statusTextActive: { color: colors.primary },
@@ -1008,20 +1000,12 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       </View>
 
       {/* Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-            progressBackgroundColor={colors.surface}
-          />
-        }
       >
         {/* Linked Exchanges */}
         {(activeTab === 'all' || activeTab === 'linked') && (
@@ -1305,10 +1289,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                           style={[styles.qrButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleOpenQRScanner('apiKey')}
                         >
-                          <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                            <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
-                          </Svg>
+                          <Ionicons name="qr-code-outline" size={18} color={colors.textInverse} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -1332,10 +1313,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                           style={[styles.qrButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleOpenQRScanner('apiSecret')}
                         >
-                          <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                            <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
-                          </Svg>
+                          <Ionicons name="qr-code-outline" size={18} color={colors.textInverse} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -1360,10 +1338,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                             style={[styles.qrButton, { backgroundColor: colors.primary }]}
                             onPress={() => handleOpenQRScanner('passphrase')}
                           >
-                            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                              <Path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke={colors.textInverse} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <Path d="M7 8h2v2H7V8zM15 8h2v2h-2V8zM7 14h2v2H7v-2zM15 14h2v2h-2v-2z" fill={colors.textInverse}/>
-                            </Svg>
+                            <Ionicons name="qr-code-outline" size={18} color={colors.textInverse} />
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -1394,7 +1369,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                     disabled={connecting}
                   >
                     {connecting ? (
-                      <AnimatedLogoIcon size={20} />
+                      <ActivityIndicator size="small" />
                     ) : (
                       <Text style={[styles.submitButtonText, { color: colors.primary }]}>{t('exchanges.connect')}</Text>
                     )}
@@ -1460,7 +1435,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   disabled={toggleLoading}
                 >
                   {toggleLoading ? (
-                    <AnimatedLogoIcon size={24} />
+                    <ActivityIndicator size="small" />
                   ) : (
                     <Text style={[styles.confirmModalButtonText, { color: '#ffffff' }]}>
                       {toggleExchangeNewStatus === 'active' ? t('exchanges.activate') : t('exchanges.deactivate')}
@@ -1537,7 +1512,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                   disabled={confirmLoading}
                 >
                   {confirmLoading ? (
-                    <AnimatedLogoIcon size={24} />
+                    <ActivityIndicator size="small" />
                   ) : (
                     <Text style={[styles.confirmModalButtonText, { color: '#ffffff' }]}>
                       {confirmAction === 'delete' ? t('exchanges.delete') : t('exchanges.disconnect')}
@@ -1624,7 +1599,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                       
                       {loadingDetails ? (
                         <View style={styles.detailsLoadingContainer}>
-                          <AnimatedLogoIcon size={32} />
+                          <ActivityIndicator size="small" />
                           <Text style={[styles.detailsLoadingText, { color: colors.textSecondary }]}>
                             {t('exchanges.loadingDetails')}
                           </Text>
@@ -2184,11 +2159,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   menuItemIcon: {
-    fontSize: 20,
+    fontSize: typography.displaySmall,
   },
   menuItemText: {
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: typography.bodyLarge,
+    fontWeight: fontWeights.medium,
   },
   menuItemDanger: {
   },
@@ -2202,10 +2177,10 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: typography.body,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: typography.body,
     textAlign: "center",
     padding: 20,
   },
@@ -2217,8 +2192,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   retryButtonText: {
-    fontSize: 14,
-    fontWeight: "400",
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
   },
   header: {
     flexDirection: "row",
@@ -2237,13 +2212,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: typography.h3,
-    fontWeight: "300",
+    fontWeight: fontWeights.light,
     letterSpacing: -0.2,
   },
   headerSubtitle: {
     fontSize: typography.caption,
     marginTop: 2,
-    fontWeight: "300",
+    fontWeight: fontWeights.light,
   },
   scrollView: {
     flex: 1,
@@ -2258,7 +2233,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconText: {
-    fontSize: 20,
+    fontSize: typography.displaySmall,
   },
   iconContainer: {
     width: 24,
@@ -2282,17 +2257,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyIcon: {
-    fontSize: 48,
+    fontSize: typography.emojiHuge,
     marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: "400",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.regular,
     marginBottom: 8,
     textAlign: "center",
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.body,
     textAlign: "center",
     marginBottom: 24,
   },
@@ -2328,15 +2303,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "400",
+    fontSize: typography.icon,
+    fontWeight: fontWeights.regular,
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
-    fontSize: 22,
-    fontWeight: "300",
+    fontSize: typography.h1,
+    fontWeight: fontWeights.light,
   },
   exchangeInfo: {
     flexDirection: "row",
@@ -2346,11 +2321,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   modalExchangeName: {
-    fontSize: 16,
-    fontWeight: "400",
+    fontSize: typography.h4,
+    fontWeight: fontWeights.regular,
   },
   modalExchangeCountry: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     marginTop: 2,
   },
   form: {
@@ -2361,13 +2336,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: "400",
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
   },
   input: {
     borderRadius: 8,
     padding: 12,
-    fontSize: 14,
+    fontSize: typography.body,
     borderWidth: 1,
   },
   inputWithButtons: {
@@ -2377,14 +2352,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     paddingRight: 96,
-    fontSize: 14,
+    fontSize: typography.body,
     borderWidth: 1,
   },
   inputWithQR: {
     borderRadius: 8,
     padding: 12,
     paddingRight: 52,
-    fontSize: 14,
+    fontSize: typography.body,
     borderWidth: 1,
   },
   inputActions: {
@@ -2410,7 +2385,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   inputHint: {
-    fontSize: 12,
+    fontSize: typography.caption,
     marginTop: 4,
   },
   modalActions: {
@@ -2471,8 +2446,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   confirmModalTitle: {
-    fontSize: 18,
-    fontWeight: "500",
+    fontSize: typography.icon,
+    fontWeight: fontWeights.medium,
   },
   confirmModalCloseButton: {
     width: 32,
@@ -2481,15 +2456,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmModalCloseIcon: {
-    fontSize: 24,
-    fontWeight: '300',
+    fontSize: typography.display,
+    fontWeight: fontWeights.light,
   },
   confirmModalBody: {
     padding: 24,
   },
   confirmModalMessage: {
-    fontSize: 14,
-    fontWeight: "300",
+    fontSize: typography.body,
+    fontWeight: fontWeights.light,
     lineHeight: 20,
   },
   confirmModalFooter: {
@@ -2506,8 +2481,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmModalButtonText: {
-    fontSize: 15,
-    fontWeight: '400',
+    fontSize: typography.bodyLarge,
+    fontWeight: fontWeights.regular,
   },
   // Details Modal Styles
   detailsModalContent: {
@@ -2548,15 +2523,15 @@ const styles = StyleSheet.create({
     height: 48,
   },
   detailsIconText: {
-    fontSize: 28,
+    fontSize: typography.emoji,
   },
   detailsHeaderText: {
     flex: 1,
     gap: 8,
   },
   detailsExchangeName: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: typography.displaySmall,
+    fontWeight: fontWeights.semibold,
   },
   detailsStatusBadge: {
     flexDirection: 'row',
@@ -2574,15 +2549,15 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   detailsStatusText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.medium,
   },
   detailsSection: {
     marginBottom: 24,
   },
   detailsSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.h4,
+    fontWeight: fontWeights.semibold,
     marginBottom: 12,
   },
   detailsInfoRow: {
@@ -2594,13 +2569,13 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(128, 128, 128, 0.2)',
   },
   detailsInfoLabel: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
     flex: 1,
   },
   detailsInfoValue: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.body,
+    fontWeight: fontWeights.medium,
     flex: 1.5,
     textAlign: 'right',
   },
@@ -2610,8 +2585,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailsFeatureText: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
     lineHeight: 22,
   },
   detailsSecurityBox: {
@@ -2620,8 +2595,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   detailsSecurityText: {
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
     lineHeight: 20,
   },
   detailsModalFooter: {
@@ -2638,16 +2613,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   detailsLoadingText: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: typography.body,
+    fontWeight: fontWeights.regular,
   },
   detailsFeesBox: {
     padding: 12,
     borderRadius: 8,
   },
   detailsFeesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
     marginBottom: 8,
   },
   detailsFeeRow: {
@@ -2657,12 +2632,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   detailsFeeLabel: {
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
   },
   detailsFeeValue: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
   },
   detailsMarketsBox: {
     padding: 16,
@@ -2670,8 +2645,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   detailsMarketsCount: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
   },
   detailsMarketsSample: {
     flexDirection: 'row',
@@ -2686,12 +2661,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   detailsMarketText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.medium,
   },
   detailsMarketsMore: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: typography.caption,
+    fontWeight: fontWeights.regular,
     paddingVertical: 6,
   },
   detailsCapabilitiesBox: {
@@ -2703,8 +2678,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   detailsCapabilityText: {
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
     lineHeight: 20,
   },
   // Card compacto - mesmo padrão Orders
@@ -2742,7 +2717,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   typeIconText: {
-    fontSize: 14,
+    fontSize: typography.iconSmall,
   },
   cardInfo: {
     flex: 1,
@@ -2766,7 +2741,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sideBadgeText: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.bold,
   },
   cardSubtext: {

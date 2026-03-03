@@ -149,25 +149,32 @@ export function useTokenMonitor(tokens: TokenVariation[]) {
         
         if (alert.alertType === 'percentage') {
           // Alerta baseado em variação percentual
-          if (alert.condition === 'below' && token.variation24h <= alert.value) {
-            shouldAlert = true
-            alertTitle = `📉 ${token.symbol} Abaixo de ${alert.value}%`
-            alertMessage = `${token.symbol} caiu para ${token.variation24h.toFixed(2)}% (limite: ${alert.value}%). Preço: $${formatPrice(token.price)}`
-            alertType = 'warning'
-            alertIcon = '⚠️'
-          } else if (alert.condition === 'above' && token.variation24h >= alert.value) {
-            shouldAlert = true
-            alertTitle = `📈 ${token.symbol} Acima de ${alert.value}%`
-            alertMessage = `${token.symbol} subiu para ${token.variation24h.toFixed(2)}% (limite: ${alert.value}%). Preço: $${formatPrice(token.price)}`
-            alertType = 'success'
-            alertIcon = '🚀'
-          }
-          
-          // Remove alerta quando a condição não é mais verdadeira
-          if (alert.condition === 'below' && token.variation24h > alert.value && hasAlerted) {
-            notifiedAlerts.current.delete(alertKey)
-          } else if (alert.condition === 'above' && token.variation24h < alert.value && hasAlerted) {
-            notifiedAlerts.current.delete(alertKey)
+          // Para condição 'below', o value é tratado como negativo (ex: value=5 → queda de -5%)
+          if (alert.condition === 'below') {
+            const targetPercent = -Math.abs(alert.value)
+            if (token.variation24h <= targetPercent && !hasAlerted) {
+              shouldAlert = true
+              alertTitle = `📉 ${token.symbol} Caiu ${Math.abs(alert.value)}%`
+              alertMessage = `${token.symbol} caiu para ${token.variation24h.toFixed(2)}% (limite: ${targetPercent}%). Preço: $${formatPrice(token.price)}`
+              alertType = 'warning'
+              alertIcon = '⚠️'
+            }
+            // Remove alerta quando recuperou acima do threshold
+            if (token.variation24h > targetPercent && hasAlerted) {
+              notifiedAlerts.current.delete(alertKey)
+            }
+          } else if (alert.condition === 'above') {
+            if (token.variation24h >= alert.value && !hasAlerted) {
+              shouldAlert = true
+              alertTitle = `📈 ${token.symbol} Acima de ${alert.value}%`
+              alertMessage = `${token.symbol} subiu para ${token.variation24h.toFixed(2)}% (limite: ${alert.value}%). Preço: $${formatPrice(token.price)}`
+              alertType = 'success'
+              alertIcon = '🚀'
+            }
+            // Remove alerta quando caiu abaixo do threshold
+            if (token.variation24h < alert.value && hasAlerted) {
+              notifiedAlerts.current.delete(alertKey)
+            }
           }
         } else {
           // Alerta baseado em preço absoluto

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native"
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native"
 import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
@@ -103,13 +103,17 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
   })
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}> 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="small" />
         </View>
       ) : (
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchTemplates} />}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 32 }}
+        >
 
           {/* ── Lista de templates da API ── */}
           {templates.map((tpl) => {
@@ -144,7 +148,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
                     <View style={[styles.riskDot, { backgroundColor: tpl.risk.color }]} />
                     <Text style={[styles.riskLabel, { color: tpl.risk.color }]}>{tpl.risk.label}</Text>
                   </View>
-                  <Text style={{ fontSize: 16, color: colors.textSecondary, marginLeft: 6 }}>
+                  <Text style={{ fontSize: typography.h4, color: colors.textSecondary, marginLeft: 6 }}>
                     {isOpen ? "▲" : "▼"}
                   </Text>
                 </View>
@@ -219,14 +223,14 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
             onPress={() => setShowCreateModal(true)}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 28 }}>➕</Text>
+            <Text style={{ fontSize: typography.emoji }}>➕</Text>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={[styles.newTitle, { color: colors.primary }]}>Criar Novo Template</Text>
               <Text style={[styles.newSub, { color: colors.textSecondary }]}>
                 Configure seu próprio template personalizado
               </Text>
             </View>
-            <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
+            <Text style={{ fontSize: typography.displaySmall, color: colors.primary }}>→</Text>
           </TouchableOpacity>
 
         </ScrollView>
@@ -328,7 +332,7 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>✨ Novo Template</Text>
                 <TouchableOpacity onPress={onClose}>
-                  <Text style={{ fontSize: 22, color: colors.textSecondary }}>✕</Text>
+                  <Text style={{ fontSize: typography.h1, color: colors.textSecondary }}>✕</Text>
                 </TouchableOpacity>
               </View>
 
@@ -341,7 +345,7 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
                     style={[styles.iconOption, icon === ic && { borderColor: colors.primary, borderWidth: 2 }]}
                     onPress={() => setIcon(ic)}
                   >
-                    <Text style={{ fontSize: 22 }}>{ic}</Text>
+                    <Text style={{ fontSize: typography.h1 }}>{ic}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -450,7 +454,7 @@ function CreateTemplateModal({ visible, onClose, onSuccess, colors }: {
                 activeOpacity={0.7}
               >
                 {saving ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator size="small" />
                 ) : (
                   <Text style={styles.saveBtnText}>💾 Salvar Template</Text>
                 )}
@@ -482,7 +486,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  cardIcon: { fontSize: 30 },
+  cardIcon: { fontSize: typography.emoji },
   cardName: {
     fontSize: typography.h4,
     fontWeight: fontWeights.medium,

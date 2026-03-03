@@ -3,7 +3,7 @@
  * Mostra tokens marcados como favoritos pelo usuário
  */
 
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from "react-native"
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from "react-native"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "@/contexts/ThemeContext"
@@ -14,6 +14,7 @@ import { useAlerts } from "@/contexts/AlertsContext"
 import { useOrders } from "@/contexts/OrdersContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { apiService } from "@/services/api"
+import { typography, fontWeights } from "@/lib/typography"
 import { CreateAlertModal } from "./create-price-alert-modal"
 import { TokenDetailsModal } from "./token-details-modal"
 import { TradeModal } from "./trade-modal"
@@ -33,13 +34,12 @@ interface TokenData {
 export function WatchlistFavorites() {
   const { colors } = useTheme()
   const { watchlist, removeToken, loading: watchlistLoading } = useWatchlist()
-  const { data: balanceData, loading: balanceLoading, refresh: refreshBalance } = useBalance()
+  const { data: balanceData, loading: balanceLoading, refresh: refreshBalance, refreshing } = useBalance()
   const { hideValue } = usePrivacy()
   const { getAlertsForToken } = useAlerts()
   const { refresh: refreshOrders } = useOrders()
   const { t } = useLanguage()
   
-  const [refreshing, setRefreshing] = useState(false)
   const [alertModalVisible, setAlertModalVisible] = useState(false)
   const [selectedToken, setSelectedToken] = useState<{ symbol: string; price: number; exchangeId?: string; exchangeName?: string } | null>(null)
   const [tokenModalVisible, setTokenModalVisible] = useState(false)
@@ -55,11 +55,7 @@ export function WatchlistFavorites() {
 
   // Refresh
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true)
     await refreshBalance()
-    // ✅ Aguarda um pouco para garantir que a UI processou os novos dados
-    await new Promise(resolve => setTimeout(resolve, 300))
-    setRefreshing(false)
   }, [refreshBalance])
 
   // Remover favorito
@@ -195,16 +191,8 @@ export function WatchlistFavorites() {
   return (
     <ScrollView
       style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-          progressBackgroundColor={colors.surface}
-        />
-      }
     >
       {/* Empty State */}
       {loading && favoriteSections.length === 0 ? (
@@ -451,13 +439,13 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: typography.icon,
+    fontWeight: fontWeights.semibold,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: typography.body,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -467,8 +455,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   variationText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
   },
   exchangeBadge: {
     paddingHorizontal: 8,
@@ -478,8 +466,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   exchangeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
   },
   noBalanceTag: {
@@ -491,7 +479,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   noBalanceText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.medium,
   },
 })

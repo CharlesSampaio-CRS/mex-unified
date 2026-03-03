@@ -12,11 +12,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
-} from "react-native"
+ActivityIndicator } from "react-native"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBackendStrategies, Strategy, UpdateStrategyRequest } from "@/hooks/useBackendStrategies"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
 
 interface EditStrategyModalProps {
@@ -132,8 +131,8 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
               {/* Strategy Info (read-only) */}
               <View style={[styles.infoCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>🪙 {strategy.symbol}</Text>
-                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                  <Text style={{ fontSize: typography.body, color: colors.textSecondary }}>🪙 {strategy.symbol}</Text>
+                  <Text style={{ fontSize: typography.body, color: colors.textSecondary }}>
                     {strategy.exchange_name || strategy.exchange_id}
                   </Text>
                 </View>
@@ -177,7 +176,7 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                 />
                 {ia > 0 && bp > 0 && (
                   <View style={{ marginTop: 6, padding: 8, backgroundColor: '#f59e0b10', borderRadius: 6, borderWidth: 1, borderColor: '#f59e0b30' }}>
-                    <Text style={{ fontSize: 12, color: '#f59e0b', fontWeight: '600' }}>
+                    <Text style={{ fontSize: typography.caption, color: '#f59e0b', fontWeight: fontWeights.semibold }}>
                       🔒 Double-check ativo: ~{(ia / bp).toFixed(4)} moedas
                     </Text>
                   </View>
@@ -196,7 +195,7 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                   keyboardType="decimal-pad"
                 />
                 {bp > 0 && triggerPrice > 0 && (
-                  <Text style={{ fontSize: 12, color: '#10b981', marginTop: 6, fontWeight: '500' }}>
+                  <Text style={{ fontSize: typography.caption, color: '#10b981', marginTop: 6, fontWeight: fontWeights.medium }}>
                     Trigger: ${triggerPrice.toFixed(4)} (base + {tp}% + {fee}% fee)
                   </Text>
                 )}
@@ -214,7 +213,7 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                   />
                 </View>
                 {!stopLossEnabled && (
-                  <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>
+                  <Text style={{ fontSize: typography.caption, color: colors.textSecondary, fontStyle: 'italic' }}>
                     Stop loss desativado — a estratégia nunca vende por queda de preço (hold).
                   </Text>
                 )}
@@ -230,7 +229,7 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                       keyboardType="decimal-pad"
                     />
                     {bp > 0 && stopLossPrice > 0 && (
-                      <Text style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: '500' }}>
+                      <Text style={{ fontSize: typography.caption, color: '#ef4444', marginTop: 6, fontWeight: fontWeights.medium }}>
                         Stop: ${stopLossPrice.toFixed(4)} (base - {sl}%)
                       </Text>
                     )}
@@ -265,7 +264,7 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                 {gradualSell && (
                   <View style={{ gap: 12 }}>
                     <View>
-                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Gradual Take (%)</Text>
+                      <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Gradual Take (%)</Text>
                       <TextInput
                         style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                         placeholder="2.0"
@@ -276,7 +275,7 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                       />
                     </View>
                     <View>
-                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Timer entre lotes (min)</Text>
+                      <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Timer entre lotes (min)</Text>
                       <TextInput
                         style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                         placeholder="15"
@@ -308,29 +307,29 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
 
               {/* Summary */}
               <View style={[styles.summaryCard, { backgroundColor: `${colors.primary}10`, borderColor: colors.primary + '30' }]}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: 8 }}>📋 Resumo das Alterações</Text>
+                <Text style={{ fontSize: typography.bodySmall, fontWeight: fontWeights.semibold, color: colors.primary, marginBottom: 8 }}>📋 Resumo das Alterações</Text>
                 <View style={{ gap: 4 }}>
-                  <Text style={{ fontSize: 12, color: colors.text }}>
+                  <Text style={{ fontSize: typography.caption, color: colors.text }}>
                     {strategy.symbol} — {strategy.exchange_name}
                   </Text>
-                  <Text style={{ fontSize: 12, color: colors.text }}>
+                  <Text style={{ fontSize: typography.caption, color: colors.text }}>
                     Preço de Compra: {bp > 0 ? `$${bp.toFixed(4)}` : '🔄 Auto'}
                   </Text>
                   {ia > 0 && (
-                    <Text style={{ fontSize: 12, color: '#f59e0b' }}>
+                    <Text style={{ fontSize: typography.caption, color: '#f59e0b' }}>
                       💵 Investido: ${ia.toFixed(2)} — Double-check ativo
                     </Text>
                   )}
-                  <Text style={{ fontSize: 12, color: '#10b981' }}>
+                  <Text style={{ fontSize: typography.caption, color: '#10b981' }}>
                     Trigger (TP): {triggerPrice > 0 ? `$${triggerPrice.toFixed(4)}` : '—'} (+{tp}% + {fee}% fee)
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#ef4444' }}>
+                  <Text style={{ fontSize: typography.caption, color: '#ef4444' }}>
                     Stop Loss: {stopLossEnabled ? (stopLossPrice > 0 ? `$${stopLossPrice.toFixed(4)} (-${sl}%)` : `(-${sl}%)`) : '🚫 Desativado'}
                   </Text>
-                  <Text style={{ fontSize: 12, color: colors.text }}>
+                  <Text style={{ fontSize: typography.caption, color: colors.text }}>
                     Gradual: {gradualSell ? `timer ${timerGradualMin}min, step ${gradualTakePercent}%` : 'OFF'}
                   </Text>
-                  <Text style={{ fontSize: 12, color: colors.text }}>
+                  <Text style={{ fontSize: typography.caption, color: colors.text }}>
                     Expiração: {timeExecutionMin}min ({((parseInt(timeExecutionMin) || 120) / 60).toFixed(1)}h)
                   </Text>
                 </View>
@@ -354,7 +353,7 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                 onPress={handleSave}
                 disabled={!canSave || loading}
               >
-                {loading ? <AnimatedLogoIcon size={24} /> : (
+                {loading ? <ActivityIndicator size="small" /> : (
                   <Text style={styles.buttonTextPrimary}>💾 Salvar</Text>
                 )}
               </TouchableOpacity>
@@ -378,14 +377,14 @@ const styles = StyleSheet.create({
   infoCard: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 20 },
   fieldGroup: { marginBottom: 20 },
   fieldCard: { marginBottom: 20, borderWidth: 1, borderRadius: 14, padding: 16 },
-  fieldLabel: { fontSize: 15, fontWeight: '600', marginBottom: 8 },
-  fieldInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18, fontWeight: '600' },
-  fieldHint: { fontSize: 12, marginTop: 6, fontStyle: 'italic' },
+  fieldLabel: { fontSize: typography.bodyLarge, fontWeight: fontWeights.semibold, marginBottom: 8 },
+  fieldInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: typography.icon, fontWeight: fontWeights.semibold },
+  fieldHint: { fontSize: typography.caption, marginTop: 6, fontStyle: 'italic' },
   summaryCard: { padding: 14, borderRadius: 12, borderWidth: 0.5, marginTop: 8 },
   footer: { flexDirection: "row", gap: 12, padding: 20, borderTopWidth: 1 },
   button: { flex: 1, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", minHeight: 48 },
   buttonSecondary: { borderWidth: 1 },
   buttonPrimary: {},
-  buttonText: { fontSize: 14, fontWeight: "400" },
-  buttonTextPrimary: { color: "#1a1a1a", fontSize: 14, fontWeight: "500" },
+  buttonText: { fontSize: typography.body, fontWeight: fontWeights.regular },
+  buttonTextPrimary: { color: "#1a1a1a", fontSize: typography.body, fontWeight: fontWeights.medium },
 })

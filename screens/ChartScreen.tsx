@@ -1,17 +1,29 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native"
-import { memo } from "react"
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from "react-native"
+import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
 
 export const ChartScreen = memo(function ChartScreen({ navigation }: any) {
   const { colors } = useTheme()
+  const [refreshing, setRefreshing] = useState(false)
 
   useHeader({ title: "Chart", subtitle: "Recurso Chart" })
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    // Simula carregamento — quando tiver dados reais, substituir pelo fetch
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    setRefreshing(false)
+  }, [])
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.content}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>📊 Chart Feature</Text>
           <Text style={[styles.description, { color: colors.textSecondary }]}>

@@ -17,7 +17,6 @@ interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  isLoadingData: boolean
   isAuthenticated: boolean
   biometricAvailable: boolean
   biometricType: string | null
@@ -32,9 +31,6 @@ interface AuthContextType {
   registerWithApple: () => Promise<void>
   logout: () => Promise<void>
   deleteAccount: () => Promise<void>
-  
-  // Loading control
-  setLoadingDataComplete: () => void
   
   // Biometric settings
   enableBiometric: () => Promise<boolean>
@@ -64,7 +60,6 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingData, setIsLoadingData] = useState(false)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [biometricType, setBiometricType] = useState<string | null>(null)
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false)
@@ -156,11 +151,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           console.log('✅ Token validado com sucesso no handler')
           
-          // Salvar tokens
+          // 🚀 OTIMIZAÇÃO: Salva access_token PRIMEIRO (necessário para chamadas de dados)
           await secureStorage.setItemAsync('access_token', access_token)
-          if (refresh_token) {
-            await secureStorage.setItemAsync('refresh_token', refresh_token)
-          }
           
           // Criar objeto user
           const userData = {
@@ -170,13 +162,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             authProvider: 'google' as const
           }
           
-          // Salvar user
-          await secureStorage.setItemAsync('user_data', JSON.stringify(userData))
-          await secureStorage.setItemAsync('user_id', user_id)
-          
+          // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento de dados
           console.log('✅ Setando usuário autenticado no estado (via evento)...')
-          // Atualizar estado
+          setHasValidToken(true)
           setUser(userData)
+          
+          // 🚀 Salva dados persistentes em PARALELO (não bloqueia)
+          Promise.all([
+            refresh_token 
+              ? secureStorage.setItemAsync('refresh_token', refresh_token)
+              : Promise.resolve(),
+            secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+            secureStorage.setItemAsync('user_id', user_id),
+          ]).catch(err => {
+            console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+          })
         } catch (error) {
           console.error('❌ Error processing OAuth callback:', error)
           // Limpa qualquer dado que possa ter sido salvo parcialmente
@@ -319,7 +319,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             if (data.valid) {
               console.log('✅ Access token válido - sessão restaurada')
               setHasValidToken(true)
-              setIsLoadingData(true)
               setUser(parsedUser)
               return true
             }
@@ -334,7 +333,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (newToken) {
         console.log('✅ Sessão restaurada via refresh token')
         setHasValidToken(true)
-        setIsLoadingData(true)
         setUser(parsedUser)
         return true
       }
@@ -461,7 +459,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true)
-      setIsLoadingData(true)
       
       // Chama API real de login
       const response = await fetch(`${config.kongBaseUrl}/auth/login`, {
@@ -482,17 +479,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       const data = await response.json()
       
-      // Salva tokens
+      // 🚀 OTIMIZAÇÃO: Salva token de acesso PRIMEIRO (necessário para as chamadas de dados)
+      // e faz os demais saves em paralelo para não atrasar o carregamento
       await secureStorage.setItemAsync('access_token', data.token)
-      if (data.refresh_token) {
-        await secureStorage.setItemAsync('refresh_token', data.refresh_token)
-      }
       
-      // Salva dados do usuário
-      await secureStorage.setItemAsync('user_id', data.user.id)
-      await secureStorage.setItemAsync('user_email', data.user.email)
-      
-      const user: User = {
+      const userData: User = {
         id: data.user.id,
         email: data.user.email,
         name: data.user.name || email.split('@')[0],
@@ -500,20 +491,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authProvider: 'email'
       }
       
-      await saveUser(user)
-      
-      // Pequeno delay para garantir que o estado foi atualizado
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
+      // 🚀 IMEDIATAMENTE seta o usuário no estado para disparar o carregamento de dados
+      // BalanceContext e OrdersContext reagem ao user?.id via useEffect
       console.log('✅ Setando usuário autenticado no estado...')
       setHasValidToken(true)
-      setUser(user)
+      setUser(userData)
       
-      console.log('✅ Login completo!')
+      // 🚀 Salva dados persistentes em PARALELO (não bloqueia o carregamento)
+      Promise.all([
+        data.refresh_token 
+          ? secureStorage.setItemAsync('refresh_token', data.refresh_token) 
+          : Promise.resolve(),
+        secureStorage.setItemAsync('user_id', data.user.id),
+        secureStorage.setItemAsync('user_email', data.user.email),
+        secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+      ]).catch(err => {
+        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+      })
+      
+      console.log('✅ Login completo! Dados sendo carregados em background...')
     } catch (error) {
       console.error('Login error:', error)
       setHasValidToken(false)
-      setIsLoadingData(false)
       throw error
     } finally {
       setIsLoading(false)
@@ -527,9 +526,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (!biometricAvailable || !isBiometricEnabled) {
         throw new Error('Biometric authentication not available or not enabled')
       }
-
-      // Define isLoadingData ANTES de autenticar para evitar flash
-      setIsLoadingData(true)
       
       // 🔐 BIOMETRIA = DESBLOQUEIO LOCAL (não chama servidor!)
       // Apenas verifica que o dono do celular está presente
@@ -549,7 +545,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (!userData) {
           console.error('❌ Dados do usuário não encontrados')
-          setIsLoadingData(false)
           throw new Error('Dados do usuário não encontrados. Faça login novamente.')
         }
         
@@ -568,14 +563,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         // Se refresh token também expirou (>30 dias), precisa login completo
         console.log('⚠️ Sessão expirada (refresh token vencido) - precisa login completo')
-        setIsLoadingData(false)
         throw new Error('Sua sessão expirou. Faça login novamente.')
         
         // O loading será desativado pelo App.tsx quando os dados estiverem prontos
       } else {
         // ❌ Usuário cancelou ou falhou a autenticação
         console.log('👤 Usuário cancelou a autenticação biométrica')
-        setIsLoadingData(false)
         
         // Cria erro específico para cancelamento
         const cancelError = new Error('User canceled biometric authentication')
@@ -584,7 +577,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     } catch (error: any) {
       console.error('Biometric login error:', error)
-      setIsLoadingData(false)
       
       // Se já é um erro de cancelamento, apenas repropaga
       if (error.name === 'BiometricCancelError') {
@@ -661,16 +653,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 
                 const validationData = await verifyResponse.json()
                 
-                if (refresh_token) {
-                  await secureStorage.setItemAsync('refresh_token', refresh_token)
-                }
-                
-                // Salva dados do usuário
-                await secureStorage.setItemAsync('user_id', user_id)
-                await secureStorage.setItemAsync('user_email', email)
-                if (name) await secureStorage.setItemAsync('user_name', name)
-                
-                const user: User = {
+                // 🚀 OTIMIZAÇÃO: Seta usuário IMEDIATAMENTE para disparar carregamento
+                const userData: User = {
                   id: user_id,
                   email: email,
                   name: name || email.split('@')[0],
@@ -678,15 +662,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                   authProvider: 'google'
                 }
                 
-                await saveUser(user)
-                
-                // IMPORTANTE: Define isLoadingData ANTES de setUser para evitar flash da tela de login
-                setIsLoadingData(true)
-                
-                // Pequeno delay para garantir que o estado foi atualizado
-                await new Promise(resolve => setTimeout(resolve, 50))
                 setHasValidToken(true)
-                setUser(user)
+                setUser(userData)
+                
+                // 🚀 Salva dados persistentes em PARALELO (não bloqueia)
+                Promise.all([
+                  refresh_token 
+                    ? secureStorage.setItemAsync('refresh_token', refresh_token) 
+                    : Promise.resolve(),
+                  secureStorage.setItemAsync('user_id', user_id),
+                  secureStorage.setItemAsync('user_email', email),
+                  name ? secureStorage.setItemAsync('user_name', name) : Promise.resolve(),
+                  secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+                ]).catch(err => {
+                  console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+                })
+                
                 resolve()
               } catch (saveError) {
                 console.error('❌ Error validating or saving user data:', saveError)
@@ -809,15 +800,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             throw new Error('Invalid OAuth response from Kong')
           }
           
+          // 🚀 OTIMIZAÇÃO: Salva access_token PRIMEIRO (necessário para chamadas de dados)
           await secureStorage.setItemAsync('access_token', accessToken)
-          if (refreshToken) {
-            await secureStorage.setItemAsync('refresh_token', refreshToken)
-          }
-          await secureStorage.setItemAsync('user_id', userId)
-          await secureStorage.setItemAsync('user_email', email)
-          if (name) await secureStorage.setItemAsync('user_name', name)
           
-          const user: User = {
+          const userData: User = {
             id: userId,
             email: email,
             name: name || email.split('@')[0],
@@ -825,9 +811,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             authProvider: 'google'
           }
           
-          await saveUser(user)
-          setUser(user)
-          setIsLoadingData(true)
+          // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento
+          setHasValidToken(true)
+          setUser(userData)
+          
+          // 🚀 Salva dados persistentes em PARALELO (não bloqueia)
+          Promise.all([
+            refreshToken 
+              ? secureStorage.setItemAsync('refresh_token', refreshToken) 
+              : Promise.resolve(),
+            secureStorage.setItemAsync('user_id', userId),
+            secureStorage.setItemAsync('user_email', email),
+            name ? secureStorage.setItemAsync('user_name', name) : Promise.resolve(),
+            secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+          ]).catch(err => {
+            console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+          })
         } else {
           throw new Error('OAuth cancelled or failed')
         }
@@ -857,15 +856,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authProvider: 'apple'
       }
       
-      await saveUser(mockUser)
+      // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento
+      setHasValidToken(true)
+      setUser(mockUser)
       
-      // Ativa o loading de dados após login bem-sucedido
-      setIsLoadingData(true)
-      
-      // Aguarda um tick para garantir que isLoadingData seja propagado
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
-      // O loading será desativado pelo App.tsx quando os dados estiverem prontos
+      // Salva dados persistentes em background (não bloqueia)
+      saveUser(mockUser).catch(err => {
+        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+      })
     } catch (error) {
       console.error('Apple login error:', error)
       throw error
@@ -877,7 +875,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const register = async (email: string, password: string, name: string) => {
     try {
       setIsLoading(true)
-      setIsLoadingData(true)
 
       // Chama API real de registro
       const registerPayload = {
@@ -914,17 +911,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         throw new Error(errorMessage)
       }
 
-      // Salva tokens
+      // 🚀 OTIMIZAÇÃO: Salva token de acesso PRIMEIRO (necessário para as chamadas de dados)
       await secureStorage.setItemAsync('access_token', data.token)
-      if (data.refresh_token) {
-        await secureStorage.setItemAsync('refresh_token', data.refresh_token)
-      }
 
-      // Salva dados do usuário
-      await secureStorage.setItemAsync('user_id', data.user.id)
-      await secureStorage.setItemAsync('user_email', data.user.email)
-
-      const user: User = {
+      const userData: User = {
         id: data.user.id,
         email: data.user.email,
         name: data.user.name || email.split('@')[0],
@@ -932,23 +922,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authProvider: 'email'
       }
 
-      console.log('[REGISTER] Antes de saveUser:', user)
-      await saveUser(user)
-      console.log('[REGISTER] Depois de saveUser')
-
-      // Pequeno delay para garantir que o estado foi atualizado
-      await new Promise(resolve => setTimeout(resolve, 50))
-
-      console.log('[REGISTER] Antes de setUser')
+      // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento de dados
+      console.log('[REGISTER] Setando usuário no estado para carregar dados...')
       setHasValidToken(true)
-      setUser(user)
-      console.log('[REGISTER] Depois de setUser')
+      setUser(userData)
 
-      console.log('✅ Registro completo!')
+      // 🚀 Salva dados persistentes em PARALELO (não bloqueia)
+      Promise.all([
+        data.refresh_token 
+          ? secureStorage.setItemAsync('refresh_token', data.refresh_token) 
+          : Promise.resolve(),
+        secureStorage.setItemAsync('user_id', data.user.id),
+        secureStorage.setItemAsync('user_email', data.user.email),
+        secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
+      ]).catch(err => {
+        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+      })
+
+      console.log('✅ Registro completo! Dados sendo carregados em background...')
     } catch (error) {
       console.error('Register error:', error)
       setHasValidToken(false)
-      setIsLoadingData(false)
       throw error
     } finally {
       setIsLoading(false)
@@ -1006,7 +1000,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null)
       setHasValidToken(false)
       setIsBiometricEnabled(false)
-      setIsLoadingData(false)
       setIsLoading(false)
       
       console.log('✅ Logout completo - todos os dados limpos')
@@ -1123,14 +1116,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const setLoadingDataComplete = () => {
-    setIsLoadingData(false)
-  }
-
   const value: AuthContextType = {
     user,
     isLoading,
-    isLoadingData,
     isAuthenticated: !!user,
     biometricAvailable,
     biometricType,
@@ -1146,8 +1134,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     registerWithApple,
     logout,
     deleteAccount,
-    
-    setLoadingDataComplete,
     
     enableBiometric,
     disableBiometric,

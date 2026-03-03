@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
-} from 'react-native'
-import Svg, { Path, Circle } from 'react-native-svg'
+ActivityIndicator } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useBalance } from '../contexts/BalanceContext'
@@ -18,39 +17,13 @@ import { getExchangeBalances, getExchangeId, getExchangeName } from '../lib/exch
 import { TokenDetailsModal } from './token-details-modal'
 import { apiService } from '../services/api'
 
-// Close Icon (X)
+// Icon components usando Ionicons (fonte única)
 const CloseIcon = ({ color }: { color: string }) => (
-  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M18 6L6 18M6 6l12 12"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="close-outline" size={20} color={color} />
 )
 
-// Search Icon
 const SearchIcon = ({ color }: { color: string }) => (
-  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <Circle 
-      cx="11" 
-      cy="11" 
-      r="8" 
-      stroke={color} 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    />
-    <Path
-      d="m21 21-4.35-4.35"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
+  <Ionicons name="search-outline" size={20} color={color} />
 )
 
 interface TokenSearchModalProps {
@@ -351,7 +324,7 @@ export function TokenSearchModal({ visible, onClose }: TokenSearchModalProps) {
               <View style={styles.resultsContainer}>
                 {(loading || searchingCoinGecko) ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={colors.primary} />
+                    <ActivityIndicator size="small" />
                     <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                       {searchingCoinGecko ? '🦎 Buscando na CoinGecko...' : t('common.loading')}
                     </Text>

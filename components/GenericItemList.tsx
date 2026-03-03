@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AnimatedLogoIcon } from './AnimatedLogoIcon';
 import { GradientCard } from './GradientCard';
+import { typography, fontWeights } from '../lib/typography';
 
 // Tipo genérico para o item
 interface GenericItem {
@@ -101,7 +101,7 @@ export function GenericItemList<T extends GenericItem>({
               </Text>
               {section.loading ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <AnimatedLogoIcon size={16} />
+                  <ActivityIndicator size="small" />
                   <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
                     {t('common.loading')}
                   </Text>
@@ -116,7 +116,7 @@ export function GenericItemList<T extends GenericItem>({
             {/* Loading state */}
             {section.loading ? (
               <View style={[styles.loadingContainer, { backgroundColor: colors.surface }]}>
-                <AnimatedLogoIcon size={24} />
+                <ActivityIndicator size="small" />
                 <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                   {t('common.loading')}
                 </Text>
@@ -169,7 +169,7 @@ export function GenericItemList<T extends GenericItem>({
                           <Text style={[
                             styles.detailValue,
                             { color: colors.text },
-                            detail.bold && { fontWeight: '600' }
+                            detail.bold && { fontWeight: fontWeights.semibold }
                           ]}>
                             {detail.value}
                           </Text>
@@ -213,7 +213,7 @@ export function GenericItemList<T extends GenericItem>({
                           >
                             {isProcessing ? (
                               <>
-                                <AnimatedLogoIcon size={16} />
+                                <ActivityIndicator size="small" />
                                 <Text style={[styles.actionButtonText, { color: colors.success }]}>
                                   {config.buttons.secondary.loadingText || 'Processando...'}
                                 </Text>
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.body,
     textAlign: 'center',
   },
   exchangeSection: {
@@ -262,11 +262,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,          // Reduzido
   },
   exchangeName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: typography.bodyLarge,
+    fontWeight: fontWeights.semibold,
   },
   itemCount: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
   },
   loadingContainer: {
     padding: 16,              // Reduzido
@@ -276,8 +276,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,          // Reduzido
   },
   loadingText: {
-    marginTop: 6,             // Reduzido
-    fontSize: 13,
+    marginTop: 6,
+    fontSize: typography.bodySmall,
   },
   emptySection: {
     padding: 16,              // Reduzido
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,          // Reduzido
   },
   emptySectionText: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
     fontStyle: 'italic',
   },
   itemCard: {
@@ -307,8 +307,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   itemSymbol: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0.2,
   },
   itemSubtitle: {
@@ -323,10 +323,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailLabel: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
   },
   detailValue: {
-    fontSize: 13,
+    fontSize: typography.bodySmall,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -345,8 +345,8 @@ const styles = StyleSheet.create({
     minHeight: 40,            // Reduzido para mobile
   },
   detailsButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
   },
   actionButton: {
     flex: 1,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.body,
+    fontWeight: fontWeights.semibold,
   },
 });

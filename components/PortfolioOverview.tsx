@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/services/api"
 import { currencyService } from "@/services/currencyService"
 import { SkeletonPortfolioOverview } from "./SkeletonLoaders"
-import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { PortfolioChart } from "./PortfolioChart"
 import { DistributionCharts } from "./DistributionCharts"
 import { ExchangeBalancesList } from "./ExchangeBalancesList"
@@ -420,7 +419,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   label: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     letterSpacing: 0.5,
     textTransform: "uppercase",
@@ -438,7 +437,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   refreshIcon: {
-    fontSize: 14,
+    fontSize: typography.body,
     fontWeight: fontWeights.light,
     opacity: 0.5,
   },
@@ -455,12 +454,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   value: {
-    fontSize: 15,
+    fontSize: typography.bodyLarge,
     fontWeight: fontWeights.light,
     letterSpacing: -0.3,
   },
   currencyLabel: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
     opacity: 0.45,
     letterSpacing: 0.3,
@@ -472,12 +471,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   brlValue: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.regular,
     opacity: 0.55,
   },
   lastUpdated: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.light,
     opacity: 0.35,
   },
@@ -489,21 +488,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pnlInlineArrow: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.bold,
     opacity: 0.85,
   },
   pnlInlineValue: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.semibold,
   },
   pnlInlinePercent: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     opacity: 0.7,
   },
   pnlInlineLabel: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.regular,
     opacity: 0.35,
     marginLeft: 2,
@@ -524,7 +523,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   pnlPillLabel: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.semibold,
     opacity: 0.45,
     letterSpacing: 0.4,
@@ -535,11 +534,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   pnlPillArrow: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.bold,
   },
   pnlPillValue: {
-    fontSize: 11,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.semibold,
   },
   // Seção PNL linha (OLD)
@@ -554,7 +553,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   pnlLabel: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.regular,
     letterSpacing: 0.4,
     textTransform: "uppercase",
@@ -566,27 +565,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pnlArrow: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.light,
     opacity: 0.5,
   },
   pnlValue: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.medium,
     letterSpacing: 0,
     flex: 1,
   },
   pnlPercent: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     opacity: 0.55,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: typography.caption,
     textAlign: "center",
   },
   exchangesCount: {
-    fontSize: 11,
+    fontSize: typography.tiny,
   },
   refreshButtonDisabled: {
     opacity: 0.5,
@@ -628,7 +627,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   pnlCardLabel: {
-    fontSize: 8,
+    fontSize: typography.pico,
     fontWeight: fontWeights.medium,
     opacity: 0.45,
   },
@@ -638,15 +637,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   pnlCardArrow: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.semibold,
   },
   pnlCardValue: {
-    fontSize: 10,
+    fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
   },
   pnlCardPercent: {
-    fontSize: 9,
+    fontSize: typography.badge,
     fontWeight: fontWeights.regular,
     opacity: 0.65,
   },

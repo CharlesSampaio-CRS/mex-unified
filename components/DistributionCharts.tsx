@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { memo, useState } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
-import { fontWeights } from '../lib/typography'
+import { fontWeights, typography } from '../lib/typography'
 import { ExchangesPieChart } from './ExchangesPieChart'
 import { TokensPieChart } from './TokensPieChart'
 
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1.5,
   },
   tabText: {
-    fontSize: 12,
+    fontSize: typography.caption,
     fontWeight: fontWeights.regular,
     letterSpacing: 0.3,
   },

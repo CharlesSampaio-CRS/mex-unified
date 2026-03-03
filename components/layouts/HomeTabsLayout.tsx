@@ -21,18 +21,10 @@ export const HomeTabsLayout: React.FC<HomeTabsLayoutProps> = ({ pnl, pnlLoading 
   return (
     <View style={{ flex: 1 }}>
       {/* Conteúdo scrollável - apenas Summary */}
-      <ScrollView 
-        style={{ flex: 1 }} 
+      <ScrollView
+        style={{ flex: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshBalance} />}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refreshBalance}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressBackgroundColor={colors.surface}
-          />
-        }
       >
         <View style={{ gap: 16, paddingTop: 16, paddingHorizontal: 16 }}>
           <PortfolioOverview pnl={pnl} pnlLoading={pnlLoading} />
