@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, TouchableOpacity } from "react-native"
 import { memo, useState, useCallback, useMemo, useEffect } from "react"
-import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg"
+import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgLinearGradient, Stop, ClipPath, Rect, G } from "react-native-svg"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
@@ -130,7 +130,7 @@ const EvolutionChart = memo(function EvolutionChart({
     )
   }
 
-  const points = valuesToPoints(values, CHART_W, CHART_H, CHART_PAD, 12)
+  const points = valuesToPoints(values, CHART_W, CHART_H, CHART_PAD, 16)
   const linePath = buildSmoothPath(points)
   const areaPath = buildAreaPath(points, CHART_H)
   const isPositive = values[values.length - 1] >= values[0]
@@ -187,32 +187,37 @@ const EvolutionChart = memo(function EvolutionChart({
             <Stop offset="0%" stopColor={lineColor} stopOpacity={0.25} />
             <Stop offset="100%" stopColor={lineColor} stopOpacity={0} />
           </SvgLinearGradient>
+          <ClipPath id="evoClip">
+            <Rect x={0} y={0} width={CHART_W} height={CHART_H} />
+          </ClipPath>
         </Defs>
 
-        {[0.25, 0.5, 0.75].map(frac => (
-          <Line
-            key={frac}
-            x1={CHART_PAD} y1={12 + frac * (CHART_H - 24)}
-            x2={CHART_W - CHART_PAD} y2={12 + frac * (CHART_H - 24)}
-            stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}
-            strokeWidth={1}
-          />
-        ))}
-
-        <Path d={areaPath} fill="url(#evoGrad)" />
-        <Path d={linePath} stroke={lineColor} strokeWidth={2} fill="none" strokeLinecap="round" />
-
-        {selected && (
-          <>
+        <G clipPath="url(#evoClip)">
+          {[0.25, 0.5, 0.75].map(frac => (
             <Line
-              x1={selected.point.x} y1={0}
-              x2={selected.point.x} y2={CHART_H}
-              stroke={colors.textTertiary} strokeWidth={0.5} strokeDasharray="3,3"
+              key={frac}
+              x1={CHART_PAD} y1={16 + frac * (CHART_H - 32)}
+              x2={CHART_W - CHART_PAD} y2={16 + frac * (CHART_H - 32)}
+              stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}
+              strokeWidth={1}
             />
-            <Circle cx={selected.point.x} cy={selected.point.y} r={4} fill={lineColor} />
-            <Circle cx={selected.point.x} cy={selected.point.y} r={6} fill={lineColor} opacity={0.2} />
-          </>
-        )}
+          ))}
+
+          <Path d={areaPath} fill="url(#evoGrad)" />
+          <Path d={linePath} stroke={lineColor} strokeWidth={2} fill="none" strokeLinecap="round" />
+
+          {selected && (
+            <>
+              <Line
+                x1={selected.point.x} y1={0}
+                x2={selected.point.x} y2={CHART_H}
+                stroke={colors.textTertiary} strokeWidth={0.5} strokeDasharray="3,3"
+              />
+              <Circle cx={selected.point.x} cy={selected.point.y} r={4} fill={lineColor} />
+              <Circle cx={selected.point.x} cy={selected.point.y} r={6} fill={lineColor} opacity={0.2} />
+            </>
+          )}
+        </G>
       </Svg>
 
       {/* Eixo X */}
@@ -323,11 +328,12 @@ const ComparisonChart = memo(function ComparisonChart({
   const globalMax = Math.max(...allValues)
   const range = globalMax - globalMin || 1
 
-  // Converter para pontos usando escala global
+  // Converter para pontos usando escala global (padY=16 para evitar overflow)
+  const COMP_PAD_Y = 16
   const toPoints = (pctValues: number[]) =>
     pctValues.map((v, i) => ({
       x: CHART_PAD + (i / Math.max(pctValues.length - 1, 1)) * (CHART_W - 2 * CHART_PAD),
-      y: 12 + ((globalMax - v) / range) * (COMP_CHART_H - 24),
+      y: COMP_PAD_Y + ((globalMax - v) / range) * (COMP_CHART_H - 2 * COMP_PAD_Y),
     }))
 
   const portPoints = toPoints(portPct)
@@ -335,7 +341,7 @@ const ComparisonChart = memo(function ComparisonChart({
   const ethPoints = ethPct ? toPoints(ethPct) : null
 
   // Linha de 0%
-  const zeroY = 12 + ((globalMax - 0) / range) * (COMP_CHART_H - 24)
+  const zeroY = COMP_PAD_Y + ((globalMax - 0) / range) * (COMP_CHART_H - 2 * COMP_PAD_Y)
 
   // Valores finais para a legenda
   const portFinal = portPct[portPct.length - 1]
@@ -393,65 +399,71 @@ const ComparisonChart = memo(function ComparisonChart({
 
       {/* SVG */}
       <Svg width={CHART_W} height={COMP_CHART_H} style={{ alignSelf: 'center' }}>
-        {/* Grid */}
-        {[0.25, 0.5, 0.75].map(frac => (
-          <Line
-            key={frac}
-            x1={CHART_PAD} y1={12 + frac * (COMP_CHART_H - 24)}
-            x2={CHART_W - CHART_PAD} y2={12 + frac * (COMP_CHART_H - 24)}
-            stroke={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
-            strokeWidth={1}
-          />
-        ))}
-
-        {/* Linha de 0% */}
-        {zeroY > 10 && zeroY < COMP_CHART_H - 10 && (
-          <Line
-            x1={CHART_PAD} y1={zeroY}
-            x2={CHART_W - CHART_PAD} y2={zeroY}
-            stroke={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
-            strokeWidth={1}
-            strokeDasharray="4,4"
-          />
-        )}
-
-        {/* ETH line */}
-        {ethPoints && (
-          <Path d={buildSmoothPath(ethPoints)} stroke={COMP_COLORS.eth} strokeWidth={1.5} fill="none" strokeLinecap="round" opacity={0.7} />
-        )}
-
-        {/* BTC line */}
-        {btcPoints && (
-          <Path d={buildSmoothPath(btcPoints)} stroke={COMP_COLORS.btc} strokeWidth={1.5} fill="none" strokeLinecap="round" opacity={0.7} />
-        )}
-
-        {/* Portfolio line (mais forte) */}
         <Defs>
           <SvgLinearGradient id="compPortGrad" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0%" stopColor={COMP_COLORS.portfolio} stopOpacity={0.15} />
             <Stop offset="100%" stopColor={COMP_COLORS.portfolio} stopOpacity={0} />
           </SvgLinearGradient>
+          <ClipPath id="compClip">
+            <Rect x={0} y={0} width={CHART_W} height={COMP_CHART_H} />
+          </ClipPath>
         </Defs>
-        <Path d={buildAreaPath(portPoints, COMP_CHART_H)} fill="url(#compPortGrad)" />
-        <Path d={buildSmoothPath(portPoints)} stroke={COMP_COLORS.portfolio} strokeWidth={2.5} fill="none" strokeLinecap="round" />
 
-        {/* Touch indicator */}
-        {selected && (
-          <>
+        <G clipPath="url(#compClip)">
+          {/* Grid */}
+          {[0.25, 0.5, 0.75].map(frac => (
             <Line
-              x1={selected.point.x} y1={0}
-              x2={selected.point.x} y2={COMP_CHART_H}
-              stroke={colors.textTertiary} strokeWidth={0.5} strokeDasharray="3,3"
+              key={frac}
+              x1={CHART_PAD} y1={COMP_PAD_Y + frac * (COMP_CHART_H - 2 * COMP_PAD_Y)}
+              x2={CHART_W - CHART_PAD} y2={COMP_PAD_Y + frac * (COMP_CHART_H - 2 * COMP_PAD_Y)}
+              stroke={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
+              strokeWidth={1}
             />
-            <Circle cx={selected.point.x} cy={selected.point.y} r={4} fill={COMP_COLORS.portfolio} />
-            {btcPoints && (
-              <Circle cx={btcPoints[selectedIdx!].x} cy={btcPoints[selectedIdx!].y} r={3} fill={COMP_COLORS.btc} />
-            )}
-            {ethPoints && (
-              <Circle cx={ethPoints[selectedIdx!].x} cy={ethPoints[selectedIdx!].y} r={3} fill={COMP_COLORS.eth} />
-            )}
-          </>
-        )}
+          ))}
+
+          {/* Linha de 0% */}
+          {zeroY > 10 && zeroY < COMP_CHART_H - 10 && (
+            <Line
+              x1={CHART_PAD} y1={zeroY}
+              x2={CHART_W - CHART_PAD} y2={zeroY}
+              stroke={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
+              strokeWidth={1}
+              strokeDasharray="4,4"
+            />
+          )}
+
+          {/* ETH line */}
+          {ethPoints && (
+            <Path d={buildSmoothPath(ethPoints)} stroke={COMP_COLORS.eth} strokeWidth={1.5} fill="none" strokeLinecap="round" opacity={0.7} />
+          )}
+
+          {/* BTC line */}
+          {btcPoints && (
+            <Path d={buildSmoothPath(btcPoints)} stroke={COMP_COLORS.btc} strokeWidth={1.5} fill="none" strokeLinecap="round" opacity={0.7} />
+          )}
+
+          {/* Portfolio line (mais forte) */}
+          <Path d={buildAreaPath(portPoints, COMP_CHART_H)} fill="url(#compPortGrad)" />
+          <Path d={buildSmoothPath(portPoints)} stroke={COMP_COLORS.portfolio} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+
+          {/* Touch indicator */}
+          {selected && (
+            <>
+              <Line
+                x1={selected.point.x} y1={0}
+                x2={selected.point.x} y2={COMP_CHART_H}
+                stroke={colors.textTertiary} strokeWidth={0.5} strokeDasharray="3,3"
+              />
+              <Circle cx={selected.point.x} cy={selected.point.y} r={4} fill={COMP_COLORS.portfolio} />
+              {btcPoints && (
+                <Circle cx={btcPoints[selectedIdx!].x} cy={btcPoints[selectedIdx!].y} r={3} fill={COMP_COLORS.btc} />
+              )}
+              {ethPoints && (
+                <Circle cx={ethPoints[selectedIdx!].x} cy={ethPoints[selectedIdx!].y} r={3} fill={COMP_COLORS.eth} />
+              )}
+            </>
+          )}
+        </G>
       </Svg>
 
       {/* Eixo X */}
