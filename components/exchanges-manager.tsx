@@ -3,22 +3,17 @@ import { CustomPullToRefreshScrollView } from './CustomPullToRefreshScrollView';
 import { useEffect, useState, useMemo, useCallback, memo } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
-import { exchangeService } from "@/services/exchange-service"
 import { AvailableExchange, LinkedExchange } from "@/types/api"
-import { config } from "@/lib/config"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useBalance } from "@/contexts/BalanceContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useCacheInvalidation } from "@/contexts/CacheInvalidationContext"
 import { QRScanner } from "./QRScanner"
-import { LogoIcon } from "./LogoIcon"
 import { AnimatedLogoIcon } from "./AnimatedLogoIcon"
 import { typography, fontWeights } from "@/lib/typography"
-import { spacing, borderRadius, shadows } from "@/lib/layout"
-import { getExchangeLogo } from "@/lib/exchange-logos"
+import { spacing } from "@/lib/layout"
 
-import { encryptExchangeCredentials } from "@/lib/encryption"
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 
 // Mapeamento dos logos locais das exchanges
