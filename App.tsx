@@ -29,6 +29,8 @@ import { SystemScreen } from "./screens/SystemScreen"
 import { LoginScreen } from "./screens/LoginScreen"
 import { SignUpScreen } from "./screens/SignUpScreen"
 import { WatchlistManager } from "./components/WatchlistManager"
+import { FavoritesScreen } from "./screens/FavoritesScreen"
+import { AlertsScreen } from "./screens/AlertsScreen"
 import { StarScreen } from "./screens/StarScreen"
 import { HeartScreen } from "./screens/HeartScreen"
 import { FireScreen } from "./screens/FireScreen"
@@ -147,9 +149,16 @@ function MainTabs() {
         />
         <Tab.Screen
           name="Favoritos"
-          component={WatchlistManager}
+          component={FavoritesScreen}
           options={{
-            tabBarButton: () => null, // Oculta da navegação inferior
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Alertas"
+          component={AlertsScreen}
+          options={{
+            tabBarButton: () => null,
           }}
         />
         <Tab.Screen

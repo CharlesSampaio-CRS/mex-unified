@@ -29,9 +29,10 @@ import { ConfirmModal } from './ConfirmModal';
 
 interface AlertsListProps {
   filterSymbol?: string;
+  exchanges?: Array<{ id: string; name: string }>;
 }
 
-export function AlertsList({ filterSymbol }: AlertsListProps) {
+export function AlertsList({ filterSymbol, exchanges }: AlertsListProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const {
@@ -373,7 +374,7 @@ export function AlertsList({ filterSymbol }: AlertsListProps) {
       <CreateAlertModal
         visible={createModalVisible}
         onClose={() => setCreateModalVisible(false)}
-        symbol=""
+        exchanges={exchanges}
       />
     </ScrollView>
   );
