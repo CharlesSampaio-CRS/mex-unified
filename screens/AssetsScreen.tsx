@@ -194,7 +194,7 @@ export function AssetsScreen({ navigation }: any) {
   }, [allAssetsSections]);
 
   // Define o Header global para esta tela
-  const assetsSubtitle = `${String(globalTotals.totalAssets)} ${String(globalTotals.totalAssets === 1 ? 'asset' : 'assets')} • ${String(hideValue(`$${apiService.formatUSD(globalTotals.totalValue)}`))}`;
+  const assetsSubtitle = `${String(globalTotals.totalAssets)} ${String(globalTotals.totalAssets === 1 ? 'asset' : 'assets')}`;
   useHeader({
     title: 'Assets',
     subtitle: assetsSubtitle,
