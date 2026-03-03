@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Text as SvgText, Line } from 'react-native-svg';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -10,10 +9,13 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { useOrders } from '@/contexts/OrdersContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useHeader } from '@/contexts/HeaderContext';
+import { useWatchlist } from '@/contexts/WatchlistContext';
+import { useAlerts } from '@/contexts/AlertsContext';
 import { apiService } from '@/services/api';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { TokenDetailsModal } from '@/components/token-details-modal';
 import { TradeModal } from '@/components/trade-modal';
+import { CreateAlertModal } from '@/components/create-price-alert-modal';
 import { getExchangeBalances, getExchangeId, getExchangeName, capitalizeExchangeName } from '@/lib/exchange-helpers';
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { commonStyles } from '@/lib/layout';
@@ -26,6 +28,8 @@ export function AssetsScreen({ navigation }: any) {
   const { hideValue, hideZeroBalances: hideZero, toggleHideZeroBalances } = usePrivacy();
   const { unreadCount } = useNotifications();
   const { refresh: refreshOrders } = useOrders();
+  const { addToken, removeToken, isWatching } = useWatchlist();
+  const { getAlertsForToken } = useAlerts();
   
   const [search, setSearch] = useState('');
   const [selectedExchange, setSelectedExchange] = useState<string>('All');
@@ -33,6 +37,13 @@ export function AssetsScreen({ navigation }: any) {
   const [tokenModalVisible, setTokenModalVisible] = useState(false);
   const [selectedTokenForDetails, setSelectedTokenForDetails] = useState<{ exchangeId: string; symbol: string } | null>(null);
   const [tradeModalVisible, setTradeModalVisible] = useState(false);
+  const [alertModalVisible, setAlertModalVisible] = useState(false);
+  const [selectedTokenForAlert, setSelectedTokenForAlert] = useState<{
+    symbol: string;
+    price: number;
+    exchangeId: string;
+    exchangeName: string;
+  } | null>(null);
   const [selectedTrade, setSelectedTrade] = useState<{
     exchangeId: string;
     exchangeName: string;
@@ -44,6 +55,15 @@ export function AssetsScreen({ navigation }: any) {
   const onNotificationsPress = useCallback(() => {
     setNotificationsModalVisible(true);
   }, []);
+
+  // Toggle favorito (watchlist)
+  const handleToggleFavorite = useCallback(async (symbol: string) => {
+    if (isWatching(symbol)) {
+      await removeToken(symbol);
+    } else {
+      await addToken(symbol);
+    }
+  }, [isWatching, addToken, removeToken]);
 
   // Refresh — usa refreshing gerenciado pelo BalanceContext
   const handleRefresh = useCallback(async () => {
@@ -408,29 +428,85 @@ export function AssetsScreen({ navigation }: any) {
                       </View>
                     </View>
 
-                    {/* Botão Negociar compacto */}
-                    <TouchableOpacity
-                      style={[styles.tradeButton, { borderTopColor: colors.border }]}
-                      onPress={() => {
-                        setSelectedTrade({
-                          exchangeId: item.exchangeId,
-                          exchangeName: item.exchangeName,
-                          symbol: item.symbol,
-                          currentPrice: item.priceUSD,
-                          balance: {
-                            token: item.free,
-                            usdt: item.usdtBalance,
-                            brl: item.brlBalance
-                          }
-                        });
-                        setTradeModalVisible(true);
-                      }}
-                    >
-                      <Ionicons name="swap-horizontal-outline" size={14} color={colors.primary} />
-                      <Text style={[styles.tradeButtonText, { color: colors.primary }]}>
-                        Negociar
-                      </Text>
-                    </TouchableOpacity>
+                    {/* Barra de ações: Favorito | Alerta | Negociar */}
+                    <View style={[styles.actionBar, { borderTopColor: colors.border }]}>
+                      {/* Favorito */}
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleToggleFavorite(item.symbol)}
+                        activeOpacity={0.6}
+                      >
+                        <Ionicons
+                          name={isWatching(item.symbol) ? 'star' : 'star-outline'}
+                          size={15}
+                          color={isWatching(item.symbol) ? '#F59E0B' : colors.textSecondary}
+                        />
+                        <Text style={[
+                          styles.actionButtonText,
+                          { color: isWatching(item.symbol) ? '#F59E0B' : colors.textSecondary }
+                        ]}>
+                          {isWatching(item.symbol) ? 'Favorito' : 'Favoritar'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {/* Separador */}
+                      <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
+
+                      {/* Alerta */}
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => {
+                          setSelectedTokenForAlert({
+                            symbol: item.symbol,
+                            price: item.priceUSD,
+                            exchangeId: item.exchangeId,
+                            exchangeName: item.exchangeName,
+                          });
+                          setAlertModalVisible(true);
+                        }}
+                        activeOpacity={0.6}
+                      >
+                        <Ionicons
+                          name={getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? 'notifications' : 'notifications-outline'}
+                          size={15}
+                          color={getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? colors.primary : colors.textSecondary}
+                        />
+                        <Text style={[
+                          styles.actionButtonText,
+                          { color: getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? colors.primary : colors.textSecondary }
+                        ]}>
+                          Alerta
+                        </Text>
+                      </TouchableOpacity>
+
+                      {/* Separador */}
+                      <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
+
+                      {/* Negociar */}
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => {
+                          setSelectedTrade({
+                            exchangeId: item.exchangeId,
+                            exchangeName: item.exchangeName,
+                            symbol: item.symbol,
+                            currentPrice: item.priceUSD,
+                            balance: {
+                              token: item.free,
+                              usdt: item.usdtBalance,
+                              brl: item.brlBalance
+                            }
+                          });
+                          setTradeModalVisible(true);
+                        }}
+                        activeOpacity={0.6}
+                      >
+                        <Ionicons name="swap-horizontal-outline" size={15} color={colors.primary} />
+                        <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+                          Negociar
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -479,6 +555,21 @@ export function AssetsScreen({ navigation }: any) {
         visible={notificationsModalVisible}
         onClose={() => setNotificationsModalVisible(false)}
       />
+
+      {/* Modal de Criar Alerta */}
+      {selectedTokenForAlert && (
+        <CreateAlertModal
+          visible={alertModalVisible}
+          onClose={() => {
+            setAlertModalVisible(false);
+            setTimeout(() => setSelectedTokenForAlert(null), 300);
+          }}
+          symbol={selectedTokenForAlert.symbol}
+          currentPrice={selectedTokenForAlert.price}
+          exchangeId={selectedTokenForAlert.exchangeId}
+          exchangeName={selectedTokenForAlert.exchangeName}
+        />
+      )}
     </View>
   );
 }
@@ -690,5 +781,27 @@ const styles = StyleSheet.create({
   tradeButtonText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
+  },
+  // Action bar com 3 botões
+  actionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 4,
+  },
+  actionButtonText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
+  },
+  actionSeparator: {
+    width: 1,
+    height: '60%',
   },
 });
