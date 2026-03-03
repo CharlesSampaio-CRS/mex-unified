@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
 import { View, LogBox } from "react-native"
-import { useEffect, useRef, useState } from "react"
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { typography, fontWeights } from "@/lib/typography"
@@ -45,9 +44,9 @@ import { StrategyTemplatesScreen } from "./screens/StrategyTemplatesScreen"
 import { Header } from "./components/Header"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
-import { BalanceProvider, useBalance } from "./contexts/BalanceContext"
+import { BalanceProvider } from "./contexts/BalanceContext"
 import { CacheInvalidationProvider } from "./contexts/CacheInvalidationContext"
-import { OrdersProvider, useOrders } from "./contexts/OrdersContext"
+import { OrdersProvider } from "./contexts/OrdersContext"
 import { LayoutProvider } from "./contexts/LayoutContext"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { PrivacyProvider } from "./contexts/PrivacyContext"
@@ -57,117 +56,9 @@ import { WatchlistProvider } from "./contexts/WatchlistContext"
 import { HeaderProvider } from "./contexts/HeaderContext"
 import { LoadingProgress } from "./components/LoadingProgress"
 import { AnimatedLogoIcon } from "./components/AnimatedLogoIcon"
-import { MaintenanceScreen } from "./components/MaintenanceScreen"
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
-
-// DataLoader - monitora quando os dados estão prontos e notifica
-function DataLoader({ children, onDataReady }: { children: React.ReactNode, onDataReady: () => void }) {
-  const { data: balanceData, loading: balanceLoading, error: balanceError, refresh: refreshBalance } = useBalance()
-  const hasCalledRef = useRef(false)
-  const [showMaintenance, setShowMaintenance] = useState(false)
-  const mountTimeRef = useRef(Date.now())
-
-  // Detecta erros críticos de API (erro ao carregar balance = API offline)
-  const isCriticalError = balanceError !== null && !balanceLoading
-
-  useEffect(() => {
-    // Se erro crítico detectado, mostra tela de manutenção
-    if (isCriticalError && !showMaintenance) {
-      setShowMaintenance(true)
-      hasCalledRef.current = true
-      onDataReady()
-      return
-    }
-
-    // ✅ Considera dados prontos quando:
-    // 1. Loading terminou (!balanceLoading)
-    // 2. E: (tem dados OU tem erro OU usuário novo sem exchanges)
-    // 3. E: pelo menos 1s desde que montou (evita flash se dados já estavam em cache)
-    const balanceReady = !balanceLoading && (
-      balanceData !== null ||  // Tem dados
-      balanceError !== null    // Tem erro (vai mostrar mensagem)
-    )
-
-    // Tempo mínimo de loading visual: 1.5s (para que o usuário veja a animação)
-    const elapsedMs = Date.now() - mountTimeRef.current
-    const MIN_LOADING_TIME = 1500
-
-    console.log('🔍 [DataLoader] Estado atual:', {
-      balanceLoading,
-      hasBalanceData: !!balanceData,
-      hasBalanceError: !!balanceError,
-      balanceReady,
-      elapsedMs,
-      hasCalledRef: hasCalledRef.current
-    })
-
-    // Chama onDataReady quando balance terminou E tempo mínimo passou
-    if (balanceReady && !hasCalledRef.current) {
-      if (elapsedMs >= MIN_LOADING_TIME) {
-        console.log('✅ [DataLoader] Dados prontos, chamando onDataReady()')
-        hasCalledRef.current = true
-        onDataReady()
-      } else {
-        // Espera o tempo restante para dar feedback visual adequado
-        const remaining = MIN_LOADING_TIME - elapsedMs
-        console.log(`⏳ [DataLoader] Dados prontos, aguardando ${remaining}ms para feedback visual`)
-        const timer = setTimeout(() => {
-          if (!hasCalledRef.current) {
-            console.log('✅ [DataLoader] Tempo mínimo atingido, chamando onDataReady()')
-            hasCalledRef.current = true
-            onDataReady()
-          }
-        }, remaining)
-        return () => clearTimeout(timer)
-      }
-    }
-  }, [balanceLoading, balanceData, balanceError, onDataReady, isCriticalError, showMaintenance])
-
-  // Timeout de segurança: se demorar mais de 8 segundos, finaliza o loading
-  useEffect(() => {
-    console.log('⏰ [DataLoader] Timeout de segurança de 10s iniciado')
-    const timeout = setTimeout(() => {
-      if (!hasCalledRef.current) {
-        console.warn('⏰ [DataLoader] TIMEOUT! Forçando onDataReady() após 10s')
-        hasCalledRef.current = true
-        onDataReady()
-      }
-    }, 10000) // 10s timeout de segurança (acima do MIN_LOADING_TIME + tempo de API)
-
-    return () => clearTimeout(timeout)
-  }, [onDataReady])
-
-  // Reset quando desmonta (logout)
-  useEffect(() => {
-    return () => {
-      hasCalledRef.current = false
-      setShowMaintenance(false)
-    }
-  }, [])
-
-  // Função de retry
-  const handleRetry = async () => {
-    setShowMaintenance(false)
-    hasCalledRef.current = false
-    
-    // Tenta recarregar os dados
-    try {
-      await refreshBalance()
-    } catch (error) {
-      console.error('❌ Erro ao tentar reconectar:', error)
-    }
-  }
-
-  // Se erro crítico, mostra tela de manutenção
-  if (showMaintenance) {
-    return <MaintenanceScreen onRetry={handleRetry} />
-  }
-
-  return <>{children}</>
-}
-
 // Auth Stack (Login/SignUp)
 function AuthStack() {
   return (
@@ -380,7 +271,7 @@ function MainTabs() {
 
 // App Navigator - decide entre Auth ou Main baseado no login
 function AppNavigator() {
-  const { isAuthenticated, isLoading, isLoadingData, setLoadingDataComplete, user } = useAuth()
+  const { isAuthenticated, isLoading, isLoadingData, setLoadingDataComplete } = useAuth()
   const { colors, isDark } = useTheme()
 
   if (isLoading) {
@@ -391,35 +282,18 @@ function AppNavigator() {
     )
   }
 
-
   return (
     <NavigationContainer>
       <StatusBar style={isDark ? "light" : "dark"} />
       {isAuthenticated ? (
-        <>
-          {!isLoadingData ? (
-            <MainTabs />
-          ) : (
-            // Fundo vazio enquanto LoadingProgress cobre tudo (z-index 9999)
-            <View style={{ flex: 1, backgroundColor: colors.background }} />
-          )}
-          
-          {/* DataLoader monitora dados em segundo plano e chama setLoadingDataComplete quando pronto */}
-          {isLoadingData && (
-            <DataLoader onDataReady={setLoadingDataComplete}>
-              <></>
-            </DataLoader>
-          )}
-        </>
+        isLoadingData ? (
+          <LoadingProgress onComplete={setLoadingDataComplete} />
+        ) : (
+          <MainTabs />
+        )
       ) : (
-        // Não autenticado - SEMPRE mostra tela de login
-        <>
-          <AuthStack />
-        </>
+        <AuthStack />
       )}
-      
-      {/* LoadingProgress aparece sobre qualquer tela quando isLoadingData = true */}
-      <LoadingProgress visible={isLoadingData} />
     </NavigationContainer>
   )
 }

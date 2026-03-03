@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { View, StyleSheet, Animated, Easing } from 'react-native'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useBalance } from '@/contexts/BalanceContext'
@@ -7,16 +7,22 @@ import { typography, fontWeights } from '@/lib/typography'
 import { AnimatedLogoIcon } from './AnimatedLogoIcon'
 
 interface LoadingProgressProps {
-  visible: boolean
+  onComplete: () => void
 }
 
-export function LoadingProgress({ visible }: LoadingProgressProps) {
+/**
+ * Tela de loading pós-login.
+ * Renderizada como tela PRINCIPAL (flex:1, não overlay).
+ * Monitora BalanceContext e chama onComplete quando dados prontos.
+ */
+export function LoadingProgress({ onComplete }: LoadingProgressProps) {
   const { colors, isDark } = useTheme()
   const { t } = useLanguage()
-  const { data: balanceData, loading: balanceLoading } = useBalance()
+  const { data: balanceData, loading: balanceLoading, error: balanceError } = useBalance()
   const [currentStep, setCurrentStep] = useState(0)
-  const prevStepRef = useRef(0)
-  
+  const hasCompletedRef = useRef(false)
+  const mountTimeRef = useRef(Date.now())
+
   const steps = [
     { key: 'loading.authenticating' },
     { key: 'loading.fetchingExchanges' },
@@ -34,192 +40,165 @@ export function LoadingProgress({ visible }: LoadingProgressProps) {
     steps.map(() => new Animated.Value(0))
   ).current
 
-  // Animação de entrada
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-      ]).start()
+  // Chama onComplete respeitando tempo mínimo de exibição (1.5s)
+  const finishLoading = useCallback(() => {
+    if (hasCompletedRef.current) return
+    hasCompletedRef.current = true
+
+    const elapsed = Date.now() - mountTimeRef.current
+    const MIN_TIME = 1500
+    const remaining = Math.max(0, MIN_TIME - elapsed)
+
+    if (remaining > 0) {
+      setTimeout(() => onComplete(), remaining)
     } else {
-      fadeAnim.setValue(0)
-      scaleAnim.setValue(0.9)
-      setCurrentStep(0)
+      onComplete()
     }
-  }, [visible])
+  }, [onComplete])
 
-  // Animação de fade no texto quando muda de step
+  // ── Monitora dados do BalanceContext e avança steps ──
   useEffect(() => {
-    if (visible) {
-      // Fade out -> Fade in
-      Animated.sequence([
-        Animated.timing(textFadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(textFadeAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start()
-    }
-  }, [currentStep, visible])
+    const dataReady = !balanceLoading && (balanceData !== null || balanceError !== null)
 
-  // Efeito shimmer no texto (brilho suave passando)
-  useEffect(() => {
-    if (visible) {
-      Animated.loop(
-        Animated.timing(textShimmer, {
-          toValue: 1,
-          duration: 2500,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      ).start()
-    } else {
-      textShimmer.setValue(0)
-    }
-  }, [visible])
-
-  // Animação pulsante nos dots
-  useEffect(() => {
-    if (visible) {
-      dotsAnimations.forEach((anim, index) => {
-        if (index <= currentStep) {
-          // Dot ativo: pulsa
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(anim, {
-                toValue: 1,
-                duration: 600,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: true,
-              }),
-              Animated.timing(anim, {
-                toValue: 0,
-                duration: 600,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: true,
-              }),
-            ])
-          ).start()
-        } else {
-          // Dot inativo: sem animação
-          anim.setValue(0)
-        }
-      })
-    }
-  }, [currentStep, visible])
-
-  // Progressão dos steps baseada no estado REAL dos dados
-  useEffect(() => {
-    if (!visible) {
-      setCurrentStep(0)
-      prevStepRef.current = 0
-      return
-    }
-
-    // Calcula step real baseado no estado dos dados
-    let realStep = 0
-
-    // Step 0: Authenticating (sempre passa rápido — login já concluiu se visible=true)
-    // Step 0→1 é controlado pelo timer de 400ms abaixo
-
-    if (balanceData !== null && !balanceLoading) {
-      // Dados prontos! Pula para "quase pronto"
-      realStep = 4
+    if (dataReady) {
+      setCurrentStep(4)
+      finishLoading()
     } else if (balanceLoading) {
-      // Está carregando balances ativamente
-      realStep = 2
+      setCurrentStep(prev => Math.max(prev, 2))
     }
-    // Se !balanceLoading && balanceData === null → ainda não começou ou está no começo
-    // Nesse caso mantém o step atual (controlado pelo timer de 400ms)
+  }, [balanceLoading, balanceData, balanceError, finishLoading])
 
-    // Steps só avançam, nunca voltam (evita flicker)
-    if (realStep > prevStepRef.current) {
-      prevStepRef.current = realStep
-      setCurrentStep(realStep)
-    }
-  }, [visible, balanceLoading, balanceData])
-
-  // Step 0 → 1 com delay mínimo para dar feedback visual de "autenticando"
+  // Step 0 → 1 com delay (feedback visual de "autenticando")
   useEffect(() => {
-    if (!visible) return
-
-    // Garante que step 0 (authenticating) aparece por pelo menos 400ms
-    const timer = setTimeout(() => {
-      if (prevStepRef.current < 1) {
-        prevStepRef.current = 1
-        setCurrentStep(1)
-      }
-    }, 400)
-
+    const timer = setTimeout(() => setCurrentStep(prev => Math.max(prev, 1)), 400)
     return () => clearTimeout(timer)
-  }, [visible])
+  }, [])
 
-  if (!visible) return null
+  // Timeout de segurança: libera após 10s
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!hasCompletedRef.current) {
+        console.warn('⏰ [LoadingProgress] TIMEOUT 10s - forçando onComplete()')
+        hasCompletedRef.current = true
+        onComplete()
+      }
+    }, 10000)
+    return () => clearTimeout(timeout)
+  }, [onComplete])
 
-  const currentStepText = currentStep < steps.length ? t(steps[currentStep].key) : t('loading.almostReady')
+  // ── Animações visuais ──
 
-  // Interpolação do shimmer para criar efeito de brilho
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [])
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(textFadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(textFadeAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [currentStep])
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(textShimmer, {
+        toValue: 1,
+        duration: 2500,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start()
+  }, [])
+
+  useEffect(() => {
+    dotsAnimations.forEach((anim, index) => {
+      if (index <= currentStep) {
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(anim, {
+              toValue: 1,
+              duration: 600,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim, {
+              toValue: 0,
+              duration: 600,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ])
+        ).start()
+      } else {
+        anim.setValue(0)
+      }
+    })
+  }, [currentStep])
+
+  const currentStepText = currentStep < steps.length
+    ? t(steps[currentStep].key)
+    : t('loading.almostReady')
+
   const shimmerOpacity = textShimmer.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: [0.7, 1, 0.7],
   })
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
-        styles.container, 
-        { 
-          backgroundColor: isDark ? 'rgba(39,39,42,0.98)' : 'rgba(255,255,255,0.95)',
-          opacity: fadeAnim 
-        }
+        styles.container,
+        {
+          backgroundColor: isDark ? '#27272a' : '#ffffff',
+          opacity: fadeAnim,
+        },
       ]}
     >
-      <Animated.View 
-        style={[
-          styles.content,
-          { transform: [{ scale: scaleAnim }] }
-        ]}
+      <Animated.View
+        style={[styles.content, { transform: [{ scale: scaleAnim }] }]}
       >
-        {/* Logo/Spinner customizado com rotação e pulso */}
         <View style={styles.spinnerWrapper}>
           <AnimatedLogoIcon size={50} />
         </View>
 
-        {/* Texto do step atual com animação de fade e shimmer */}
-        <Animated.Text 
+        <Animated.Text
           style={[
-            styles.stepText, 
-            { 
+            styles.stepText,
+            {
               color: colors.text,
-              opacity: Animated.multiply(textFadeAnim, shimmerOpacity)
-            }
+              opacity: Animated.multiply(textFadeAnim, shimmerOpacity),
+            },
           ]}
         >
           {currentStepText}
         </Animated.Text>
 
-        {/* Dots de progresso com animação pulsante */}
         <View style={styles.dotsContainer}>
           {steps.map((_, index) => {
             const dotScale = dotsAnimations[index].interpolate({
               inputRange: [0, 1],
               outputRange: [1, 1.3],
             })
-
             return (
               <Animated.View
                 key={index}
@@ -242,14 +221,9 @@ export function LoadingProgress({ visible }: LoadingProgressProps) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 9999,
   },
   content: {
     alignItems: 'center',
@@ -260,25 +234,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  spinnerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spinner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 4,
-    borderTopColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: 'transparent',
-  },
-  particle: {
-    position: 'absolute',
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   stepText: {
     fontSize: typography.body,
