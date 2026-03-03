@@ -1,10 +1,8 @@
-import { View, Text, StyleSheet } from "react-native"
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from "react-native"
 import { memo, useState, useCallback } from "react"
 import { useHeader } from "../contexts/HeaderContext"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
-import { CustomPullToRefreshScrollView } from "../components/CustomPullToRefreshScrollView"
-
 export const HeartScreen = memo(function HeartScreen({ navigation }: any) {
   const { colors } = useTheme()
   const [refreshing, setRefreshing] = useState(false)
@@ -19,9 +17,9 @@ export const HeartScreen = memo(function HeartScreen({ navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <CustomPullToRefreshScrollView
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        
         style={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -39,7 +37,7 @@ export const HeartScreen = memo(function HeartScreen({ navigation }: any) {
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Wishlist de investimentos</Text>
           <Text style={[styles.item, { color: colors.textSecondary }]}>• Exchanges preferidas</Text>
         </View>
-      </CustomPullToRefreshScrollView>
+      </ScrollView>
     </View>
   )
 })
