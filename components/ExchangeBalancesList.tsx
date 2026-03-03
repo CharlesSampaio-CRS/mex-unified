@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   chevron: {
-    fontSize: 10,
-    opacity: 0.3,
+    fontSize: 16,
+    opacity: 0.5,
   },
   // Table layout
   list: {
