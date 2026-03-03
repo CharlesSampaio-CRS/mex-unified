@@ -273,7 +273,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   if (isProcessingOAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <AnimatedLogoIcon size={48} />
         <Text style={{ marginTop: 16, color: colors.text }}>
           {t('auth.completingLogin')}
         </Text>

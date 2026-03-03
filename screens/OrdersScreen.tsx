@@ -503,7 +503,8 @@ export function OrdersScreen({ navigation }: any) {
       >
         {loading && filteredSections.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            <AnimatedLogoIcon size={40} />
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}> 
               Carregando ordens...
             </Text>
           </View>

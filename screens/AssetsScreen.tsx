@@ -315,7 +315,8 @@ export function AssetsScreen({ navigation }: any) {
       >
         {loading && assetsSections.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            <AnimatedLogoIcon size={40} />
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}> 
               Carregando assets...
             </Text>
           </View>
