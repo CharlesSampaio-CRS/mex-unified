@@ -396,10 +396,8 @@ function AppNavigator() {
           {!isLoadingData ? (
             <MainTabs />
           ) : (
-            // Durante carregamento de dados, mostra tela de loading ao invés de voltar pro login
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-              <AnimatedLogoIcon size={48} />
-            </View>
+            // LoadingProgress overlay (z-index 9999) cobre tudo — fundo invisível
+            <View style={{ flex: 1, backgroundColor: colors.background }} />
           )}
           
           {/* DataLoader monitora em segundo plano DURANTE o carregamento após login */}
