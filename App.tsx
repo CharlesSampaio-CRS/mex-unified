@@ -292,7 +292,7 @@ function AppNavigator() {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <AnimatedLogoIcon 
           size={48} 
-          messages={isAuthenticated ? loadingMessages : undefined}
+          messages={loadingMessages}
           textColor={colors.text}
           fontSize={14}
         />
