@@ -208,8 +208,8 @@ function runSimulation(prices: PricePoint[], config: SimConfig): SimResult {
 
 // ─── Chart Component ─────────────────────────────────────────────
 const CHART_H = 200
-const CHART_PADDING_LEFT = 54
-const CHART_PADDING_RIGHT = 16
+const CHART_PADDING_LEFT = 50
+const CHART_PADDING_RIGHT = 24
 const CHART_PADDING_V = 20
 
 function SimChart({
@@ -224,7 +224,8 @@ function SimChart({
   colors: any
 }) {
   const screenWidth = Dimensions.get('window').width
-  const chartW = screenWidth - 32 // full width minus margin
+  // Desconta margem do ScrollView (16*2) + padding do card (16*2)
+  const chartW = screenWidth - 64
   const plotW = chartW - CHART_PADDING_LEFT - CHART_PADDING_RIGHT
   const plotH = CHART_H - CHART_PADDING_V * 2
 
@@ -275,7 +276,7 @@ function SimChart({
   const entryY = toY(config.entryPrice)
 
   return (
-    <Svg width={chartW} height={CHART_H + 24} style={{ overflow: 'visible' }}>
+    <Svg width={chartW} height={CHART_H + 24}>
       <Defs>
         <SvgLinearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={lineColor} stopOpacity="0.3" />
@@ -315,8 +316,8 @@ function SimChart({
             stroke="#10b981" strokeWidth="1.5" strokeDasharray="6,4"
           />
           <SvgText
-            x={chartW - CHART_PADDING_RIGHT + 2} y={tpY + 4}
-            fontSize="9" fill="#10b981" fontWeight="600"
+            x={chartW - CHART_PADDING_RIGHT - 2} y={tpY - 4}
+            fontSize={typography.badge} fill="#10b981" fontWeight="600" textAnchor="end"
           >
             TP
           </SvgText>
@@ -332,8 +333,8 @@ function SimChart({
             stroke="#ef4444" strokeWidth="1.5" strokeDasharray="6,4"
           />
           <SvgText
-            x={chartW - CHART_PADDING_RIGHT + 2} y={slY + 4}
-            fontSize="9" fill="#ef4444" fontWeight="600"
+            x={chartW - CHART_PADDING_RIGHT - 2} y={slY + 12}
+            fontSize={typography.badge} fill="#ef4444" fontWeight="600" textAnchor="end"
           >
             SL
           </SvgText>
@@ -362,7 +363,7 @@ function SimChart({
         <SvgText
           key={i}
           x={CHART_PADDING_LEFT - 4} y={l.y + 4}
-          fontSize="9" fill={colors.textSecondary} textAnchor="end"
+          fontSize={typography.pico} fill={colors.textSecondary} textAnchor="end"
         >
           {l.label}
         </SvgText>
@@ -373,7 +374,7 @@ function SimChart({
         <SvgText
           key={i}
           x={toX(i)} y={CHART_H + 16}
-          fontSize="9" fill={colors.textSecondary} textAnchor="middle"
+          fontSize={typography.pico} fill={colors.textSecondary} textAnchor="middle"
         >
           {label}
         </SvgText>
@@ -901,7 +902,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
 
                 {/* Chart */}
                 {prices.length > 0 && (
-                  <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, overflow: 'hidden' }]}>
+                  <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                     <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>📈 Gráfico de Preço + Triggers</Text>
                     <View style={{ flexDirection: 'row', gap: 16, marginBottom: 10, flexWrap: 'wrap' }}>
                       <View style={styles.legendItem}>
@@ -950,7 +951,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
                           ]}
                         >
                           <View style={styles.rowBetween}>
-                            <Text style={[styles.eventType, { color: ev.type === 'stop_loss' ? '#ef4444' : '#10b981' }]}>
+                            <Text style={[styles.eventType, { color: ev.type === 'stop_loss' ? '#ef4444' : '#10b981', flexShrink: 1 }]} numberOfLines={1}>
                               {eventTypeLabel(ev.type, ev.lotNumber)}
                             </Text>
                             <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
@@ -973,7 +974,10 @@ export function StrategySimulatorScreen({ navigation }: any) {
                             <View style={styles.eventStat}>
                               <Text style={[styles.eventStatLabel, { color: colors.textSecondary }]}>P&L</Text>
                               <Text style={[styles.eventStatValue, { color: ev.pnl >= 0 ? '#10b981' : '#ef4444' }]}>
-                                {ev.pnl >= 0 ? '+' : ''}{formatUSD(ev.pnl)} ({formatPct(ev.pnlPercent)})
+                                {ev.pnl >= 0 ? '+' : ''}{formatUSD(ev.pnl)}
+                              </Text>
+                              <Text style={[styles.eventStatLabel, { color: ev.pnl >= 0 ? '#10b981' : '#ef4444' }]}>
+                                {formatPct(ev.pnlPercent)}
                               </Text>
                             </View>
                           </View>
@@ -1050,10 +1054,10 @@ const styles = StyleSheet.create({
   legendLine: { width: 16, height: 2, borderRadius: 1, opacity: 0.9 },
   legendText: { fontSize: typography.micro },
   eventCard: { borderRadius: 8, borderWidth: 1, padding: 12, gap: 8 },
-  eventType: { fontSize: typography.body, fontWeight: fontWeights.semibold },
-  eventDate: { fontSize: typography.caption },
-  eventDetails: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  eventStat: { gap: 2 },
+  eventType: { fontSize: typography.caption, fontWeight: fontWeights.semibold },
+  eventDate: { fontSize: typography.micro },
+  eventDetails: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  eventStat: { gap: 2, minWidth: '22%', flexShrink: 1 },
   eventStatLabel: { fontSize: typography.micro, fontWeight: fontWeights.medium },
-  eventStatValue: { fontSize: typography.caption, fontWeight: fontWeights.semibold },
+  eventStatValue: { fontSize: typography.micro, fontWeight: fontWeights.semibold },
 })
