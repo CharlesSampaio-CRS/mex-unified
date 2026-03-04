@@ -1010,6 +1010,31 @@ export function StrategySimulatorScreen({ navigation }: any) {
                   <Ionicons name="settings" size={18} color="#fff" />
                   <Text style={styles.runButtonText}>Ajustar e Simular Novamente</Text>
                 </TouchableOpacity>
+
+                {/* Create Strategy button */}
+                <TouchableOpacity
+                  style={[styles.createStrategyButton, { borderColor: '#10b981' }]}
+                  onPress={() => {
+                    navigation?.navigate('Strategy', {
+                      openCreate: true,
+                      simulatorPreset: {
+                        token,
+                        basePrice: entryPrice,
+                        investedAmount: String(totalCost),
+                        takeProfitPercent,
+                        stopLossEnabled,
+                        stopLossPercent,
+                        gradualSell,
+                        gradualTakePercent,
+                        feePercent,
+                      },
+                    })
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color="#10b981" />
+                  <Text style={[styles.createStrategyText, { color: '#10b981' }]}>Criar Estratégia com estes Parâmetros</Text>
+                </TouchableOpacity>
               </>
             )}
           </View>
@@ -1074,4 +1099,10 @@ const styles = StyleSheet.create({
   eventStat: { gap: 2, minWidth: '22%', flexShrink: 1 },
   eventStatLabel: { fontSize: typography.micro, fontWeight: fontWeights.medium },
   eventStatValue: { fontSize: typography.micro, fontWeight: fontWeights.semibold },
+  createStrategyButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 24,
+    borderWidth: 1.5,
+  },
+  createStrategyText: { fontSize: typography.body, fontWeight: fontWeights.semibold },
 })

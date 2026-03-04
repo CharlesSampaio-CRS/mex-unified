@@ -43,12 +43,18 @@ export function StrategyScreen({ navigation, route }: any) {
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'paused'>('all')
 
-  // Abre modal de criação se vier da tela de templates
+  // Preset do simulador para criar estratégia pré-preenchida
+  const [simulatorPreset, setSimulatorPreset] = useState<any>(undefined)
+
+  // Abre modal de criação se vier da tela de templates ou do simulador
   useEffect(() => {
     if (route?.params?.openCreate) {
+      if (route?.params?.simulatorPreset) {
+        setSimulatorPreset(route.params.simulatorPreset)
+      }
       setCreateModalVisible(true)
       // Limpa o param para não reabrir ao voltar
-      navigation?.setParams({ openCreate: undefined, template: undefined })
+      navigation?.setParams({ openCreate: undefined, template: undefined, simulatorPreset: undefined })
     }
   }, [route?.params?.openCreate])
 
@@ -603,10 +609,14 @@ export function StrategyScreen({ navigation, route }: any) {
       {/* Create Strategy Modal */}
       <CreateStrategyModal
         visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
+        onClose={() => {
+          setCreateModalVisible(false)
+          setSimulatorPreset(undefined)
+        }}
         onSuccess={handleStrategyCreated}
         userId={user?.id || ''}
         navigation={navigation}
+        simulatorPreset={simulatorPreset}
       />
 
       {/* Strategy Details Modal */}

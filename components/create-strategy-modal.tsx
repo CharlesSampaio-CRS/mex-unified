@@ -34,15 +34,29 @@ interface LocalExchange {
   is_active: boolean
 }
 
+interface SimulatorPreset {
+  token?: string
+  basePrice?: string
+  investedAmount?: string
+  takeProfitPercent?: string
+  stopLossEnabled?: boolean
+  stopLossPercent?: string
+  gradualSell?: boolean
+  gradualLots?: string
+  gradualTakePercent?: string
+  feePercent?: string
+}
+
 interface CreateStrategyModalProps {
   visible: boolean
   onClose: () => void
   onSuccess: (strategyId: string) => void
   userId: string
   navigation?: any
+  simulatorPreset?: SimulatorPreset
 }
 
-export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navigation }: CreateStrategyModalProps) {
+export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navigation, simulatorPreset }: CreateStrategyModalProps) {
   const { colors } = useTheme()
   const { t } = useLanguage()
   const { createStrategy } = useBackendStrategies(false)
@@ -92,6 +106,22 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   useEffect(() => {
     if (visible) {
       loadExchanges()
+      // Pré-preenche com dados do simulador se disponível
+      if (simulatorPreset) {
+        if (simulatorPreset.token) {
+          setToken(simulatorPreset.token)
+          setTokenSearchQuery(simulatorPreset.token)
+          setShowTokenList(false)
+        }
+        if (simulatorPreset.basePrice) setBasePrice(simulatorPreset.basePrice)
+        if (simulatorPreset.investedAmount) setInvestedAmount(simulatorPreset.investedAmount)
+        if (simulatorPreset.takeProfitPercent) setTakeProfitPercent(simulatorPreset.takeProfitPercent)
+        if (simulatorPreset.stopLossEnabled !== undefined) setStopLossEnabled(simulatorPreset.stopLossEnabled)
+        if (simulatorPreset.stopLossPercent) setStopLossPercent(simulatorPreset.stopLossPercent)
+        if (simulatorPreset.gradualSell !== undefined) setGradualSell(simulatorPreset.gradualSell)
+        if (simulatorPreset.gradualTakePercent) setGradualTakePercent(simulatorPreset.gradualTakePercent)
+        if (simulatorPreset.feePercent) setFeePercent(simulatorPreset.feePercent)
+      }
     } else {
       setStep(1)
       setSelectedExchange("")
@@ -119,9 +149,12 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
 
   useEffect(() => {
     if (step === 2 && selectedExchange) {
-      setToken("")
-      setTokenSearchQuery("")
-      setShowTokenList(true)
+      // Só reseta token se NÃO veio do simulador
+      if (!simulatorPreset?.token) {
+        setToken("")
+        setTokenSearchQuery("")
+        setShowTokenList(true)
+      }
       loadTokens()
     }
   }, [step, selectedExchange])
