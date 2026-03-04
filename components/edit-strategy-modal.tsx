@@ -43,6 +43,10 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
   const [gradualSell, setGradualSell] = useState(false)
   const [timerGradualMin, setTimerGradualMin] = useState("")
   const [timeExecutionMin, setTimeExecutionMin] = useState("")
+  const [buyDipEnabled, setBuyDipEnabled] = useState(false)
+  const [buyDipPercent, setBuyDipPercent] = useState("5.0")
+  const [buyDipAmountUsd, setBuyDipAmountUsd] = useState("")
+  const [buyDipMaxBuys, setBuyDipMaxBuys] = useState("3")
 
   // ── Populate form when strategy changes ──
   useEffect(() => {
@@ -59,6 +63,10 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
       setGradualSell(cfg.gradual_sell || false)
       setTimerGradualMin(cfg.timer_gradual_min.toString())
       setTimeExecutionMin(cfg.time_execution_min.toString())
+      setBuyDipEnabled((cfg as any).auto_buy_dip_enabled || false)
+      setBuyDipPercent(((cfg as any).auto_buy_dip_percent || 5.0).toString())
+      setBuyDipAmountUsd((cfg as any).auto_buy_dip_amount_usd > 0 ? (cfg as any).auto_buy_dip_amount_usd.toString() : "")
+      setBuyDipMaxBuys(((cfg as any).auto_buy_dip_max_buys || 3).toString())
     }
   }, [visible, strategy])
 
@@ -91,6 +99,10 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
           gradual_sell: gradualSell,
           timer_gradual_min: parseInt(timerGradualMin) || 15,
           time_execution_min: parseInt(timeExecutionMin) || 120,
+          auto_buy_dip_enabled: buyDipEnabled,
+          auto_buy_dip_percent: parseFloat(buyDipPercent) || 5.0,
+          auto_buy_dip_amount_usd: parseFloat(buyDipAmountUsd) || 0,
+          auto_buy_dip_max_buys: parseInt(buyDipMaxBuys) || 3,
         },
       }
 
@@ -237,6 +249,79 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                 )}
               </View>
 
+              {/* Buy Dip */}
+              <View style={[styles.fieldCard, { borderColor: buyDipEnabled ? '#05966940' : colors.border + '40', backgroundColor: buyDipEnabled ? '#05966908' : colors.background }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: buyDipEnabled ? 12 : 0 }}>
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={[styles.fieldLabel, { color: colors.text, marginBottom: 2 }]}>🛒 Auto Buy Dip</Text>
+                    <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>
+                      Compra automaticamente quando o preço cair X%
+                    </Text>
+                  </View>
+                  <Switch
+                    value={buyDipEnabled}
+                    onValueChange={setBuyDipEnabled}
+                    trackColor={{ false: colors.border, true: '#05966960' }}
+                    thumbColor={buyDipEnabled ? '#059669' : '#f4f3f4'}
+                  />
+                </View>
+                {buyDipEnabled && (
+                  <View style={{ gap: 12 }}>
+                    <View>
+                      <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Queda para comprar (%)</Text>
+                      <TextInput
+                        style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        placeholder="5.0"
+                        placeholderTextColor={colors.textSecondary}
+                        value={buyDipPercent}
+                        onChangeText={(v) => setBuyDipPercent(v.replace(/[^0-9.]/g, ''))}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Valor por compra (USD)</Text>
+                      <TextInput
+                        style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        placeholder="50.00"
+                        placeholderTextColor={colors.textSecondary}
+                        value={buyDipAmountUsd}
+                        onChangeText={(v) => setBuyDipAmountUsd(v.replace(/[^0-9.]/g, ''))}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: typography.bodySmall, color: colors.textSecondary, marginBottom: 4 }}>Máx. de compras</Text>
+                      <TextInput
+                        style={[styles.fieldInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        placeholder="3"
+                        placeholderTextColor={colors.textSecondary}
+                        value={buyDipMaxBuys}
+                        onChangeText={(v) => setBuyDipMaxBuys(v.replace(/[^0-9]/g, ''))}
+                        keyboardType="number-pad"
+                      />
+                    </View>
+                    {bp > 0 && (
+                      <View style={{ padding: 10, backgroundColor: '#05966910', borderRadius: 8, borderWidth: 1, borderColor: '#05966930' }}>
+                        <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: '#059669', marginBottom: 4 }}>🛒 Simulação Buy Dip</Text>
+                        {Array.from({ length: parseInt(buyDipMaxBuys) || 3 }).map((_, i) => {
+                          const dipPct = parseFloat(buyDipPercent) || 5
+                          const dipPrice = bp * (1 - (dipPct * (i + 1)) / 100)
+                          const dipAmt = parseFloat(buyDipAmountUsd) || 50
+                          return (
+                            <Text key={i} style={{ fontSize: typography.tiny, color: colors.textSecondary, marginTop: 2 }}>
+                              Buy #{i + 1}: a ${dipPrice.toFixed(4)} (−{(dipPct * (i + 1)).toFixed(1)}%) → ${dipAmt.toFixed(0)}
+                            </Text>
+                          )
+                        })}
+                        <Text style={{ fontSize: typography.tiny, color: '#059669', marginTop: 4, fontWeight: fontWeights.semibold }}>
+                          Total máx: ${((parseFloat(buyDipAmountUsd) || 50) * (parseInt(buyDipMaxBuys) || 3)).toFixed(0)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+
               {/* Fee */}
               <View style={styles.fieldGroup}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>📊 Taxa / Fee (%)</Text>
@@ -329,6 +414,11 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
                   <Text style={{ fontSize: typography.caption, color: colors.text }}>
                     Gradual: {gradualSell ? `timer ${timerGradualMin}min, step ${gradualTakePercent}%` : 'OFF'}
                   </Text>
+                  {buyDipEnabled && (
+                    <Text style={{ fontSize: typography.caption, color: '#059669' }}>
+                      🛒 Buy Dip: −{buyDipPercent}% → ${buyDipAmountUsd || '50'}/compra (máx {buyDipMaxBuys}x)
+                    </Text>
+                  )}
                   <Text style={{ fontSize: typography.caption, color: colors.text }}>
                     Expiração: {timeExecutionMin}min ({((parseInt(timeExecutionMin) || 120) / 60).toFixed(1)}h)
                   </Text>

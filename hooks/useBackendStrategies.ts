@@ -45,6 +45,14 @@ export interface StrategyConfig {
   dca_trigger_percent?: number;
   /** Máximo de compras DCA extras */
   dca_max_buys?: number;
+  /** Auto Buy Dip — compra automática na queda (SEM posição aberta) */
+  auto_buy_dip_enabled?: boolean;
+  /** Queda % do base_price para acionar compra (ex: 5 = -5%) */
+  auto_buy_dip_percent?: number;
+  /** Valor em USDT de cada compra */
+  auto_buy_dip_amount_usd?: number;
+  /** Máximo de compras automáticas */
+  auto_buy_dip_max_buys?: number;
 }
 
 export type ExecutionAction =
@@ -73,6 +81,7 @@ export type SignalType =
   | 'stop_loss'
   | 'gradual_sell'
   | 'dca_buy'
+  | 'buy_dip'
   | 'expired'
   | 'info';
 
@@ -115,6 +124,7 @@ export interface Strategy {
   total_pnl_usd: number;
   total_executions: number;
   dca_buys_done?: number;
+  buy_dip_buys_done?: number;
   started_at: number;
   created_at: number;
   updated_at: number;

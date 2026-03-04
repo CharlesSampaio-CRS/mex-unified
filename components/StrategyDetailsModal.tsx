@@ -467,6 +467,34 @@ export function StrategyDetailsModal({
               </View>
             </>
           )}
+          {(cfg as any).auto_buy_dip_enabled && (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: typography.h4 }}>🛒</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Auto Buy Dip</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#059669' }]}>Ativo</Text>
+              </View>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: typography.h4 }}>💰</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Valor Buy Dip</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#059669' }]}>${(cfg as any).auto_buy_dip_amount_usd?.toFixed(2) ?? '—'}</Text>
+              </View>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: typography.h4 }}>📊</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Trigger / Max</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#059669' }]}>-{(cfg as any).auto_buy_dip_percent ?? 5}% · {(strategy as any).buy_dip_buys_done ?? 0}/{(cfg as any).auto_buy_dip_max_buys ?? 3} compras</Text>
+              </View>
+            </>
+          )}
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
@@ -552,7 +580,7 @@ export function StrategyDetailsModal({
           <Text style={{ fontSize: typography.emojiLarge, marginBottom: 12 }}>📊</Text>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('strategy.noExecutions') || 'Nenhuma execução ainda'}</Text>
           <Text style={{ fontSize: typography.caption, color: colors.textSecondary, marginTop: 6, textAlign: 'center', paddingHorizontal: 24 }}>
-            Execuções aparecem quando o sistema executa ordens na exchange (take profit, stop loss, DCA ou venda gradual).
+            Execuções aparecem quando o sistema executa ordens na exchange (take profit, stop loss, DCA, buy dip ou venda gradual).
           </Text>
         </View>
       )
@@ -564,6 +592,7 @@ export function StrategyDetailsModal({
         'stop_loss': '🛑 Stop Loss',
         'gradual_sell': '📈 Venda Gradual',
         'dca_buy': '📉 DCA Buy',
+        'buy_dip': '🛒 Buy Dip',
       }
       if (reason.startsWith('sell_failed:')) return '❌ ' + reason.replace('sell_failed:', '').trim()
       if (reason.startsWith('stop_loss_failed:')) return '🛑❌ ' + reason.replace('stop_loss_failed:', '').trim()
@@ -716,6 +745,7 @@ export function StrategyDetailsModal({
       stop_loss: { label: 'STOP LOSS', emoji: '🛑' },
       gradual_sell: { label: 'GRADUAL', emoji: '📈' },
       dca_buy: { label: 'DCA', emoji: '📉' },
+      buy_dip: { label: 'BUY DIP', emoji: '🛒' },
       expired: { label: 'EXPIRADO', emoji: '⏰' },
       info: { label: 'INFO', emoji: 'ℹ️' },
     }
@@ -723,6 +753,7 @@ export function StrategyDetailsModal({
     const sigColors: Record<string, string> = {
       take_profit: '#10b981', stop_loss: '#ef4444',
       gradual_sell: '#f59e0b', dca_buy: '#3b82f6',
+      buy_dip: '#059669',
       expired: '#6b7280', info: '#6b7280',
     }
 
