@@ -30,25 +30,59 @@ export function StrategyScreen({ navigation, route }: any) {
   const { unreadCount, addNotification } = useNotifications()
   const { 
     strategies,
+    archivedStrategies,
     loading,
     refreshing,
     loadStrategies,
+    loadHistory,
     toggleActive,
     deleteStrategy: deleteStrategyFromBackend,
     activeStrategies,
-    inactiveStrategies 
+    inactiveStrategies,
+    newExecutions,
+    clearNewExecutions,
   } = useBackendStrategies(true) // Auto-load
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   const [search, setSearch] = useState('')
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'paused'>('all')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'paused' | 'archived'>('all')
 
-  // Abre modal de criação se vier da tela de templates
+  // Preset do simulador para criar estratégia pré-preenchida
+  const [simulatorPreset, setSimulatorPreset] = useState<any>(undefined)
+
+  // 🔔 Notificações de novas execuções detectadas no polling
+  useEffect(() => {
+    if (newExecutions.length > 0) {
+      for (const exec of newExecutions) {
+        const count = exec.newCount - exec.prevCount;
+        // Notifica uma vez por estratégia que teve nova(s) execução(ões)
+        addNotification({
+          type: 'info',
+          title: '🤖 Nova Execução',
+          message: `${exec.strategyName} executou ${count} nova(s) ordem(ns) em ${exec.symbol}`,
+          icon: '⚡',
+          data: {
+            category: 'strategy',
+            action: 'strategy_executed',
+            name: exec.strategyName,
+            symbol: exec.symbol,
+            strategyId: exec.strategyId,
+          },
+        });
+      }
+      clearNewExecutions();
+    }
+  }, [newExecutions, addNotification, clearNewExecutions]);
+
+  // Abre modal de criação se vier da tela de templates ou do simulador
   useEffect(() => {
     if (route?.params?.openCreate) {
+      if (route?.params?.simulatorPreset) {
+        setSimulatorPreset(route.params.simulatorPreset)
+      }
       setCreateModalVisible(true)
       // Limpa o param para não reabrir ao voltar
-      navigation?.setParams({ openCreate: undefined, template: undefined })
+      navigation?.setParams({ openCreate: undefined, template: undefined, simulatorPreset: undefined })
     }
   }, [route?.params?.openCreate])
 
@@ -130,20 +164,20 @@ export function StrategyScreen({ navigation, route }: any) {
     setConfirmStrategyName("")
 
     try {
-      console.log(`🗑️ Deleting strategy ${id} (${name})`)
+      console.log(`🗑️ Archiving strategy ${id} (${name})`)
       
-      // Deleta via hook (atualiza estado automaticamente)
+      // Arquiva via hook (remove do estado local automaticamente)
       await deleteStrategyFromBackend(id)
       
-      // 🔔 Notificação: Estratégia removida
+      // 🔔 Notificação: Estratégia arquivada
       notify.strategyDeleted(addNotification, { name, strategyId: id })
       
-      console.log('✅ Strategy deleted from MongoDB')
+      console.log('✅ Strategy archived in MongoDB')
     } catch (error: any) {
-      console.error("❌ Error deleting strategy:", error)
+      console.error("❌ Error archiving strategy:", error)
       notify.strategyError(addNotification, {
         name,
-        action: 'excluir',
+        action: 'arquivar',
         error: error.message || 'Erro desconhecido',
         strategyId: id,
       })
@@ -172,7 +206,7 @@ export function StrategyScreen({ navigation, route }: any) {
   }, [])
 
   const getStatusLabel = useCallback((status: StrategyStatus): string => {
-    const labels: Record<StrategyStatus, string> = {
+    const labels: Record<string, string> = {
       idle: t('strategy.statusIdle') || 'Idle',
       monitoring: t('strategy.statusMonitoring') || 'Monitoring',
       buy_pending: t('strategy.statusBuyPending') || 'Buy Pending',
@@ -181,6 +215,10 @@ export function StrategyScreen({ navigation, route }: any) {
       paused: t('strategy.inactive'),
       completed: t('strategy.statusCompleted') || 'Completed',
       error: t('strategy.statusError') || 'Error',
+      archived: 'Arquivada',
+      gradual_selling: 'Gradual Selling',
+      stopped_out: 'Stopped Out',
+      expired: 'Expirada',
     };
     return labels[status] || status;
   }, [t])
@@ -189,11 +227,13 @@ export function StrategyScreen({ navigation, route }: any) {
     switch (status) {
       case 'monitoring': return '#3b82f6';
       case 'in_position': return '#10b981';
-      case 'buy_pending':
-      case 'sell_pending': return '#f59e0b';
+      case 'gradual_selling': return '#f59e0b';
       case 'completed': return '#8b5cf6';
       case 'error': return '#ef4444';
       case 'paused': return '#6b7280';
+      case 'archived': return '#9ca3af';
+      case 'stopped_out': return '#ef4444';
+      case 'expired': return '#f59e0b';
       default: return '#6b7280';
     }
   }, [])
@@ -204,6 +244,20 @@ export function StrategyScreen({ navigation, route }: any) {
 
   // Filtered strategies based on search + filter
   const filteredStrategies = useMemo(() => {
+    // Se filtro é "archived", usa lista de arquivadas
+    if (activeFilter === 'archived') {
+      let result = archivedStrategies;
+      if (search.trim()) {
+        const q = search.toLowerCase().trim()
+        result = result.filter(s =>
+          s.name.toLowerCase().includes(q) ||
+          s.symbol.toLowerCase().includes(q) ||
+          s.exchange_name.toLowerCase().includes(q)
+        )
+      }
+      return result;
+    }
+
     let result = strategies
 
     // Filter by active/paused
@@ -225,16 +279,20 @@ export function StrategyScreen({ navigation, route }: any) {
     }
 
     return result
-  }, [strategies, activeFilter, search])
+  }, [strategies, archivedStrategies, activeFilter, search])
 
   // 🔄 Refresh - atualiza estratégias do MongoDB
   const handleRefresh = useCallback(async () => {
     try {
-      await loadStrategies()
+      if (activeFilter === 'archived') {
+        await loadHistory()
+      } else {
+        await loadStrategies()
+      }
     } catch (error) {
       console.error('❌ [StrategyScreen] Erro ao atualizar:', error)
     }
-  }, [loadStrategies])
+  }, [loadStrategies, loadHistory, activeFilter])
 
   // Handlers para o Header
   const onNotificationsPress = useCallback(() => {
@@ -335,6 +393,28 @@ export function StrategyScreen({ navigation, route }: any) {
               Pausadas
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.typeFilterChip,
+              {
+                backgroundColor: activeFilter === 'archived' ? '#9ca3af' : colors.surface,
+                borderColor: activeFilter === 'archived' ? '#9ca3af' : colors.border,
+              }
+            ]}
+            onPress={() => {
+              setActiveFilter('archived')
+              loadHistory()
+            }}
+          >
+            <Ionicons name="archive-outline" size={12} color={activeFilter === 'archived' ? colors.background : colors.text} style={{ marginRight: 2 }} />
+            <Text style={[
+              styles.typeFilterText,
+              { color: activeFilter === 'archived' ? colors.background : colors.text }
+            ]}>
+              Histórico
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Results Count + New Button */}
@@ -342,14 +422,24 @@ export function StrategyScreen({ navigation, route }: any) {
           <Text style={[styles.resultsCount, { color: colors.textTertiary }]}>
             {filteredStrategies.length} {filteredStrategies.length === 1 ? 'estratégia' : 'estratégias'}
           </Text>
-          <TouchableOpacity
-            style={[styles.newStrategyButton, { borderColor: colors.primary }]}
-            onPress={handleNewStrategy}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add-outline" size={14} color={colors.primary} />
-            <Text style={[styles.newStrategyText, { color: colors.primary }]}>Nova</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              style={[styles.newStrategyButton, { borderColor: '#8b5cf6' }]}
+              onPress={() => navigation?.navigate('StrategySimulator')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="flask-outline" size={14} color="#8b5cf6" />
+              <Text style={[styles.newStrategyText, { color: '#8b5cf6' }]}>Simular</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.newStrategyButton, { borderColor: colors.primary }]}
+              onPress={handleNewStrategy}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-outline" size={14} color={colors.primary} />
+              <Text style={[styles.newStrategyText, { color: colors.primary }]}>Nova</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -465,36 +555,40 @@ export function StrategyScreen({ navigation, route }: any) {
                         </Text>
                       </TouchableOpacity>
 
-                      <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
+                      {activeFilter !== 'archived' && (
+                        <>
+                          <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
 
-                      <TouchableOpacity
-                        style={styles.cardActionButton}
-                        onPress={() => toggleStrategyHandler(strategy.id)}
-                      >
-                        <Ionicons
-                          name={strategy.is_active ? 'pause-outline' : 'play-outline'}
-                          size={14}
-                          color={strategy.is_active ? '#f59e0b' : colors.success}
-                        />
-                        <Text style={[
-                          styles.cardActionText,
-                          { color: strategy.is_active ? '#f59e0b' : colors.success }
-                        ]}>
-                          {strategy.is_active ? 'Pausar' : 'Ativar'}
-                        </Text>
-                      </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.cardActionButton}
+                            onPress={() => toggleStrategyHandler(strategy.id)}
+                          >
+                            <Ionicons
+                              name={strategy.is_active ? 'pause-outline' : 'play-outline'}
+                              size={14}
+                              color={strategy.is_active ? '#f59e0b' : colors.success}
+                            />
+                            <Text style={[
+                              styles.cardActionText,
+                              { color: strategy.is_active ? '#f59e0b' : colors.success }
+                            ]}>
+                              {strategy.is_active ? 'Pausar' : 'Ativar'}
+                            </Text>
+                          </TouchableOpacity>
 
-                      <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
+                          <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
 
-                      <TouchableOpacity
-                        style={styles.cardActionButton}
-                        onPress={() => deleteStrategyHandler(strategy.id, strategy.name)}
-                      >
-                        <Ionicons name="trash-outline" size={14} color={colors.danger} />
-                        <Text style={[styles.cardActionText, { color: colors.danger }]}>
-                          Excluir
-                        </Text>
-                      </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.cardActionButton}
+                            onPress={() => deleteStrategyHandler(strategy.id, strategy.name)}
+                          >
+                            <Ionicons name="archive-outline" size={14} color={colors.danger} />
+                            <Text style={[styles.cardActionText, { color: colors.danger }]}>
+                              Arquivar
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -562,10 +656,10 @@ export function StrategyScreen({ navigation, route }: any) {
           <SafeAreaView style={styles.modalSafeArea}>
             <View style={[styles.confirmModal, { backgroundColor: colors.surface }]}>
               <Text style={[styles.confirmTitle, { color: colors.text }]}>
-                {t('strategy.confirmDelete')}
+                Arquivar estratégia?
               </Text>
               <Text style={[styles.confirmMessage, { color: colors.textSecondary }]}>
-                {t('strategy.deleteWarning')}
+                A estratégia "{confirmStrategyName}" será arquivada. O histórico de sinais e execuções será preservado na aba Histórico.
               </Text>
               <View style={styles.confirmButtons}>
                 <TouchableOpacity
@@ -582,7 +676,7 @@ export function StrategyScreen({ navigation, route }: any) {
                   onPress={confirmDelete}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.deleteConfirmButtonText}>{t('strategy.delete')}</Text>
+                  <Text style={styles.deleteConfirmButtonText}>Arquivar</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -593,10 +687,14 @@ export function StrategyScreen({ navigation, route }: any) {
       {/* Create Strategy Modal */}
       <CreateStrategyModal
         visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
+        onClose={() => {
+          setCreateModalVisible(false)
+          setSimulatorPreset(undefined)
+        }}
         onSuccess={handleStrategyCreated}
         userId={user?.id || ''}
         navigation={navigation}
+        simulatorPreset={simulatorPreset}
       />
 
       {/* Strategy Details Modal */}

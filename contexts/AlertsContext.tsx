@@ -56,10 +56,12 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   // Salvar alertas no AsyncStorage sempre que mudar
+  // Flag para evitar salvar o estado inicial vazio antes do loadAlerts
+  const hasLoadedRef = React.useRef(false);
+  
   useEffect(() => {
-    if (alerts.length > 0) {
-      saveAlerts(alerts);
-    }
+    if (!hasLoadedRef.current) return; // Ignora o primeiro render (antes do load)
+    saveAlerts(alerts);
   }, [alerts]);
 
   /**
@@ -90,6 +92,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
         setAlerts(loadedAlerts);
         console.log(`[AlertsContext] ✅ ${loadedAlerts.length} alertas carregados`);
       }
+      hasLoadedRef.current = true;
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar alertas');
       console.error('[AlertsContext] ❌ Erro ao carregar alertas:', err);
@@ -191,14 +194,16 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       
-      // Update otimista - remove da UI imediatamente
+      // Update otimista - remove da UI e salva no storage imediatamente
       setAlerts(prev => {
         const filtered = prev.filter(alert => alert.id !== id);
         console.log('[AlertsContext] 📊 Alertas antes:', prev.length, 'depois:', filtered.length);
+        // Salva direto no storage para garantir persistência imediata
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered)).catch(console.error);
         return filtered;
       });
       
-      // Remove do serviço em background
+      // Também remove no serviço (mantém sincronizado)
       await priceAlertService.deleteAlert(id);
       
       console.log('[AlertsContext] ✅ Alerta removido com sucesso:', id);

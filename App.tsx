@@ -29,6 +29,8 @@ import { SystemScreen } from "./screens/SystemScreen"
 import { LoginScreen } from "./screens/LoginScreen"
 import { SignUpScreen } from "./screens/SignUpScreen"
 import { WatchlistManager } from "./components/WatchlistManager"
+import { FavoritesScreen } from "./screens/FavoritesScreen"
+import { AlertsScreen } from "./screens/AlertsScreen"
 import { StarScreen } from "./screens/StarScreen"
 import { HeartScreen } from "./screens/HeartScreen"
 import { FireScreen } from "./screens/FireScreen"
@@ -42,6 +44,7 @@ import { TargetScreen } from "./screens/TargetScreen"
 import { FlagScreen } from "./screens/FlagScreen"
 import { AnalyticsScreen } from "./screens/AnalyticsScreen"
 import { StrategyTemplatesScreen } from "./screens/StrategyTemplatesScreen"
+import { StrategySimulatorScreen } from "./screens/StrategySimulatorScreen"
 import { Header } from "./components/Header"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
@@ -147,9 +150,16 @@ function MainTabs() {
         />
         <Tab.Screen
           name="Favoritos"
-          component={WatchlistManager}
+          component={FavoritesScreen}
           options={{
-            tabBarButton: () => null, // Oculta da navegação inferior
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="Alertas"
+          component={AlertsScreen}
+          options={{
+            tabBarButton: () => null,
           }}
         />
         <Tab.Screen
@@ -264,6 +274,13 @@ function MainTabs() {
             tabBarButton: () => null,
           }}
         />
+        <Tab.Screen
+          name="StrategySimulator"
+          component={StrategySimulatorScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
       </Tab.Navigator>
     </SafeAreaView>
   )
@@ -272,7 +289,7 @@ function MainTabs() {
 // App Navigator - decide entre Auth ou Main baseado no login
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth()
-  const { data: balanceData } = useBalance()
+  const { data: balanceData, loading: balanceLoading, isStale } = useBalance()
   const { colors, isDark } = useTheme()
   const { t } = useLanguage()
 
@@ -285,9 +302,10 @@ function AppNavigator() {
     t('loading.almostReady'),
   ], [t])
 
-  // Init do app (verificando token salvo, restaurando sessão)
-  // OU autenticado mas ainda sem dados (aguarda primeiro fetchBalances completar)
-  if (isLoading || (isAuthenticated && !balanceData)) {
+  // 🚀 OTIMIZAÇÃO: Mostra loading APENAS durante init do AuthContext
+  // NÃO bloqueia mais esperando balanceData - a tela principal renderiza
+  // com dados do cache (stale) ou skeleton, e atualiza quando chegar
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <AnimatedLogoIcon 

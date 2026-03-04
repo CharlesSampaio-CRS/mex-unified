@@ -5,6 +5,7 @@ import * as AuthSession from 'expo-auth-session'
 import { Platform } from 'react-native'
 import { secureStorage } from '@/lib/secure-storage'
 import { config } from '@/lib/config'
+import { clearBalanceLocalCache } from '@/lib/balance-cache'
 
 interface User {
   id: string
@@ -1001,6 +1002,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setHasValidToken(false)
       setIsBiometricEnabled(false)
       setIsLoading(false)
+      
+      // 🗑️ Limpa cache de balances local
+      await clearBalanceLocalCache()
       
       console.log('✅ Logout completo - todos os dados limpos')
     } catch (error) {

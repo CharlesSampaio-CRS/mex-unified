@@ -31,7 +31,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     : (balanceData?.total_usd || 0)
   
   // Hook para snapshots e PNL do MongoDB
-  const { pnl, loading: pnlLoading, refresh: refreshPnl, saveSnapshot } = useBackendSnapshots(totalUSD)
+  const { pnl, snapshots, loading: pnlLoading, refresh: refreshPnl, saveSnapshot } = useBackendSnapshots(totalUSD)
   
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   // const [searchModalVisible, setSearchModalVisible] = useState(false) // Busca removida - agora está dentro da lista
@@ -93,9 +93,9 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
   const renderLayout = () => {
     switch (layout) {
       case 'tabs':
-        return <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
+        return <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} snapshots={snapshots} />
       default:
-        return <HomeVerticalLayout pnl={pnl} pnlLoading={pnlLoading} isUpdating={refreshing} />
+        return <HomeVerticalLayout pnl={pnl} pnlLoading={pnlLoading} snapshots={snapshots} isUpdating={refreshing} />
     }
   }
   
@@ -103,7 +103,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Layout tabs não precisa de ScrollView - ele já tem scroll interno */}
       {layout === 'tabs' ? (
-        <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} />
+        <HomeTabsLayout pnl={pnl} pnlLoading={pnlLoading} snapshots={snapshots} />
       ) : (
         <ScrollView
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
@@ -116,6 +116,7 @@ export const HomeScreen = memo(function HomeScreen({ navigation }: any) {
           <HomeVerticalLayout 
             pnl={pnl}
             pnlLoading={pnlLoading}
+            snapshots={snapshots}
             isUpdating={refreshing}
           />
         </ScrollView>

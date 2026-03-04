@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { Animated } from 'react-native'
-import { useFocusEffect } from '@react-navigation/native'
+import { useFocusEffect, useIsFocused } from '@react-navigation/native'
 
 interface HeaderConfig {
   title?: string
@@ -72,6 +72,7 @@ export function HeaderProvider({ children }: { children: React.ReactNode }) {
 export function useHeader(config: HeaderConfig) {
   const { setHeaderConfig } = useContext(HeaderContext)
   const configRef = useRef(config)
+  const isFocused = useIsFocused()
 
   // Mantém ref atualizada
   useEffect(() => {
@@ -86,9 +87,13 @@ export function useHeader(config: HeaderConfig) {
   )
 
   // Quando valores dinâmicos mudam (subtitle, unreadCount) → atualiza sem animação
+  // Só atualiza se a tela estiver em foco, para não sobrescrever o header de outra tela
   useEffect(() => {
-    setHeaderConfig(config)
+    if (isFocused) {
+      setHeaderConfig(config)
+    }
   }, [
+    isFocused,
     config.title,
     config.subtitle,
     config.unreadCount,

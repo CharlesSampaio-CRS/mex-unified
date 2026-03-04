@@ -112,12 +112,23 @@ export function validateAlert(alert: Partial<CreateAlertInput>): string[] {
     errors.push('Condição do alerta é obrigatória');
   }
   
-  if (!alert.value || alert.value <= 0) {
-    errors.push('Valor deve ser maior que zero');
+  if (alert.value === undefined || alert.value === null) {
+    errors.push('Valor é obrigatório');
   }
-  
-  if (alert.alertType === 'percentage' && (alert.value < -100 || alert.value > 1000)) {
-    errors.push('Percentual deve estar entre -100% e +1000%');
+
+  if (alert.alertType === 'price') {
+    // Preço absoluto deve ser positivo
+    if (alert.value !== undefined && alert.value <= 0) {
+      errors.push('Preço deve ser maior que zero');
+    }
+  } else if (alert.alertType === 'percentage') {
+    // Porcentagem: aceita negativos para quedas, rejeita zero
+    if (alert.value === 0) {
+      errors.push('Percentual não pode ser zero');
+    }
+    if (alert.value !== undefined && (alert.value < -100 || alert.value > 1000)) {
+      errors.push('Percentual deve estar entre -100% e +1000%');
+    }
   }
   
   return errors;

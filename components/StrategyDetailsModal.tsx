@@ -181,7 +181,7 @@ export function StrategyDetailsModal({
   }
 
   const getStatusLabel = (status: StrategyStatus): string => {
-    const map: Record<StrategyStatus, string> = {
+    const map: Record<string, string> = {
       idle: t('strategy.statusIdle') || 'Idle',
       monitoring: t('strategy.statusMonitoring') || 'Monitoring',
       in_position: t('strategy.statusInPosition') || 'In Position',
@@ -191,12 +191,13 @@ export function StrategyDetailsModal({
       expired: 'Expired',
       paused: t('strategy.paused') || 'Paused',
       error: t('strategy.statusError') || 'Error',
+      archived: 'Arquivada',
     }
     return map[status] || status
   }
 
   const getStatusColor = (status: StrategyStatus) => {
-    const map: Record<StrategyStatus, { bg: string; text: string; dot: string }> = {
+    const map: Record<string, { bg: string; text: string; dot: string }> = {
       monitoring: { bg: 'rgba(59, 130, 246, 0.12)', text: '#3b82f6', dot: '#3b82f6' },
       in_position: { bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981', dot: '#10b981' },
       gradual_selling: { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', dot: '#f59e0b' },
@@ -206,6 +207,7 @@ export function StrategyDetailsModal({
       error: { bg: 'rgba(239, 68, 68, 0.12)', text: '#ef4444', dot: '#ef4444' },
       paused: { bg: 'rgba(107, 114, 128, 0.12)', text: '#6b7280', dot: '#6b7280' },
       idle: { bg: 'rgba(107, 114, 128, 0.12)', text: '#9ca3af', dot: '#9ca3af' },
+      archived: { bg: 'rgba(156, 163, 175, 0.12)', text: '#9ca3af', dot: '#9ca3af' },
     }
     return map[status] || map.idle
   }
@@ -467,6 +469,34 @@ export function StrategyDetailsModal({
               </View>
             </>
           )}
+          {(cfg as any).auto_buy_dip_enabled && (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: typography.h4 }}>🛒</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Auto Buy Dip</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#059669' }]}>Ativo</Text>
+              </View>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: typography.h4 }}>💰</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Valor Buy Dip</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#059669' }]}>${(cfg as any).auto_buy_dip_amount_usd?.toFixed(2) ?? '—'}</Text>
+              </View>
+              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Text style={{ fontSize: typography.h4 }}>📊</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Trigger / Max</Text>
+                </View>
+                <Text style={[styles.infoValue, { color: '#059669' }]}>-{(cfg as any).auto_buy_dip_percent ?? 5}% · {(strategy as any).buy_dip_buys_done ?? 0}/{(cfg as any).auto_buy_dip_max_buys ?? 3} compras</Text>
+              </View>
+            </>
+          )}
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
@@ -552,7 +582,7 @@ export function StrategyDetailsModal({
           <Text style={{ fontSize: typography.emojiLarge, marginBottom: 12 }}>📊</Text>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('strategy.noExecutions') || 'Nenhuma execução ainda'}</Text>
           <Text style={{ fontSize: typography.caption, color: colors.textSecondary, marginTop: 6, textAlign: 'center', paddingHorizontal: 24 }}>
-            Execuções aparecem quando o sistema executa ordens na exchange (take profit, stop loss, DCA ou venda gradual).
+            Execuções aparecem quando o sistema executa ordens na exchange (take profit, stop loss, DCA, buy dip ou venda gradual).
           </Text>
         </View>
       )
@@ -564,6 +594,7 @@ export function StrategyDetailsModal({
         'stop_loss': '🛑 Stop Loss',
         'gradual_sell': '📈 Venda Gradual',
         'dca_buy': '📉 DCA Buy',
+        'buy_dip': '🛒 Buy Dip',
       }
       if (reason.startsWith('sell_failed:')) return '❌ ' + reason.replace('sell_failed:', '').trim()
       if (reason.startsWith('stop_loss_failed:')) return '🛑❌ ' + reason.replace('stop_loss_failed:', '').trim()
@@ -634,8 +665,8 @@ export function StrategyDetailsModal({
           return (
             <View key={exec.execution_id || idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: label.color }]}>
               {/* Header: Tipo + Source + Data */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1, flexWrap: 'wrap' }}>
                   <View style={[styles.execBadge, { backgroundColor: label.color + '18' }]}>
                     <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.semibold, color: label.color }}>{label.emoji} {label.text}</Text>
                   </View>
@@ -647,13 +678,13 @@ export function StrategyDetailsModal({
                     </View>
                   )}
                 </View>
-                <Text style={{ fontSize: typography.micro, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{formatDate(exec.executed_at)}</Text>
+                <Text style={{ fontSize: typography.micro, color: colors.textSecondary, flexShrink: 0 }}>{formatDate(exec.executed_at)}</Text>
               </View>
 
               {/* Quantidade e Preço */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, alignItems: 'center' }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: typography.caption, color: colors.textSecondary }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, alignItems: 'flex-start', gap: 8 }}>
+                <View style={{ flex: 1, flexShrink: 1 }}>
+                  <Text style={{ fontSize: typography.caption, color: colors.textSecondary }} numberOfLines={1}>
                     {(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}
                   </Text>
                   {exec.fee != null && exec.fee > 0 && (
@@ -661,7 +692,7 @@ export function StrategyDetailsModal({
                   )}
                 </View>
                 {!isFailure && (
-                  <View style={{ alignItems: 'flex-end' }}>
+                  <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
                     <Text style={{ fontSize: typography.bodyLarge, fontWeight: fontWeights.bold, color: pnlColor }}>{formatCurrency(exec.pnl_usd)}</Text>
                     <Text style={{ fontSize: typography.micro, color: pnlColor }}>{(exec.pnl_usd ?? 0) >= 0 ? 'Lucro' : 'Perda'}</Text>
                   </View>
@@ -716,6 +747,7 @@ export function StrategyDetailsModal({
       stop_loss: { label: 'STOP LOSS', emoji: '🛑' },
       gradual_sell: { label: 'GRADUAL', emoji: '📈' },
       dca_buy: { label: 'DCA', emoji: '📉' },
+      buy_dip: { label: 'BUY DIP', emoji: '🛒' },
       expired: { label: 'EXPIRADO', emoji: '⏰' },
       info: { label: 'INFO', emoji: 'ℹ️' },
     }
@@ -723,6 +755,7 @@ export function StrategyDetailsModal({
     const sigColors: Record<string, string> = {
       take_profit: '#10b981', stop_loss: '#ef4444',
       gradual_sell: '#f59e0b', dca_buy: '#3b82f6',
+      buy_dip: '#059669',
       expired: '#6b7280', info: '#6b7280',
     }
 
@@ -785,8 +818,8 @@ export function StrategyDetailsModal({
           return (
             <View key={idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: sigColor }]}>
               {/* Header: Tipo + Acted + Source + Data */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1, flexWrap: 'wrap' }}>
                   <View style={[styles.execBadge, { backgroundColor: sigColor + '18' }]}>
                     <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.semibold, color: sigColor }}>{typeInfo.emoji} {typeInfo.label}</Text>
                   </View>
@@ -803,14 +836,14 @@ export function StrategyDetailsModal({
                     </View>
                   )}
                 </View>
-                <Text style={{ fontSize: typography.micro, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{formatDate(sig.created_at)}</Text>
+                <Text style={{ fontSize: typography.micro, color: colors.textSecondary, flexShrink: 0 }}>{formatDate(sig.created_at)}</Text>
               </View>
 
               {/* Mensagem */}
-              <Text style={{ fontSize: typography.caption, color: colors.text, marginTop: 8, lineHeight: 18 }}>{sig.message}</Text>
+              <Text style={{ fontSize: typography.caption, color: colors.text, marginTop: 8, lineHeight: 18 }} numberOfLines={3}>{sig.message}</Text>
 
               {/* Footer: Preço + Variação */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border + '40', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border + '40', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                 <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>💰 Preço: {formatCurrencyAbs(sig.price)}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <View style={{
@@ -875,9 +908,11 @@ export function StrategyDetailsModal({
   const renderTabBar = () => {
     if (!strategy) return null
     const sigCount = (strategy as StrategyDetail)?.signals?.length || 0
+    const execCount = (strategy as StrategyDetail)?.executions?.length || 0
+    const totalActivity = sigCount + execCount
     const tabs = [
       { key: 'overview' as const, label: t('strategy.overview') || 'Visão Geral' },
-      { key: 'signals' as const, label: `${t('strategy.signals') || 'Sinais'} (${sigCount})` },
+      { key: 'signals' as const, label: `${t('strategy.signals') || 'Sinais'} (${totalActivity})` },
     ]
     return (
       <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
@@ -974,7 +1009,7 @@ export function StrategyDetailsModal({
                       )}
 
                       {/* Contadores resumo */}
-                      <View style={{ flexDirection: 'row', gap: 16, marginTop: 2 }}>
+                      <View style={{ flexDirection: 'row', gap: 16, marginTop: 2, flexWrap: 'wrap' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>📡 Sinais:</Text>
                           <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: colors.text }}>{tickResult.signals_count ?? 0}</Text>
@@ -1016,8 +1051,8 @@ export function StrategyDetailsModal({
                             const sigColor = sigColorMap[sig.signal_type] || colors.textSecondary
                             return (
                               <View key={idx} style={{ backgroundColor: sigColor + '0D', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: sigColor }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, flexWrap: 'wrap' }}>
                                     <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.semibold, color: sigColor }}>
                                       {sig.signal_type.replace('_', ' ').toUpperCase()}
                                     </Text>
@@ -1027,11 +1062,11 @@ export function StrategyDetailsModal({
                                       </View>
                                     )}
                                   </View>
-                                  <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.medium, color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>
+                                  <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.medium, color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444', flexShrink: 0 }}>
                                     {(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%
                                   </Text>
                                 </View>
-                                <Text style={{ fontSize: typography.caption, color: colors.text, lineHeight: 18 }}>{sig.message}</Text>
+                                <Text style={{ fontSize: typography.caption, color: colors.text, lineHeight: 18 }} numberOfLines={3}>{sig.message}</Text>
                               </View>
                             )
                           })}
@@ -1047,22 +1082,22 @@ export function StrategyDetailsModal({
                             const execColor = isFailure ? '#ef4444' : (exec.pnl_usd >= 0 ? '#10b981' : '#ef4444')
                             return (
                               <View key={exec.execution_id || idx} style={{ backgroundColor: execColor + '0D', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: execColor }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: execColor }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                                  <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: execColor, flexShrink: 1 }}>
                                     {isFailure ? '❌ FALHOU' : exec.action === 'sell' ? '📤 VENDA' : '📥 COMPRA'}
                                   </Text>
                                   {!isFailure && (
-                                    <Text style={{ fontSize: typography.bodySmall, fontWeight: fontWeights.bold, color: exec.pnl_usd >= 0 ? '#10b981' : '#ef4444' }}>
+                                    <Text style={{ fontSize: typography.bodySmall, fontWeight: fontWeights.bold, color: exec.pnl_usd >= 0 ? '#10b981' : '#ef4444', flexShrink: 0 }}>
                                       {formatCurrency(exec.pnl_usd)}
                                     </Text>
                                   )}
                                 </View>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                  <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
+                                  <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }} numberOfLines={1}>
                                     {(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}
                                   </Text>
                                   {exec.fee > 0 && (
-                                    <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>Fee: ${exec.fee.toFixed(4)}</Text>
+                                    <Text style={{ fontSize: typography.tiny, color: colors.textSecondary, flexShrink: 0 }}>Fee: ${exec.fee.toFixed(4)}</Text>
                                   )}
                                 </View>
                                 {exec.reason && (
@@ -1131,7 +1166,12 @@ export function StrategyDetailsModal({
               {renderDates()}
             </>
           )}
-          {activeTab === 'signals' && renderSignalsList()}
+          {activeTab === 'signals' && (
+            <>
+              {renderExecutionsList()}
+              {renderSignalsList()}
+            </>
+          )}
           <View style={{ height: 120 }} />
         </ScrollView>
       </>

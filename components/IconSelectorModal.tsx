@@ -20,7 +20,9 @@ const AVAILABLE_ICONS = [
   { id: 'flag', name: 'Flag', icon: 'flag', screen: 'Flag' },
   { id: 'chart', name: 'Analytics', icon: 'chart', screen: 'Analytics' },
   { id: 'robot', name: 'Strategies', icon: 'robot', screen: 'StrategyTemplates' },
-  { id: 'bell', name: 'Alerts', icon: 'bell', screen: 'Favoritos' },
+  { id: 'simulator', name: 'Simulator', icon: 'simulator', screen: 'StrategySimulator' },
+  { id: 'bell', name: 'Alerts', icon: 'bell', screen: 'Alertas' },
+  { id: 'star-fav', name: 'Favorites', icon: 'star', screen: 'Favoritos' },
   { id: 'settings', name: 'Settings', icon: 'settings', screen: 'Settings' },
 ]
 
@@ -85,6 +87,10 @@ const RobotIcon = ({ color }: { color: string }) => (
   <Ionicons name="hardware-chip-outline" size={24} color={color} />
 )
 
+const SimulatorIcon = ({ color }: { color: string }) => (
+  <Ionicons name="flask-outline" size={24} color={color} />
+)
+
 const iconComponents: Record<string, React.FC<{ color: string }>> = {
   star: StarIcon,
   heart: HeartIcon,
@@ -99,6 +105,7 @@ const iconComponents: Record<string, React.FC<{ color: string }>> = {
   flag: FlagIcon,
   chart: ChartIcon,
   robot: RobotIcon,
+  simulator: SimulatorIcon,
   bell: BellIcon,
   settings: SettingsIcon,
 }

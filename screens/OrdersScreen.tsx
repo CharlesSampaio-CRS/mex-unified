@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Animated, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Animated, Image, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -66,7 +66,7 @@ function AnimatedOrderCard({
 export function OrdersScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
-  const { ordersByExchange, loading, refreshing, refresh, removeOrder, recentlyAddedIds } = useOrders();
+  const { ordersByExchange, loading, refreshing, refresh, removeOrder, removeOrdersByExchange, recentlyAddedIds, refreshExchange } = useOrders();
   const { data: balanceData, refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
   const { unreadCount, addNotification } = useNotifications();
@@ -80,6 +80,21 @@ export function OrdersScreen({ navigation }: any) {
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<{ order: OpenOrder; exchangeId: string } | null>(null);
   const [createOrderVisible, setCreateOrderVisible] = useState(false);
+  const [cloneOrderData, setCloneOrderData] = useState<{
+    exchangeId: string;
+    exchangeName: string;
+    symbol: string;
+    side: 'buy' | 'sell';
+    type: 'market' | 'limit';
+    price: number;
+    amount: number;
+  } | null>(null);
+
+  // Estado para "Cancelar Todas" por exchange
+  const [cancelAllExchangeConfirmVisible, setCancelAllExchangeConfirmVisible] = useState(false);
+  const [cancelAllExchangeTarget, setCancelAllExchangeTarget] = useState<{ exchangeId: string; exchangeName: string; orderCount: number } | null>(null);
+  const [cancelAllExchangeLoading, setCancelAllExchangeLoading] = useState(false);
+  const [cancellingExchangeIds, setCancellingExchangeIds] = useState<Set<string>>(new Set());
 
   const onNotificationsPress = useCallback(() => setNotificationsModalVisible(true), []);
 
@@ -202,6 +217,21 @@ export function OrdersScreen({ navigation }: any) {
     setCancelConfirmVisible(true);
   }, [cancellingOrderIds]);
 
+  // 🔁 Clona uma ordem existente — abre CreateOrderModal com dados pré-preenchidos
+  const handleCloneOrder = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
+    const orderType = (order.type === 'market' || order.type === 'limit') ? order.type : 'limit';
+    setCloneOrderData({
+      exchangeId,
+      exchangeName,
+      symbol: order.symbol,
+      side: order.side,
+      type: orderType,
+      price: Number(order.price) || 0,
+      amount: Number(order.amount) || 0,
+    });
+    setCreateOrderVisible(true);
+  }, []);
+
   // Executa o cancelamento após confirmação
   const executeCancelOrder = useCallback(async () => {
     if (!orderToCancel) return;
@@ -263,8 +293,123 @@ export function OrdersScreen({ navigation }: any) {
     }
   }, [orderToCancel, refresh, removeOrder, refreshBalance, addNotification]);
 
+  // 🔴 Abre modal de confirmação para cancelar TODAS ordens de uma exchange
+  const handleCancelAllByExchange = useCallback((exchangeId: string, exchangeName: string, orderCount: number) => {
+    if (cancellingExchangeIds.has(exchangeId)) return;
+    setCancelAllExchangeTarget({ exchangeId, exchangeName, orderCount });
+    setCancelAllExchangeConfirmVisible(true);
+  }, [cancellingExchangeIds]);
+
+  // 🔴 Executa o cancelamento de todas as ordens de uma exchange (uma a uma)
+  const executeCancelAllByExchange = useCallback(async () => {
+    if (!cancelAllExchangeTarget || !user?.id) return;
+    const { exchangeId, exchangeName } = cancelAllExchangeTarget;
+
+    // Pega as ordens dessa exchange do estado local
+    const exchangeOrders = ordersByExchange.find(ex => ex.exchangeId === exchangeId)?.orders || [];
+    if (exchangeOrders.length === 0) {
+      setCancelAllExchangeConfirmVisible(false);
+      setCancelAllExchangeTarget(null);
+      return;
+    }
+
+    setCancelAllExchangeConfirmVisible(false);
+    setCancelAllExchangeTarget(null);
+    setCancelAllExchangeLoading(true);
+    setCancellingExchangeIds(prev => new Set(prev).add(exchangeId));
+
+    // Marca todas as ordens como "cancelando" (animação piscante)
+    setCancellingOrderIds(prev => {
+      const newSet = new Set(prev);
+      exchangeOrders.forEach(order => newSet.add(String(order.id || '')));
+      return newSet;
+    });
+
+    let cancelledCount = 0;
+    let failedCount = 0;
+    const failedOrders: Array<{ symbol: string; error: string }> = [];
+
+    // Cancela cada ordem individualmente (em paralelo, max 3 por vez)
+    const batchSize = 3;
+    for (let i = 0; i < exchangeOrders.length; i += batchSize) {
+      const batch = exchangeOrders.slice(i, i + batchSize);
+      const results = await Promise.allSettled(
+        batch.map(async (order) => {
+          const orderId = String(order.id || '');
+          const exchangeOrderId = String(order.exchange_order_id || order.id || '');
+          try {
+            await apiService.cancelOrder(exchangeId, order.symbol, exchangeOrderId);
+            // Remoção otimista imediata desta ordem
+            removeOrder(orderId, order.symbol);
+            return { success: true, orderId };
+          } catch (err: any) {
+            return { success: false, orderId, symbol: order.symbol, error: err.message || 'Erro' };
+          }
+        })
+      );
+
+      results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.success) {
+          cancelledCount++;
+        } else {
+          failedCount++;
+          const val = result.status === 'fulfilled' ? result.value : { symbol: '?', error: 'Erro' };
+          failedOrders.push({ symbol: val.symbol || '?', error: val.error || 'Erro' });
+        }
+      });
+    }
+
+    // Limpa estado de cancelamento
+    setCancellingOrderIds(prev => {
+      const newSet = new Set(prev);
+      exchangeOrders.forEach(order => newSet.delete(String(order.id || '')));
+      return newSet;
+    });
+
+    // Feedback ao usuário
+    if (cancelledCount > 0 && failedCount === 0) {
+      // Sucesso total
+      addNotification({
+        type: 'warning',
+        title: `🗑️ ${cancelledCount} Ordem(ns) Cancelada(s)`,
+        message: `Todas as ordens abertas em ${exchangeName} foram canceladas com sucesso.`,
+        icon: '🗑️',
+        data: {
+          category: 'order',
+          action: 'order_cancel_all',
+          exchangeId,
+          exchangeName,
+          cancelledCount,
+        },
+      });
+      Alert.alert('Sucesso', `✅ ${cancelledCount} ordem(ns) cancelada(s) em ${exchangeName}!`);
+    } else if (cancelledCount > 0 && failedCount > 0) {
+      // Parcial
+      Alert.alert(
+        'Cancelamento Parcial',
+        `✅ ${cancelledCount} cancelada(s)\n❌ ${failedCount} falhou(ram)\n\n${failedOrders[0]?.error || ''}`
+      );
+    } else {
+      // Todas falharam
+      Alert.alert('Erro', `❌ Nenhuma ordem cancelada.\n\n${failedOrders[0]?.error || 'Erro desconhecido'}`);
+    }
+
+    // Atualiza balance e sincroniza com backend
+    refreshBalance().catch(console.error);
+    setTimeout(() => {
+      refreshExchange(exchangeId).catch(console.error);
+    }, 2000);
+
+    setCancelAllExchangeLoading(false);
+    setCancellingExchangeIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(exchangeId);
+      return newSet;
+    });
+  }, [cancelAllExchangeTarget, user?.id, ordersByExchange, removeOrder, refreshBalance, refreshExchange, addNotification]);
+
   // Renderiza order card
-  const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string) => {
+  const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
     if (!order || !order.id) return null;
     
     const orderId = String(order.id || '');
@@ -371,29 +516,47 @@ export function OrdersScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Botão cancelar compacto */}
-          {!isCancelling ? (
+          {/* Botões de ação: Clonar + Cancelar */}
+          <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
+            {/* Clonar */}
             <TouchableOpacity
-              style={[styles.cancelButton, { borderTopColor: colors.border }]}
-              onPress={() => handleCancelOrder(order, exchangeId)}
+              style={styles.actionButton}
+              onPress={() => handleCloneOrder(order, exchangeId, exchangeName)}
+              disabled={isCancelling}
             >
-              <Ionicons name="close-circle-outline" size={14} color={colors.danger} />
-              <Text style={[styles.cancelButtonText, { color: colors.danger }]}>
-                Cancelar
+              <Ionicons name="copy-outline" size={14} color={colors.primary} />
+              <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+                Clonar
               </Text>
             </TouchableOpacity>
-          ) : (
-            <View style={[styles.cancelButton, { borderTopColor: colors.border }]}>
-              <Ionicons name="hourglass-outline" size={14} color={colors.textSecondary} />
-              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
-                Cancelando...
-              </Text>
-            </View>
-          )}
+
+            {/* Separador */}
+            <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
+
+            {/* Cancelar */}
+            {!isCancelling ? (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleCancelOrder(order, exchangeId)}
+              >
+                <Ionicons name="close-circle-outline" size={14} color={colors.danger} />
+                <Text style={[styles.actionButtonText, { color: colors.danger }]}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.actionButton}>
+                <Ionicons name="hourglass-outline" size={14} color={colors.textSecondary} />
+                <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
+                  Cancelando...
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </AnimatedOrderCard>
     );
-  }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder, tokenPrices]);
+  }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder, handleCloneOrder, tokenPrices]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -480,7 +643,7 @@ export function OrdersScreen({ navigation }: any) {
           </Text>
           <TouchableOpacity
             style={[styles.newOrderButton, { borderColor: colors.primary }]}
-            onPress={() => setCreateOrderVisible(true)}
+            onPress={() => { setCloneOrderData(null); setCreateOrderVisible(true); }}
             activeOpacity={0.7}
           >
             <Ionicons name="add-outline" size={14} color={colors.primary} />
@@ -514,7 +677,7 @@ export function OrdersScreen({ navigation }: any) {
             {!search && selectedType === 'All' && (
               <TouchableOpacity
                 style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
-                onPress={() => setCreateOrderVisible(true)}
+                onPress={() => { setCloneOrderData(null); setCreateOrderVisible(true); }}
                 activeOpacity={0.7}
               >
                 <Ionicons name="add-circle-outline" size={18} color="#fff" />
@@ -540,11 +703,33 @@ export function OrdersScreen({ navigation }: any) {
                       {String(section.exchangeName)}
                     </Text>
                   </View>
-                  <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
-                    {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
-                  </Text>
+                  <View style={styles.exchangeHeaderRight}>
+                    <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
+                      {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
+                    </Text>
+                    {cancellingExchangeIds.has(section.exchangeId) ? (
+                      <View style={styles.cancelAllExchangeButton}>
+                        <ActivityIndicator size="small" color={colors.danger} />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.cancelAllExchangeButton, { 
+                          borderColor: colors.danger + '40',
+                          backgroundColor: colors.danger + '10',
+                        }]}
+                        onPress={() => handleCancelAllByExchange(section.exchangeId, section.exchangeName, section.orders.length)}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons name="trash-outline" size={13} color={colors.danger} />
+                        <Text style={[styles.cancelAllExchangeText, { color: colors.danger }]}>
+                          Cancel All
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-                {section.orders.map(order => renderOrderCard(order, section.exchangeId))}
+                {section.orders.map(order => renderOrderCard(order, section.exchangeId, section.exchangeName))}
               </View>
             ))}
           </View>
@@ -583,10 +768,30 @@ export function OrdersScreen({ navigation }: any) {
         icon="⚠️"
       />
 
+      {/* Modal de Confirmação de Cancelar Todas por Exchange */}
+      <ConfirmModal
+        visible={cancelAllExchangeConfirmVisible}
+        onClose={() => { setCancelAllExchangeConfirmVisible(false); setCancelAllExchangeTarget(null); }}
+        onConfirm={executeCancelAllByExchange}
+        title="Cancelar Todas as Ordens"
+        message={cancelAllExchangeTarget
+          ? `⚠️ Tem certeza que deseja cancelar TODAS as ${cancelAllExchangeTarget.orderCount} ordem(ns) abertas na ${cancelAllExchangeTarget.exchangeName}?\n\nEssa ação não pode ser desfeita.`
+          : ''
+        }
+        confirmText={`Cancelar Todas (${cancelAllExchangeTarget?.orderCount || 0})`}
+        cancelText="Voltar"
+        confirmColor="#ef4444"
+        icon="🗑️"
+      />
+
       {/* Modal de Criação de Nova Ordem */}
       <CreateOrderModal
         visible={createOrderVisible}
-        onClose={() => setCreateOrderVisible(false)}
+        onClose={() => {
+          setCreateOrderVisible(false);
+          setCloneOrderData(null);
+        }}
+        cloneData={cloneOrderData || undefined}
       />
     </View>
   );
@@ -709,6 +914,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 0,
   },
   exchangeCardLogo: {
     width: '100%',
@@ -727,10 +934,32 @@ const styles = StyleSheet.create({
   exchangeCardName: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
+    flexShrink: 1,
   },
   exchangeCardCount: {
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
+  },
+  exchangeHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexShrink: 0,
+  },
+  cancelAllExchangeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  cancelAllExchangeText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
   orderCard: {
     borderRadius: 12,
@@ -812,5 +1041,26 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 5,
+  },
+  actionButtonText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
+  },
+  actionSeparator: {
+    width: 1,
+    height: 16,
   },
 });

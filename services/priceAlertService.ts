@@ -14,7 +14,7 @@ import {
 } from '../types/alerts';
 import { apiService } from './api';
 
-const ALERTS_STORAGE_KEY = '@cryptohub:price_alerts';
+const ALERTS_STORAGE_KEY = '@cryptohub:price-alerts-v2';
 const PRICE_CACHE_KEY = '@cryptohub:price_cache';
 const CHECK_INTERVAL_MS = 60000; // 1 minuto
 
@@ -35,6 +35,30 @@ class PriceAlertService {
    */
   async initialize() {
     try {
+      // Solicita permissão de notificações
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.warn('[PriceAlerts] ⚠️ Permissão de notificações NÃO concedida — alertas não enviarão push');
+      } else {
+        console.log('[PriceAlerts] ✅ Permissão de notificações concedida');
+      }
+
+      // Configura handler de notificações (foreground)
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+        }),
+      });
+
       // Carrega cache de preços
       await this.loadPriceCache();
       
@@ -183,9 +207,17 @@ class PriceAlertService {
     }
 
     // ✅ IMPORTANTE: Evita disparar múltiplas vezes se o preço não mudou significativamente
-    if (alert.lastCheckedPrice && Math.abs(currentPrice - alert.lastCheckedPrice) < 0.01) {
-      // Preço praticamente igual ao último check - não dispara
-      return false;
+    // Para alertas de porcentagem, usa threshold relativo (0.01% do preço)
+    // Para alertas de preço absoluto, usa threshold fixo ($0.01)
+    if (alert.lastCheckedPrice) {
+      const priceDiff = Math.abs(currentPrice - alert.lastCheckedPrice);
+      const threshold = alert.alertType === 'percentage' 
+        ? currentPrice * 0.0001  // 0.01% do preço atual
+        : 0.01;                   // $0.01 fixo
+      
+      if (priceDiff < threshold) {
+        return false;
+      }
     }
 
     // Verifica condição baseada no tipo
@@ -228,65 +260,70 @@ class PriceAlertService {
 
   /**
    * Verifica condição de porcentagem
+   * O valor do alerta é exatamente o que o usuário digitou:
+   *   - condition='above', value=10 → dispara quando subiu >= +10%
+   *   - condition='below', value=-5 → dispara quando caiu <= -5%
+   *   - condition='above', value=-3 → dispara quando variação >= -3% (caiu menos que 3%)
+   *   - condition='below', value=5 → dispara quando variação <= 5% (compatibilidade)
    */
   private checkPercentageCondition(
     alert: TokenAlert,
     currentPrice: number
   ): boolean {
-    if (!alert.basePrice) {
-      // ❌ ERRO: alerta de porcentagem sem basePrice - não deveria acontecer!
-      console.error(`[PriceAlerts] ❌ Alerta ${alert.id} de porcentagem sem basePrice definido!`);
-      console.error(`[PriceAlerts] 📊 Symbol: ${alert.symbol}, Condition: ${alert.condition}, Value: ${alert.value}%`);
-      
-      // Define o preço atual como base para evitar erros futuros
+    if (!alert.basePrice || alert.basePrice <= 0) {
+      console.error(`[PriceAlerts] ❌ Alerta ${alert.id} de porcentagem sem basePrice válido!`);
       alert.basePrice = currentPrice;
       return false;
     }
 
     const percentChange = ((currentPrice - alert.basePrice) / alert.basePrice) * 100;
+    const targetValue = alert.value; // Valor exato do usuário (pode ser negativo)
     
-    console.log(`[PriceAlerts] 📊 ${alert.symbol}: basePrice=$${alert.basePrice.toFixed(2)}, currentPrice=$${currentPrice.toFixed(2)}, change=${percentChange.toFixed(2)}%, target=${alert.value}%`);
+    console.log(`[PriceAlerts] 📊 ${alert.symbol}: base=$${alert.basePrice.toFixed(2)}, current=$${currentPrice.toFixed(2)}, change=${percentChange.toFixed(2)}%, target=${targetValue}%, condition=${alert.condition}`);
 
     switch (alert.condition) {
       case 'above':
-        // Exemplo: alerta +20%, percentChange precisa ser >= 20
-        const isAbove = percentChange >= alert.value;
-        console.log(`[PriceAlerts] 🔍 Checking ABOVE: ${percentChange.toFixed(2)}% >= ${alert.value}% ? ${isAbove}`);
+        // Dispara quando percentChange >= targetValue
+        // Ex: target=10 → subiu 10%+  |  target=-5 → caiu menos de 5%
+        const isAbove = percentChange >= targetValue;
+        console.log(`[PriceAlerts] 🔍 ABOVE: ${percentChange.toFixed(2)}% >= ${targetValue}% ? ${isAbove}`);
         return isAbove;
       
       case 'below':
-        // Exemplo: alerta -10%, percentChange precisa ser <= -10
-        const targetBelow = -Math.abs(alert.value);
-        const isBelow = percentChange <= targetBelow;
-        console.log(`[PriceAlerts] 🔍 Checking BELOW: ${percentChange.toFixed(2)}% <= ${targetBelow}% ? ${isBelow}`);
+        // Dispara quando percentChange <= targetValue
+        // Ex: target=-5 → caiu 5%+  |  target=-10 → caiu 10%+
+        // Compatibilidade: se user digitar 5 com below, interpreta como -5
+        const effectiveTarget = targetValue > 0 ? -targetValue : targetValue;
+        const isBelow = percentChange <= effectiveTarget;
+        console.log(`[PriceAlerts] 🔍 BELOW: ${percentChange.toFixed(2)}% <= ${effectiveTarget}% ? ${isBelow}`);
         return isBelow;
       
-      case 'crosses_up':
-        // ✅ Cruza para CIMA: estava abaixo do target e agora está acima/igual
+      case 'crosses_up': {
         const lastPercent = alert.lastCheckedPrice && alert.basePrice
           ? ((alert.lastCheckedPrice - alert.basePrice) / alert.basePrice) * 100
-          : percentChange - 1; // Se não tem histórico, assume que estava abaixo
+          : percentChange - 1;
         
-        const wasBelow = lastPercent < alert.value;
-        const isNowAbove = percentChange >= alert.value;
-        const crossedUp = wasBelow && isNowAbove;
+        const wasBelow = lastPercent < targetValue;
+        const isNowAbove = percentChange >= targetValue;
+        const crossed = wasBelow && isNowAbove;
         
-        console.log(`[PriceAlerts] 🔍 Checking CROSSES_UP: was ${lastPercent.toFixed(2)}% (below ${alert.value}%? ${wasBelow}), now ${percentChange.toFixed(2)}% (above? ${isNowAbove}) = ${crossedUp}`);
-        return crossedUp;
+        console.log(`[PriceAlerts] 🔍 CROSSES_UP: was ${lastPercent.toFixed(2)}%, now ${percentChange.toFixed(2)}%, target ${targetValue}% → ${crossed}`);
+        return crossed;
+      }
       
-      case 'crosses_down':
-        // ✅ Cruza para BAIXO: estava acima do target negativo e agora está abaixo/igual
-        const lastPercentDown = alert.lastCheckedPrice && alert.basePrice
+      case 'crosses_down': {
+        const lastPercentD = alert.lastCheckedPrice && alert.basePrice
           ? ((alert.lastCheckedPrice - alert.basePrice) / alert.basePrice) * 100
-          : percentChange + 1; // Se não tem histórico, assume que estava acima
+          : percentChange + 1;
         
-        const targetDown = -Math.abs(alert.value);
-        const wasAboveDown = lastPercentDown > targetDown;
-        const isNowBelowDown = percentChange <= targetDown;
-        const crossedDown = wasAboveDown && isNowBelowDown;
+        const effectiveTargetD = targetValue > 0 ? -targetValue : targetValue;
+        const wasAbove = lastPercentD > effectiveTargetD;
+        const isNowBelow = percentChange <= effectiveTargetD;
+        const crossed = wasAbove && isNowBelow;
         
-        console.log(`[PriceAlerts] 🔍 Checking CROSSES_DOWN: was ${lastPercentDown.toFixed(2)}% (above ${targetDown}%? ${wasAboveDown}), now ${percentChange.toFixed(2)}% (below? ${isNowBelowDown}) = ${crossedDown}`);
-        return crossedDown;
+        console.log(`[PriceAlerts] 🔍 CROSSES_DOWN: was ${lastPercentD.toFixed(2)}%, now ${percentChange.toFixed(2)}%, target ${effectiveTargetD}% → ${crossed}`);
+        return crossed;
+      }
       
       default:
         return false;
