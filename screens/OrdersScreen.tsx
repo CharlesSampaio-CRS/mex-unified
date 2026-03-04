@@ -369,12 +369,18 @@ export function OrdersScreen({ navigation }: any) {
     // Feedback ao usuário
     if (cancelledCount > 0 && failedCount === 0) {
       // Sucesso total
-      notify.orderCancelled(addNotification, {
-        symbol: `Todas (${exchangeName})`,
-        side: 'buy',
-        amount: cancelledCount,
-        type: 'cancel-all',
-        orderId: exchangeId,
+      addNotification({
+        type: 'warning',
+        title: `🗑️ ${cancelledCount} Ordem(ns) Cancelada(s)`,
+        message: `Todas as ordens abertas em ${exchangeName} foram canceladas com sucesso.`,
+        icon: '🗑️',
+        data: {
+          category: 'order',
+          action: 'order_cancel_all',
+          exchangeId,
+          exchangeName,
+          cancelledCount,
+        },
       });
       Alert.alert('Sucesso', `✅ ${cancelledCount} ordem(ns) cancelada(s) em ${exchangeName}!`);
     } else if (cancelledCount > 0 && failedCount > 0) {
