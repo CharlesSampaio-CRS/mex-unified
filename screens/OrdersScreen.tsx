@@ -691,7 +691,10 @@ export function OrdersScreen({ navigation }: any) {
                       </View>
                     ) : (
                       <TouchableOpacity
-                        style={[styles.cancelAllExchangeButton, { borderColor: colors.danger + '40' }]}
+                        style={[styles.cancelAllExchangeButton, { 
+                          borderColor: colors.danger + '40',
+                          backgroundColor: colors.danger + '10',
+                        }]}
                         onPress={() => handleCancelAllByExchange(section.exchangeId, section.exchangeName, section.orders.length)}
                         activeOpacity={0.7}
                       >
@@ -888,6 +891,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 0,
   },
   exchangeCardLogo: {
     width: '100%',
@@ -906,6 +911,7 @@ const styles = StyleSheet.create({
   exchangeCardName: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
+    flexShrink: 1,
   },
   exchangeCardCount: {
     fontSize: typography.micro,
@@ -915,6 +921,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
   },
   cancelAllExchangeButton: {
     flexDirection: 'row',
