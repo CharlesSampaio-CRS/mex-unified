@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image, ActivityIndicator } from 'react-native'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -93,6 +93,9 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
   const [createOrderError, setCreateOrderError] = useState<string | null>(null)
   const [confirmVisible, setConfirmVisible] = useState(false)
 
+  // Ref para impedir que o auto-fetch de preço sobrescreva o preço clonado
+  const isCloneModeRef = useRef(false)
+
   // Reset everything on open (or setup clone mode)
   useEffect(() => {
     if (visible) {
@@ -110,6 +113,7 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
 
       if (cloneData) {
         // 🔁 Modo Clone: pula direto para o formulário com dados pré-preenchidos
+        isCloneModeRef.current = true
         const [base, quote] = cloneData.symbol.split('/')
         setSelectedExchange({
           exchange_id: cloneData.exchangeId,
@@ -137,6 +141,7 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
         // Fetch exchanges em background (para o botão "voltar" funcionar)
         fetchExchanges()
       } else {
+        isCloneModeRef.current = false
         // Modo normal: inicia do início
         setStep('exchange')
         setSelectedExchange(null)
@@ -285,8 +290,14 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
   }
 
   // 🔄 AUTO-FETCH: Sempre que selecionar "limit", busca o preço atualizado
+  // (Pula quando veio de clone — o preço já foi preenchido pelo cloneData)
   useEffect(() => {
     if (orderType === 'limit' && selectedPair && selectedExchange) {
+      if (isCloneModeRef.current) {
+        // Primeira vez no modo clone → não sobrescreve o preço clonado
+        isCloneModeRef.current = false
+        return
+      }
       fetchCurrentPrice()
     }
   }, [orderType])
