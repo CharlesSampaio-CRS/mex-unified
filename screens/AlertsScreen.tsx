@@ -34,7 +34,7 @@ export const AlertsScreen = memo(function AlertsScreen({ navigation }: any) {
   }, [activeAlerts.length, alerts.length]);
 
   useHeader({
-    title: '🔔 Alertas',
+    title: 'Alertas',
     subtitle: headerSubtitle,
     onNotificationsPress,
     unreadCount,
