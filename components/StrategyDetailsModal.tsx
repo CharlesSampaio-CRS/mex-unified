@@ -1280,20 +1280,12 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   safeArea: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
     flex: 1,
   },
   modalContainer: {
-    borderRadius: 16,
-    width: '90%',
-    maxHeight: '85%',
-    height: '85%',
+    flex: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.2,

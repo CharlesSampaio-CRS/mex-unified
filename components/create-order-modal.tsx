@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image, ActivityIndicator, SafeAreaView } from 'react-native'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -1169,6 +1169,7 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
+        <SafeAreaView style={styles.safeArea}>
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -1218,6 +1219,7 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
             {step === 'order' && renderOrderStep()}
           </ScrollView>
         </View>
+        </SafeAreaView>
       </View>
 
       {/* Confirm Modal */}
@@ -1251,13 +1253,12 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+  },
+  safeArea: {
+    flex: 1,
   },
   container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '92%',
-    minHeight: '60%',
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

@@ -456,9 +456,9 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
-  safeArea: { width: "100%", alignItems: "center", justifyContent: "center", flex: 1 },
-  modalContainer: { borderRadius: 20, width: "90%", maxHeight: "85%", height: "85%" },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  safeArea: { flex: 1 },
+  modalContainer: { flex: 1 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
   title: { fontSize: typography.h2, fontWeight: fontWeights.medium },
   closeButton: { padding: 4 },

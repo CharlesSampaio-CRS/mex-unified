@@ -696,20 +696,12 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   safeArea: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
     flex: 1,
   },
   modalContent: {
-    borderRadius: 20,
-    width: '90%',
-    maxHeight: '85%',
-    height: '85%',
+    flex: 1,
   },
   modalHeader: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, SafeAreaView } from "react-native"
 import { memo } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { typography, fontWeights } from "../lib/typography"
@@ -142,6 +142,7 @@ export const IconSelectorModal = memo(function IconSelectorModal({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
+        <SafeAreaView style={styles.safeArea}>
         <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
           {/* Header */}
           <View style={styles.modalHeader}>
@@ -182,6 +183,7 @@ export const IconSelectorModal = memo(function IconSelectorModal({
             </View>
           </ScrollView>
         </View>
+        </SafeAreaView>
       </View>
     </Modal>
   )
@@ -191,14 +193,12 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  safeArea: {
+    flex: 1,
   },
   modalContainer: {
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    borderRadius: 20,
+    flex: 1,
     overflow: 'hidden',
   },
   modalHeader: {

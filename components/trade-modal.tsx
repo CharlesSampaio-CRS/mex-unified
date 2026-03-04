@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, ActivityIndicator, SafeAreaView } from 'react-native'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -599,6 +599,7 @@ export function TradeModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
+        <SafeAreaView style={styles.safeArea}>
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -1051,6 +1052,7 @@ export function TradeModal({
             )}
           </ScrollView>
         </View>
+        </SafeAreaView>
       </View>
 
       {/* Modal de Confirmação de Ordem - DENTRO do modal principal */}
@@ -1172,13 +1174,12 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  safeArea: {
+    flex: 1,
   },
   container: {
-    borderRadius: 20,
-    width: '90%',
-    maxHeight: '85%',
+    flex: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
