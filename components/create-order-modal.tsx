@@ -61,7 +61,7 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
   const { colors } = useTheme()
   const { user } = useAuth()
   const { addNotification } = useNotifications()
-  const { addOrder, refresh: refreshOrders } = useOrders()
+  const { addOrder, refresh: refreshOrders, refreshExchange } = useOrders()
   const { data: balanceData, refresh: refreshBalance } = useBalance()
 
   // Step navigation
@@ -523,9 +523,9 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
           addOrder(newOrder, exchangeId, exchangeName)
         }
 
-        // 4. Sync in background
+        // 4. Sync in background — ⚡ apenas esta exchange
         setTimeout(() => {
-          refreshOrders().catch(console.error)
+          refreshExchange(exchangeId).catch(console.error)
           refreshBalance().catch(console.error)
         }, 3000)
       } else {

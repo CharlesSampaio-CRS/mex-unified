@@ -22,6 +22,7 @@ interface OrdersContextType {
   recentlyAddedIds: Set<string>  // IDs de ordens recém-criadas (para animação)
   recentlyAffectedSymbols: Set<string> // Símbolos de tokens afetados por create/cancel (para animação no Assets)
   refresh: () => Promise<void>
+  refreshExchange: (exchangeId: string) => Promise<void>  // ⚡ Refresh de UMA exchange
   removeOrder: (orderId: string, symbol?: string) => void  // Remoção otimista imediata
   addOrder: (order: OpenOrder, exchangeId: string, exchangeName: string) => void // Inserção otimista imediata
 }
@@ -40,13 +41,65 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   // 🛡️ IDs de ordens recentemente canceladas — o refresh ignora essas ordens por 15s
   const recentlyCancelledRef = useRef<Map<string, number>>(new Map());
 
+  // Helper: Filtra ordens canceladas do resultado
+  const filterCancelledOrders = useCallback((results: OrdersByExchange[]): OrdersByExchange[] => {
+    const now = Date.now();
+    const CANCEL_GRACE_PERIOD = 15000; // 15s de proteção
+    // Limpa entradas expiradas
+    for (const [id, ts] of recentlyCancelledRef.current) {
+      if (now - ts > CANCEL_GRACE_PERIOD) recentlyCancelledRef.current.delete(id);
+    }
+    
+    if (recentlyCancelledRef.current.size === 0) return results;
+
+    return results.map(ex => ({
+      ...ex,
+      orders: ex.orders.filter(order => {
+        const oid = String(order.id || '');
+        const eoid = String(order.exchange_order_id || '');
+        const isCancelled = recentlyCancelledRef.current.has(oid) || recentlyCancelledRef.current.has(eoid);
+        if (isCancelled) console.log('�️ [ORDERS-CONTEXT] Filtrando ordem cancelada do refresh:', oid);
+        return !isCancelled;
+      })
+    })).filter(ex => ex.orders.length > 0);
+  }, []);
+
+  // Helper: Agrupa orders de uma response em OrdersByExchange[]
+  const groupOrdersFromResponse = useCallback((orders: any[]): OrdersByExchange[] => {
+    const groupedOrders = new Map<string, { id: string; name: string; orders: OpenOrder[] }>();
+    
+    orders.forEach((order: any) => {
+      if (!order || !order.symbol) return;
+      
+      const exchangeId = order.exchange_id || order.exchange || 'unknown';
+      const exchangeName = capitalizeExchangeName(order.exchange_name || order.exchange || exchangeId);
+      
+      if (!groupedOrders.has(exchangeId)) {
+        groupedOrders.set(exchangeId, { id: exchangeId, name: exchangeName, orders: [] });
+      }
+      
+      const orderWithId = {
+        ...order,
+        id: order.id || order.exchange_order_id || `${exchangeId}_${order.symbol}_${Date.now()}`,
+        exchange_order_id: order.exchange_order_id || order.id || undefined,
+      };
+      
+      groupedOrders.get(exchangeId)!.orders.push(orderWithId);
+    });
+    
+    return Array.from(groupedOrders.values()).map(ex => ({
+      exchangeId: ex.id,
+      exchangeName: ex.name,
+      orders: ex.orders,
+    }));
+  }, []);
+
   const fetchOrders = useCallback(async (forceRefresh = false, silent = false) => {
     if (!user?.id) return
     
     console.log('🟣 [ORDERS-CONTEXT] ========================================')
     console.log('🟣 [ORDERS-CONTEXT] Iniciando busca de ordens')
     console.log('🟣 [ORDERS-CONTEXT] ForceRefresh:', forceRefresh, 'Silent:', silent)
-    console.log('🟣 [ORDERS-CONTEXT] User ID:', user.id)
     
     if (!silent) {
       if (forceRefresh) {
@@ -60,99 +113,68 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const startTime = Date.now()
-      console.log('🟣 [ORDERS-CONTEXT] Chamando getOrdersSecure...')
       
       const response = await apiService.getOrdersSecure();
       
       const apiTime = Date.now() - startTime
-      console.log(`🟣 [ORDERS-CONTEXT] Resposta recebida em ${apiTime}ms`)
-      console.log('🟣 [ORDERS-CONTEXT] Sucesso:', response?.success)
-      console.log('🟣 [ORDERS-CONTEXT] Total de ordens:', response?.orders?.length || 0)
+      console.log(`🟣 [ORDERS-CONTEXT] Resposta recebida em ${apiTime}ms — ${response?.orders?.length || 0} ordens`)
       
       if (!response?.success || !response.orders) {
-        console.log('⚠️ [ORDERS-CONTEXT] Nenhuma ordem retornada')
         setOrdersByExchange([]);
         setTimestamp(Date.now());
-        console.log('🟣 [ORDERS-CONTEXT] ========================================')
         return;
       }
       
-      // Agrupa orders por exchange
-      const groupedOrders = new Map<string, { id: string; name: string; orders: OpenOrder[] }>();
+      const results = groupOrdersFromResponse(response.orders);
+      const filteredResults = filterCancelledOrders(results);
       
-      response.orders.forEach((order: any) => {
-        // ✅ Validação: ignora orders sem dados essenciais
-        if (!order || !order.symbol) return;
-        
-        const exchangeId = order.exchange_id || order.exchange || 'unknown';
-        const exchangeName = capitalizeExchangeName(order.exchange_name || order.exchange || exchangeId);
-        
-        if (!groupedOrders.has(exchangeId)) {
-          groupedOrders.set(exchangeId, {
-            id: exchangeId,
-            name: exchangeName,
-            orders: []
-          });
-        }
-        
-        // ✅ Garante ID único e preserva exchange_order_id
-        const orderWithId = {
-          ...order,
-          id: order.id || order.exchange_order_id || `${exchangeId}_${order.symbol}_${Date.now()}`,
-          exchange_order_id: order.exchange_order_id || order.id || undefined,
-        };
-        
-        groupedOrders.get(exchangeId)!.orders.push(orderWithId);
-      });
-      
-      const results: OrdersByExchange[] = Array.from(groupedOrders.values()).map(ex => ({
-        exchangeId: ex.id,
-        exchangeName: ex.name,
-        orders: ex.orders,
-      }));
-      
-      // 🛡️ Filtra ordens recentemente canceladas (evita "fantasmas" reaparecendo)
-      const now = Date.now();
-      const CANCEL_GRACE_PERIOD = 15000; // 15s de proteção
-      // Limpa entradas expiradas
-      for (const [id, ts] of recentlyCancelledRef.current) {
-        if (now - ts > CANCEL_GRACE_PERIOD) recentlyCancelledRef.current.delete(id);
-      }
-      
-      const filteredResults: OrdersByExchange[] = recentlyCancelledRef.current.size > 0
-        ? results.map(ex => ({
-            ...ex,
-            orders: ex.orders.filter(order => {
-              const oid = String(order.id || '');
-              const eoid = String(order.exchange_order_id || '');
-              const isCancelled = recentlyCancelledRef.current.has(oid) || recentlyCancelledRef.current.has(eoid);
-              if (isCancelled) console.log('�️ [ORDERS-CONTEXT] Filtrando ordem cancelada do refresh:', oid);
-              return !isCancelled;
-            })
-          })).filter(ex => ex.orders.length > 0)
-        : results;
-      
-      console.log('�🟣 [ORDERS-CONTEXT] Ordens agrupadas por exchange:')
       filteredResults.forEach(ex => {
-        console.log(`  - ${ex.exchangeName}: ${ex.orders.length} ordens`)
+        console.log(`  📦 ${ex.exchangeName}: ${ex.orders.length} ordens`)
       })
       
       setOrdersByExchange(filteredResults);
       setTimestamp(Date.now());
-      console.log('✅ [ORDERS-CONTEXT] Ordens atualizadas com sucesso')
-      console.log('🟣 [ORDERS-CONTEXT] ========================================')
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch orders';
       console.error('❌ [ORDERS-CONTEXT] Erro ao buscar ordens:', errorMsg)
-      console.error('❌ [ORDERS-CONTEXT] Stack:', err)
-      console.log('🟣 [ORDERS-CONTEXT] ========================================')
       setError(errorMsg);
       setOrdersByExchange([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?.id]);
+  }, [user?.id, groupOrdersFromResponse, filterCancelledOrders]);
+
+  // ⚡ Refresh rápido de UMA exchange específica — atualiza apenas os dados dessa exchange
+  // Ideal para chamar após create/cancel de order sem recarregar tudo
+  const refreshExchange = useCallback(async (exchangeId: string) => {
+    if (!user?.id) return
+    
+    console.log(`⚡ [ORDERS-CONTEXT] Refresh rápido da exchange ${exchangeId}`)
+    const startTime = Date.now()
+    
+    try {
+      const response = await apiService.getOrdersByExchange(exchangeId);
+      
+      const apiTime = Date.now() - startTime
+      console.log(`⚡ [ORDERS-CONTEXT] Exchange ${exchangeId} respondeu em ${apiTime}ms — ${response?.orders?.length || 0} ordens`)
+      
+      if (!response?.success) return;
+      
+      const newOrders = groupOrdersFromResponse(response.orders || []);
+      const filteredNew = filterCancelledOrders(newOrders);
+      
+      // Merge: substitui orders dessa exchange, mantém as outras
+      setOrdersByExchange(prev => {
+        const otherExchanges = prev.filter(ex => ex.exchangeId !== exchangeId);
+        return [...otherExchanges, ...filteredNew].sort((a, b) => a.exchangeName.localeCompare(b.exchangeName));
+      });
+      setTimestamp(Date.now());
+    } catch (err) {
+      console.error(`❌ [ORDERS-CONTEXT] Erro no refresh da exchange ${exchangeId}:`, err)
+      // Não seta error global — falha de 1 exchange não deve bloquear o contexto
+    }
+  }, [user?.id, groupOrdersFromResponse, filterCancelledOrders]);
 
   const refresh = useCallback(async () => {
     await fetchOrders(true);
@@ -288,6 +310,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         recentlyAddedIds,
         recentlyAffectedSymbols,
         refresh,
+        refreshExchange,
         removeOrder,
         addOrder,
       }}

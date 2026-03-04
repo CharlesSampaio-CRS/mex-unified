@@ -1266,6 +1266,45 @@ export const apiService = {
   },
 
   /**
+   * ⚡ Busca orders de UMA exchange específica (usando JWT)
+   * Muito mais rápido que getOrdersSecure() — ideal para modais
+   * @param exchangeId ID da exchange no MongoDB
+   * @returns Promise com lista de orders dessa exchange
+   */
+  async getOrdersByExchange(exchangeId: string): Promise<any> {
+    try {
+      const token = await secureStorage.getItemAsync('access_token');
+      
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/orders/fetch/exchange`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ exchange_id: exchangeId }),
+        },
+        TIMEOUTS.STANDARD  // 10s — só 1 exchange, muito mais rápido
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('❌ Get Orders By Exchange Error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * ➕ Cria uma nova ordem (usando JWT)
    * @param exchangeId ID da exchange no MongoDB
    * @param symbol Par de negociação (ex: "BTC/USDT")

@@ -75,7 +75,7 @@ export function OpenOrdersModal({
   const { colors } = useTheme()
   const { t, language } = useLanguage()
   const { refresh: refreshBalance } = useBalance()
-  const { removeOrder: removeOrderFromContext, refresh: refreshOrders, recentlyAddedIds } = useOrders()
+  const { removeOrder: removeOrderFromContext, refresh: refreshOrders, refreshExchange, recentlyAddedIds } = useOrders()
   const { addNotification } = useNotifications()
   const [orders, setOrders] = useState<OpenOrder[]>([])
   const [loading, setLoading] = useState(false)
@@ -110,8 +110,9 @@ export function OpenOrdersModal({
     setError(null)
     
     try {
-      // ✅ NOVO: Usa endpoint seguro que busca exchanges do MongoDB
-      const response = await apiService.getOrdersSecure()
+      // ⚡ OTIMIZADO: Busca orders de apenas UMA exchange (antes buscava de TODAS)
+      // Reduz latência de ~N*3s para ~3s (onde N = número de exchanges do usuário)
+      const response = await apiService.getOrdersByExchange(exchangeId)
       
       if (!response || !response.success) {
         setError('Erro ao buscar ordens')
@@ -120,12 +121,7 @@ export function OpenOrdersModal({
         return
       }
       
-      // Filtra ordens da exchange selecionada
-      const exchangeOrders = response.orders.filter((order: any) => 
-        order.exchange_id === exchangeId || order.exchange === exchangeId
-      )
-      
-      setOrders(exchangeOrders)
+      setOrders(response.orders || [])
       setLastUpdate(new Date())
       
       
@@ -382,9 +378,9 @@ export function OpenOrdersModal({
         // Atualiza em background (silencioso)
         refreshBalance().catch(console.error)
         
-        // Sincroniza com backend em background
+        // ⚡ Sincroniza apenas ESTA exchange (antes: recarregava TODAS)
         setTimeout(() => {
-          refreshOrders().catch(console.error)
+          refreshExchange(exchangeId).catch(console.error)
         }, 2000)
         
         // Chama callback se existir
@@ -509,9 +505,9 @@ export function OpenOrdersModal({
         // ✅ Atualiza balance/assets imediatamente (fundos liberados ao cancelar)
         refreshBalance().catch(console.error)
         
-        // Sincroniza com backend em background
+        // ⚡ Sincroniza apenas ESTA exchange (antes: recarregava TODAS)
         setTimeout(() => {
-          refreshOrders().catch(console.error)
+          refreshExchange(exchangeId).catch(console.error)
         }, 2000)
         
         // Chama callback

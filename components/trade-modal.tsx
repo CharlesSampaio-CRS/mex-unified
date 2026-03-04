@@ -44,7 +44,7 @@ export function TradeModal({
   const { t } = useLanguage()
   const { user } = useAuth()
   const { addNotification } = useNotifications()
-  const { addOrder, refresh: refreshOrders } = useOrders()
+  const { addOrder, refresh: refreshOrders, refreshExchange } = useOrders()
   const { refresh: refreshBalance } = useBalance()
   
   const [orderSide, setOrderSide] = useState<OrderSide | null>(null)
@@ -566,7 +566,7 @@ export function TradeModal({
         
         // 4. Sincroniza com backend em background (silencioso, corrige dados reais)
         setTimeout(() => {
-          refreshOrders().catch(console.error)
+          refreshExchange(exchangeId).catch(console.error)
           refreshBalance().catch(console.error)
         }, 3000);
       } else {
