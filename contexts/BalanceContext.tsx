@@ -115,14 +115,24 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       setRefreshing(true)
     }
     
-    // ⏰ TIMEOUT DE SEGURANÇA
+    // ⏰ TIMEOUT DE SEGURANÇA (90s)
+    // Se já tem dados em cache, apenas cancela silenciosamente sem mostrar erro.
+    // Os dados do cache continuam visíveis para o usuário.
     const safetyTimeout = setTimeout(() => {
-      console.error('⏰ [BalanceContext] TIMEOUT DE SEGURANÇA (60s)')
+      console.warn('⏰ [BalanceContext] Safety timeout (90s) — cancelando fetch')
       setLoading(false)
       setRefreshing(false)
       isFetchingRef.current = false
-      setError('Timeout ao carregar dados. Tente novamente.')
-    }, 60000)
+
+      if (data) {
+        // Tem dados do cache → mantém exibindo, sem erro visível
+        console.log('ℹ️ [BalanceContext] Dados do cache mantidos, sem erro para o usuário')
+        setIsStale(true)
+      } else {
+        // Sem nenhum dado → mostra erro para o usuário poder tentar novamente
+        setError('Timeout ao carregar dados. Tente novamente.')
+      }
+    }, 90_000)
     
     try {
       if (!user?.id) {
@@ -168,7 +178,7 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       
       if (allExchangesFailed && hasTimeout && data && currentTotal > 0) {
         console.warn('⚠️ Todas exchanges falharam por timeout. Mantendo dados do cache.')
-        setError('Timeout ao buscar saldos. Mostrando último valor conhecido.')
+        setIsStale(true)
         isFetchingRef.current = false
         return
       }
