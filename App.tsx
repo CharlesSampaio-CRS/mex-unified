@@ -281,7 +281,7 @@ function MainTabs() {
 // App Navigator - decide entre Auth ou Main baseado no login
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth()
-  const { data: balanceData } = useBalance()
+  const { data: balanceData, loading: balanceLoading, isStale } = useBalance()
   const { colors, isDark } = useTheme()
   const { t } = useLanguage()
 
@@ -294,9 +294,10 @@ function AppNavigator() {
     t('loading.almostReady'),
   ], [t])
 
-  // Init do app (verificando token salvo, restaurando sessão)
-  // OU autenticado mas ainda sem dados (aguarda primeiro fetchBalances completar)
-  if (isLoading || (isAuthenticated && !balanceData)) {
+  // 🚀 OTIMIZAÇÃO: Mostra loading APENAS durante init do AuthContext
+  // NÃO bloqueia mais esperando balanceData - a tela principal renderiza
+  // com dados do cache (stale) ou skeleton, e atualiza quando chegar
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <AnimatedLogoIcon 

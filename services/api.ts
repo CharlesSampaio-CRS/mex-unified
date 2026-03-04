@@ -313,6 +313,34 @@ export const apiService = {
     }
   },
 
+  /**
+   * ⚡ CACHED: Busca último balance cacheado no backend (MongoDB)
+   * Endpoint: POST /balances/cached
+   * Resposta instantânea (~50-100ms) - Sem chamar CCXT
+   * Retorna { from_cache: true, cached_at, age_seconds, data }
+   */
+  async getBalancesCached(): Promise<{ from_cache: boolean; cached_at: number | null; age_seconds: number | null; data: BalanceResponse | null }> {
+    try {
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/balances/cached`,
+        {
+          method: 'POST',
+          cache: 'no-store'
+        },
+        TIMEOUTS.FAST
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ [API] Erro ao buscar balances cached:', error);
+      return { from_cache: true, cached_at: null, age_seconds: null, data: null };
+    }
+  },
+
   // ==================== 📝 GERENCIAMENTO DE EXCHANGES (MongoDB) ====================
 
   /**
