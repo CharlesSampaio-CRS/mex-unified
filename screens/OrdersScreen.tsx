@@ -677,17 +677,14 @@ export function OrdersScreen({ navigation }: any) {
                     <Text style={[styles.exchangeCardName, { color: colors.text }]}>
                       {String(section.exchangeName)}
                     </Text>
+                  </View>
+                  <View style={styles.exchangeHeaderRight}>
                     <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
                       {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
                     </Text>
-                  </View>
-                  <View style={styles.exchangeHeaderRight}>
                     {cancellingExchangeIds.has(section.exchangeId) ? (
                       <View style={styles.cancelAllExchangeButton}>
                         <ActivityIndicator size="small" color={colors.danger} />
-                        <Text style={[styles.cancelAllExchangeText, { color: colors.danger }]}>
-                          Cancelando...
-                        </Text>
                       </View>
                     ) : (
                       <TouchableOpacity
@@ -697,11 +694,9 @@ export function OrdersScreen({ navigation }: any) {
                         }]}
                         onPress={() => handleCancelAllByExchange(section.exchangeId, section.exchangeName, section.orders.length)}
                         activeOpacity={0.7}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <Ionicons name="trash-outline" size={13} color={colors.danger} />
-                        <Text style={[styles.cancelAllExchangeText, { color: colors.danger }]}>
-                          Cancelar Todas
-                        </Text>
+                        <Ionicons name="trash-outline" size={14} color={colors.danger} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -920,16 +915,15 @@ const styles = StyleSheet.create({
   exchangeHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     flexShrink: 0,
   },
   cancelAllExchangeButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    justifyContent: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: 7,
     borderWidth: 1,
     borderColor: 'transparent',
   },
