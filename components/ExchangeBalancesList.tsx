@@ -281,8 +281,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   colAction: {
-    flex: 1,
-    alignItems: 'center' as const,
+    width: 40,
+    alignItems: 'flex-start' as const,
   },
   colUsd: {
     flex: 2,
