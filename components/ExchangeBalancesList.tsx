@@ -255,8 +255,8 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   chevron: {
-    fontSize: typography.h4,
-    opacity: 0.5,
+    fontSize: typography.h2,
+    opacity: 0.7,
   },
   // Table layout
   list: {
@@ -271,6 +271,7 @@ const styles = StyleSheet.create({
   // Columns
   colIcon: {
     width: 20,
+    marginRight: 6,
     alignItems: 'center' as const,
   },
   colName: {
