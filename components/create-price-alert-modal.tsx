@@ -488,11 +488,11 @@ export function CreateAlertModal({
                     borderColor: colors.border,
                   },
                 ]}
-                placeholder={alertType === 'price' ? 'Ex: 50000' : 'Ex: 5 (para 5%)'}
+                placeholder={alertType === 'price' ? 'Ex: 50000' : (condition === 'below' || condition === 'crosses_down') ? 'Ex: -5 (para queda de 5%)' : 'Ex: 5 (para +5%)'}
                 placeholderTextColor={colors.textTertiary}
                 value={value}
                 onChangeText={setValue}
-                keyboardType="numeric"
+                keyboardType="numbers-and-punctuation"
               />
 
               {/* Sugestões */}
