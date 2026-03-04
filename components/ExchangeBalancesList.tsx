@@ -8,6 +8,7 @@ import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 import { getExchangeLogo } from '@/lib/exchange-logos'
 import { getDepositConfig } from '@/lib/exchange-deposit-links'
 import { typography, fontWeights } from '@/lib/typography'
+import type { ExchangePnL } from '@/services/backend-snapshot-service'
 
 // Habilita LayoutAnimation no Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -16,14 +17,15 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 interface ExchangeBalancesListProps {
   usdToBrlRate?: number | null
+  exchangePnl?: ExchangePnL[]
 }
 
 /**
  * ExchangeBalancesList — Inicia comprimido, expande ao tocar.
  * Header discreto com ícones empilhados + chevron.
- * Expandido: ícone · nome · USD · BRL por exchange.
+ * Expandido: ícone · nome · USD · PnL 24h por exchange.
  */
-export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBrlRate }: ExchangeBalancesListProps) {
+export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBrlRate, exchangePnl }: ExchangeBalancesListProps) {
   const { colors } = useTheme()
   const { data } = useBalance()
   const { hideValue } = usePrivacy()
@@ -34,6 +36,14 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
   const exchanges = useMemo(() => {
     if (!data?.exchanges || data.exchanges.length === 0) return []
 
+    // Mapa de PnL por exchange name (lowercase)
+    const pnlMap = new Map<string, ExchangePnL>()
+    if (exchangePnl) {
+      for (const ep of exchangePnl) {
+        pnlMap.set(ep.exchange_name.toLowerCase(), ep)
+      }
+    }
+
     return data.exchanges
       .map((ex) => {
         const name = capitalizeExchangeName(ex.name || ex.exchange || 'Unknown')
@@ -43,10 +53,11 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
         const error = (ex as any).error || ''
         const ccxtId = (ex.name || ex.exchange || '').toLowerCase()
         const depositConfig = getDepositConfig(ccxtId)
-        return { name, value, logo, hasError, error, ccxtId, depositConfig }
+        const pnl = pnlMap.get(ccxtId) || pnlMap.get(name.toLowerCase()) || null
+        return { name, value, logo, hasError, error, ccxtId, depositConfig, pnl }
       })
       .sort((a, b) => b.value - a.value)
-  }, [data])
+  }, [data, exchangePnl])
 
   const handleDeposit = useCallback(async (exchangeName: string, ccxtId: string) => {
     const config = getDepositConfig(ccxtId)
@@ -189,9 +200,21 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                     {hideValue(fmtUsd(ex.value))}
                   </Text>
                 </View>
-                {/* Col: BRL */}
-                {usdToBrlRate ? (
-                  <View style={styles.colBrl}>
+                {/* Col: PnL 24h */}
+                {ex.pnl && ex.pnl.previous > 0 ? (
+                  <View style={styles.colPnl}>
+                    <Text
+                      style={[
+                        styles.valuePnl,
+                        { color: ex.pnl.change === 0 ? colors.textTertiary : (ex.pnl.change > 0 ? colors.success : colors.danger) }
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {hideValue(`${ex.pnl.change >= 0 ? '+' : ''}${ex.pnl.changePercent.toFixed(1)}%`)}
+                    </Text>
+                  </View>
+                ) : usdToBrlRate ? (
+                  <View style={styles.colPnl}>
                     <Text style={[styles.valueBrl, { color: colors.textSecondary }]} numberOfLines={1}>
                       {hideValue(fmtBrl(ex.value * usdToBrlRate))}
                     </Text>
@@ -264,7 +287,7 @@ const styles = StyleSheet.create({
     flex: 2,
     alignItems: 'flex-end' as const,
   },
-  colBrl: {
+  colPnl: {
     flex: 2,
     alignItems: 'flex-end' as const,
   },
@@ -319,6 +342,11 @@ const styles = StyleSheet.create({
     fontSize: typography.badge,
     fontWeight: fontWeights.light,
     opacity: 0.35,
+  },
+  valuePnl: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.medium,
+    opacity: 0.75,
   },
   depositButton: {
     paddingHorizontal: 4,

@@ -50,6 +50,16 @@ export interface PnLSummary {
   month: PnLData
 }
 
+/** PnL 24h por exchange individual */
+export interface ExchangePnL {
+  exchange_id: string
+  exchange_name: string
+  current: number
+  previous: number
+  change: number
+  changePercent: number
+}
+
 class BackendSnapshotService {
   /**
    * Busca todos os snapshots do usuário autenticado
@@ -134,6 +144,48 @@ class BackendSnapshotService {
       console.error('❌ Erro ao calcular PnL:', error)
       return this.createEmptyPnL(currentBalance)
     }
+  }
+
+  /**
+   * Calcula PnL 24h por exchange.
+   * Compara o balance_usd de cada exchange no snapshot de ~24h atrás
+   * com os saldos atuais vindos do BalanceContext.
+   */
+  calculatePnLByExchange(
+    currentExchanges: { name: string; balance_usd: number }[],
+    snapshots: BackendSnapshot[]
+  ): ExchangePnL[] {
+    if (snapshots.length === 0 || currentExchanges.length === 0) return []
+
+    const now = Date.now()
+    const oneDayAgo = now - (24 * 60 * 60 * 1000)
+    const snapshot = this.findClosestSnapshot(snapshots, oneDayAgo)
+    if (!snapshot || !snapshot.exchanges || snapshot.exchanges.length === 0) return []
+
+    // Mapa: exchange_name (lowercase) → balance_usd anterior
+    const previousMap = new Map<string, ExchangeSnapshotDetail>()
+    for (const ex of snapshot.exchanges) {
+      previousMap.set(ex.exchange_name.toLowerCase(), ex)
+    }
+
+    return currentExchanges.map((cur) => {
+      const key = cur.name.toLowerCase()
+      const prev = previousMap.get(key)
+      const previousBalance = prev?.balance_usd ?? 0
+      const change = cur.balance_usd - previousBalance
+      const changePercent = previousBalance > 0
+        ? (change / previousBalance) * 100
+        : 0
+
+      return {
+        exchange_id: prev?.exchange_id ?? '',
+        exchange_name: cur.name,
+        current: cur.balance_usd,
+        previous: previousBalance,
+        change,
+        changePercent,
+      }
+    })
   }
 
   /**

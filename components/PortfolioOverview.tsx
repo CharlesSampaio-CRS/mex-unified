@@ -16,13 +16,15 @@ import { GradientCard } from "./GradientCard"
 import { typography, fontWeights } from "@/lib/typography"
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion"
 import { PnLSummary, backendSnapshotService } from "@/services/backend-snapshot-service"
+import type { BackendSnapshot, ExchangePnL } from "@/services/backend-snapshot-service"
 
 interface PortfolioOverviewProps {
   pnl?: PnLSummary | null
   pnlLoading?: boolean
+  snapshots?: BackendSnapshot[]
 }
 
-export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoading = false }: PortfolioOverviewProps) {
+export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoading = false, snapshots }: PortfolioOverviewProps) {
   // 1️⃣ HOOKS: useContext (sempre primeiro)
   const { colors, isDark } = useTheme()
   const { t, language } = useLanguage()
@@ -67,6 +69,16 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
     if (!formattedBrlValue) return null
     return formattedBrlValue.replace(/[R$]/g, '').trim()
   }, [formattedBrlValue])
+
+  // PnL 24h por exchange — compara saldo atual vs snapshot de ~24h atrás
+  const exchangePnl = useMemo((): ExchangePnL[] => {
+    if (!data?.exchanges || !snapshots || snapshots.length === 0) return []
+    const currentExchanges = data.exchanges.map((ex: any) => ({
+      name: (ex.name || ex.exchange || 'Unknown'),
+      balance_usd: typeof ex.total_usd === 'string' ? parseFloat(ex.total_usd) : (ex.total_usd || 0),
+    }))
+    return backendSnapshotService.calculatePnLByExchange(currentExchanges, snapshots)
+  }, [data?.exchanges, snapshots])
   
   // PNL do MongoDB (hoje = 24h)
   const pnl24h = useMemo(() => {
@@ -299,7 +311,7 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
         </View>
 
         {/* Saldos por Exchange */}
-        <ExchangeBalancesList usdToBrlRate={usdToBrlRate} />
+        <ExchangeBalancesList usdToBrlRate={usdToBrlRate} exchangePnl={exchangePnl} />
 
         {/* PNL Cards - Diário e Período separados */}
         <View style={styles.pnlCardsRow}>
