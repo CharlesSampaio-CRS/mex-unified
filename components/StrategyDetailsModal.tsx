@@ -181,7 +181,7 @@ export function StrategyDetailsModal({
   }
 
   const getStatusLabel = (status: StrategyStatus): string => {
-    const map: Record<StrategyStatus, string> = {
+    const map: Record<string, string> = {
       idle: t('strategy.statusIdle') || 'Idle',
       monitoring: t('strategy.statusMonitoring') || 'Monitoring',
       in_position: t('strategy.statusInPosition') || 'In Position',
@@ -191,12 +191,13 @@ export function StrategyDetailsModal({
       expired: 'Expired',
       paused: t('strategy.paused') || 'Paused',
       error: t('strategy.statusError') || 'Error',
+      archived: 'Arquivada',
     }
     return map[status] || status
   }
 
   const getStatusColor = (status: StrategyStatus) => {
-    const map: Record<StrategyStatus, { bg: string; text: string; dot: string }> = {
+    const map: Record<string, { bg: string; text: string; dot: string }> = {
       monitoring: { bg: 'rgba(59, 130, 246, 0.12)', text: '#3b82f6', dot: '#3b82f6' },
       in_position: { bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981', dot: '#10b981' },
       gradual_selling: { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', dot: '#f59e0b' },
@@ -206,6 +207,7 @@ export function StrategyDetailsModal({
       error: { bg: 'rgba(239, 68, 68, 0.12)', text: '#ef4444', dot: '#ef4444' },
       paused: { bg: 'rgba(107, 114, 128, 0.12)', text: '#6b7280', dot: '#6b7280' },
       idle: { bg: 'rgba(107, 114, 128, 0.12)', text: '#9ca3af', dot: '#9ca3af' },
+      archived: { bg: 'rgba(156, 163, 175, 0.12)', text: '#9ca3af', dot: '#9ca3af' },
     }
     return map[status] || map.idle
   }

@@ -1817,6 +1817,13 @@ export const apiService = {
   },
 
   /**
+   * Lista estratégias arquivadas (histórico)
+   */
+  async listStrategiesHistory() {
+    return this.get('/strategies/history', TIMEOUTS.FAST);
+  },
+
+  /**
    * Busca uma estratégia específica pelo ID
    */
   async getStrategy(id: string) {

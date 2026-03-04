@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '../services/api';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -14,7 +14,8 @@ export type StrategyStatus =
   | 'stopped_out'
   | 'expired'
   | 'paused'
-  | 'error';
+  | 'error'
+  | 'archived';
 
 export interface GradualLot {
   lot_number: number;
@@ -125,6 +126,7 @@ export interface Strategy {
   total_executions: number;
   dca_buys_done?: number;
   buy_dip_buys_done?: number;
+  deleted_at?: number;
   started_at: number;
   created_at: number;
   updated_at: number;
@@ -164,16 +166,22 @@ export interface UpdateStrategyRequest {
 
 interface UseBackendStrategiesReturn {
   strategies: Strategy[];
+  archivedStrategies: Strategy[];
   loading: boolean;
   error: string | null;
   refreshing: boolean;
   
   loadStrategies: () => Promise<void>;
+  loadHistory: () => Promise<void>;
   createStrategy: (data: CreateStrategyRequest) => Promise<Strategy>;
   updateStrategy: (id: string, data: UpdateStrategyRequest) => Promise<Strategy>;
   deleteStrategy: (id: string) => Promise<void>;
   toggleActive: (id: string, isActive: boolean) => Promise<Strategy>;
   
+  /** Estratégias que tiveram novas execuções desde o último load */
+  newExecutions: Array<{ strategyId: string; strategyName: string; symbol: string; prevCount: number; newCount: number }>;
+  clearNewExecutions: () => void;
+
   activeStrategies: Strategy[];
   inactiveStrategies: Strategy[];
   filterByExchange: (exchangeId: string) => Strategy[];
@@ -182,9 +190,16 @@ interface UseBackendStrategiesReturn {
 
 export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrategiesReturn => {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [archivedStrategies, setArchivedStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [newExecutions, setNewExecutions] = useState<Array<{ strategyId: string; strategyName: string; symbol: string; prevCount: number; newCount: number }>>([]);
+
+  // Ref para guardar contagem de execuções anterior (por estratégia)
+  const prevExecutionCountsRef = useRef<Record<string, number>>({});
+
+  const clearNewExecutions = useCallback(() => setNewExecutions([]), []);
 
   const loadStrategies = useCallback(async () => {
     try {
@@ -193,8 +208,37 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       
       console.log('🔄 [useBackendStrategies] Carregando estratégias...');
       const response = await apiService.listStrategies();
-      const data = response.data.strategies || [];
+      const data: Strategy[] = response.data.strategies || [];
       
+      // ── Detectar novas execuções ──
+      const prevCounts = prevExecutionCountsRef.current;
+      const detected: Array<{ strategyId: string; strategyName: string; symbol: string; prevCount: number; newCount: number }> = [];
+
+      for (const s of data) {
+        const prev = prevCounts[s.id];
+        if (prev !== undefined && s.total_executions > prev) {
+          detected.push({
+            strategyId: s.id,
+            strategyName: s.name,
+            symbol: s.symbol,
+            prevCount: prev,
+            newCount: s.total_executions,
+          });
+        }
+      }
+
+      // Atualiza ref com contagens atuais
+      const newCounts: Record<string, number> = {};
+      for (const s of data) {
+        newCounts[s.id] = s.total_executions;
+      }
+      prevExecutionCountsRef.current = newCounts;
+
+      if (detected.length > 0) {
+        console.log(`🔔 [useBackendStrategies] ${detected.length} novas execuções detectadas`);
+        setNewExecutions(detected);
+      }
+
       setStrategies(data);
       console.log(`✅ [useBackendStrategies] ${data.length} estratégias carregadas`);
     } catch (err: any) {
@@ -204,6 +248,18 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }, []);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      console.log('🔄 [useBackendStrategies] Carregando histórico...');
+      const response = await apiService.listStrategiesHistory();
+      const data = response.data.strategies || [];
+      setArchivedStrategies(data);
+      console.log(`✅ [useBackendStrategies] ${data.length} estratégias arquivadas`);
+    } catch (err: any) {
+      console.error('❌ [useBackendStrategies] Erro histórico:', err.message);
     }
   }, []);
 
@@ -254,17 +310,17 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
   const deleteStrategy = useCallback(async (id: string): Promise<void> => {
     try {
       setError(null);
-      console.log(`🔄 [useBackendStrategies] Deletando estratégia ${id}`);
+      console.log(`🔄 [useBackendStrategies] Arquivando estratégia ${id}`);
       
       await apiService.deleteStrategy(id);
       
-      // Remove a estratégia do estado local
+      // Remove a estratégia da lista ativa (agora está arquivada no backend)
       setStrategies(prev => prev.filter(s => s.id !== id));
       
-      console.log('✅ [useBackendStrategies] Estratégia deletada:', id);
+      console.log('✅ [useBackendStrategies] Estratégia arquivada:', id);
     } catch (err: any) {
-      const errorMessage = err.message || 'Erro ao deletar estratégia';
-      console.error(`❌ [useBackendStrategies] Erro ao deletar ${id}:`, errorMessage);
+      const errorMessage = err.message || 'Erro ao arquivar estratégia';
+      console.error(`❌ [useBackendStrategies] Erro ao arquivar ${id}:`, errorMessage);
       setError(errorMessage);
       throw err;
     }
@@ -316,16 +372,22 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
 
   return {
     strategies,
+    archivedStrategies,
     loading,
     error,
     refreshing,
     
     // CRUD Operations
     loadStrategies,
+    loadHistory,
     createStrategy,
     updateStrategy,
     deleteStrategy,
     toggleActive,
+
+    // Execution detection
+    newExecutions,
+    clearNewExecutions,
     
     // Filters
     activeStrategies,
