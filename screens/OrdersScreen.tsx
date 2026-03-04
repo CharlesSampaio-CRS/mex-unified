@@ -300,88 +300,107 @@ export function OrdersScreen({ navigation }: any) {
     setCancelAllExchangeConfirmVisible(true);
   }, [cancellingExchangeIds]);
 
-  // 🔴 Executa o cancelamento de todas as ordens de uma exchange
+  // 🔴 Executa o cancelamento de todas as ordens de uma exchange (uma a uma)
   const executeCancelAllByExchange = useCallback(async () => {
     if (!cancelAllExchangeTarget || !user?.id) return;
-    const { exchangeId, exchangeName, orderCount } = cancelAllExchangeTarget;
+    const { exchangeId, exchangeName } = cancelAllExchangeTarget;
+
+    // Pega as ordens dessa exchange do estado local
+    const exchangeOrders = ordersByExchange.find(ex => ex.exchangeId === exchangeId)?.orders || [];
+    if (exchangeOrders.length === 0) {
+      setCancelAllExchangeConfirmVisible(false);
+      setCancelAllExchangeTarget(null);
+      return;
+    }
 
     setCancelAllExchangeConfirmVisible(false);
     setCancelAllExchangeTarget(null);
     setCancelAllExchangeLoading(true);
     setCancellingExchangeIds(prev => new Set(prev).add(exchangeId));
 
-    try {
-      const result = await apiService.cancelAllOrders(user.id, exchangeId);
+    // Marca todas as ordens como "cancelando" (animação piscante)
+    setCancellingOrderIds(prev => {
+      const newSet = new Set(prev);
+      exchangeOrders.forEach(order => newSet.add(String(order.id || '')));
+      return newSet;
+    });
 
-      if (result.success) {
-        const cancelledCount = result.cancelled_count || result.cancelledCount || result.canceled_count || 0;
-        const failedCount = result.failed_count || result.failedCount || 0;
+    let cancelledCount = 0;
+    let failedCount = 0;
+    const failedOrders: Array<{ symbol: string; error: string }> = [];
 
-        if (cancelledCount === 0 && failedCount > 0) {
-          // Todas falharam
-          const firstError = result.failed_orders?.[0]?.error || 'Erro ao cancelar ordens';
-          Alert.alert('Erro', `❌ Nenhuma ordem cancelada.\n\n${firstError}`);
-        } else if (cancelledCount > 0 && failedCount > 0) {
-          // Sucesso parcial — remove as canceladas do estado
-          const failedOrderIds = new Set((result.failed_orders || []).map((fo: any) => fo.order_id || fo.orderId));
-          // Remove apenas as que foram canceladas
-          const exchangeOrders = ordersByExchange.find(ex => ex.exchangeId === exchangeId)?.orders || [];
-          exchangeOrders.forEach(order => {
-            if (!failedOrderIds.has(order.id)) {
-              removeOrder(order.id, order.symbol);
-            }
-          });
+    // Cancela cada ordem individualmente (em paralelo, max 3 por vez)
+    const batchSize = 3;
+    for (let i = 0; i < exchangeOrders.length; i += batchSize) {
+      const batch = exchangeOrders.slice(i, i + batchSize);
+      const results = await Promise.allSettled(
+        batch.map(async (order) => {
+          const orderId = String(order.id || '');
+          const exchangeOrderId = String(order.exchange_order_id || order.id || '');
+          try {
+            await apiService.cancelOrder(exchangeId, order.symbol, exchangeOrderId);
+            // Remoção otimista imediata desta ordem
+            removeOrder(orderId, order.symbol);
+            return { success: true, orderId };
+          } catch (err: any) {
+            return { success: false, orderId, symbol: order.symbol, error: err.message || 'Erro' };
+          }
+        })
+      );
 
-          Alert.alert(
-            'Cancelamento Parcial',
-            `✅ ${cancelledCount} cancelada(s)\n❌ ${failedCount} falhou(ram)`
-          );
-          refreshBalance().catch(console.error);
+      results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.success) {
+          cancelledCount++;
         } else {
-          // Sucesso total
-          removeOrdersByExchange(exchangeId);
-
-          notify.orderCancelled(addNotification, {
-            symbol: `Todas (${exchangeName})`,
-            side: 'buy',
-            amount: cancelledCount,
-            type: 'cancel-all',
-            orderId: exchangeId,
-          });
-
-          refreshBalance().catch(console.error);
-
-          // Sincroniza com backend em background
-          setTimeout(() => {
-            refreshExchange(exchangeId).catch(console.error);
-          }, 2000);
-
-          Alert.alert('Sucesso', `✅ ${cancelledCount} ordem(ns) cancelada(s) em ${exchangeName}!`);
+          failedCount++;
+          const val = result.status === 'fulfilled' ? result.value : { symbol: '?', error: 'Erro' };
+          failedOrders.push({ symbol: val.symbol || '?', error: val.error || 'Erro' });
         }
-      } else {
-        // API retornou success=false
-        let errorMsg = 'Erro ao cancelar ordens';
-        if (result.exchange_limitation && result.details) {
-          errorMsg = result.details;
-        } else if (result.details) {
-          errorMsg = result.details;
-        } else if (result.error) {
-          errorMsg = result.error;
-        }
-        Alert.alert('Erro', `❌ ${errorMsg}`);
-      }
-    } catch (error: any) {
-      console.error('❌ [ORDERS-SCREEN] Erro ao cancelar todas por exchange:', error);
-      Alert.alert('Erro', `❌ ${error.message || 'Erro desconhecido ao cancelar ordens'}`);
-    } finally {
-      setCancelAllExchangeLoading(false);
-      setCancellingExchangeIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(exchangeId);
-        return newSet;
       });
     }
-  }, [cancelAllExchangeTarget, user?.id, ordersByExchange, removeOrder, removeOrdersByExchange, refreshBalance, refreshExchange, addNotification]);
+
+    // Limpa estado de cancelamento
+    setCancellingOrderIds(prev => {
+      const newSet = new Set(prev);
+      exchangeOrders.forEach(order => newSet.delete(String(order.id || '')));
+      return newSet;
+    });
+
+    // Feedback ao usuário
+    if (cancelledCount > 0 && failedCount === 0) {
+      // Sucesso total
+      notify.orderCancelled(addNotification, {
+        symbol: `Todas (${exchangeName})`,
+        side: 'buy',
+        amount: cancelledCount,
+        type: 'cancel-all',
+        orderId: exchangeId,
+      });
+      Alert.alert('Sucesso', `✅ ${cancelledCount} ordem(ns) cancelada(s) em ${exchangeName}!`);
+    } else if (cancelledCount > 0 && failedCount > 0) {
+      // Parcial
+      Alert.alert(
+        'Cancelamento Parcial',
+        `✅ ${cancelledCount} cancelada(s)\n❌ ${failedCount} falhou(ram)\n\n${failedOrders[0]?.error || ''}`
+      );
+    } else {
+      // Todas falharam
+      Alert.alert('Erro', `❌ Nenhuma ordem cancelada.\n\n${failedOrders[0]?.error || 'Erro desconhecido'}`);
+    }
+
+    // Atualiza balance e sincroniza com backend
+    refreshBalance().catch(console.error);
+    setTimeout(() => {
+      refreshExchange(exchangeId).catch(console.error);
+    }, 2000);
+
+    setCancelAllExchangeLoading(false);
+    setCancellingExchangeIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(exchangeId);
+      return newSet;
+    });
+  }, [cancelAllExchangeTarget, user?.id, ordersByExchange, removeOrder, refreshBalance, refreshExchange, addNotification]);
 
   // Renderiza order card
   const renderOrderCard = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
@@ -696,7 +715,10 @@ export function OrdersScreen({ navigation }: any) {
                         activeOpacity={0.7}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <Ionicons name="trash-outline" size={14} color={colors.danger} />
+                        <Ionicons name="trash-outline" size={13} color={colors.danger} />
+                        <Text style={[styles.cancelAllExchangeText, { color: colors.danger }]}>
+                          Cancel All
+                        </Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -919,10 +941,12 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   cancelAllExchangeButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 28,
-    height: 28,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     borderRadius: 7,
     borderWidth: 1,
     borderColor: 'transparent',
