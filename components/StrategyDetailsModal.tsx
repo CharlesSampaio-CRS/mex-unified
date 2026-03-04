@@ -634,8 +634,8 @@ export function StrategyDetailsModal({
           return (
             <View key={exec.execution_id || idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: label.color }]}>
               {/* Header: Tipo + Source + Data */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1, flexWrap: 'wrap' }}>
                   <View style={[styles.execBadge, { backgroundColor: label.color + '18' }]}>
                     <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.semibold, color: label.color }}>{label.emoji} {label.text}</Text>
                   </View>
@@ -647,13 +647,13 @@ export function StrategyDetailsModal({
                     </View>
                   )}
                 </View>
-                <Text style={{ fontSize: typography.micro, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{formatDate(exec.executed_at)}</Text>
+                <Text style={{ fontSize: typography.micro, color: colors.textSecondary, flexShrink: 0 }}>{formatDate(exec.executed_at)}</Text>
               </View>
 
               {/* Quantidade e Preço */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, alignItems: 'center' }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: typography.caption, color: colors.textSecondary }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, alignItems: 'flex-start', gap: 8 }}>
+                <View style={{ flex: 1, flexShrink: 1 }}>
+                  <Text style={{ fontSize: typography.caption, color: colors.textSecondary }} numberOfLines={1}>
                     {(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}
                   </Text>
                   {exec.fee != null && exec.fee > 0 && (
@@ -661,7 +661,7 @@ export function StrategyDetailsModal({
                   )}
                 </View>
                 {!isFailure && (
-                  <View style={{ alignItems: 'flex-end' }}>
+                  <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
                     <Text style={{ fontSize: typography.bodyLarge, fontWeight: fontWeights.bold, color: pnlColor }}>{formatCurrency(exec.pnl_usd)}</Text>
                     <Text style={{ fontSize: typography.micro, color: pnlColor }}>{(exec.pnl_usd ?? 0) >= 0 ? 'Lucro' : 'Perda'}</Text>
                   </View>
@@ -785,8 +785,8 @@ export function StrategyDetailsModal({
           return (
             <View key={idx} style={[styles.execCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: sigColor }]}>
               {/* Header: Tipo + Acted + Source + Data */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexShrink: 1, flexWrap: 'wrap' }}>
                   <View style={[styles.execBadge, { backgroundColor: sigColor + '18' }]}>
                     <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.semibold, color: sigColor }}>{typeInfo.emoji} {typeInfo.label}</Text>
                   </View>
@@ -803,14 +803,14 @@ export function StrategyDetailsModal({
                     </View>
                   )}
                 </View>
-                <Text style={{ fontSize: typography.micro, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{formatDate(sig.created_at)}</Text>
+                <Text style={{ fontSize: typography.micro, color: colors.textSecondary, flexShrink: 0 }}>{formatDate(sig.created_at)}</Text>
               </View>
 
               {/* Mensagem */}
-              <Text style={{ fontSize: typography.caption, color: colors.text, marginTop: 8, lineHeight: 18 }}>{sig.message}</Text>
+              <Text style={{ fontSize: typography.caption, color: colors.text, marginTop: 8, lineHeight: 18 }} numberOfLines={3}>{sig.message}</Text>
 
               {/* Footer: Preço + Variação */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border + '40', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border + '40', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                 <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>💰 Preço: {formatCurrencyAbs(sig.price)}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <View style={{
@@ -875,9 +875,11 @@ export function StrategyDetailsModal({
   const renderTabBar = () => {
     if (!strategy) return null
     const sigCount = (strategy as StrategyDetail)?.signals?.length || 0
+    const execCount = (strategy as StrategyDetail)?.executions?.length || 0
+    const totalActivity = sigCount + execCount
     const tabs = [
       { key: 'overview' as const, label: t('strategy.overview') || 'Visão Geral' },
-      { key: 'signals' as const, label: `${t('strategy.signals') || 'Sinais'} (${sigCount})` },
+      { key: 'signals' as const, label: `${t('strategy.signals') || 'Sinais'} (${totalActivity})` },
     ]
     return (
       <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
@@ -974,7 +976,7 @@ export function StrategyDetailsModal({
                       )}
 
                       {/* Contadores resumo */}
-                      <View style={{ flexDirection: 'row', gap: 16, marginTop: 2 }}>
+                      <View style={{ flexDirection: 'row', gap: 16, marginTop: 2, flexWrap: 'wrap' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>📡 Sinais:</Text>
                           <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: colors.text }}>{tickResult.signals_count ?? 0}</Text>
@@ -1016,8 +1018,8 @@ export function StrategyDetailsModal({
                             const sigColor = sigColorMap[sig.signal_type] || colors.textSecondary
                             return (
                               <View key={idx} style={{ backgroundColor: sigColor + '0D', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: sigColor }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, flexWrap: 'wrap' }}>
                                     <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.semibold, color: sigColor }}>
                                       {sig.signal_type.replace('_', ' ').toUpperCase()}
                                     </Text>
@@ -1027,11 +1029,11 @@ export function StrategyDetailsModal({
                                       </View>
                                     )}
                                   </View>
-                                  <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.medium, color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>
+                                  <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.medium, color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444', flexShrink: 0 }}>
                                     {(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%
                                   </Text>
                                 </View>
-                                <Text style={{ fontSize: typography.caption, color: colors.text, lineHeight: 18 }}>{sig.message}</Text>
+                                <Text style={{ fontSize: typography.caption, color: colors.text, lineHeight: 18 }} numberOfLines={3}>{sig.message}</Text>
                               </View>
                             )
                           })}
@@ -1047,22 +1049,22 @@ export function StrategyDetailsModal({
                             const execColor = isFailure ? '#ef4444' : (exec.pnl_usd >= 0 ? '#10b981' : '#ef4444')
                             return (
                               <View key={exec.execution_id || idx} style={{ backgroundColor: execColor + '0D', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: execColor }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: execColor }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                                  <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: execColor, flexShrink: 1 }}>
                                     {isFailure ? '❌ FALHOU' : exec.action === 'sell' ? '📤 VENDA' : '📥 COMPRA'}
                                   </Text>
                                   {!isFailure && (
-                                    <Text style={{ fontSize: typography.bodySmall, fontWeight: fontWeights.bold, color: exec.pnl_usd >= 0 ? '#10b981' : '#ef4444' }}>
+                                    <Text style={{ fontSize: typography.bodySmall, fontWeight: fontWeights.bold, color: exec.pnl_usd >= 0 ? '#10b981' : '#ef4444', flexShrink: 0 }}>
                                       {formatCurrency(exec.pnl_usd)}
                                     </Text>
                                   )}
                                 </View>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                  <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
+                                  <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }} numberOfLines={1}>
                                     {(exec.amount ?? 0).toFixed(6)} @ {formatCurrencyAbs(exec.price)}
                                   </Text>
                                   {exec.fee > 0 && (
-                                    <Text style={{ fontSize: typography.tiny, color: colors.textSecondary }}>Fee: ${exec.fee.toFixed(4)}</Text>
+                                    <Text style={{ fontSize: typography.tiny, color: colors.textSecondary, flexShrink: 0 }}>Fee: ${exec.fee.toFixed(4)}</Text>
                                   )}
                                 </View>
                                 {exec.reason && (
@@ -1131,7 +1133,12 @@ export function StrategyDetailsModal({
               {renderDates()}
             </>
           )}
-          {activeTab === 'signals' && renderSignalsList()}
+          {activeTab === 'signals' && (
+            <>
+              {renderExecutionsList()}
+              {renderSignalsList()}
+            </>
+          )}
           <View style={{ height: 120 }} />
         </ScrollView>
       </>
