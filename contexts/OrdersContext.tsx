@@ -24,6 +24,7 @@ interface OrdersContextType {
   refresh: () => Promise<void>
   refreshExchange: (exchangeId: string) => Promise<void>  // ⚡ Refresh de UMA exchange
   removeOrder: (orderId: string, symbol?: string) => void  // Remoção otimista imediata
+  removeOrdersByExchange: (exchangeId: string) => void  // Remoção otimista de TODAS ordens de uma exchange
   addOrder: (order: OpenOrder, exchangeId: string, exchangeName: string) => void // Inserção otimista imediata
 }
 
@@ -235,6 +236,33 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     }
   }, [ordersByExchange, markSymbolAffected])
 
+  // 🚀 Remoção otimista em massa: Remove TODAS as ordens de uma exchange
+  const removeOrdersByExchange = useCallback((exchangeId: string) => {
+    console.log('🗑️ [ORDERS-CONTEXT] Remoção otimista de TODAS ordens da exchange:', exchangeId)
+    
+    const now = Date.now()
+    const targetExchange = ordersByExchange.find(ex => ex.exchangeId === exchangeId)
+    
+    if (targetExchange) {
+      // Registra todas as ordens no grace period
+      targetExchange.orders.forEach(order => {
+        recentlyCancelledRef.current.set(String(order.id || ''), now)
+        if (order.exchange_order_id) {
+          recentlyCancelledRef.current.set(String(order.exchange_order_id), now)
+        }
+        // Marca símbolos como afetados
+        if (order.symbol) markSymbolAffected(order.symbol)
+      })
+    }
+    
+    setOrdersByExchange(prev => {
+      const updated = prev.filter(ex => ex.exchangeId !== exchangeId)
+      console.log('🗑️ [ORDERS-CONTEXT] Ordens restantes após remoção em massa:', updated.reduce((sum, ex) => sum + ex.orders.length, 0))
+      return updated
+    })
+    setTimestamp(Date.now())
+  }, [ordersByExchange, markSymbolAffected])
+
   // 🚀 Inserção otimista: Adiciona uma ordem na lista localmente sem esperar API
   const addOrder = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
     const orderId = String(order.id || `temp_${Date.now()}`)
@@ -312,6 +340,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         refresh,
         refreshExchange,
         removeOrder,
+        removeOrdersByExchange,
         addOrder,
       }}
     >
