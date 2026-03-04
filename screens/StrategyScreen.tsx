@@ -342,14 +342,24 @@ export function StrategyScreen({ navigation, route }: any) {
           <Text style={[styles.resultsCount, { color: colors.textTertiary }]}>
             {filteredStrategies.length} {filteredStrategies.length === 1 ? 'estratégia' : 'estratégias'}
           </Text>
-          <TouchableOpacity
-            style={[styles.newStrategyButton, { borderColor: colors.primary }]}
-            onPress={handleNewStrategy}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add-outline" size={14} color={colors.primary} />
-            <Text style={[styles.newStrategyText, { color: colors.primary }]}>Nova</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              style={[styles.newStrategyButton, { borderColor: '#8b5cf6' }]}
+              onPress={() => navigation?.navigate('StrategySimulator')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="flask-outline" size={14} color="#8b5cf6" />
+              <Text style={[styles.newStrategyText, { color: '#8b5cf6' }]}>Simular</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.newStrategyButton, { borderColor: colors.primary }]}
+              onPress={handleNewStrategy}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-outline" size={14} color={colors.primary} />
+              <Text style={[styles.newStrategyText, { color: colors.primary }]}>Nova</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 

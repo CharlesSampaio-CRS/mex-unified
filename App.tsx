@@ -44,6 +44,7 @@ import { TargetScreen } from "./screens/TargetScreen"
 import { FlagScreen } from "./screens/FlagScreen"
 import { AnalyticsScreen } from "./screens/AnalyticsScreen"
 import { StrategyTemplatesScreen } from "./screens/StrategyTemplatesScreen"
+import { StrategySimulatorScreen } from "./screens/StrategySimulatorScreen"
 import { Header } from "./components/Header"
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext"
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext"
@@ -269,6 +270,13 @@ function MainTabs() {
         <Tab.Screen
           name="StrategyTemplates"
           component={StrategyTemplatesScreen}
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tab.Screen
+          name="StrategySimulator"
+          component={StrategySimulatorScreen}
           options={{
             tabBarButton: () => null,
           }}
