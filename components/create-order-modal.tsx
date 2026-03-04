@@ -292,12 +292,13 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
   // 🔄 AUTO-FETCH: Sempre que selecionar "limit", busca o preço atualizado
   // (Pula quando veio de clone — o preço já foi preenchido pelo cloneData)
   useEffect(() => {
-    if (orderType === 'limit' && selectedPair && selectedExchange) {
+    if (orderType && selectedPair && selectedExchange) {
       if (isCloneModeRef.current) {
         // Primeira vez no modo clone → não sobrescreve o preço clonado
         isCloneModeRef.current = false
         return
       }
+      // Busca preço atual para limit E market (market precisa do preço para % de saldo)
       fetchCurrentPrice()
     }
   }, [orderType])
@@ -405,7 +406,9 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
   }, [balanceData, selectedExchange, selectedPair, orderSide, isAmountInQuote, baseCurrency, quoteCurrency])
 
   // Calcula o amount com base na porcentagem do saldo disponível
-  const handlePercentage = useCallback((pct: number) => {
+  // Compra: % do saldo USDT (quote) → converte para base usando preço atual
+  // Venda: % do saldo do token (base) → valor direto
+  const handlePercentage = useCallback(async (pct: number) => {
     const available = getAvailableBalance()
     
     if (available <= 0) {
@@ -416,28 +419,40 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
     const portionValue = available * (pct / 100)
     
     if (orderSide === 'buy') {
+      // Compra: saldo é em quote (USDT). Precisa do preço para converter em base.
+      let currentPrice = priceNum
+
+      // Se não tem preço, busca agora
+      if (currentPrice <= 0 && selectedPair && selectedExchange) {
+        try {
+          const exId = selectedExchange.exchange_id || (selectedExchange as any)?._id || ''
+          const result = await apiService.getPairTicker(exId, selectedPair.symbol)
+          if (result.success && result.ticker?.last > 0) {
+            currentPrice = result.ticker.last
+            setPrice(currentPrice < 0.01 ? currentPrice.toFixed(10).replace(/\.?0+$/, '') : currentPrice.toString())
+          }
+        } catch (e) {
+          console.warn('⚠️ Could not fetch price for %:', e)
+        }
+      }
+
       if (isAmountInQuote) {
         // Amount em quote (BRL/USDT): define direto o valor em quote
         setAmount(portionValue < 1 ? portionValue.toFixed(8).replace(/\.?0+$/, '') : portionValue.toFixed(2))
+      } else if (currentPrice > 0) {
+        // Amount em base (ETH/BTC): converte quote → base usando preço
+        const baseAmt = portionValue / currentPrice
+        setAmount(baseAmt.toFixed(8).replace(/\.?0+$/, ''))
       } else {
-        // Amount em base (ETH/BTC): precisa converter quote → base
-        if (priceNum > 0) {
-          const baseAmt = portionValue / priceNum
-          setAmount(baseAmt.toFixed(8).replace(/\.?0+$/, ''))
-        } else if (orderType === 'market') {
-          // Market sem preço → sugere trocar para modo quote
-          setAmountInQuote(true)
-          setAmount(portionValue < 1 ? portionValue.toFixed(8).replace(/\.?0+$/, '') : portionValue.toFixed(2))
-        } else {
-          Alert.alert('Dica', `Defina o preço primeiro para calcular ${pct}% do saldo.`)
-          return
-        }
+        // Sem preço — muda para modo quote
+        setAmountInQuote(true)
+        setAmount(portionValue < 1 ? portionValue.toFixed(8).replace(/\.?0+$/, '') : portionValue.toFixed(2))
       }
     } else {
-      // Venda: saldo em base (ou quote se isAmountInQuote)
+      // Venda: saldo em base (SOL, BTC, etc.) — valor direto
       setAmount(portionValue.toFixed(8).replace(/\.?0+$/, ''))
     }
-  }, [getAvailableBalance, orderSide, isAmountInQuote, priceNum, orderType])
+  }, [getAvailableBalance, orderSide, isAmountInQuote, priceNum, orderType, selectedPair, selectedExchange])
 
   // Handle submit → show confirm
   const handleSubmit = () => {
@@ -1044,35 +1059,34 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
               </Text>
             )}
 
-            {/* Percentage buttons */}
-            <View style={styles.percentRow}>
-              {[25, 50, 75, 100].map((pct) => (
-                <TouchableOpacity
-                  key={pct}
-                  style={[styles.percentChip, { 
-                    backgroundColor: colors.surface, 
-                    borderColor: colors.border,
-                  }]}
-                  onPress={() => handlePercentage(pct)}
-                  disabled={!orderSide}
-                >
-                  <Text style={[styles.percentText, { color: colors.textSecondary }]}>{pct}%</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Available balance hint */}
+            {/* Available balance hint + Percentage buttons */}
             {orderSide && (
-              <Text style={{ fontSize: typography.tiny, color: colors.textTertiary, marginTop: 2 }}>
-                {(() => {
-                  const avail = getAvailableBalance()
-                  if (avail <= 0) return 'Saldo não disponível'
-                  const curr = orderSide === 'buy' 
-                    ? quoteCurrency
-                    : (isAmountInQuote ? quoteCurrency : baseCurrency)
-                  return `Disponível: ${apiService.formatTokenAmount(avail.toFixed(8))} ${curr}`
-                })()}
-              </Text>
+              <View style={{ marginTop: 6, padding: 10, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: typography.tiny, color: colors.textSecondary, marginBottom: 8 }}>
+                  {(() => {
+                    const avail = getAvailableBalance()
+                    if (avail <= 0) return `💰 Saldo ${orderSide === 'buy' ? quoteCurrency : baseCurrency}: não disponível`
+                    const curr = orderSide === 'buy' 
+                      ? quoteCurrency
+                      : (isAmountInQuote ? quoteCurrency : baseCurrency)
+                    return `💰 Saldo ${curr}: ${apiService.formatTokenAmount(avail.toFixed(8))} ${curr}`
+                  })()}
+                </Text>
+                <View style={styles.percentRow}>
+                  {[25, 50, 75, 100].map((pct) => (
+                    <TouchableOpacity
+                      key={pct}
+                      style={[styles.percentChip, { 
+                        backgroundColor: colors.card, 
+                        borderColor: orderSide === 'buy' ? '#10b98140' : '#f59e0b40',
+                      }]}
+                      onPress={() => handlePercentage(pct)}
+                    >
+                      <Text style={[styles.percentText, { color: orderSide === 'buy' ? '#10b981' : '#f59e0b' }]}>{pct}%</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
             )}
           </>
         )}
