@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   Alert,
   Switch,
   Dimensions,
-  SafeAreaView,
 } from 'react-native'
 import Svg, {
   Path,
@@ -24,6 +23,7 @@ import Svg, {
 } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useHeader } from '@/contexts/HeaderContext'
 import { typography, fontWeights } from '@/lib/typography'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -402,6 +402,12 @@ const COIN_IDS: Record<string, string> = {
 export function StrategySimulatorScreen({ navigation }: any) {
   const { colors } = useTheme()
 
+  // Define o Header global para esta tela
+  useHeader({
+    title: "Simulador",
+    subtitle: "Backtesting com dados reais",
+  })
+
   const [token, setToken] = useState('SOL/USDT')
   const [entryPrice, setEntryPrice] = useState('230')
   const [quantity, setQuantity] = useState('1')
@@ -510,19 +516,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation?.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Simulador de Estratégia</Text>
-          <Text style={[styles.headerSub, { color: colors.textSecondary }]}>Backtesting com dados reais</Text>
-        </View>
-        <View style={{ width: 36 }} />
-      </View>
-
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Tabs */}
       <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
         {(['config', 'result'] as const).map(tab => (
@@ -805,7 +799,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
           <View style={{ gap: 16 }}>
             {!result ? (
               <View style={[styles.emptyResult, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                <Text style={{ fontSize: 48, marginBottom: 12 }}>🧪</Text>
+                <Text style={{ fontSize: typography.emojiHuge, marginBottom: 12 }}>🧪</Text>
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>Nenhuma simulação ainda</Text>
                 <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
                   Configure a estratégia na aba anterior e toque em "Simular".
@@ -936,8 +930,8 @@ export function StrategySimulatorScreen({ navigation }: any) {
                   </Text>
                   {result.events.length === 0 ? (
                     <View style={{ padding: 16, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 32 }}>😴</Text>
-                      <Text style={[{ color: colors.textSecondary, marginTop: 8, textAlign: 'center' }]}>
+                      <Text style={{ fontSize: typography.emoji }}>😴</Text>
+                      <Text style={[{ color: colors.textSecondary, marginTop: 8, textAlign: 'center', fontSize: typography.body }]}>
                         Nenhum trigger disparou neste período.{'\n'}
                         Tente ajustar o Take Profit ou o período de simulação.
                       </Text>
@@ -1003,19 +997,12 @@ export function StrategySimulatorScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: typography.h3, fontWeight: fontWeights.bold },
-  headerSub: { fontSize: typography.caption, marginTop: 2 },
+  container: { flex: 1 },
   tabs: { flexDirection: 'row', borderBottomWidth: 1 },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabText: { fontSize: typography.body, fontWeight: fontWeights.medium },
@@ -1056,17 +1043,17 @@ const styles = StyleSheet.create({
   statusText: { fontSize: typography.caption, fontWeight: fontWeights.semibold },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 0, marginTop: 8 },
   metric: { width: '33.33%', paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center' },
-  metricLabel: { fontSize: 10, marginBottom: 4, fontWeight: fontWeights.medium },
+  metricLabel: { fontSize: typography.micro, marginBottom: 4, fontWeight: fontWeights.medium },
   metricValue: { fontSize: typography.bodyLarge, fontWeight: fontWeights.bold },
-  metricSub: { fontSize: 10, marginTop: 2 },
+  metricSub: { fontSize: typography.micro, marginTop: 2 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendLine: { width: 16, height: 2, borderRadius: 1, opacity: 0.9 },
-  legendText: { fontSize: 10 },
+  legendText: { fontSize: typography.micro },
   eventCard: { borderRadius: 8, borderWidth: 1, padding: 12, gap: 8 },
   eventType: { fontSize: typography.body, fontWeight: fontWeights.semibold },
   eventDate: { fontSize: typography.caption },
   eventDetails: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   eventStat: { gap: 2 },
-  eventStatLabel: { fontSize: 10, fontWeight: fontWeights.medium },
+  eventStatLabel: { fontSize: typography.micro, fontWeight: fontWeights.medium },
   eventStatValue: { fontSize: typography.caption, fontWeight: fontWeights.semibold },
 })
