@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   // Columns
   colIcon: {
-    width: 18,
+    width: 20,
     alignItems: 'center' as const,
   },
   colName: {
@@ -292,15 +292,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end' as const,
   },
   icon: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     opacity: 0.8,
   },
   iconFallback: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -309,9 +309,9 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.semibold,
   },
   name: {
-    fontSize: typography.micro,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.regular,
-    opacity: 0.45,
+    opacity: 0.5,
     flexShrink: 1,
   },
   errorIcon: {
@@ -334,19 +334,19 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
   valueUsd: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.light,
-    opacity: 0.65,
+    fontSize: typography.caption,
+    fontWeight: fontWeights.regular,
+    opacity: 0.7,
   },
   valueBrl: {
-    fontSize: typography.badge,
+    fontSize: typography.micro,
     fontWeight: fontWeights.light,
-    opacity: 0.35,
+    opacity: 0.4,
   },
   valuePnl: {
-    fontSize: typography.micro,
+    fontSize: typography.tiny,
     fontWeight: fontWeights.medium,
-    opacity: 0.75,
+    opacity: 0.8,
   },
   depositButton: {
     paddingHorizontal: 4,
