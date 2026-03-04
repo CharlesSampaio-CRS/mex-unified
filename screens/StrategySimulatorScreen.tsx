@@ -231,13 +231,18 @@ function SimChart({
 
   if (prices.length < 2) return null
 
-  const minP = Math.min(...prices.map(p => p.price)) * 0.995
-  const maxP = Math.max(...prices.map(p => p.price)) * 1.005
-
+  // Inclui entry, TP e SL no range do eixo Y para ficarem sempre visíveis
+  const allPrices = prices.map(p => p.price)
   const tpPrice = config.entryPrice * (1 + config.takeProfitPercent / 100)
   const slPrice = config.stopLossEnabled
     ? config.entryPrice * (1 - config.stopLossPercent / 100)
     : null
+
+  allPrices.push(config.entryPrice, tpPrice)
+  if (slPrice !== null) allPrices.push(slPrice)
+
+  const minP = Math.min(...allPrices) * 0.99
+  const maxP = Math.max(...allPrices) * 1.01
 
   const toX = (i: number) => CHART_PADDING_LEFT + (i / (prices.length - 1)) * plotW
   const toY = (price: number) =>
@@ -257,11 +262,20 @@ function SimChart({
   const bottomY = CHART_PADDING_V + plotH
   const fillPath = `${d} L${lastX},${bottomY} L${firstX},${bottomY} Z`
 
-  // Y-axis labels
-  const yLabels = [minP, (minP + maxP) / 2, maxP].map(v => ({
+  // Y-axis labels — mostra min, entry, TP e max para contexto claro
+  const formatLabel = (v: number) =>
+    v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : v >= 1 ? `$${v.toFixed(1)}` : `$${v.toPrecision(3)}`
+
+  const rawYValues = [minP, config.entryPrice, tpPrice, maxP]
+  // Remove duplicatas próximas (< 3% de diferença) mantendo a mais relevante
+  const yLabelValues = rawYValues.filter((v, i, arr) => {
+    if (i === 0) return true
+    return arr.slice(0, i).every(prev => Math.abs(v - prev) / prev > 0.03)
+  })
+  const yLabels = yLabelValues.map(v => ({
     value: v,
     y: toY(v),
-    label: v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v.toFixed(1)}`,
+    label: formatLabel(v),
   }))
 
   // X-axis labels (every ~7 days)
