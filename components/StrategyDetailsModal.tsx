@@ -6,9 +6,6 @@ import {
   Modal, 
   TouchableOpacity, 
   ScrollView, 
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
@@ -1181,16 +1178,12 @@ export function StrategyDetailsModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView 
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <SafeAreaView style={styles.safeArea}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+      <View style={styles.overlay}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: colors.border }]}>
               <Text style={[styles.title, { color: colors.text }]}>{t('strategy.details')}</Text>
@@ -1258,8 +1251,7 @@ export function StrategyDetailsModal({
                 </View>
               </View>
             )}
-          </View>
-        </SafeAreaView>
+        </View>
 
         {/* Edit Strategy Modal — fora do modalContainer para não ser cortado */}
         <EditStrategyModal
@@ -1271,7 +1263,7 @@ export function StrategyDetailsModal({
             setShowEditModal(false)
           }}
         />
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   )
 }
@@ -1280,16 +1272,22 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   safeArea: {
     flex: 1,
   },
   modalContainer: {
-    flex: 1,
+    borderRadius: 20,
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: 12,
     elevation: 4,
   },
   header: {
