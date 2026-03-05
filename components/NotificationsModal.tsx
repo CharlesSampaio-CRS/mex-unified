@@ -1,4 +1,4 @@
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable } from "react-native"
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, FlatList } from "react-native"
 import { useState, useMemo } from "react"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
@@ -124,10 +124,15 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
               </View>
             </View>
 
-          {/* Category Filter Tabs */}
+          {/* Category Filter Tabs — horizontal carousel */}
           {notifications.length > 0 && (
             <View style={[styles.categoryTabs, { borderBottomColor: colors.cardBorder }]}>
-              <View style={styles.categoryTabsContent}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryTabsContent}
+                keyboardShouldPersistTaps="handled"
+              >
               {NOTIFICATION_CATEGORIES.map((cat) => {
                 const count = categoryCounts[cat] || 0
                 if (cat !== 'all' && count === 0) return null
@@ -167,7 +172,7 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
                   </TouchableOpacity>
                 )
               })}
-              </View>
+              </ScrollView>
             </View>
           )}
 
@@ -398,13 +403,10 @@ const styles = StyleSheet.create({
   },
   // Category filter tabs
   categoryTabs: {
-    maxHeight: 48,
     borderBottomWidth: 0.5,
   },
   categoryTabsContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
