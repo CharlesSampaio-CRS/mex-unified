@@ -599,36 +599,27 @@ export function TradeModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
 
           {/* Handle */}
           <View style={styles.handleRow}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
           </View>
 
-          {/* Header */}
+          {/* Header — padrão idêntico ao CreateAlertModal */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Fechar</Text>
+            <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
+              <Text style={[styles.cancelText, { color: colors.primary }]}>Fechar</Text>
             </TouchableOpacity>
-            <View style={styles.headerCenter}>
-              <Text style={[styles.title, { color: colors.text }]}>{tradingPair || symbol.toUpperCase()}</Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                {exchangeName}{pairPriceLoading ? ' ⏳' : ''}
-              </Text>
-            </View>
-            <View style={styles.headerPrice}>
-              <Text style={[styles.headerPriceText, { color: colors.text }]}>
-                {parseFloat(price || '0') < 0.01
-                  ? parseFloat(price || '0').toFixed(8).replace(/\.?0+$/, '')
-                  : apiService.formatUSD(parseFloat(price || '0'))}
-              </Text>
-            </View>
+            <Text style={[styles.title, { color: colors.text }]}>
+              {tradingPair || symbol.toUpperCase()}
+            </Text>
+            <View style={styles.headerSpacer} />
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-            {/* Token row — info do par */}
+            {/* Token info row — par, exchange e preço */}
             <View style={[styles.tokenRow, { borderBottomColor: colors.border }]}>
               <View style={[styles.tokenIconWrap, { backgroundColor: `${colors.primary}20`, borderColor: `${colors.primary}40` }]}>
                 <Text style={[styles.tokenIconText, { color: colors.primary }]}>
@@ -637,7 +628,9 @@ export function TradeModal({
               </View>
               <View style={styles.tokenInfoLeft}>
                 <Text style={[styles.tokenSymbol, { color: colors.text }]}>{tradingPair || symbol.toUpperCase()}</Text>
-                <Text style={[styles.tokenExchange, { color: colors.textSecondary }]}>{exchangeName}</Text>
+                <Text style={[styles.tokenExchange, { color: colors.textSecondary }]}>
+                  {exchangeName}{pairPriceLoading ? ' ⏳' : ''}
+                </Text>
               </View>
               <View style={styles.tokenPriceWrap}>
                 <Text style={[styles.tokenPrice, { color: colors.text }]}>
@@ -645,9 +638,6 @@ export function TradeModal({
                     ? parseFloat(price || '0').toFixed(8).replace(/\.?0+$/, '')
                     : apiService.formatUSD(parseFloat(price || '0'))}
                 </Text>
-                {pairPriceLoading && (
-                  <ActivityIndicator size="small" color={colors.textTertiary} style={{ marginTop: 4 }} />
-                )}
               </View>
             </View>
 
@@ -1131,26 +1121,8 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: fontWeights.medium,
   },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: typography.h4,
-    fontWeight: fontWeights.bold,
-  },
-  subtitle: {
-    fontSize: typography.caption,
-    fontWeight: fontWeights.regular,
-    marginTop: 2,
-  },
-  headerPrice: {
+  headerSpacer: {
     minWidth: 60,
-    alignItems: 'flex-end',
-  },
-  headerPriceText: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.semibold,
   },
 
   // ─── Scroll ────────────────────────────────────────────────
