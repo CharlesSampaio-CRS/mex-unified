@@ -15,7 +15,7 @@ import {
   Switch,
   Image,
   ActivityIndicator,
-  SafeAreaView } from 'react-native';
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -214,30 +214,51 @@ export function CreateAlertModal({
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={[styles.overlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-        <SafeAreaView style={styles.safeArea}>
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-          {/* Header */}
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.text }]}>
-              🔔 {t('alerts.createAlert')}
-            </Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
+      <View style={styles.overlay}>
+        {/* Bottom Sheet */}
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+
+          {/* Handle */}
+          <View style={styles.handleRow}>
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Modo genérico: Seletor de Exchange + Input de Token */}
-            {isGenericMode ? (
-              <>
-                {/* Exchange Selector */}
+          {/* Header */}
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={handleClose} style={styles.cancelBtn}>
+              <Text style={[styles.cancelText, { color: colors.primary }]}>Cancelar</Text>
+            </TouchableOpacity>
+            <Text style={[styles.title, { color: colors.text }]}>Criar Alerta</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+            {/* Token Info Row */}
+            {!isGenericMode ? (
+              <View style={[styles.tokenRow, { borderBottomColor: colors.border }]}>
+                <View style={[styles.tokenIconWrap, { backgroundColor: `${colors.primary}20`, borderColor: `${colors.primary}40` }]}>
+                  <Ionicons name="logo-bitcoin" size={22} color={colors.primary} />
+                </View>
+                <View style={styles.tokenInfoLeft}>
+                  <Text style={[styles.tokenSymbol, { color: colors.text }]}>{symbol}/USDT</Text>
+                  <Text style={[styles.tokenExchange, { color: colors.textSecondary }]}>
+                    {exchangeName || ''}
+                  </Text>
+                </View>
+                {currentPrice && (
+                  <View style={styles.tokenPriceWrap}>
+                    <Text style={[styles.tokenPrice, { color: colors.text }]}>${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              /* Modo genérico: seletor de exchange + input de token */
+              <View style={[styles.tokenRow, { borderBottomColor: colors.border, flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
                 {exchanges && exchanges.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      📊 Corretora
-                    </Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.exchangeScroll}>
+                  <View>
+                    <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Corretora</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
                       <View style={styles.exchangeChips}>
                         {exchanges.map((ex) => {
                           const isSelected = localExchangeId === ex.id;
@@ -255,18 +276,8 @@ export function CreateAlertModal({
                               ]}
                               onPress={() => handleSelectExchange(ex)}
                             >
-                              {logo && (
-                                <Image source={logo} style={styles.exchangeChipLogo} />
-                              )}
-                              <Text
-                                style={[
-                                  styles.exchangeChipText,
-                                  {
-                                    color: isSelected ? colors.primary : colors.textSecondary,
-                                    fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular,
-                                  },
-                                ]}
-                              >
+                              {logo && <Image source={logo} style={styles.exchangeChipLogo} />}
+                              <Text style={[styles.exchangeChipText, { color: isSelected ? colors.primary : colors.textSecondary, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular }]}>
                                 {ex.name}
                               </Text>
                             </TouchableOpacity>
@@ -276,21 +287,10 @@ export function CreateAlertModal({
                     </ScrollView>
                   </View>
                 )}
-
-                {/* Token Input */}
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    🪙 Token
-                  </Text>
+                <View>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Token</Text>
                   <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        color: colors.text,
-                        backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                      },
-                    ]}
+                    style={[styles.inputField, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, marginTop: 8 }]}
                     placeholder="Ex: BTC, ETH, SOL..."
                     placeholderTextColor={colors.textTertiary}
                     value={localSymbol}
@@ -298,225 +298,93 @@ export function CreateAlertModal({
                     autoCapitalize="characters"
                     autoCorrect={false}
                   />
-                  {localSymbol.trim() !== '' && (
-                    <View style={[styles.tokenPreviewBadge, { backgroundColor: `${colors.primary}15` }]}>
-                      <Text style={[styles.tokenPreviewText, { color: colors.primary }]}>
-                        {localSymbol.trim().toUpperCase()}/USDT
-                      </Text>
-                      {localExchangeName ? (
-                        <Text style={[styles.tokenPreviewExchange, { color: colors.textSecondary }]}>
-                          na {localExchangeName}
-                        </Text>
-                      ) : null}
-                    </View>
-                  )}
                 </View>
-              </>
-            ) : (
-              /* Modo com token pré-selecionado: Token Info */
-              <View style={[styles.tokenInfo, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.tokenSymbol, { color: colors.text }]}>
-                  {symbol}
-                </Text>
-                {currentPrice && (
-                  <Text style={[styles.tokenPrice, { color: colors.textSecondary }]}>
-                    {t('alerts.currentPrice')} ${currentPrice.toFixed(2)}
-                  </Text>
-                )}
-                {exchangeName && (
-                  <Text style={[styles.tokenExchange, { color: colors.textTertiary }]}>
-                    {exchangeName}
-                  </Text>
-                )}
               </View>
             )}
 
-            {/* Tipo de Alerta */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t('alerts.alertType')}
-              </Text>
-              <View style={styles.buttonGroup}>
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    alertType === 'price' && styles.optionButtonActive,
-                    { 
-                      borderColor: alertType === 'price' ? colors.primary : colors.border,
-                      backgroundColor: alertType === 'price' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setAlertType('price')}
-                >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: alertType === 'price' ? colors.primary : colors.text },
-                    ]}
+            {/* Tipo + Condição como segmentado */}
+            <View style={styles.formSection}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tipo de alerta</Text>
+              <View style={[styles.segmented, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {([['price', '$ Preço'], ['percentage', '% Variação']] as const).map(([type, label]) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.segmentItem, alertType === type && { backgroundColor: colors.primary }]}
+                    onPress={() => setAlertType(type)}
                   >
-                    💰 {t('alerts.absolutePrice')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    alertType === 'percentage' && styles.optionButtonActive,
-                    { 
-                      borderColor: alertType === 'percentage' ? colors.primary : colors.border,
-                      backgroundColor: alertType === 'percentage' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setAlertType('percentage')}
-                >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: alertType === 'percentage' ? colors.primary : colors.text },
-                    ]}
-                  >
-                    📊 {t('alerts.percentage')}
-                  </Text>
-                </TouchableOpacity>
+                    <Text style={[styles.segmentText, { color: alertType === type ? '#fff' : colors.textSecondary }]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
 
             {/* Condição */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t('alerts.condition')}
-              </Text>
-              <View style={styles.buttonGroup}>
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    condition === 'above' && styles.optionButtonActive,
-                    { 
-                      borderColor: condition === 'above' ? colors.primary : colors.border,
-                      backgroundColor: condition === 'above' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setCondition('above')}
-                >
-                  <Text
+            <View style={styles.formSection}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Condição</Text>
+              <View style={styles.conditionGrid}>
+                {([
+                  ['above', '↑ Acima', colors.success],
+                  ['below', '↓ Abaixo', colors.danger],
+                  ['crosses_up', '⬆ Cruza cima', colors.success],
+                  ['crosses_down', '⬇ Cruza baixo', colors.danger],
+                ] as const).map(([cond, label, activeColor]) => (
+                  <TouchableOpacity
+                    key={cond}
                     style={[
-                      styles.optionButtonText,
-                      { color: condition === 'above' ? colors.primary : colors.text },
+                      styles.conditionBtn,
+                      {
+                        borderColor: condition === cond ? activeColor : colors.border,
+                        backgroundColor: condition === cond ? `${activeColor}15` : colors.surface,
+                      },
                     ]}
+                    onPress={() => setCondition(cond)}
                   >
-                    🚀 {t('alerts.above')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    condition === 'below' && styles.optionButtonActive,
-                    { 
-                      borderColor: condition === 'below' ? colors.primary : colors.border,
-                      backgroundColor: condition === 'below' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setCondition('below')}
-                >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: condition === 'below' ? colors.primary : colors.text },
-                    ]}
-                  >
-                    📉 {t('alerts.below')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.buttonGroup}>
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    condition === 'crosses_up' && styles.optionButtonActive,
-                    { 
-                      borderColor: condition === 'crosses_up' ? colors.primary : colors.border,
-                      backgroundColor: condition === 'crosses_up' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setCondition('crosses_up')}
-                >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: condition === 'crosses_up' ? colors.primary : colors.text },
-                    ]}
-                  >
-                    ⬆️ {t('alerts.crossesUp')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    condition === 'crosses_down' && styles.optionButtonActive,
-                    { 
-                      borderColor: condition === 'crosses_down' ? colors.primary : colors.border,
-                      backgroundColor: condition === 'crosses_down' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setCondition('crosses_down')}
-                >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: condition === 'crosses_down' ? colors.primary : colors.text },
-                    ]}
-                  >
-                    ⬇️ {t('alerts.crossesDown')}
-                  </Text>
-                </TouchableOpacity>
+                    <Text style={[styles.conditionText, { color: condition === cond ? activeColor : colors.textSecondary }]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
 
-            {/* Valor */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {alertType === 'price' ? t('alerts.targetPrice') : t('alerts.percentageLabel')}
+            {/* Target Price Input */}
+            <View style={styles.formSection}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+                {alertType === 'price' ? 'Preço alvo' : 'Variação (%)'}
               </Text>
-              
-              <TextInput
-                style={[
-                  styles.input,
-                  { 
-                    color: colors.text, 
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-                placeholder={alertType === 'price' ? 'Ex: 50000' : (condition === 'below' || condition === 'crosses_down') ? 'Ex: -5 (para queda de 5%)' : 'Ex: 5 (para +5%)'}
-                placeholderTextColor={colors.textTertiary}
-                value={value}
-                onChangeText={setValue}
-                keyboardType="numbers-and-punctuation"
-              />
+              <View style={[styles.inputWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Ionicons
+                  name={alertType === 'price' ? 'cash-outline' : 'trending-up-outline'}
+                  size={20}
+                  color={colors.textTertiary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={[styles.priceInput, { color: colors.text }]}
+                  placeholder={alertType === 'price' ? '0.00' : '0.00'}
+                  placeholderTextColor={colors.textTertiary}
+                  value={value}
+                  onChangeText={setValue}
+                  keyboardType="numbers-and-punctuation"
+                />
+              </View>
+              {/* Hint */}
+              <Text style={[styles.inputHint, { color: colors.textTertiary }]}>
+                {condition === 'above' || condition === 'crosses_up'
+                  ? 'Alerta disparado quando o preço subir acima do valor'
+                  : 'Alerta disparado quando o preço cair abaixo do valor'}
+              </Text>
 
               {/* Sugestões */}
-              {currentPrice && (
+              {currentPrice && getSuggestedValues().length > 0 && (
                 <View style={styles.suggestions}>
-                  {getSuggestedValues().map((suggestion, idx) => (
+                  {getSuggestedValues().map((s, idx) => (
                     <TouchableOpacity
                       key={idx}
-                      style={[
-                        styles.suggestionButton,
-                        { 
-                          backgroundColor: colors.surface,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                      onPress={() => setValue(suggestion.value)}
+                      style={[styles.suggestionChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      onPress={() => setValue(s.value)}
                     >
-                      <Text style={[styles.suggestionLabel, { color: colors.textSecondary }]}>
-                        {suggestion.label}
-                      </Text>
+                      <Text style={[styles.suggestionLabel, { color: colors.textSecondary }]}>{s.label}</Text>
                       <Text style={[styles.suggestionValue, { color: colors.text }]}>
-                        {alertType === 'price' ? `$${suggestion.value}` : `${suggestion.value}%`}
+                        {alertType === 'price' ? `$${s.value}` : `${s.value}%`}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -524,102 +392,40 @@ export function CreateAlertModal({
               )}
             </View>
 
-            {/* Frequência */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t('alerts.frequency')}
-              </Text>
-              <View style={styles.buttonGroup}>
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    frequency === 'once' && styles.optionButtonActive,
-                    { 
-                      borderColor: frequency === 'once' ? colors.primary : colors.border,
-                      backgroundColor: frequency === 'once' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setFrequency('once')}
-                >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: frequency === 'once' ? colors.primary : colors.text },
-                    ]}
-                  >
-                    1️⃣ {t('alerts.once')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    frequency === 'repeated' && styles.optionButtonActive,
-                    { 
-                      borderColor: frequency === 'repeated' ? colors.primary : colors.border,
-                      backgroundColor: frequency === 'repeated' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setFrequency('repeated')}
-                >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: frequency === 'repeated' ? colors.primary : colors.text },
-                    ]}
-                  >
-                    🔁 {t('alerts.always')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    frequency === 'daily' && styles.optionButtonActive,
-                    { 
-                      borderColor: frequency === 'daily' ? colors.primary : colors.border,
-                      backgroundColor: frequency === 'daily' ? `${colors.primary}15` : colors.surface,
-                    },
-                  ]}
-                  onPress={() => setFrequency('daily')}
-                >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: frequency === 'daily' ? colors.primary : colors.text },
-                    ]}
-                  >
-                    📅 {t('alerts.daily')}
-                  </Text>
-                </TouchableOpacity>
+            {/* Frequência — toggle row */}
+            <View style={[styles.toggleRow, { borderColor: colors.border, backgroundColor: `${colors.surface}` }]}>
+              <View style={styles.toggleInfo}>
+                <Text style={[styles.toggleTitle, { color: colors.text }]}>Alerta persistente</Text>
+                <Text style={[styles.toggleSubtitle, { color: colors.textSecondary }]}>
+                  Notificar sempre que o preço cruzar
+                </Text>
               </View>
+              <Switch
+                value={frequency === 'repeated'}
+                onValueChange={(v) => setFrequency(v ? 'repeated' : 'once')}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#ffffff"
+              />
             </View>
 
-            {/* Mensagem Customizada */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t('alerts.customMessage')}
-                </Text>
-                <Switch
-                  value={useCustomMessage}
-                  onValueChange={setUseCustomMessage}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor={colors.surface}
-                />
+            {/* Mensagem customizada */}
+            <View style={[styles.toggleRow, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+              <View style={styles.toggleInfo}>
+                <Text style={[styles.toggleTitle, { color: colors.text }]}>Mensagem personalizada</Text>
+                <Text style={[styles.toggleSubtitle, { color: colors.textSecondary }]}>Adicionar nota ao alerta</Text>
               </View>
+              <Switch
+                value={useCustomMessage}
+                onValueChange={setUseCustomMessage}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#ffffff"
+              />
+            </View>
 
-              {useCustomMessage && (
+            {useCustomMessage && (
+              <View style={styles.formSection}>
                 <TextInput
-                  style={[
-                    styles.input,
-                    styles.textArea,
-                    { 
-                      color: colors.text, 
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                  ]}
+                  style={[styles.inputField, styles.textArea, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
                   placeholder="Ex: 🎉 Bitcoin disparou!"
                   placeholderTextColor={colors.textTertiary}
                   value={customMessage}
@@ -627,71 +433,48 @@ export function CreateAlertModal({
                   multiline
                   numberOfLines={3}
                 />
-              )}
-            </View>
+              </View>
+            )}
 
             {/* Erros */}
             {errors.length > 0 && (
-              <View style={[styles.errorContainer, { backgroundColor: '#ef444415' }]}>
+              <View style={[styles.errorBox, { backgroundColor: '#ef444415' }]}>
                 {errors.map((error, idx) => (
-                  <Text key={idx} style={[styles.errorText, { color: '#ef4444' }]}>
-                    ⚠️ {error}
-                  </Text>
+                  <Text key={idx} style={styles.errorText}>⚠️ {error}</Text>
                 ))}
               </View>
             )}
 
             {/* Preview */}
             <View style={[styles.preview, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
-                {t('alerts.previewAlert')}
-              </Text>
+              <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>{t('alerts.previewAlert')}</Text>
               <Text style={[styles.previewText, { color: colors.text }]}>
-                {getAlertIcon(condition)} {symbol || '???'} {formatAlertCondition({
-                  condition,
-                  value: parseFloat(value) || 0,
-                  alertType,
-                } as any)}
+                {getAlertIcon(condition)} {symbol || '???'} {formatAlertCondition({ condition, value: parseFloat(value) || 0, alertType } as any)}
               </Text>
               <Text style={[styles.previewFrequency, { color: colors.textTertiary }]}>
                 {t('alerts.frequencyLabel')} {getAlertFrequencyLabel(frequency)}
               </Text>
             </View>
+
           </ScrollView>
 
-          {/* Footer */}
-          <View style={[styles.footer, { borderTopColor: colors.border }]}>
+          {/* CTA Button */}
+          <View style={[styles.ctaWrap, { borderTopColor: colors.border }]}>
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton, { backgroundColor: colors.surface }]}
-              onPress={handleClose}
-              disabled={loading}
-            >
-              <Text style={[styles.buttonText, { color: colors.text }]}>
-                {t('common.cancel')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.createButton,
-                { backgroundColor: colors.primary },
-                loading && styles.buttonDisabled,
-              ]}
+              style={[styles.ctaButton, { backgroundColor: colors.primary }, loading && { opacity: 0.6 }]}
               onPress={handleCreate}
               disabled={loading}
+              activeOpacity={0.85}
             >
               {loading ? (
-                <ActivityIndicator size="small" />
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
-                  {t('alerts.createButton')}
-                </Text>
+                <Text style={styles.ctaText}>Criar Alerta</Text>
               )}
             </TouchableOpacity>
           </View>
+
         </View>
-        </SafeAreaView>
       </View>
     </Modal>
   );
@@ -700,164 +483,279 @@ export function CreateAlertModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
   },
-  safeArea: {
-    flex: 1,
+  sheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '92%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 20,
   },
-  container: {
-    flex: 1,
+  handleRow: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  handle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderBottomWidth: 1,
   },
-  title: {
-    fontSize: typography.icon,
-    fontWeight: fontWeights.semibold,
-  },
-  closeButton: {
+  cancelBtn: {
     padding: 4,
   },
-  content: {
-    padding: 16,
+  cancelText: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.medium,
   },
-  tokenInfo: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
+  title: {
+    fontSize: typography.h4,
+    fontWeight: fontWeights.bold,
+  },
+  headerSpacer: {
+    width: 60,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  // Token row (info do token pré-selecionado)
+  tokenRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    minHeight: 80,
+  },
+  tokenIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    flexShrink: 0,
+  },
+  tokenInfoLeft: {
+    flex: 1,
   },
   tokenSymbol: {
-    fontSize: typography.display,
+    fontSize: typography.body,
     fontWeight: fontWeights.bold,
-    marginBottom: 4,
-  },
-  tokenPrice: {
-    fontSize: typography.h4,
-    marginBottom: 2,
   },
   tokenExchange: {
     fontSize: typography.caption,
+    fontWeight: fontWeights.regular,
+    marginTop: 2,
   },
-  section: {
-    marginBottom: 24,
+  tokenPriceWrap: {
+    alignItems: 'flex-end',
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  sectionTitle: {
+  tokenPrice: {
     fontSize: typography.body,
+    fontWeight: fontWeights.bold,
+  },
+  // Form sections
+  formSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  fieldLabel: {
+    fontSize: typography.caption,
     fontWeight: fontWeights.semibold,
-    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 10,
   },
-  buttonGroup: {
+  // Segmented control (Tipo de alerta)
+  segmented: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  optionButton: {
+  segmentItem: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 9,
+  },
+  segmentText: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.semibold,
+  },
+  // Condition grid (2x2)
+  conditionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  conditionBtn: {
+    width: '47%',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
   },
-  optionButtonActive: {
-    borderWidth: 2,
-  },
-  optionButtonText: {
+  conditionText: {
     fontSize: typography.bodySmall,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.semibold,
   },
-  input: {
-    padding: 12,
-    borderRadius: 8,
+  // Price input com ícone
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
     borderWidth: 1,
-    fontSize: typography.h4,
+    overflow: 'hidden',
   },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
+  inputIcon: {
+    paddingHorizontal: 14,
   },
+  priceInput: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingRight: 14,
+    fontSize: typography.h3,
+    fontWeight: fontWeights.semibold,
+  },
+  inputHint: {
+    fontSize: 10,
+    fontWeight: fontWeights.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 8,
+  },
+  // Sugestões
   suggestions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 12,
+    marginTop: 14,
   },
-  suggestionButton: {
-    padding: 8,
-    borderRadius: 6,
+  suggestionChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
     borderWidth: 1,
-    minWidth: 70,
     alignItems: 'center',
+    minWidth: 70,
   },
   suggestionLabel: {
     fontSize: typography.tiny,
+    fontWeight: fontWeights.medium,
     marginBottom: 2,
   },
   suggestionValue: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.semibold,
   },
-  errorContainer: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorText: {
-    fontSize: typography.bodySmall,
-    marginBottom: 4,
-  },
-  preview: {
+  // Toggle rows
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginTop: 14,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 16,
+  },
+  toggleInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  toggleTitle: {
+    fontSize: typography.body,
+    fontWeight: fontWeights.bold,
+    marginBottom: 2,
+  },
+  toggleSubtitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.regular,
+  },
+  // Text area (mensagem customizada)
+  inputField: {
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: typography.body,
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  // Erros
+  errorBox: {
+    marginHorizontal: 20,
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 10,
+  },
+  errorText: {
+    fontSize: typography.bodySmall,
+    color: '#ef4444',
+    marginBottom: 4,
+  },
+  // Preview
+  preview: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   previewLabel: {
     fontSize: typography.caption,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   previewText: {
-    fontSize: typography.h4,
+    fontSize: typography.body,
     fontWeight: fontWeights.semibold,
     marginBottom: 4,
   },
   previewFrequency: {
     fontSize: typography.caption,
   },
-  footer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
+  // CTA Button
+  ctaWrap: {
+    padding: 20,
+    paddingBottom: 32,
     borderTopWidth: 1,
   },
-  button: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
+  ctaButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#19a1e6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
-  cancelButton: {},
-  createButton: {},
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
+  ctaText: {
     fontSize: typography.bodyLarge,
-    fontWeight: fontWeights.semibold,
+    fontWeight: fontWeights.bold,
+    color: '#FFFFFF',
   },
-  exchangeScroll: {
-    marginBottom: 4,
-  },
+  // Exchange chips (modo genérico)
   exchangeChips: {
     flexDirection: 'row',
     gap: 8,
@@ -877,20 +775,5 @@ const styles = StyleSheet.create({
   },
   exchangeChipText: {
     fontSize: typography.bodySmall,
-  },
-  tokenPreviewBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  tokenPreviewText: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-  },
-  tokenPreviewExchange: {
-    fontSize: typography.caption,
   },
 });
