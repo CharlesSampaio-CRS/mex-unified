@@ -9,7 +9,6 @@ import {
   ScrollView,
   FlatList,
   Alert,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
@@ -44,7 +43,17 @@ interface SimulatorPreset {
   gradualSell?: boolean
   gradualLots?: string
   gradualTakePercent?: string
+  timerGradualMin?: string
+  timeExecutionMin?: string
   feePercent?: string
+  dcaEnabled?: boolean
+  dcaBuyAmountUsd?: string
+  dcaTriggerPercent?: string
+  dcaMaxBuys?: string
+  buyDipEnabled?: boolean
+  buyDipPercent?: string
+  buyDipAmountUsd?: string
+  buyDipMaxBuys?: string
 }
 
 interface CreateStrategyModalProps {
@@ -124,7 +133,17 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         if (simulatorPreset.stopLossPercent) setStopLossPercent(simulatorPreset.stopLossPercent)
         if (simulatorPreset.gradualSell !== undefined) setGradualSell(simulatorPreset.gradualSell)
         if (simulatorPreset.gradualTakePercent) setGradualTakePercent(simulatorPreset.gradualTakePercent)
+        if (simulatorPreset.timerGradualMin) setTimerGradualMin(simulatorPreset.timerGradualMin)
+        if (simulatorPreset.timeExecutionMin) setTimeExecutionMin(simulatorPreset.timeExecutionMin)
         if (simulatorPreset.feePercent) setFeePercent(simulatorPreset.feePercent)
+        if (simulatorPreset.dcaEnabled !== undefined) setDcaEnabled(simulatorPreset.dcaEnabled)
+        if (simulatorPreset.dcaBuyAmountUsd) setDcaBuyAmountUsd(simulatorPreset.dcaBuyAmountUsd)
+        if (simulatorPreset.dcaTriggerPercent) setDcaTriggerPercent(simulatorPreset.dcaTriggerPercent)
+        if (simulatorPreset.dcaMaxBuys) setDcaMaxBuys(simulatorPreset.dcaMaxBuys)
+        if (simulatorPreset.buyDipEnabled !== undefined) setBuyDipEnabled(simulatorPreset.buyDipEnabled)
+        if (simulatorPreset.buyDipPercent) setBuyDipPercent(simulatorPreset.buyDipPercent)
+        if (simulatorPreset.buyDipAmountUsd) setBuyDipAmountUsd(simulatorPreset.buyDipAmountUsd)
+        if (simulatorPreset.buyDipMaxBuys) setBuyDipMaxBuys(simulatorPreset.buyDipMaxBuys)
       }
     } else {
       setStep(1)
@@ -845,9 +864,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   )
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <SafeAreaView style={styles.safeArea}>
           <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
             <View style={[styles.header, { borderBottomColor: colors.border }]}>
               <Text style={[styles.title, { color: colors.text }]}>{t("strategy.newStrategy")}</Text>
@@ -907,16 +925,15 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
               </View>
             )}
           </View>
-        </SafeAreaView>
       </KeyboardAvoidingView>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
-  safeArea: { width: "100%", alignItems: "center", justifyContent: "center", flex: 1 },
-  modalContainer: { borderRadius: 20, width: "90%", maxHeight: "85%", height: "85%" },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: 'center', alignItems: 'center' },
+  safeArea: { flex: 1 },
+  modalContainer: { borderRadius: 20, width: '90%', maxHeight: '85%', height: '85%', overflow: 'hidden' },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
   title: { fontSize: typography.h2, fontWeight: fontWeights.medium },
   closeButton: { padding: 4 },

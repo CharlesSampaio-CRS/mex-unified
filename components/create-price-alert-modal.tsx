@@ -14,7 +14,8 @@ import {
   ScrollView,
   Switch,
   Image,
-  ActivityIndicator } from 'react-native';
+  ActivityIndicator,
+  SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -214,6 +215,7 @@ export function CreateAlertModal({
       onRequestClose={handleClose}
     >
       <View style={[styles.overlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+        <SafeAreaView style={styles.safeArea}>
         <View style={[styles.container, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -689,6 +691,7 @@ export function CreateAlertModal({
             </TouchableOpacity>
           </View>
         </View>
+        </SafeAreaView>
       </View>
     </Modal>
   );
@@ -697,12 +700,12 @@ export function CreateAlertModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+  },
+  safeArea: {
+    flex: 1,
   },
   container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

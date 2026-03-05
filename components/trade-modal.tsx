@@ -594,7 +594,7 @@ export function TradeModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
@@ -1179,6 +1179,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     width: '90%',
     maxHeight: '85%',
+    height: '85%',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,

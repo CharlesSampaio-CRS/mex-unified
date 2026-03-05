@@ -1283,20 +1283,12 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
   },
   modalSafeArea: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
     flex: 1,
   },
   modalContainer: {
-    borderRadius: 20,
-    width: "90%",
-    maxHeight: "85%",
-    height: "85%",
+    flex: 1,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1647,7 +1639,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   confirmContainer: {
-    borderRadius: 16,
+    borderRadius: 20,
     width: "100%",
     maxWidth: 400,
     elevation: 5,

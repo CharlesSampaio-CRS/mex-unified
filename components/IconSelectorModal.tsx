@@ -194,11 +194,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  safeArea: {
+    flex: 1,
+  },
   modalContainer: {
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '80%',
     borderRadius: 20,
+    width: '90%',
+    maxHeight: '85%',
     overflow: 'hidden',
   },
   modalHeader: {
@@ -223,6 +225,7 @@ const styles = StyleSheet.create({
   iconsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 12,
   },
   iconItem: {

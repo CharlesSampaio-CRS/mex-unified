@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import { useOrders } from '@/contexts/OrdersContext'
 import { useBalance } from '@/contexts/BalanceContext'
-import { capitalizeExchangeName, getExchangeName, getExchangeId } from '@/lib/exchange-helpers'
+import { capitalizeExchangeName, getExchangeName, getExchangeId, getExchangeBalances } from '@/lib/exchange-helpers'
 import { typography, fontWeights } from '@/lib/typography'
 import { apiService } from '@/services/api'
 import { notify } from '@/services/notify'
@@ -373,16 +373,27 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
     if (!balanceData?.exchanges || !selectedExchange || !selectedPair) return 0
     
     const exId = selectedExchange.exchange_id || (selectedExchange as any)._id || ''
+    const exType = selectedExchange.exchange_type?.toLowerCase() || ''
+    const exName = selectedExchange.exchange_name?.toLowerCase() || ''
     
-    // Encontra a exchange certa nos dados de balance
+    // Encontra a exchange certa nos dados de balance — compara todos os campos possíveis
     const exchangeData = balanceData.exchanges.find((ex: any) => {
-      const id = getExchangeId(ex)
-      return id === exId || id === selectedExchange.exchange_name?.toLowerCase()
+      const id = (ex.exchange_id || '').toLowerCase()
+      const exField = (ex.exchange || '').toLowerCase()
+      const nameField = (ex.name || '').toLowerCase()
+      return (
+        id === exId.toLowerCase() ||
+        exField === exType ||
+        exField === exName ||
+        nameField === exType ||
+        nameField === exName
+      )
     })
     
     if (!exchangeData) return 0
     
-    const balances = exchangeData.balances || exchangeData.tokens || {}
+    // Usa getExchangeBalances que normaliza formatos novo (balances) e antigo (tokens)
+    const balances = getExchangeBalances(exchangeData)
     
     // Determina qual currency precisa verificar:
     // - Se isAmountInQuote e está comprando: precisa do quote (gasta quote pra comprar base)
@@ -398,11 +409,15 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
       relevantCurrency = isAmountInQuote ? quoteCurrency : baseCurrency
     }
     
-    const token = balances[relevantCurrency] || balances[relevantCurrency?.toUpperCase()]
+    const token = balances[relevantCurrency] || balances[relevantCurrency?.toUpperCase()] || balances[relevantCurrency?.toLowerCase()]
     if (!token) return 0
     
+    // Suporta formato novo (free/total/used) e formato antigo (amount)
     const free = typeof token.free === 'number' ? token.free : parseFloat(token.free || '0')
-    return free > 0 ? free : Math.max(0, (token.total || 0) - (typeof token.used === 'number' ? token.used : parseFloat(token.used || '0')))
+    if (free > 0) return free
+    const total = typeof token.total === 'number' ? token.total : parseFloat(token.total || token.amount || '0')
+    const used = typeof token.used === 'number' ? token.used : parseFloat(token.used || '0')
+    return Math.max(0, total - used)
   }, [balanceData, selectedExchange, selectedPair, orderSide, isAmountInQuote, baseCurrency, quoteCurrency])
 
   // Calcula o amount com base na porcentagem do saldo disponível
@@ -1164,7 +1179,7 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
@@ -1251,13 +1266,23 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  safeArea: {
+    flex: 1,
   },
   container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '92%',
-    minHeight: '60%',
+    borderRadius: 20,
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   header: {
     flexDirection: 'row',
@@ -1482,14 +1507,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pairChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    width: '31%',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pairChipText: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.semibold,
+    textAlign: 'center',
   },
   retryButton: {
     flexDirection: 'row',

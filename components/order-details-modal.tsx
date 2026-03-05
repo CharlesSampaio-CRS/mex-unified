@@ -258,20 +258,19 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalSafeArea: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
   },
   modalContainer: {
     borderRadius: 20,
-    width: "90%",
-    maxHeight: "85%",
-    height: "85%",
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: "row",
@@ -388,9 +387,14 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
   },
   detailsGrid: {
-    gap: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 0,
+    rowGap: 14,
   },
   detailItem: {
+    width: '50%',
+    paddingRight: 8,
     gap: 4,
   },
   detailLabel: {

@@ -1,4 +1,4 @@
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable } from "react-native"
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, FlatList } from "react-native"
 import { useState, useMemo } from "react"
 import { useTheme } from "../contexts/ThemeContext"
 import { typography, fontWeights } from "../lib/typography"
@@ -90,12 +90,12 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.safeArea}>
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable style={styles.modalSafeArea} onPress={(e) => e.stopPropagation()}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             {/* Header */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.cardBorder }]}>
@@ -124,14 +124,15 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
               </View>
             </View>
 
-          {/* Category Filter Tabs */}
+          {/* Category Filter Tabs — horizontal carousel */}
           {notifications.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={[styles.categoryTabs, { borderBottomColor: colors.cardBorder }]}
-              contentContainerStyle={styles.categoryTabsContent}
-            >
+            <View style={[styles.categoryTabs, { borderBottomColor: colors.cardBorder }]}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryTabsContent}
+                keyboardShouldPersistTaps="handled"
+              >
               {NOTIFICATION_CATEGORIES.map((cat) => {
                 const count = categoryCounts[cat] || 0
                 if (cat !== 'all' && count === 0) return null
@@ -171,7 +172,8 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
                   </TouchableOpacity>
                 )
               })}
-            </ScrollView>
+              </ScrollView>
+            </View>
           )}
 
           {/* Notifications List */}
@@ -240,8 +242,8 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
             )}
           </ScrollView>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
 
       {/* Modal de Confirmação para Limpar Todas */}
       <ConfirmModal
@@ -266,20 +268,18 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  safeArea: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
+  modalSafeArea: {
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
   },
   modalContent: {
+    flex: 1,
     borderRadius: 20,
-    width: "90%",
-    maxHeight: "85%",
-    height: "85%",
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: "row",
@@ -403,10 +403,10 @@ const styles = StyleSheet.create({
   },
   // Category filter tabs
   categoryTabs: {
-    maxHeight: 48,
     borderBottomWidth: 0.5,
   },
   categoryTabsContent: {
+    flexDirection: 'row',
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
