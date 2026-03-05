@@ -24,6 +24,8 @@ import Svg, {
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useHeader } from '@/contexts/HeaderContext'
+import { useNotifications } from '@/contexts/NotificationsContext'
+import { NotificationsModal } from '@/components/NotificationsModal'
 import { typography, fontWeights } from '@/lib/typography'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -31,12 +33,23 @@ interface SimConfig {
   token: string
   entryPrice: number
   quantity: number
+  investedAmount: number
   takeProfitPercent: number
   stopLossEnabled: boolean
   stopLossPercent: number
   gradualSell: boolean
   gradualLots: number
   gradualTakePercent: number
+  timerGradualMin: number
+  timeExecutionMin: number
+  dcaEnabled: boolean
+  dcaBuyAmountUsd: number
+  dcaTriggerPercent: number
+  dcaMaxBuys: number
+  buyDipEnabled: boolean
+  buyDipPercent: number
+  buyDipAmountUsd: number
+  buyDipMaxBuys: number
   feePercent: number
   days: number
 }
@@ -45,7 +58,7 @@ interface SimEvent {
   day: number
   date: string
   price: number
-  type: 'take_profit' | 'gradual_sell' | 'stop_loss' | 'expired'
+  type: 'take_profit' | 'gradual_sell' | 'stop_loss' | 'expired' | 'dca_buy' | 'buy_dip'
   lotNumber?: number
   quantitySold: number
   revenue: number
@@ -82,19 +95,35 @@ interface PricePoint {
 
 // ─── Simulation Engine ───────────────────────────────────────────
 function runSimulation(prices: PricePoint[], config: SimConfig): SimResult {
-  const totalCost = config.entryPrice * config.quantity
-  let quantity = config.quantity
+  // Track blended position
+  let totalInvested = config.entryPrice * config.quantity
+  let totalQty = config.quantity
+  let totalCostWithBuys = totalInvested
+
   const events: SimEvent[] = []
-  const tpPrice = config.entryPrice * (1 + config.takeProfitPercent / 100)
+
+  // SL fixed at entry
   const slPrice = config.stopLossEnabled
     ? config.entryPrice * (1 - config.stopLossPercent / 100)
     : 0
 
+  // Gradual sell tracking
   const lotsCount = config.gradualSell ? Math.max(1, config.gradualLots) : 1
-  const lotPercent = 100 / lotsCount
   let gradualLotsFired = 0
-  // Primeiro lote dispara no TP configurado; lotes seguintes incrementam gradualTakePercent
-  let gradualNextTrigger = tpPrice
+  let gradualNextTrigger = config.entryPrice * (1 + config.takeProfitPercent / 100)
+
+  // DCA trigger prices (compound from entry)
+  const dcaBuyPrices = config.dcaEnabled
+    ? Array.from({ length: config.dcaMaxBuys }).map((_, i) =>
+        config.entryPrice * Math.pow(1 - config.dcaTriggerPercent / 100, i + 1))
+    : []
+  let dcaBuysFired = 0
+
+  // Buy Dip
+  const buyDipTriggerPrice = config.buyDipEnabled
+    ? config.entryPrice * (1 - config.buyDipPercent / 100)
+    : 0
+  let buyDipsFired = 0
 
   let highestPrice = config.entryPrice
   let lowestPrice = config.entryPrice
@@ -107,32 +136,62 @@ function runSimulation(prices: PricePoint[], config: SimConfig): SimResult {
     if (price > highestPrice) highestPrice = price
     if (price < lowestPrice) lowestPrice = price
 
-    if (quantity <= 0) break
+    if (totalQty <= 0) break
 
-    // Stop Loss tem prioridade sobre TP
+    // ── DCA buys ──
+    while (config.dcaEnabled && dcaBuysFired < config.dcaMaxBuys && price <= dcaBuyPrices[dcaBuysFired]) {
+      const buyAmt = config.dcaBuyAmountUsd
+      const buyQty = buyAmt / price
+      const fee = buyQty * price * (config.feePercent / 100)
+      totalInvested += buyAmt + fee
+      totalQty += buyQty
+      totalCostWithBuys += buyAmt + fee
+      events.push({ day, date: p.date, price, type: 'dca_buy', quantitySold: buyQty, revenue: -(buyAmt + fee), fee, pnl: 0, pnlPercent: 0 })
+      dcaBuysFired++
+      // Recalc gradual trigger from new avg
+      if (config.gradualSell && gradualLotsFired === 0) {
+        const newAvg = totalInvested / totalQty
+        gradualNextTrigger = newAvg * (1 + config.takeProfitPercent / 100)
+      }
+    }
+
+    // ── Buy Dip buys ──
+    if (config.buyDipEnabled && buyDipsFired < config.buyDipMaxBuys && price <= buyDipTriggerPrice) {
+      const buyAmt = config.buyDipAmountUsd
+      const buyQty = buyAmt / price
+      const fee = buyQty * price * (config.feePercent / 100)
+      totalInvested += buyAmt + fee
+      totalQty += buyQty
+      totalCostWithBuys += buyAmt + fee
+      events.push({ day, date: p.date, price, type: 'buy_dip', quantitySold: buyQty, revenue: -(buyAmt + fee), fee, pnl: 0, pnlPercent: 0 })
+      buyDipsFired++
+      if (config.gradualSell && gradualLotsFired === 0) {
+        const newAvg = totalInvested / totalQty
+        gradualNextTrigger = newAvg * (1 + config.takeProfitPercent / 100)
+      }
+    }
+
+    const avgEntryPrice = totalQty > 0 ? totalInvested / totalQty : config.entryPrice
+
+    // ── Stop Loss (priority) ──
     if (config.stopLossEnabled && price <= slPrice) {
-      const fee = quantity * price * (config.feePercent / 100)
-      const revenue = quantity * price - fee
-      const costBasis = quantity * config.entryPrice
+      const fee = totalQty * price * (config.feePercent / 100)
+      const revenue = totalQty * price - fee
+      const costBasis = totalQty * avgEntryPrice
       const pnl = revenue - costBasis
-      events.push({
-        day, date: p.date, price, type: 'stop_loss',
-        quantitySold: quantity, revenue, fee,
-        pnl, pnlPercent: (pnl / costBasis) * 100,
-      })
-      quantity = 0
-      finalStatus = 'stopped_out'
+      events.push({ day, date: p.date, price, type: 'stop_loss', quantitySold: totalQty, revenue, fee, pnl, pnlPercent: (pnl / costBasis) * 100 })
+      totalQty = 0; totalInvested = 0; finalStatus = 'stopped_out'
       break
     }
 
-    // Venda gradual: dispara um lote por candle que atinge o trigger
+    // ── Gradual sell ──
     if (config.gradualSell && gradualLotsFired < lotsCount) {
       if (price >= gradualNextTrigger) {
-        const lotQty = config.quantity * (lotPercent / 100)
-        const sellQty = Math.min(lotQty, quantity)
+        const lotQty = config.quantity * (1 / lotsCount)
+        const sellQty = Math.min(lotQty, totalQty)
         const fee = sellQty * price * (config.feePercent / 100)
         const revenue = sellQty * price - fee
-        const costBasis = sellQty * config.entryPrice
+        const costBasis = sellQty * avgEntryPrice
         const pnl = revenue - costBasis
         const isLastLot = gradualLotsFired + 1 === lotsCount
         events.push({
@@ -142,55 +201,47 @@ function runSimulation(prices: PricePoint[], config: SimConfig): SimResult {
           quantitySold: sellQty, revenue, fee,
           pnl, pnlPercent: (pnl / costBasis) * 100,
         })
-        quantity -= sellQty
+        totalInvested -= sellQty * avgEntryPrice
+        totalQty -= sellQty
         gradualLotsFired++
-        // Próximo lote: incrementa gradualTakePercent sobre o trigger atual
         gradualNextTrigger = gradualNextTrigger * (1 + config.gradualTakePercent / 100)
-        if (quantity <= 0.0001) { quantity = 0; finalStatus = 'completed'; break }
+        if (totalQty <= 0.0001) { totalQty = 0; finalStatus = 'completed'; break }
       }
     } else if (!config.gradualSell) {
-      // Venda total no TP
-      if (price >= tpPrice) {
-        const fee = quantity * price * (config.feePercent / 100)
-        const revenue = quantity * price - fee
-        const costBasis = quantity * config.entryPrice
+      const currentTp = avgEntryPrice * (1 + config.takeProfitPercent / 100)
+      if (price >= currentTp) {
+        const fee = totalQty * price * (config.feePercent / 100)
+        const revenue = totalQty * price - fee
+        const costBasis = totalQty * avgEntryPrice
         const pnl = revenue - costBasis
-        events.push({
-          day, date: p.date, price, type: 'take_profit',
-          quantitySold: quantity, revenue, fee,
-          pnl, pnlPercent: (pnl / costBasis) * 100,
-        })
-        quantity = 0
-        finalStatus = 'completed'
+        events.push({ day, date: p.date, price, type: 'take_profit', quantitySold: totalQty, revenue, fee, pnl, pnlPercent: (pnl / costBasis) * 100 })
+        totalQty = 0; totalInvested = 0; finalStatus = 'completed'
         break
       }
     }
   }
 
-  if (quantity > 0) finalStatus = finalStatus === 'monitoring' ? 'monitoring' : finalStatus
-
-  const totalRevenue = events.reduce((s, e) => s + e.revenue, 0)
+  const sellEvents = events.filter(e => e.type !== 'dca_buy' && e.type !== 'buy_dip')
+  const totalRevenue = sellEvents.reduce((s, e) => s + e.revenue, 0)
   const totalFees = events.reduce((s, e) => s + e.fee, 0)
 
-  // P&L REALIZADO: apenas das vendas que de fato ocorreram
-  const realizedPnl = events.reduce((s, e) => s + e.pnl, 0)
-  const soldCost = events.reduce((s, e) => s + e.quantitySold * config.entryPrice, 0)
+  const realizedPnl = sellEvents.reduce((s, e) => s + e.pnl, 0)
+  const soldCost = sellEvents.reduce((s, e) => s + e.quantitySold * (totalCostWithBuys / (config.quantity || 1)), 0)
   const realizedPnlPercent = soldCost > 0 ? (realizedPnl / soldCost) * 100 : 0
 
-  // P&L NÃO REALIZADO: mark-to-market da posição restante
   const lastPrice = prices[prices.length - 1]?.price ?? config.entryPrice
-  const remainingCost = quantity * config.entryPrice
-  const remainingValue = quantity * lastPrice
+  const avgFinalEntry = totalQty > 0 ? totalInvested / totalQty : config.entryPrice
+  const remainingCost = totalQty * avgFinalEntry
+  const remainingValue = totalQty * lastPrice
   const unrealizedPnl = remainingCost > 0 ? remainingValue - remainingCost : 0
   const unrealizedPnlPercent = remainingCost > 0 ? (unrealizedPnl / remainingCost) * 100 : 0
 
-  // TOTAL = realizado + não realizado
   const totalPnl = realizedPnl + unrealizedPnl
-  const totalPnlPercent = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0
+  const totalPnlPercent = totalCostWithBuys > 0 ? (totalPnl / totalCostWithBuys) * 100 : 0
 
   return {
     events,
-    remainingQuantity: quantity,
+    remainingQuantity: totalQty,
     totalRevenue,
     totalFees,
     realizedPnl,
@@ -199,7 +250,7 @@ function runSimulation(prices: PricePoint[], config: SimConfig): SimResult {
     unrealizedPnlPercent,
     totalPnl,
     totalPnlPercent,
-    totalCost,
+    totalCost: totalCostWithBuys,
     highestPrice,
     lowestPrice,
     finalStatus,
@@ -416,22 +467,41 @@ const COIN_IDS: Record<string, string> = {
 
 export function StrategySimulatorScreen({ navigation }: any) {
   const { colors } = useTheme()
+  const { unreadCount } = useNotifications()
+  const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
+
+  const onNotificationsPress = useCallback(() => {
+    setNotificationsModalVisible(true)
+  }, [])
 
   // Define o Header global para esta tela
   useHeader({
     title: "Simulador",
     subtitle: "Backtesting com dados reais",
+    onNotificationsPress,
+    unreadCount,
   })
 
   const [token, setToken] = useState('SOL/USDT')
   const [entryPrice, setEntryPrice] = useState('230')
   const [quantity, setQuantity] = useState('1')
+  const [investedAmount, setInvestedAmount] = useState('')
   const [takeProfitPercent, setTakeProfitPercent] = useState('5')
   const [stopLossEnabled, setStopLossEnabled] = useState(true)
   const [stopLossPercent, setStopLossPercent] = useState('3')
   const [gradualSell, setGradualSell] = useState(true)
   const [gradualLots, setGradualLots] = useState('3')
   const [gradualTakePercent, setGradualTakePercent] = useState('2')
+  const [timerGradualMin, setTimerGradualMin] = useState('15')
+  const [timeExecutionMin, setTimeExecutionMin] = useState('120')
+  const [dcaEnabled, setDcaEnabled] = useState(false)
+  const [dcaBuyAmountUsd, setDcaBuyAmountUsd] = useState('')
+  const [dcaTriggerPercent, setDcaTriggerPercent] = useState('5')
+  const [dcaMaxBuys, setDcaMaxBuys] = useState('3')
+  const [buyDipEnabled, setBuyDipEnabled] = useState(false)
+  const [buyDipPercent, setBuyDipPercent] = useState('5')
+  const [buyDipAmountUsd, setBuyDipAmountUsd] = useState('')
+  const [buyDipMaxBuys, setBuyDipMaxBuys] = useState('3')
   const [feePercent, setFeePercent] = useState('0.1')
   const [days, setDays] = useState('30')
 
@@ -445,15 +515,26 @@ export function StrategySimulatorScreen({ navigation }: any) {
     token,
     entryPrice: parseFloat(entryPrice) || 0,
     quantity: parseFloat(quantity) || 1,
+    investedAmount: parseFloat(investedAmount) || 0,
     takeProfitPercent: parseFloat(takeProfitPercent) || 5,
     stopLossEnabled,
     stopLossPercent: parseFloat(stopLossPercent) || 3,
     gradualSell,
     gradualLots: parseInt(gradualLots) || 3,
     gradualTakePercent: parseFloat(gradualTakePercent) || 2,
+    timerGradualMin: parseInt(timerGradualMin) || 15,
+    timeExecutionMin: parseInt(timeExecutionMin) || 120,
+    dcaEnabled,
+    dcaBuyAmountUsd: parseFloat(dcaBuyAmountUsd) || 0,
+    dcaTriggerPercent: parseFloat(dcaTriggerPercent) || 5,
+    dcaMaxBuys: parseInt(dcaMaxBuys) || 3,
+    buyDipEnabled,
+    buyDipPercent: parseFloat(buyDipPercent) || 5,
+    buyDipAmountUsd: parseFloat(buyDipAmountUsd) || 0,
+    buyDipMaxBuys: parseInt(buyDipMaxBuys) || 3,
     feePercent: parseFloat(feePercent) || 0.1,
     days: parseInt(days) || 30,
-  }), [token, entryPrice, quantity, takeProfitPercent, stopLossEnabled, stopLossPercent, gradualSell, gradualLots, gradualTakePercent, feePercent, days])
+  }), [token, entryPrice, quantity, investedAmount, takeProfitPercent, stopLossEnabled, stopLossPercent, gradualSell, gradualLots, gradualTakePercent, timerGradualMin, timeExecutionMin, dcaEnabled, dcaBuyAmountUsd, dcaTriggerPercent, dcaMaxBuys, buyDipEnabled, buyDipPercent, buyDipAmountUsd, buyDipMaxBuys, feePercent, days])
 
   // Computed
   const tpPrice = config.entryPrice * (1 + config.takeProfitPercent / 100)
@@ -520,6 +601,8 @@ export function StrategySimulatorScreen({ navigation }: any) {
     if (type === 'gradual_sell') return `📊 Venda Gradual - Lote ${lot}`
     if (type === 'stop_loss') return '🛑 Stop Loss'
     if (type === 'expired') return '⏰ Expirado'
+    if (type === 'dca_buy') return '📉 Compra DCA'
+    if (type === 'buy_dip') return '🛒 Auto Buy Dip'
     return type
   }
 
@@ -628,6 +711,17 @@ export function StrategySimulatorScreen({ navigation }: any) {
                   />
                 </View>
               </View>
+              <View>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Valor Investido (USD)</Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                  value={investedAmount}
+                  onChangeText={v => setInvestedAmount(v.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                  placeholder={config.entryPrice > 0 ? String((config.entryPrice * config.quantity).toFixed(2)) : 'Ex: 36.00'}
+                  placeholderTextColor={colors.textSecondary}
+                />
+              </View>
               {config.entryPrice > 0 && (
                 <View style={[styles.infoBox, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}30` }]}>
                   <Text style={[styles.infoText, { color: colors.primary }]}>
@@ -669,7 +763,10 @@ export function StrategySimulatorScreen({ navigation }: any) {
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>🛑 Stop Loss</Text>
                 <Switch
                   value={stopLossEnabled}
-                  onValueChange={setStopLossEnabled}
+                  onValueChange={v => {
+                    setStopLossEnabled(v)
+                    if (v && dcaEnabled) setDcaEnabled(false)
+                  }}
                   trackColor={{ true: '#ef4444', false: colors.border }}
                   thumbColor="#fff"
                 />
@@ -737,6 +834,31 @@ export function StrategySimulatorScreen({ navigation }: any) {
                       />
                     </View>
                   </View>
+                  <View style={styles.row}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.label, { color: colors.textSecondary }]}>Timer Gradual (min)</Text>
+                      <TextInput
+                        style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        value={timerGradualMin}
+                        onChangeText={v => setTimerGradualMin(v.replace(/[^0-9]/g, ''))}
+                        keyboardType="number-pad"
+                        placeholder="15"
+                        placeholderTextColor={colors.textSecondary}
+                      />
+                    </View>
+                    <View style={{ width: 12 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.label, { color: colors.textSecondary }]}>Timeout Execução (min)</Text>
+                      <TextInput
+                        style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        value={timeExecutionMin}
+                        onChangeText={v => setTimeExecutionMin(v.replace(/[^0-9]/g, ''))}
+                        keyboardType="number-pad"
+                        placeholder="120"
+                        placeholderTextColor={colors.textSecondary}
+                      />
+                    </View>
+                  </View>
                   {/* Preview dos lotes */}
                   {config.entryPrice > 0 && (
                     <View style={{ gap: 4 }}>
@@ -761,6 +883,142 @@ export function StrategySimulatorScreen({ navigation }: any) {
               )}
             </View>
 
+            {/* DCA */}
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: dcaEnabled ? '#3b82f640' : colors.cardBorder }]}>
+              <View style={styles.rowBetween}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>📉 DCA (Compra na Queda)</Text>
+                  <Text style={{ fontSize: typography.caption, color: colors.textSecondary, marginTop: 2 }}>Compra mais quando o preço cai, baixando o preço médio</Text>
+                </View>
+                <Switch
+                  value={dcaEnabled}
+                  onValueChange={v => {
+                    setDcaEnabled(v)
+                    if (v && stopLossEnabled) setStopLossEnabled(false)
+                  }}
+                  trackColor={{ true: '#3b82f6', false: colors.border }}
+                  thumbColor="#fff"
+                />
+              </View>
+              {dcaEnabled && (
+                <View style={{ gap: 12 }}>
+                  <View style={styles.row}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.label, { color: colors.textSecondary }]}>Valor por compra (USD)</Text>
+                      <TextInput
+                        style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        value={dcaBuyAmountUsd}
+                        onChangeText={v => setDcaBuyAmountUsd(v.replace(/[^0-9.]/g, ''))}
+                        keyboardType="decimal-pad"
+                        placeholder="36.00"
+                        placeholderTextColor={colors.textSecondary}
+                      />
+                    </View>
+                    <View style={{ width: 12 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.label, { color: colors.textSecondary }]}>Queda para acionar (%)</Text>
+                      <TextInput
+                        style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        value={dcaTriggerPercent}
+                        onChangeText={v => setDcaTriggerPercent(v.replace(/[^0-9.]/g, ''))}
+                        keyboardType="decimal-pad"
+                        placeholder="5.0"
+                        placeholderTextColor={colors.textSecondary}
+                      />
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Máx. de compras DCA</Text>
+                    <TextInput
+                      style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                      value={dcaMaxBuys}
+                      onChangeText={v => setDcaMaxBuys(v.replace(/[^0-9]/g, ''))}
+                      keyboardType="number-pad"
+                      placeholder="3"
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  </View>
+                  {config.entryPrice > 0 && config.dcaBuyAmountUsd > 0 && (
+                    <View style={{ gap: 4 }}>
+                      {Array.from({ length: Math.min(config.dcaMaxBuys, 5) }).map((_, i) => {
+                        const dcaPrice = config.entryPrice * Math.pow(1 - config.dcaTriggerPercent / 100, i + 1)
+                        const pct = ((dcaPrice / config.entryPrice) - 1) * 100
+                        return (
+                          <View key={i} style={styles.lotRow}>
+                            <Text style={[styles.lotLabel, { color: colors.textSecondary }]}>DCA #{i + 1}</Text>
+                            <Text style={[styles.lotPrice, { color: '#3b82f6' }]}>{formatUSD(dcaPrice)} ({pct.toFixed(1)}%)</Text>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Auto Buy Dip */}
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: buyDipEnabled ? '#05966940' : colors.cardBorder }]}>
+              <View style={styles.rowBetween}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>🛒 Auto Buy Dip</Text>
+                  <Text style={{ fontSize: typography.caption, color: colors.textSecondary, marginTop: 2 }}>Compra automaticamente quando o preço cair X% do preço base</Text>
+                </View>
+                <Switch
+                  value={buyDipEnabled}
+                  onValueChange={setBuyDipEnabled}
+                  trackColor={{ true: '#059669', false: colors.border }}
+                  thumbColor="#fff"
+                />
+              </View>
+              {buyDipEnabled && (
+                <View style={{ gap: 12 }}>
+                  <View style={styles.row}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.label, { color: colors.textSecondary }]}>Queda para comprar (%)</Text>
+                      <TextInput
+                        style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        value={buyDipPercent}
+                        onChangeText={v => setBuyDipPercent(v.replace(/[^0-9.]/g, ''))}
+                        keyboardType="decimal-pad"
+                        placeholder="5.0"
+                        placeholderTextColor={colors.textSecondary}
+                      />
+                    </View>
+                    <View style={{ width: 12 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.label, { color: colors.textSecondary }]}>Valor por compra (USD)</Text>
+                      <TextInput
+                        style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                        value={buyDipAmountUsd}
+                        onChangeText={v => setBuyDipAmountUsd(v.replace(/[^0-9.]/g, ''))}
+                        keyboardType="decimal-pad"
+                        placeholder="50.00"
+                        placeholderTextColor={colors.textSecondary}
+                      />
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Máx. de compras</Text>
+                    <TextInput
+                      style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                      value={buyDipMaxBuys}
+                      onChangeText={v => setBuyDipMaxBuys(v.replace(/[^0-9]/g, ''))}
+                      keyboardType="number-pad"
+                      placeholder="3"
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  </View>
+                  {config.entryPrice > 0 && (
+                    <View style={[styles.infoBox, { backgroundColor: '#05966910', borderColor: '#05966930' }]}>
+                      <Text style={{ fontSize: typography.caption, color: '#059669', fontWeight: fontWeights.medium }}>
+                        Trigger: {formatUSD(config.entryPrice * (1 - config.buyDipPercent / 100))} (-{config.buyDipPercent}%)
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
             {/* Configurações Gerais */}
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>⚙️ Configurações</Text>
@@ -776,7 +1034,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
                 />
               </View>
               <View>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Período</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Período (backtesting)</Text>
                 <View style={[styles.chipRow, { marginTop: 0 }]}>
                   {['7', '15', '30', '60', '90'].map(d => (
                     <TouchableOpacity
@@ -953,19 +1211,16 @@ export function StrategySimulatorScreen({ navigation }: any) {
                     </View>
                   ) : (
                     <View style={{ gap: 10 }}>
-                      {result.events.map((ev, idx) => (
-                        <View
-                          key={idx}
-                          style={[
-                            styles.eventCard,
-                            {
-                              borderColor: ev.type === 'stop_loss' ? '#ef444440' : '#10b98140',
-                              backgroundColor: ev.type === 'stop_loss' ? '#ef444408' : '#10b98108',
-                            },
-                          ]}
-                        >
+                      {result.events.map((ev, idx) => {
+                          const isBuy = ev.type === 'dca_buy' || ev.type === 'buy_dip'
+                          const evColor = ev.type === 'stop_loss' ? '#ef4444' : isBuy ? '#3b82f6' : '#10b981'
+                          return (
+                          <View
+                            key={idx}
+                            style={[styles.eventCard, { borderColor: evColor + '40', backgroundColor: evColor + '08' }]}
+                          >
                           <View style={styles.rowBetween}>
-                            <Text style={[styles.eventType, { color: ev.type === 'stop_loss' ? '#ef4444' : '#10b981', flexShrink: 1 }]} numberOfLines={1}>
+                            <Text style={[styles.eventType, { color: evColor, flexShrink: 1 }]} numberOfLines={1}>
                               {eventTypeLabel(ev.type, ev.lotNumber)}
                             </Text>
                             <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
@@ -981,22 +1236,32 @@ export function StrategySimulatorScreen({ navigation }: any) {
                               <Text style={[styles.eventStatLabel, { color: colors.textSecondary }]}>Qtd</Text>
                               <Text style={[styles.eventStatValue, { color: colors.text }]}>{ev.quantitySold.toFixed(4)}</Text>
                             </View>
-                            <View style={styles.eventStat}>
-                              <Text style={[styles.eventStatLabel, { color: colors.textSecondary }]}>Receita</Text>
-                              <Text style={[styles.eventStatValue, { color: colors.text }]}>{formatUSD(ev.revenue)}</Text>
-                            </View>
-                            <View style={styles.eventStat}>
-                              <Text style={[styles.eventStatLabel, { color: colors.textSecondary }]}>P&L</Text>
-                              <Text style={[styles.eventStatValue, { color: ev.pnl >= 0 ? '#10b981' : '#ef4444' }]}>
-                                {ev.pnl >= 0 ? '+' : ''}{formatUSD(ev.pnl)}
-                              </Text>
-                              <Text style={[styles.eventStatLabel, { color: ev.pnl >= 0 ? '#10b981' : '#ef4444' }]}>
-                                {formatPct(ev.pnlPercent)}
-                              </Text>
-                            </View>
+                            {isBuy ? (
+                              <View style={styles.eventStat}>
+                                <Text style={[styles.eventStatLabel, { color: colors.textSecondary }]}>Custo</Text>
+                                <Text style={[styles.eventStatValue, { color: '#3b82f6' }]}>{formatUSD(-ev.revenue)}</Text>
+                              </View>
+                            ) : (
+                              <>
+                                <View style={styles.eventStat}>
+                                  <Text style={[styles.eventStatLabel, { color: colors.textSecondary }]}>Receita</Text>
+                                  <Text style={[styles.eventStatValue, { color: colors.text }]}>{formatUSD(ev.revenue)}</Text>
+                                </View>
+                                <View style={styles.eventStat}>
+                                  <Text style={[styles.eventStatLabel, { color: colors.textSecondary }]}>P&L</Text>
+                                  <Text style={[styles.eventStatValue, { color: ev.pnl >= 0 ? '#10b981' : '#ef4444' }]}>
+                                    {ev.pnl >= 0 ? '+' : ''}{formatUSD(ev.pnl)}
+                                  </Text>
+                                  <Text style={[styles.eventStatLabel, { color: ev.pnl >= 0 ? '#10b981' : '#ef4444' }]}>
+                                    {formatPct(ev.pnlPercent)}
+                                  </Text>
+                                </View>
+                              </>
+                            )}
                           </View>
                         </View>
-                      ))}
+                          )
+                        })}
                     </View>
                   )}
                 </View>
@@ -1020,13 +1285,24 @@ export function StrategySimulatorScreen({ navigation }: any) {
                       simulatorPreset: {
                         token,
                         basePrice: entryPrice,
-                        investedAmount: String(totalCost),
+                        investedAmount: investedAmount || String(config.entryPrice * config.quantity),
                         takeProfitPercent,
                         stopLossEnabled,
                         stopLossPercent,
                         gradualSell,
+                        gradualLots,
                         gradualTakePercent,
+                        timerGradualMin,
+                        timeExecutionMin,
                         feePercent,
+                        dcaEnabled,
+                        dcaBuyAmountUsd,
+                        dcaTriggerPercent,
+                        dcaMaxBuys,
+                        buyDipEnabled,
+                        buyDipPercent,
+                        buyDipAmountUsd,
+                        buyDipMaxBuys,
                       },
                     })
                   }}
@@ -1040,6 +1316,10 @@ export function StrategySimulatorScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+      <NotificationsModal
+        visible={notificationsModalVisible}
+        onClose={() => setNotificationsModalVisible(false)}
+      />
     </View>
   )
 }

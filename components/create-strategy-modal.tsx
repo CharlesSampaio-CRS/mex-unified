@@ -43,7 +43,17 @@ interface SimulatorPreset {
   gradualSell?: boolean
   gradualLots?: string
   gradualTakePercent?: string
+  timerGradualMin?: string
+  timeExecutionMin?: string
   feePercent?: string
+  dcaEnabled?: boolean
+  dcaBuyAmountUsd?: string
+  dcaTriggerPercent?: string
+  dcaMaxBuys?: string
+  buyDipEnabled?: boolean
+  buyDipPercent?: string
+  buyDipAmountUsd?: string
+  buyDipMaxBuys?: string
 }
 
 interface CreateStrategyModalProps {
@@ -123,7 +133,17 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
         if (simulatorPreset.stopLossPercent) setStopLossPercent(simulatorPreset.stopLossPercent)
         if (simulatorPreset.gradualSell !== undefined) setGradualSell(simulatorPreset.gradualSell)
         if (simulatorPreset.gradualTakePercent) setGradualTakePercent(simulatorPreset.gradualTakePercent)
+        if (simulatorPreset.timerGradualMin) setTimerGradualMin(simulatorPreset.timerGradualMin)
+        if (simulatorPreset.timeExecutionMin) setTimeExecutionMin(simulatorPreset.timeExecutionMin)
         if (simulatorPreset.feePercent) setFeePercent(simulatorPreset.feePercent)
+        if (simulatorPreset.dcaEnabled !== undefined) setDcaEnabled(simulatorPreset.dcaEnabled)
+        if (simulatorPreset.dcaBuyAmountUsd) setDcaBuyAmountUsd(simulatorPreset.dcaBuyAmountUsd)
+        if (simulatorPreset.dcaTriggerPercent) setDcaTriggerPercent(simulatorPreset.dcaTriggerPercent)
+        if (simulatorPreset.dcaMaxBuys) setDcaMaxBuys(simulatorPreset.dcaMaxBuys)
+        if (simulatorPreset.buyDipEnabled !== undefined) setBuyDipEnabled(simulatorPreset.buyDipEnabled)
+        if (simulatorPreset.buyDipPercent) setBuyDipPercent(simulatorPreset.buyDipPercent)
+        if (simulatorPreset.buyDipAmountUsd) setBuyDipAmountUsd(simulatorPreset.buyDipAmountUsd)
+        if (simulatorPreset.buyDipMaxBuys) setBuyDipMaxBuys(simulatorPreset.buyDipMaxBuys)
       }
     } else {
       setStep(1)
