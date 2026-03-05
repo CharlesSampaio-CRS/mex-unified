@@ -6,8 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Platform,
-ActivityIndicator } from "react-native"
+  Pressable,
+  ActivityIndicator } from "react-native"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useAuth } from "@/contexts/AuthContext"
@@ -276,8 +276,9 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable style={styles.modalSafeArea} onPress={(e) => e.stopPropagation()}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View style={styles.headerLeft}>
@@ -543,23 +544,28 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
               </ScrollView>
             ) : null}
           </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalSafeArea: {
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
+  },
   modalContainer: {
     borderRadius: 20,
-    width: '92%',
-    height: '88%',
-    maxHeight: '88%',
+    width: '100%',
+    height: '100%',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -569,9 +575,10 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   headerLeft: {
