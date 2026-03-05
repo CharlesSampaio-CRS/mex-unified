@@ -30,11 +30,9 @@ export function StrategyScreen({ navigation, route }: any) {
   const { unreadCount, addNotification } = useNotifications()
   const { 
     strategies,
-    archivedStrategies,
     loading,
     refreshing,
     loadStrategies,
-    loadHistory,
     toggleActive,
     deleteStrategy: deleteStrategyFromBackend,
     activeStrategies,
@@ -45,7 +43,7 @@ export function StrategyScreen({ navigation, route }: any) {
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false)
   const [search, setSearch] = useState('')
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'paused' | 'archived'>('all')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'paused'>('all')
 
   // Preset do simulador para criar estratégia pré-preenchida
   const [simulatorPreset, setSimulatorPreset] = useState<any>(undefined)
@@ -244,20 +242,6 @@ export function StrategyScreen({ navigation, route }: any) {
 
   // Filtered strategies based on search + filter
   const filteredStrategies = useMemo(() => {
-    // Se filtro é "archived", usa lista de arquivadas
-    if (activeFilter === 'archived') {
-      let result = archivedStrategies;
-      if (search.trim()) {
-        const q = search.toLowerCase().trim()
-        result = result.filter(s =>
-          s.name.toLowerCase().includes(q) ||
-          s.symbol.toLowerCase().includes(q) ||
-          s.exchange_name.toLowerCase().includes(q)
-        )
-      }
-      return result;
-    }
-
     let result = strategies
 
     // Filter by active/paused
@@ -279,20 +263,16 @@ export function StrategyScreen({ navigation, route }: any) {
     }
 
     return result
-  }, [strategies, archivedStrategies, activeFilter, search])
+  }, [strategies, activeFilter, search])
 
   // 🔄 Refresh - atualiza estratégias do MongoDB
   const handleRefresh = useCallback(async () => {
     try {
-      if (activeFilter === 'archived') {
-        await loadHistory()
-      } else {
-        await loadStrategies()
-      }
+      await loadStrategies()
     } catch (error) {
       console.error('❌ [StrategyScreen] Erro ao atualizar:', error)
     }
-  }, [loadStrategies, loadHistory, activeFilter])
+  }, [loadStrategies])
 
   // Handlers para o Header
   const onNotificationsPress = useCallback(() => {
@@ -394,27 +374,7 @@ export function StrategyScreen({ navigation, route }: any) {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.typeFilterChip,
-              {
-                backgroundColor: activeFilter === 'archived' ? '#9ca3af' : colors.surface,
-                borderColor: activeFilter === 'archived' ? '#9ca3af' : colors.border,
-              }
-            ]}
-            onPress={() => {
-              setActiveFilter('archived')
-              loadHistory()
-            }}
-          >
-            <Ionicons name="archive-outline" size={12} color={activeFilter === 'archived' ? colors.background : colors.text} style={{ marginRight: 2 }} />
-            <Text style={[
-              styles.typeFilterText,
-              { color: activeFilter === 'archived' ? colors.background : colors.text }
-            ]}>
-              Histórico
-            </Text>
-          </TouchableOpacity>
+
         </View>
 
         {/* Results Count + New Button */}
@@ -555,40 +515,38 @@ export function StrategyScreen({ navigation, route }: any) {
                         </Text>
                       </TouchableOpacity>
 
-                      {activeFilter !== 'archived' && (
-                        <>
-                          <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
+                      <>
+                        <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
 
-                          <TouchableOpacity
-                            style={styles.cardActionButton}
-                            onPress={() => toggleStrategyHandler(strategy.id)}
-                          >
-                            <Ionicons
-                              name={strategy.is_active ? 'pause-outline' : 'play-outline'}
-                              size={14}
-                              color={strategy.is_active ? '#f59e0b' : colors.success}
-                            />
-                            <Text style={[
-                              styles.cardActionText,
-                              { color: strategy.is_active ? '#f59e0b' : colors.success }
-                            ]}>
-                              {strategy.is_active ? 'Pausar' : 'Ativar'}
-                            </Text>
-                          </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.cardActionButton}
+                          onPress={() => toggleStrategyHandler(strategy.id)}
+                        >
+                          <Ionicons
+                            name={strategy.is_active ? 'pause-outline' : 'play-outline'}
+                            size={14}
+                            color={strategy.is_active ? '#f59e0b' : colors.success}
+                          />
+                          <Text style={[
+                            styles.cardActionText,
+                            { color: strategy.is_active ? '#f59e0b' : colors.success }
+                          ]}>
+                            {strategy.is_active ? 'Pausar' : 'Ativar'}
+                          </Text>
+                        </TouchableOpacity>
 
-                          <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
+                        <View style={[styles.cardActionDivider, { backgroundColor: colors.border }]} />
 
-                          <TouchableOpacity
-                            style={styles.cardActionButton}
-                            onPress={() => deleteStrategyHandler(strategy.id, strategy.name)}
-                          >
-                            <Ionicons name="archive-outline" size={14} color={colors.danger} />
-                            <Text style={[styles.cardActionText, { color: colors.danger }]}>
-                              Arquivar
-                            </Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
+                        <TouchableOpacity
+                          style={styles.cardActionButton}
+                          onPress={() => deleteStrategyHandler(strategy.id, strategy.name)}
+                        >
+                          <Ionicons name="archive-outline" size={14} color={colors.danger} />
+                          <Text style={[styles.cardActionText, { color: colors.danger }]}>
+                            Arquivar
+                          </Text>
+                        </TouchableOpacity>
+                      </>
                     </View>
                   </TouchableOpacity>
                 </View>

@@ -526,7 +526,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
   const statusLabel = (s: string) => {
     if (s === 'completed') return { label: '✅ Concluída', color: '#10b981' }
     if (s === 'stopped_out') return { label: '🛑 Stop Loss', color: '#ef4444' }
-    if (s === 'monitoring') return { label: '👁 Em Monitoramento', color: '#3b82f6' }
+    if (s === 'monitoring') return { label: 'Em Monitoramento', color: '#3b82f6' }
     return { label: s, color: colors.textSecondary }
   }
 
