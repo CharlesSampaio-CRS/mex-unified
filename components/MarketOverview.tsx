@@ -80,7 +80,8 @@ export const MarketOverview: React.FC = () => {
           change24h: 0,
           volume24h: 0,
         };
-      }).filter(t => t.price > 0); // Remove tokens sem dados
+      }).filter(t => t.price > 0) // Remove tokens sem dados
+        .sort((a, b) => b.change24h - a.change24h); // Ordenar da maior para menor variação
 
       setTokens(tokensData);
       setLastUpdateTime(new Date());
