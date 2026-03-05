@@ -139,7 +139,7 @@ export function AssetsScreen({ navigation }: any) {
     return allAssetsSections
       .map(section => {
         // Filter by exchange
-        if (selectedExchange !== 'All' && section.exchangeId !== selectedExchange) {
+        if (selectedExchange !== 'All' && selectedExchange !== 'favorites' && section.exchangeId !== selectedExchange) {
           return null;
         }
 
@@ -147,6 +147,9 @@ export function AssetsScreen({ navigation }: any) {
         const filteredItems = section.items.filter(item => {
           // Hide zero balance
           if (hideZero && item.valueUSD === 0) return false;
+
+          // Favorites filter
+          if (selectedExchange === 'favorites' && !isWatching(item.symbol)) return false;
           
           // Search filter
           if (search) {
@@ -166,7 +169,7 @@ export function AssetsScreen({ navigation }: any) {
         };
       })
       .filter(Boolean) as typeof allAssetsSections;
-  }, [allAssetsSections, search, hideZero, selectedExchange]);
+  }, [allAssetsSections, search, hideZero, selectedExchange, isWatching]);
 
   // Get unique exchanges for filter
   const availableExchanges = useMemo(() => {
@@ -263,6 +266,23 @@ export function AssetsScreen({ navigation }: any) {
                 { color: selectedExchange === 'All' ? '#fff' : colors.textSecondary }
               ]}>
                 Todas
+              </Text>
+            </TouchableOpacity>
+            {/* Favoritos chip */}
+            <TouchableOpacity
+              style={[
+                styles.exchangeFilterChip,
+                { 
+                  backgroundColor: selectedExchange === 'favorites' ? '#F59E0B' : colors.background,
+                }
+              ]}
+              onPress={() => setSelectedExchange('favorites')}
+            >
+              <Text style={[
+                styles.exchangeFilterText,
+                { color: selectedExchange === 'favorites' ? '#fff' : colors.textSecondary }
+              ]}>
+                ⭐ Favoritos
               </Text>
             </TouchableOpacity>
             {availableExchanges.map(exchange => (
@@ -363,72 +383,59 @@ export function AssetsScreen({ navigation }: any) {
                   </Text>
                 </View>
 
-                {/* Asset Cards - Compact */}
+                {/* Asset Cards */}
                 {section.items.map((item, itemIndex) => (
                   <TouchableOpacity
                     key={item.id}
-                    style={[
-                      styles.assetCard,
-                      { 
-                        backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                      }
-                    ]}
+                    style={[styles.assetCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
                     activeOpacity={0.7}
                     onPress={() => {
-                      setSelectedTokenForDetails({
-                        exchangeId: item.exchangeId,
-                        symbol: item.symbol
-                      });
+                      setSelectedTokenForDetails({ exchangeId: item.exchangeId, symbol: item.symbol });
                       setTokenModalVisible(true);
                     }}
                   >
-                    {/* Linha única compacta - mesmo padrão Orders */}
+                    {/* Linha principal: Logo + Info + Preço */}
                     <View style={styles.cardRow}>
-                      {/* Lado esquerdo: Ícone + Info */}
-                      <View style={styles.cardLeft}>
-                        <View style={[styles.typeIcon, { backgroundColor: colors.primaryLight }]}>
-                          <Text style={[styles.typeIconText, { color: colors.primary }]}>
-                            {String((item.symbol || '?').charAt(0))}
-                          </Text>
-                        </View>
-                        <View style={styles.cardInfo}>
-                          <View style={styles.cardInfoTop}>
-                            <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
-                              {String(item.symbol || 'Unknown')}
-                            </Text>
-                            {item.variation24h !== null && item.variation24h !== undefined && !item.isStablecoin && (
-                              <View style={[
-                                styles.sideBadge,
-                                { backgroundColor: item.variation24h >= 0 ? colors.successLight : colors.dangerLight }
-                              ]}>
-                                <Text style={[
-                                  styles.sideBadgeText,
-                                  { color: item.variation24h >= 0 ? colors.success : colors.danger }
-                                ]}>
-                                  {String(item.variation24h >= 0 ? '▲' : '▼')}{String(Math.abs(item.variation24h || 0).toFixed(1))}%
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
-                            {String(hideValue(`${apiService.formatTokenAmount(String(item.amount || 0))} @ $${apiService.formatUSD(item.priceUSD || 0)}`))}
-                          </Text>
-                        </View>
+                      {/* Logo / Ícone */}
+                      <View style={[styles.tokenIcon, { backgroundColor: `${colors.primary}18` }]}>
+                        <Text style={[styles.tokenIconText, { color: colors.primary }]}>
+                          {String((item.symbol || '?').charAt(0))}
+                        </Text>
                       </View>
 
-                      {/* Lado direito: Valor + Amount */}
+                      {/* Nome + Exchange */}
+                      <View style={styles.cardInfo}>
+                        <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
+                          {String(item.symbol || 'Unknown')}
+                        </Text>
+                        <Text style={[styles.cardSubtext, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {String(hideValue(apiService.formatTokenAmount(String(item.amount || 0))))}
+                          {' · '}
+                          {String(capitalizeExchangeName(item.exchangeName))}
+                        </Text>
+                      </View>
+
+                      {/* Preço + Variação */}
                       <View style={styles.cardRight}>
                         <Text style={[styles.assetValue, { color: colors.text }]} numberOfLines={1}>
                           {String(hideValue(`$${apiService.formatUSD(item.valueUSD || 0)}`))}
                         </Text>
-                        <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
-                          {String(hideValue(apiService.formatTokenAmount(String(item.amount || 0))))}
-                        </Text>
+                        {item.variation24h !== null && item.variation24h !== undefined && !item.isStablecoin ? (
+                          <Text style={[
+                            styles.variationText,
+                            { color: item.variation24h >= 0 ? colors.success : colors.danger }
+                          ]}>
+                            {item.variation24h >= 0 ? '+' : ''}{String(item.variation24h.toFixed(2))}%
+                          </Text>
+                        ) : (
+                          <Text style={[styles.cardSubtext, { color: colors.textTertiary }]}>
+                            {String(hideValue(`@ $${apiService.formatUSD(item.priceUSD || 0)}`))}
+                          </Text>
+                        )}
                       </View>
                     </View>
 
-                    {/* Barra de ações: Favorito | Alerta | Negociar */}
+                    {/* Action Bar: Favorito | Alerta | Negociar */}
                     <View style={[styles.actionBar, { borderTopColor: colors.border }]}>
                       {/* Favorito */}
                       <TouchableOpacity
@@ -441,27 +448,18 @@ export function AssetsScreen({ navigation }: any) {
                           size={15}
                           color={isWatching(item.symbol) ? '#F59E0B' : colors.textSecondary}
                         />
-                        <Text style={[
-                          styles.actionButtonText,
-                          { color: isWatching(item.symbol) ? '#F59E0B' : colors.textSecondary }
-                        ]}>
+                        <Text style={[styles.actionButtonText, { color: isWatching(item.symbol) ? '#F59E0B' : colors.textSecondary }]}>
                           {isWatching(item.symbol) ? 'Favorito' : 'Favoritar'}
                         </Text>
                       </TouchableOpacity>
 
-                      {/* Separador */}
                       <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
 
                       {/* Alerta */}
                       <TouchableOpacity
                         style={styles.actionButton}
                         onPress={() => {
-                          setSelectedTokenForAlert({
-                            symbol: item.symbol,
-                            price: item.priceUSD,
-                            exchangeId: item.exchangeId,
-                            exchangeName: item.exchangeName,
-                          });
+                          setSelectedTokenForAlert({ symbol: item.symbol, price: item.priceUSD, exchangeId: item.exchangeId, exchangeName: item.exchangeName });
                           setAlertModalVisible(true);
                         }}
                         activeOpacity={0.6}
@@ -471,38 +469,24 @@ export function AssetsScreen({ navigation }: any) {
                           size={15}
                           color={getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? colors.primary : colors.textSecondary}
                         />
-                        <Text style={[
-                          styles.actionButtonText,
-                          { color: getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? colors.primary : colors.textSecondary }
-                        ]}>
+                        <Text style={[styles.actionButtonText, { color: getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? colors.primary : colors.textSecondary }]}>
                           Alerta
                         </Text>
                       </TouchableOpacity>
 
-                      {/* Separador */}
                       <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
 
                       {/* Negociar */}
                       <TouchableOpacity
                         style={styles.actionButton}
                         onPress={() => {
-                          setSelectedTrade({
-                            exchangeId: item.exchangeId,
-                            exchangeName: item.exchangeName,
-                            symbol: item.symbol,
-                            currentPrice: item.priceUSD,
-                            balance: {
-                              token: item.free,
-                              usdt: item.usdtBalance,
-                              brl: item.brlBalance
-                            }
-                          });
+                          setSelectedTrade({ exchangeId: item.exchangeId, exchangeName: item.exchangeName, symbol: item.symbol, currentPrice: item.priceUSD, balance: { token: item.free, usdt: item.usdtBalance, brl: item.brlBalance } });
                           setTradeModalVisible(true);
                         }}
                         activeOpacity={0.6}
                       >
                         <Ionicons name="swap-horizontal-outline" size={15} color={colors.primary} />
-                        <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+                        <Text style={[styles.actionButtonText, { color: colors.primary, fontWeight: fontWeights.bold }]}>
                           Negociar
                         </Text>
                       </TouchableOpacity>
@@ -710,52 +694,26 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 14,
     gap: 12,
   },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-    minWidth: 0,
-  },
-  typeIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  tokenIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  typeIconText: {
-    fontSize: typography.caption,
+  tokenIconText: {
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
   },
   cardInfo: {
     flex: 1,
     minWidth: 0,
     gap: 2,
-  },
-  cardInfoTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  assetSymbol: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.bold,
-    flexShrink: 1,
-  },
-  sideBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-  },
-  sideBadgeText: {
-    fontSize: typography.badge,
-    fontWeight: fontWeights.bold,
   },
   cardSubtext: {
     fontSize: typography.micro,
@@ -764,21 +722,18 @@ const styles = StyleSheet.create({
   cardRight: {
     alignItems: 'flex-end',
     flexShrink: 0,
-    gap: 2,
+    gap: 3,
+  },
+  assetSymbol: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.bold,
+    flexShrink: 1,
   },
   assetValue: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
   },
-  tradeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    gap: 5,
-    borderTopWidth: 1,
-  },
-  tradeButtonText: {
+  variationText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
   },
