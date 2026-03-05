@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image, ActivityIndicator, SafeAreaView } from 'react-native'
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Pressable, Image, ActivityIndicator } from 'react-native'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -1164,12 +1164,11 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <SafeAreaView style={styles.safeArea}>
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -1219,7 +1218,6 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
             {step === 'order' && renderOrderStep()}
           </ScrollView>
         </View>
-        </SafeAreaView>
       </View>
 
       {/* Confirm Modal */}
@@ -1253,12 +1251,23 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   safeArea: {
     flex: 1,
   },
   container: {
-    flex: 1,
+    borderRadius: 20,
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   header: {
     flexDirection: 'row',
@@ -1483,14 +1492,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pairChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    width: '31%',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pairChipText: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.semibold,
+    textAlign: 'center',
   },
   retryButton: {
     flexDirection: 'row',

@@ -1639,7 +1639,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   confirmContainer: {
-    borderRadius: 16,
+    borderRadius: 20,
     width: "100%",
     maxWidth: 400,
     elevation: 5,

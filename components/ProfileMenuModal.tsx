@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   menu: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

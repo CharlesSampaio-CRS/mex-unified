@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%', // Limita altura máxima
   },
   searchBox: {
-    borderRadius: 16,
+    borderRadius: 20,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,

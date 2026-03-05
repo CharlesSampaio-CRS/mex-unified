@@ -9,7 +9,6 @@ import {
   ScrollView,
   FlatList,
   Alert,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
@@ -845,9 +844,8 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
   )
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <SafeAreaView style={styles.safeArea}>
           <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
             <View style={[styles.header, { borderBottomColor: colors.border }]}>
               <Text style={[styles.title, { color: colors.text }]}>{t("strategy.newStrategy")}</Text>
@@ -907,16 +905,15 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
               </View>
             )}
           </View>
-        </SafeAreaView>
       </KeyboardAvoidingView>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: 'center', alignItems: 'center' },
   safeArea: { flex: 1 },
-  modalContainer: { flex: 1 },
+  modalContainer: { borderRadius: 20, width: '90%', maxHeight: '85%', height: '85%', overflow: 'hidden' },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1 },
   title: { fontSize: typography.h2, fontWeight: fontWeights.medium },
   closeButton: { padding: 4 },

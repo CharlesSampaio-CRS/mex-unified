@@ -90,12 +90,12 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.safeArea}>
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable style={styles.modalSafeArea} onPress={(e) => e.stopPropagation()}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             {/* Header */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.cardBorder }]}>
@@ -126,12 +126,8 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
 
           {/* Category Filter Tabs */}
           {notifications.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={[styles.categoryTabs, { borderBottomColor: colors.cardBorder }]}
-              contentContainerStyle={styles.categoryTabsContent}
-            >
+            <View style={[styles.categoryTabs, { borderBottomColor: colors.cardBorder }]}>
+              <View style={styles.categoryTabsContent}>
               {NOTIFICATION_CATEGORIES.map((cat) => {
                 const count = categoryCounts[cat] || 0
                 if (cat !== 'all' && count === 0) return null
@@ -171,7 +167,8 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
                   </TouchableOpacity>
                 )
               })}
-            </ScrollView>
+              </View>
+            </View>
           )}
 
           {/* Notifications List */}
@@ -240,8 +237,8 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
             )}
           </ScrollView>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
 
       {/* Modal de Confirmação para Limpar Todas */}
       <ConfirmModal
@@ -266,12 +263,18 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  safeArea: {
-    flex: 1,
+  modalSafeArea: {
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
   },
   modalContent: {
     flex: 1,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: "row",
@@ -399,6 +402,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
   },
   categoryTabsContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,

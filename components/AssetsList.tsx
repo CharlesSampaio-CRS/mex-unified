@@ -2089,7 +2089,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   tokenInfoModal: {
-    borderRadius: 14,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 16,
     minWidth: 260,

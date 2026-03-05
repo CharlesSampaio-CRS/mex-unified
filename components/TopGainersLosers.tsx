@@ -490,9 +490,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContainer: {
-    borderRadius: 16,
+    borderRadius: 20,
     width: '90%',
     maxHeight: '85%',
+    height: '85%',
     overflow: 'hidden',
     flexDirection: 'column',
   },
