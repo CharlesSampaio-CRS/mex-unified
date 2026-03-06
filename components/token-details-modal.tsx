@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Pressable,
   ActivityIndicator } from "react-native"
 import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -276,29 +275,23 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
       transparent={true}
       onRequestClose={onClose}
     >
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Pressable style={styles.modalSafeArea} onPress={(e) => e.stopPropagation()}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+      <View style={styles.overlay}>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
                 {symbol?.toUpperCase() || 'Token'}
               </Text>
-              {tokenData && (
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {capitalizeExchangeName(tokenData.exchange?.name || 'Exchange')}
-                  {tokenData.pair ? ` · ${tokenData.pair}` : ''}
-                </Text>
-              )}
-            </View>
-            {tokenData && (
-              <Text style={[styles.headerPrice, { color: colors.primary }]}>
-                {getQuoteSymbol()}{formatPrice(tokenData.price?.current || '0')}
+              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                {tokenData
+                  ? `${capitalizeExchangeName(tokenData.exchange?.name || 'Exchange')}${tokenData.pair ? ` · ${tokenData.pair}` : ''}${tokenData.price?.current ? ` · ${getQuoteSymbol()}${formatPrice(tokenData.price.current)}` : ''}`
+                  : capitalizeExchangeName(exchangeId) }
               </Text>
-            )}
+            </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={[styles.closeIcon, { color: colors.text }]}>✕</Text>
+              <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -543,72 +536,64 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
 
               </ScrollView>
             ) : null}
-          </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  // ─── Overlay / Container ───────────────────────────────────
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalSafeArea: {
+  container: {
+    borderRadius: 20,
     width: '90%',
     maxHeight: '85%',
     height: '85%',
-  },
-  modalContainer: {
-    borderRadius: 20,
-    width: '100%',
-    height: '100%',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 4,
   },
+
+  // ─── Header ────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
   },
   headerLeft: {
     flex: 1,
     minWidth: 0,
   },
-  title: {
-    fontSize: typography.h3,
-    fontWeight: fontWeights.semibold,
-  },
-  subtitle: {
-    fontSize: typography.caption,
-    marginTop: 2,
-    opacity: 0.7,
-  },
-  headerPrice: {
-    fontSize: typography.h3,
+  headerTitle: {
+    fontSize: typography.h4,
     fontWeight: fontWeights.bold,
-    flexShrink: 0,
+  },
+  headerSubtitle: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
+    marginTop: 2,
   },
   closeButton: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 4,
   },
-  closeIcon: {
-    fontSize: typography.displaySmall,
-    fontWeight: fontWeights.light,
+  closeButtonText: {
+    fontSize: typography.h4,
+    fontWeight: fontWeights.regular,
   },
+
+  // ─── States ────────────────────────────────────────────────
   loadingContainer: {
     paddingVertical: 48,
     alignItems: 'center',
@@ -637,6 +622,8 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: fontWeights.medium,
   },
+
+  // ─── Content ───────────────────────────────────────────────
   content: {
     flex: 1,
   },
@@ -645,12 +632,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   sectionTitle: {
-    fontSize: typography.caption,
+    fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
     marginBottom: 8,
   },
+
+  // ─── Info cards ────────────────────────────────────────────
   infoCard: {
     borderRadius: 12,
     borderWidth: 1,
@@ -678,17 +667,8 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     marginHorizontal: 14,
   },
-  userTotalContainer: {
-    gap: 0,
-  },
-  userTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 42,
-  },
+
+  // ─── Change badges ─────────────────────────────────────────
   changeContainer: {
     flexDirection: 'row',
     gap: 8,
@@ -710,24 +690,30 @@ const styles = StyleSheet.create({
     fontSize: typography.h4,
     fontWeight: fontWeights.semibold,
   },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  halfColumn: {
-    flex: 1,
-  },
-  label: {
+
+  // ─── Misc ──────────────────────────────────────────────────
+  lastUpdate: {
     fontSize: typography.caption,
-    marginBottom: 2,
+    textAlign: 'center',
+    opacity: 0.5,
+    paddingVertical: 12,
   },
-  value: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.medium,
+
+  // ─── Unused (kept for safety) ──────────────────────────────
+  userTotalContainer: { gap: 0 },
+  userTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 42,
   },
-  exchangesListContainer: {
-    gap: 6,
-  },
+  row: { flexDirection: 'row', gap: 8 },
+  halfColumn: { flex: 1 },
+  label: { fontSize: typography.caption, marginBottom: 2 },
+  value: { fontSize: typography.body, fontWeight: fontWeights.medium },
+  exchangesListContainer: { gap: 6 },
   exchangeItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -735,22 +721,10 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
   },
-  exchangeItemLeft: {
-    flex: 1,
-  },
-  exchangeItemName: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-  },
-  exchangeItemAmount: {
-    fontSize: typography.caption,
-    marginTop: 2,
-  },
-  exchangeItemValue: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.semibold,
-    marginLeft: 8,
-  },
+  exchangeItemLeft: { flex: 1 },
+  exchangeItemName: { fontSize: typography.body, fontWeight: fontWeights.semibold },
+  exchangeItemAmount: { fontSize: typography.caption, marginTop: 2 },
+  exchangeItemValue: { fontSize: typography.body, fontWeight: fontWeights.semibold, marginLeft: 8 },
   spreadRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -766,20 +740,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
-  limitsContainer: {
-    marginTop: 4,
-  },
+  limitsContainer: { marginTop: 4 },
   marketStatusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
-  },
-  lastUpdate: {
-    fontSize: typography.caption,
-    textAlign: 'center',
-    opacity: 0.5,
-    paddingVertical: 12,
   },
 })
