@@ -282,7 +282,7 @@ export function AssetsScreen({ navigation }: any) {
                 styles.exchangeFilterText,
                 { color: selectedExchange === 'favorites' ? '#fff' : colors.textSecondary }
               ]}>
-                ⭐ Favoritos
+                Favoritos
               </Text>
             </TouchableOpacity>
             {availableExchanges.map(exchange => (
