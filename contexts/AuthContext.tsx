@@ -430,8 +430,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (email: string, password: string) => {
     try {
-      setIsLoading(true)
-      
       // Chama API real de login
       const response = await fetch(`${config.kongBaseUrl}/auth/login`, {
         method: 'POST',
@@ -483,8 +481,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.warn('[AuthContext] Erro no login:', error)
       setHasValidToken(false)
       throw error
-    } finally {
-      setIsLoading(false)
     }
   }
 
