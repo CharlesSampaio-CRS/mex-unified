@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Pressable } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useBalance } from '../contexts/BalanceContext';
@@ -18,7 +18,7 @@ interface TokenWithChange {
 
 type ModalType = 'gainers' | 'losers' | null;
 
-export const TopGainersLosers: React.FC = () => {
+export const TopGainersLosers = memo(function TopGainersLosers() {
   const { colors } = useTheme();
   const { data, isLoading } = useBalance();
   const { t } = useLanguage();
@@ -339,7 +339,7 @@ export const TopGainersLosers: React.FC = () => {
       </Modal>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

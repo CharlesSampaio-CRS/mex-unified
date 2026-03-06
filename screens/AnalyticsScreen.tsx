@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, TouchableOpacity, InteractionManager, ActivityIndicator } from "react-native"
 import { memo, useState, useCallback, useMemo, useEffect } from "react"
 import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgLinearGradient, Stop, ClipPath, Rect, G } from "react-native-svg"
 import { useHeader } from "../contexts/HeaderContext"
@@ -464,6 +464,7 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
   const { hideValue } = usePrivacy()
 
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isReady, setIsReady] = useState(false)
   const [evolutionPeriod, setEvolutionPeriod] = useState<number>(7)
   const [evolutionData, setEvolutionData] = useState<{ values_usd: number[]; timestamps: string[] } | null>(null)
   const [evoLoading, setEvoLoading] = useState(false)
@@ -515,6 +516,11 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
     loadComparison(evolutionPeriod)
   }, [evolutionPeriod, loadEvolution, loadComparison])
 
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setIsReady(true))
+    return () => task.cancel()
+  }, [])
+
   // Refresh — aguarda todos os dados carregarem antes de encerrar
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true)
@@ -536,6 +542,12 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={isRefreshing || refreshing} onRefresh={handleRefresh} />}
       >
+        {!isReady ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 }}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : (
+        <>
         {/* ═══ 1. EVOLUÇÃO DO PORTFÓLIO ═══ */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.cardHeader}>
@@ -601,6 +613,8 @@ export const AnalyticsScreen = memo(function AnalyticsScreen({ navigation }: any
         <TokensPieChart embedded />
 
         <View style={{ height: 24 }} />
+        </>
+        )}
       </ScrollView>
     </View>
   )

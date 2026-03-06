@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -28,7 +28,7 @@ const MAIN_TOKENS = [
   { symbol: 'LINK', name: 'Chainlink' },
 ];
 
-export const MarketOverview: React.FC = () => {
+export const MarketOverview = memo(function MarketOverview() {
   const { colors, theme } = useTheme();
   const { t } = useLanguage();
   const [tokens, setTokens] = useState<MarketToken[]>([]);
@@ -414,7 +414,7 @@ export const MarketOverview: React.FC = () => {
       </Modal>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -1,4 +1,4 @@
-import { Text, StyleSheet, ScrollView, RefreshControl, View, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, TextInput } from "react-native"
+import { Text, StyleSheet, ScrollView, RefreshControl, View, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, TextInput, InteractionManager, ActivityIndicator } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect, useCallback, useMemo } from "react"
@@ -28,6 +28,13 @@ export function StrategyScreen({ navigation, route }: any) {
   const { t } = useLanguage()
   const { user } = useAuth()
   const { unreadCount, addNotification } = useNotifications()
+
+  // 🚀 Aguarda animação de transição antes de renderizar lista
+  const [isReady, setIsReady] = useState(false)
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setIsReady(true))
+    return () => task.cancel()
+  }, [])
   const { 
     strategies,
     loading,
@@ -408,7 +415,11 @@ export function StrategyScreen({ navigation, route }: any) {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        {filteredStrategies.length === 0 ? (
+        {!isReady ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : filteredStrategies.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="analytics-outline" size={40} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>

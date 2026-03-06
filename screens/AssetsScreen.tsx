@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, TextInput, Image, ActivityIndicator, InteractionManager, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Text as SvgText, Line } from 'react-native-svg';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -21,7 +21,110 @@ import { getExchangeLogo } from '@/lib/exchange-logos';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 
-export function AssetsScreen({ navigation }: any) {
+// ─── Sub-componente memoizado para cada card de asset ───────────────────────
+interface AssetCardProps {
+  item: any;
+  colors: any;
+  hideValue: (v: string) => string;
+  isWatching: (s: string) => boolean;
+  getAlertsForToken: (s: string, e: string) => any[];
+  onPress: () => void;
+  onFavorite: () => void;
+  onAlert: () => void;
+  onTrade: () => void;
+}
+
+const AssetCard = memo(function AssetCard({
+  item, colors, hideValue, isWatching, getAlertsForToken,
+  onPress, onFavorite, onAlert, onTrade,
+}: AssetCardProps) {
+  const watching = isWatching(item.symbol);
+  const hasAlerts = getAlertsForToken(item.symbol, item.exchangeId).length > 0;
+  const amt = parseFloat(String(item.amount || 0));
+  const amtStr = amt < 0.00000001 ? amt.toFixed(10)
+    : amt < 0.000001 ? amt.toFixed(8)
+    : amt < 0.0001   ? amt.toFixed(6)
+    : amt < 1        ? amt.toFixed(4)
+    : amt.toFixed(2);
+
+  return (
+    <TouchableOpacity
+      style={[styles.assetCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      {/* Linha 1 */}
+      <View style={styles.cardRow1}>
+        <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
+          {String(item.symbol || 'Unknown')}
+        </Text>
+        <Text style={[styles.assetPrice, { color: colors.text }]} numberOfLines={1}>
+          {item.priceUSD > 0
+            ? `$${item.priceUSD < 0.01 ? item.priceUSD.toFixed(6) : item.priceUSD < 1 ? item.priceUSD.toFixed(4) : item.priceUSD.toFixed(2)}`
+            : '—'}
+        </Text>
+      </View>
+      {/* Linha 2 */}
+      <View style={styles.cardRow2}>
+        <Text style={[styles.cardSubtext, { color: colors.textSecondary }]} numberOfLines={1}>
+          {hideValue(`${amtStr} ${item.symbol}`)}
+        </Text>
+        <View style={styles.cardRow2Right}>
+          <Text style={[styles.assetValue, { color: colors.textSecondary }]} numberOfLines={1}>
+            {hideValue(`$${apiService.formatUSD(item.valueUSD || 0)}`)}
+          </Text>
+          {item.variation24h !== null && item.variation24h !== undefined && !item.isStablecoin ? (
+            <Text style={[styles.variationText, {
+              color: item.variation24h >= 0 ? colors.success : colors.danger
+            }]} numberOfLines={1}>
+              {item.variation24h >= 0 ? '▲' : '▼'} {Math.abs(item.variation24h).toFixed(2)}%
+            </Text>
+          ) : (
+            <Text style={[styles.variationText, { color: colors.textTertiary, opacity: 0.4 }]}>—</Text>
+          )}
+        </View>
+      </View>
+      {/* Action Bar */}
+      <View style={[styles.actionBar, { borderTopColor: colors.border }]}>
+        <TouchableOpacity style={styles.actionButton} onPress={onFavorite} activeOpacity={0.6}>
+          <Ionicons
+            name={watching ? 'star' : 'star-outline'}
+            size={15}
+            color={watching ? '#F59E0B' : colors.textSecondary}
+          />
+          <Text style={[styles.actionButtonText, { color: watching ? '#F59E0B' : colors.textSecondary }]}>
+            {watching ? 'Favorito' : 'Favoritar'}
+          </Text>
+        </TouchableOpacity>
+        <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
+        <TouchableOpacity style={styles.actionButton} onPress={onAlert} activeOpacity={0.6}>
+          <Ionicons
+            name={hasAlerts ? 'notifications' : 'notifications-outline'}
+            size={15}
+            color={hasAlerts ? colors.primary : colors.textSecondary}
+          />
+          <Text style={[styles.actionButtonText, { color: hasAlerts ? colors.primary : colors.textSecondary }]}>
+            Alerta
+          </Text>
+        </TouchableOpacity>
+        <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
+        <TouchableOpacity style={styles.actionButton} onPress={onTrade} activeOpacity={0.6}>
+          <Ionicons name="swap-horizontal-outline" size={15} color={colors.primary} />
+          <Text style={[styles.actionButtonText, { color: colors.primary, fontWeight: fontWeights.bold }]}>
+            Negociar
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+// ─── Tipo para item "flat" da FlatList ──────────────────────────────────────
+type FlatItem =
+  | { type: 'header'; key: string; exchangeName: string; itemCount: number; exchangeId: string }
+  | { type: 'asset';  key: string; item: any };
+
+
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { data: balanceData, loading: balanceLoading, refresh: refreshBalance, refreshing } = useBalance();
@@ -30,7 +133,14 @@ export function AssetsScreen({ navigation }: any) {
   const { refresh: refreshOrders } = useOrders();
   const { addToken, removeToken, isWatching } = useWatchlist();
   const { getAlertsForToken } = useAlerts();
-  
+
+  // 🚀 Aguarda animação de transição antes de renderizar lista pesada
+  const [isReady, setIsReady] = useState(false);
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setIsReady(true));
+    return () => task.cancel();
+  }, []);
+
   const [search, setSearch] = useState('');
   const [selectedExchange, setSelectedExchange] = useState<string>('All');
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
@@ -223,6 +333,80 @@ export function AssetsScreen({ navigation }: any) {
 
   const loading = balanceLoading;
 
+  // 🚀 Lista "flat" para FlatList — headers + assets intercalados, sem aninhamento
+  const flatItems = useMemo((): FlatItem[] => {
+    const result: FlatItem[] = [];
+    assetsSections.forEach(section => {
+      result.push({
+        type: 'header',
+        key: `header-${section.exchangeId}`,
+        exchangeId: section.exchangeId,
+        exchangeName: section.exchangeName,
+        itemCount: section.items.length,
+      });
+      section.items.forEach(item => {
+        result.push({ type: 'asset', key: item.id, item });
+      });
+    });
+    return result;
+  }, [assetsSections]);
+
+  // Handlers memoizados passados ao AssetCard
+  const handleAssetPress = useCallback((item: any) => {
+    setSelectedTokenForDetails({ exchangeId: item.exchangeId, symbol: item.symbol });
+    setTokenModalVisible(true);
+  }, []);
+
+  const handleAssetAlert = useCallback((item: any) => {
+    setSelectedTokenForAlert({ symbol: item.symbol, price: item.priceUSD, exchangeId: item.exchangeId, exchangeName: item.exchangeName });
+    setAlertModalVisible(true);
+  }, []);
+
+  const handleAssetTrade = useCallback((item: any) => {
+    setSelectedTrade({ exchangeId: item.exchangeId, exchangeName: item.exchangeName, symbol: item.symbol, currentPrice: item.priceUSD, balance: { token: item.free, usdt: item.usdtBalance, brl: item.brlBalance } });
+    setTradeModalVisible(true);
+  }, []);
+
+  const renderFlatItem = useCallback(({ item: flatItem }: { item: FlatItem }) => {
+    if (flatItem.type === 'header') {
+      return (
+        <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+          <View style={styles.exchangeCardLeft}>
+            <View style={styles.exchangeLogoContainer}>
+              <Image
+                source={getExchangeLogo(flatItem.exchangeName)}
+                style={styles.exchangeCardLogo}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={[styles.exchangeCardName, { color: colors.text }]}>
+              {String(flatItem.exchangeName || 'Unknown')}
+            </Text>
+          </View>
+          <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
+            {String(flatItem.itemCount)} {String(flatItem.itemCount === 1 ? 'ativo' : 'ativos')}
+          </Text>
+        </View>
+      );
+    }
+    const { item } = flatItem;
+    return (
+      <AssetCard
+        item={item}
+        colors={colors}
+        hideValue={hideValue}
+        isWatching={isWatching}
+        getAlertsForToken={getAlertsForToken}
+        onPress={() => handleAssetPress(item)}
+        onFavorite={() => handleToggleFavorite(item.symbol)}
+        onAlert={() => handleAssetAlert(item)}
+        onTrade={() => handleAssetTrade(item)}
+      />
+    );
+  }, [colors, hideValue, isWatching, getAlertsForToken, handleAssetPress, handleToggleFavorite, handleAssetAlert, handleAssetTrade]);
+
+  const keyExtractor = useCallback((item: FlatItem) => item.key, []);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Filters Section */}
@@ -336,169 +520,42 @@ export function AssetsScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </View>
-      
-      <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-        contentContainerStyle={{ paddingBottom: 32 }}
-      >
-        {loading && assetsSections.length === 0 ? (
-          <View style={styles.emptyState}>
-            <ActivityIndicator size="small" />
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}> 
-              Carregando assets...
-            </Text>
-          </View>
-        ) : assetsSections.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="wallet-outline" size={64} color={colors.textTertiary} />
-            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
-              Nenhum asset encontrado
-            </Text>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-              {search || hideZero || selectedExchange !== 'All' 
-                ? 'Tente ajustar os filtros' 
-                : 'Conecte suas exchanges para ver seus assets'}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.assetsListContainer}>
-            {assetsSections.map((section, sectionIndex) => (
-              <View key={section.exchangeId} style={styles.exchangeSection}>
-                {/* Exchange Header - mesmo padrão dos Orders */}
-                <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                  <View style={styles.exchangeCardLeft}>
-                    <View style={styles.exchangeLogoContainer}>
-                      <Image 
-                        source={getExchangeLogo(section.exchangeName)} 
-                        style={styles.exchangeCardLogo}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <Text style={[styles.exchangeCardName, { color: colors.text }]}>
-                      {String(section.exchangeName || 'Unknown')}
-                    </Text>
-                  </View>
-                  <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
-                    {String(section.items.length)} {String(section.items.length === 1 ? 'ativo' : 'ativos')}
-                  </Text>
-                </View>
 
-                {/* Asset Cards */}
-                {section.items.map((item, itemIndex) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.assetCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setSelectedTokenForDetails({ exchangeId: item.exchangeId, symbol: item.symbol });
-                      setTokenModalVisible(true);
-                    }}
-                  >
-                    {/* Linha 1: símbolo (esquerda) + preço de mercado (direita) */}
-                    <View style={styles.cardRow1}>
-                      <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
-                        {String(item.symbol || 'Unknown')}
-                      </Text>
-                      <Text style={[styles.assetPrice, { color: colors.text }]} numberOfLines={1}>
-                        {item.priceUSD > 0
-                          ? `$${item.priceUSD < 0.01 ? item.priceUSD.toFixed(6) : item.priceUSD < 1 ? item.priceUSD.toFixed(4) : item.priceUSD.toFixed(2)}`
-                          : '—'}
-                      </Text>
-                    </View>
-
-                    {/* Linha 2: quantidade · valor USD holdings · variação% */}
-                    <View style={styles.cardRow2}>
-                      <Text style={[styles.cardSubtext, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {hideValue(
-                          `${(() => {
-                            const amt = parseFloat(String(item.amount || 0))
-                            if (amt < 0.00000001) return amt.toFixed(10)
-                            if (amt < 0.000001)   return amt.toFixed(8)
-                            if (amt < 0.0001)     return amt.toFixed(6)
-                            if (amt < 1)          return amt.toFixed(4)
-                            return                 amt.toFixed(2)
-                          })()} ${item.symbol}`
-                        )}
-                      </Text>
-                      <View style={styles.cardRow2Right}>
-                        <Text style={[styles.assetValue, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {hideValue(`$${apiService.formatUSD(item.valueUSD || 0)}`)}
-                        </Text>
-                        {item.variation24h !== null && item.variation24h !== undefined && !item.isStablecoin ? (
-                          <Text style={[styles.variationText, {
-                            color: item.variation24h >= 0 ? colors.success : colors.danger
-                          }]} numberOfLines={1}>
-                            {item.variation24h >= 0 ? '▲' : '▼'} {Math.abs(item.variation24h).toFixed(2)}%
-                          </Text>
-                        ) : (
-                          <Text style={[styles.variationText, { color: colors.textTertiary, opacity: 0.4 }]}>—</Text>
-                        )}
-                      </View>
-                    </View>
-
-                    {/* Action Bar: Favorito | Alerta | Negociar */}
-                    <View style={[styles.actionBar, { borderTopColor: colors.border }]}>
-                      {/* Favorito */}
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => handleToggleFavorite(item.symbol)}
-                        activeOpacity={0.6}
-                      >
-                        <Ionicons
-                          name={isWatching(item.symbol) ? 'star' : 'star-outline'}
-                          size={15}
-                          color={isWatching(item.symbol) ? '#F59E0B' : colors.textSecondary}
-                        />
-                        <Text style={[styles.actionButtonText, { color: isWatching(item.symbol) ? '#F59E0B' : colors.textSecondary }]}>
-                          {isWatching(item.symbol) ? 'Favorito' : 'Favoritar'}
-                        </Text>
-                      </TouchableOpacity>
-
-                      <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
-
-                      {/* Alerta */}
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => {
-                          setSelectedTokenForAlert({ symbol: item.symbol, price: item.priceUSD, exchangeId: item.exchangeId, exchangeName: item.exchangeName });
-                          setAlertModalVisible(true);
-                        }}
-                        activeOpacity={0.6}
-                      >
-                        <Ionicons
-                          name={getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? 'notifications' : 'notifications-outline'}
-                          size={15}
-                          color={getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? colors.primary : colors.textSecondary}
-                        />
-                        <Text style={[styles.actionButtonText, { color: getAlertsForToken(item.symbol, item.exchangeId).length > 0 ? colors.primary : colors.textSecondary }]}>
-                          Alerta
-                        </Text>
-                      </TouchableOpacity>
-
-                      <View style={[styles.actionSeparator, { backgroundColor: colors.border }]} />
-
-                      {/* Negociar */}
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => {
-                          setSelectedTrade({ exchangeId: item.exchangeId, exchangeName: item.exchangeName, symbol: item.symbol, currentPrice: item.priceUSD, balance: { token: item.free, usdt: item.usdtBalance, brl: item.brlBalance } });
-                          setTradeModalVisible(true);
-                        }}
-                        activeOpacity={0.6}
-                      >
-                        <Ionicons name="swap-horizontal-outline" size={15} color={colors.primary} />
-                        <Text style={[styles.actionButtonText, { color: colors.primary, fontWeight: fontWeights.bold }]}>
-                          Negociar
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+      {/* 🚀 FlatList virtualizada no lugar de ScrollView + .map() */}
+      {!isReady || (loading && flatItems.length === 0) ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="small" />
+          <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            Carregando assets...
+          </Text>
+        </View>
+      ) : flatItems.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="wallet-outline" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+            Nenhum asset encontrado
+          </Text>
+          <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            {search || hideZero || selectedExchange !== 'All'
+              ? 'Tente ajustar os filtros'
+              : 'Conecte suas exchanges para ver seus assets'}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={flatItems}
+          renderItem={renderFlatItem}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={styles.assetsListContainer}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          initialNumToRender={12}
+          updateCellsBatchingPeriod={50}
+        />
+      )}
 
       {/* Modal de Detalhes do Token */}
       {selectedTokenForDetails && (
