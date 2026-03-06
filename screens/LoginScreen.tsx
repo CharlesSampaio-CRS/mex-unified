@@ -305,21 +305,22 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       await login(email, password)
     } catch (error: any) {
       console.warn('❌ Erro no login:', error)
-      setIsLoggingIn(false)
       const msg = String(error?.message || error || '').toLowerCase()
-      if (
+      const friendlyMsg =
         msg.includes('401') ||
         msg.includes('invalid') ||
         msg.includes('incorrect') ||
         msg.includes('unauthorized') ||
         msg.includes('wrong') ||
         msg.includes('inválid') ||
-        msg.includes('credencial')
-      ) {
-        setLoginError('E-mail ou senha inválidos. Verifique seus dados.')
-      } else {
-        setLoginError('Não foi possível fazer login. Tente novamente.')
-      }
+        msg.includes('credencial') ||
+        msg.includes('login failed') ||
+        msg.includes('failed')
+          ? 'E-mail ou senha inválidos. Verifique seus dados.'
+          : 'Não foi possível fazer login. Tente novamente.'
+      // Define o erro ANTES de remover o loading para evitar race condition
+      setLoginError(friendlyMsg)
+      setIsLoggingIn(false)
     }
   }
 
