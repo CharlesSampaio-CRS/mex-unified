@@ -121,6 +121,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
   const hasProcessedOAuth = useRef(false)
   const [isProcessingOAuth, setIsProcessingOAuth] = useState(false)
   const hasTriedAutoAuth = useRef(false)
@@ -253,7 +254,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             // Só marca como não processando após tudo concluir
             setIsProcessingOAuth(false)
           } catch (error) {
-            console.error('❌ Falha na validação do token OAuth:', error)
+            console.warn('❌ Falha na validação do token OAuth:', error)
             setIsProcessingOAuth(false)
             Alert.alert(
               'Erro de autenticação',
@@ -278,14 +279,13 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     t('loading.almostReady'),
   ]
 
-  // 🆕 Se está fazendo login, mostra tela full-screen idêntica ao AppNavigator
-  // isLoggingIn é setado ANTES de chamar login() → sem flash
-  if (isLoggingIn || isProcessingOAuth) {
+  // 🆕 Se está processando OAuth, mostra tela full-screen
+  if (isProcessingOAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <AnimatedLogoIcon 
           size={48} 
-          messages={isProcessingOAuth ? [t('auth.completingLogin')] : loadingMessages}
+          messages={[t('auth.completingLogin')]}
           textColor={colors.text}
           fontSize={14}
         />
@@ -298,11 +298,28 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       return
     }
 
+    setLoginError(null)
     setIsLoggingIn(true)
     try {
       await login(email, password)
+      // Se chegou aqui, login foi bem sucedido — AppNavigator vai redirecionar
     } catch (error: any) {
-      console.error('❌ Erro no login:', error)
+      console.warn('❌ Erro no login:', error)
+      const msg = String(error?.message || error || '').toLowerCase()
+      const friendlyMsg =
+        msg.includes('401') ||
+        msg.includes('invalid') ||
+        msg.includes('incorrect') ||
+        msg.includes('unauthorized') ||
+        msg.includes('wrong') ||
+        msg.includes('inválid') ||
+        msg.includes('credencial') ||
+        msg.includes('login failed') ||
+        msg.includes('failed')
+          ? 'E-mail ou senha inválidos. Verifique seus dados.'
+          : 'Não foi possível fazer login. Tente novamente.'
+      setLoginError(friendlyMsg)
+    } finally {
       setIsLoggingIn(false)
     }
   }
@@ -323,7 +340,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       }
       
       // Para outros erros, mostra alerta
-      console.error('❌ Erro no login biométrico:', error)
+      console.warn('❌ Erro no login biométrico:', error)
       Alert.alert(
         'Erro de Autenticação',
         'Não foi possível autenticar com biometria. Tente novamente ou use outro método de login.'
@@ -335,7 +352,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     try {
       await loginWithGoogle()
     } catch (error: any) {
-      console.error('❌ Erro no login com Google:', error)
+      console.warn('❌ Erro no login com Google:', error)
     }
   }
 
@@ -343,7 +360,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     try {
       await loginWithApple()
     } catch (error: any) {
-      console.error('❌ Erro no login com Apple:', error)
+      console.warn('❌ Erro no login com Apple:', error)
     }
   }
 
@@ -520,6 +537,21 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       fontWeight: fontWeights.regular,
       marginLeft: 4,
     },
+    errorBanner: {
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(239, 68, 68, 0.3)',
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      marginBottom: 16,
+    },
+    errorBannerText: {
+      color: '#ef4444',
+      fontSize: typography.body,
+      fontWeight: fontWeights.regular,
+      textAlign: 'center',
+    },
   })
 
   const handleRefresh = useCallback(async () => {
@@ -557,7 +589,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             placeholder={t('login.emailPlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(v) => { setEmail(v); setLoginError(null) }}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -573,7 +605,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
               placeholder={t('login.passwordPlaceholder')}
               placeholderTextColor={colors.textSecondary}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(v) => { setPassword(v); setLoginError(null) }}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
@@ -594,14 +626,24 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
           <Text style={styles.forgotPasswordText}>{t('login.forgotPassword')}</Text>
         </TouchableOpacity>
 
+        {loginError && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>⚠️ {loginError}</Text>
+          </View>
+        )}
+
         <TouchableOpacity
           style={[
             styles.loginButton, 
             { backgroundColor: colors.surface, borderColor: '#3b82f6' },
+            isLoggingIn && styles.loginButtonDisabled,
           ]}
           onPress={handleLogin}
+          disabled={isLoggingIn}
         >
-          <Text style={styles.loginButtonText}>{t('login.signIn')}</Text>
+          <Text style={styles.loginButtonText}>
+            {isLoggingIn ? '...' : t('login.signIn')}
+          </Text>
         </TouchableOpacity>
 
         {biometricAvailable && isBiometricEnabled && (

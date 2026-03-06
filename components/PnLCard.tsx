@@ -97,7 +97,7 @@ export default function PnLCard({ userId, refreshTrigger }: PnLCardProps) {
         isProfit: change >= 0
       }
     } catch (error) {
-      console.error('❌ [PnLCard] Erro no cálculo:', error)
+      console.warn('❌ [PnLCard] Erro no cálculo:', error)
       return previousPnlData.current || null
     }
   }, [balanceData, balanceLoading])
@@ -119,8 +119,8 @@ export default function PnLCard({ userId, refreshTrigger }: PnLCardProps) {
   }
 
   const formatPercent = (value: number) => {
-    const sign = value >= 0 ? '+' : ''
-    return `${sign}${value.toFixed(2)}%`
+    const arrow = value >= 0 ? '▲' : '▼'
+    return `${arrow} ${Math.abs(value).toFixed(2)}%`
   }
 
   // Estados de loading e erro - APENAS na primeira carga

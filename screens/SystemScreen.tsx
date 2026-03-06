@@ -85,7 +85,7 @@ export function SystemScreen({ navigation }: any) {
       const data = await response.json()
       setDeviceIp(data.ip)
     } catch (error) {
-      console.error('Error fetching IP:', error)
+      console.warn('Error fetching IP:', error)
       setDeviceIp('Não disponível')
     }
   }

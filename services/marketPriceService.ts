@@ -138,7 +138,7 @@ class MarketPriceService {
 
       console.log(`[MarketPrice] ✅ Buscou ${result.size} tokens do CoinGecko`);
     } catch (error) {
-      console.error('[MarketPrice] ❌ Erro ao buscar dados:', error);
+      console.warn('[MarketPrice] ❌ Erro ao buscar dados:', error);
       
       // Retorna dados do cache mesmo se expirados (melhor que nada)
       for (const symbol of symbolsToFetch) {
@@ -242,7 +242,7 @@ class MarketPriceService {
       
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
-        console.error(`[MarketPrice] ❌ CoinGecko API error: ${response.status} - ${errorText}`);
+        console.warn(`[MarketPrice] ❌ CoinGecko API error: ${response.status} - ${errorText}`);
         throw new Error(`CoinGecko API error: ${response.status}`);
       }
 
@@ -271,7 +271,7 @@ class MarketPriceService {
 
       return { values, timestamps };
     } catch (error) {
-      console.error(`[MarketPrice] ❌ Erro ao buscar dados históricos de ${symbol}:`, error);
+      console.warn(`[MarketPrice] ❌ Erro ao buscar dados históricos de ${symbol}:`, error);
       return null;
     }
   }
@@ -319,7 +319,7 @@ class MarketPriceService {
 
       return results;
     } catch (error) {
-      console.error(`[MarketPrice] ❌ Erro ao buscar tokens:`, error);
+      console.warn(`[MarketPrice] ❌ Erro ao buscar tokens:`, error);
       return [];
     }
   }

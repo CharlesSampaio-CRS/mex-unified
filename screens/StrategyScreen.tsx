@@ -1,4 +1,4 @@
-import { Text, StyleSheet, ScrollView, RefreshControl, View, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, TextInput } from "react-native"
+import { Text, StyleSheet, ScrollView, RefreshControl, View, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, TextInput, InteractionManager, ActivityIndicator } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect, useCallback, useMemo } from "react"
@@ -28,6 +28,13 @@ export function StrategyScreen({ navigation, route }: any) {
   const { t } = useLanguage()
   const { user } = useAuth()
   const { unreadCount, addNotification } = useNotifications()
+
+  // 🚀 Aguarda animação de transição antes de renderizar lista
+  const [isReady, setIsReady] = useState(false)
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setIsReady(true))
+    return () => task.cancel()
+  }, [])
   const { 
     strategies,
     loading,
@@ -137,7 +144,7 @@ export function StrategyScreen({ navigation, route }: any) {
       
       console.log('✅ Strategy updated in MongoDB')
     } catch (error) {
-      console.error("❌ Error toggling strategy:", error)
+      console.warn("❌ Error toggling strategy:", error)
       notify.strategyError(addNotification, {
         name,
         action: newIsActive ? 'ativar' : 'pausar',
@@ -172,7 +179,7 @@ export function StrategyScreen({ navigation, route }: any) {
       
       console.log('✅ Strategy archived in MongoDB')
     } catch (error: any) {
-      console.error("❌ Error archiving strategy:", error)
+      console.warn("❌ Error archiving strategy:", error)
       notify.strategyError(addNotification, {
         name,
         action: 'arquivar',
@@ -196,11 +203,11 @@ export function StrategyScreen({ navigation, route }: any) {
   }, [loadStrategies])
 
   const formatCurrency = useCallback((value: number) => {
-    const sign = value >= 0 ? '+' : '';
-    return `${sign}${new Intl.NumberFormat("pt-BR", {
+    const arrow = value >= 0 ? '▲' : '▼';
+    return `${arrow} ${new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "USD",
-    }).format(value)}`;
+    }).format(Math.abs(value))}`;
   }, [])
 
   const getStatusLabel = useCallback((status: StrategyStatus): string => {
@@ -270,7 +277,7 @@ export function StrategyScreen({ navigation, route }: any) {
     try {
       await loadStrategies()
     } catch (error) {
-      console.error('❌ [StrategyScreen] Erro ao atualizar:', error)
+      console.warn('❌ [StrategyScreen] Erro ao atualizar:', error)
     }
   }, [loadStrategies])
 
@@ -408,7 +415,11 @@ export function StrategyScreen({ navigation, route }: any) {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        {filteredStrategies.length === 0 ? (
+        {!isReady ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : filteredStrategies.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="analytics-outline" size={40} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>

@@ -231,7 +231,7 @@ export function TradeModal({
   //         })
   //       }
   //     } catch (error) {
-  //       console.error('Error fetching market limits:', error)
+  //       console.warn('Error fetching market limits:', error)
   //     }
   //   }
   //   if (visible && symbol && exchangeId) {
@@ -307,7 +307,7 @@ export function TradeModal({
             setPairsError(`Nenhum par de trading ativo encontrado para ${symbol} nesta exchange`)
           }
         } catch (error: any) {
-          console.error('❌ Error fetching pairs:', error)
+          console.warn('❌ Error fetching pairs:', error)
           const fallbackPair = `${symbol.toUpperCase()}/USDT`
           setSelectedPair(fallbackPair)
           setAvailablePairs([{
@@ -566,8 +566,8 @@ export function TradeModal({
         
         // 4. Sincroniza com backend em background (silencioso, corrige dados reais)
         setTimeout(() => {
-          refreshExchange(exchangeId).catch(console.error)
-          refreshBalance().catch(console.error)
+          refreshExchange(exchangeId).catch((e) => console.warn(e))
+          refreshBalance().catch((e) => console.warn(e))
         }, 3000);
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';
@@ -600,69 +600,52 @@ export function TradeModal({
     >
       <View style={styles.overlay}>
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
+
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <View>
-              <Text style={[styles.title, { color: colors.text }]}>Trade {String(tradingPair || symbol.toUpperCase())}</Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                {String(exchangeName)} • {pairPriceLoading ? '⏳ ...' : String(parseFloat(price || '0') < 0.01 
-                  ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
-                  : apiService.formatUSD(parseFloat(price || '0')))}
-              </Text>
+            <View style={styles.headerLeft}>
+              <View>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>
+                  {tradingPair || symbol.toUpperCase()}
+                </Text>
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+                  {exchangeName}{pairPriceLoading ? ' ⏳' : ''}{' · '}{parseFloat(price || '0') < 0.01
+                    ? parseFloat(price || '0').toFixed(8).replace(/\.?0+$/, '')
+                    : apiService.formatUSD(parseFloat(price || '0'))}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* 🔄 Seletor de Par de Trading (dinâmico) */}
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
+          >
+
+            {/* Par selector (só quando há mais de 1 par) */}
             {pairsLoading ? (
-              <View style={[styles.section, { alignItems: 'center', paddingVertical: 16 }]}>
-                <ActivityIndicator size="small" />
-                <Text style={[styles.stepLabel, { color: colors.textSecondary, marginTop: 8 }]}>
-                  Buscando pares disponíveis...
-                </Text>
+              <View style={[styles.formSection, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginBottom: 0 }]}>Buscando pares...</Text>
               </View>
             ) : pairsError ? (
-              <View style={[styles.section, { alignItems: 'center', paddingVertical: 16 }]}>
-                <Text style={{ fontSize: typography.emoji }}>⚠️</Text>
-                <Text style={[styles.stepLabel, { color: '#ef4444', marginTop: 8, textAlign: 'center' }]}>
-                  {pairsError}
-                </Text>
-                <Text style={[{ color: colors.textSecondary, fontSize: typography.caption, marginTop: 4, textAlign: 'center' }]}>
-                  Este token pode não estar disponível para trading nesta exchange
-                </Text>
+              <View style={[styles.errorBox, { backgroundColor: '#ef444415' }]}>
+                <Text style={styles.errorText}>⚠️ {pairsError}</Text>
               </View>
             ) : availablePairs.length > 1 ? (
-              <View style={styles.section}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
-                    Par de trading {pairPriceLoading ? '⏳' : ''}
-                  </Text>
-                  <Text style={[{ fontSize: typography.tiny, color: colors.textTertiary }]}>
-                    {availablePairs.length} pares
-                  </Text>
-                </View>
-                {/* Search input para listas grandes (>8 pares) */}
+              <View style={styles.formSection}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Par de Trading</Text>
                 {availablePairs.length > 8 && (
-                  <View style={[{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    marginTop: 6,
-                    marginBottom: 2,
-                    gap: 6,
-                  }]}>
-                    <Text style={{ color: colors.textTertiary, fontSize: typography.body }}>🔍</Text>
+                  <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Text style={{ color: colors.textTertiary }}>🔍</Text>
                     <TextInput
-                      style={{ flex: 1, fontSize: typography.bodySmall, color: colors.text, paddingVertical: 2 }}
-                      placeholder="Buscar par... (ex: BTC, ETH)"
+                      style={[styles.searchInput, { color: colors.text }]}
+                      placeholder="Buscar par..."
                       placeholderTextColor={colors.textTertiary}
                       value={pairSearch}
                       onChangeText={setPairSearch}
@@ -670,322 +653,240 @@ export function TradeModal({
                     />
                     {pairSearch.length > 0 && (
                       <TouchableOpacity onPress={() => setPairSearch('')}>
-                        <Text style={{ color: colors.textSecondary, fontSize: typography.body }}>✕</Text>
+                        <Text style={{ color: colors.textSecondary }}>✕</Text>
                       </TouchableOpacity>
                     )}
                   </View>
                 )}
-                <ScrollView 
-                  horizontal={availablePairs.length <= 8} 
+                <ScrollView
+                  horizontal={availablePairs.length <= 8}
                   showsHorizontalScrollIndicator={false}
-                  showsVerticalScrollIndicator={availablePairs.length > 8}
-                  style={{ marginTop: 8, maxHeight: availablePairs.length > 8 ? 140 : undefined }}
+                  style={{ maxHeight: availablePairs.length > 8 ? 120 : undefined }}
                 >
-                  <View style={{ 
-                    flexDirection: availablePairs.length <= 8 ? 'row' : 'row', 
-                    flexWrap: availablePairs.length <= 8 ? 'nowrap' : 'wrap',
-                    gap: 8 
-                  }}>
+                  <View style={[styles.pairChips, { flexWrap: availablePairs.length > 8 ? 'wrap' : 'nowrap' }]}>
                     {availablePairs
-                      .filter(pair => !pairSearch || pair.symbol.toUpperCase().includes(pairSearch.toUpperCase()))
-                      .map((pair) => (
-                      <TouchableOpacity
-                        key={pair.symbol}
-                        style={[
-                          {
-                            paddingHorizontal: 14,
-                            paddingVertical: 8,
-                            borderRadius: 8,
-                            borderWidth: 1,
+                      .filter(p => !pairSearch || p.symbol.toUpperCase().includes(pairSearch.toUpperCase()))
+                      .map(pair => (
+                        <TouchableOpacity
+                          key={pair.symbol}
+                          style={[styles.pairChip, {
                             backgroundColor: selectedPair === pair.symbol ? `${colors.primary}20` : colors.surface,
                             borderColor: selectedPair === pair.symbol ? colors.primary : colors.border,
-                          }
-                        ]}
-                        onPress={() => {
-                          setSelectedPair(pair.symbol)
-                          setAmount('')
-                          setSelectedPercent(null)
-                        }}
-                      >
-                        <Text style={{
-                          fontSize: typography.bodySmall,
-                          fontWeight: selectedPair === pair.symbol ? fontWeights.bold : fontWeights.medium,
-                          color: selectedPair === pair.symbol ? colors.primary : colors.textSecondary,
-                        }}>
-                          {pair.symbol}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          }]}
+                          onPress={() => { setSelectedPair(pair.symbol); setAmount(''); setSelectedPercent(null); }}
+                        >
+                          <Text style={[styles.pairChipText, {
+                            color: selectedPair === pair.symbol ? colors.primary : colors.textSecondary,
+                            fontWeight: selectedPair === pair.symbol ? fontWeights.bold : fontWeights.medium,
+                          }]}>{pair.symbol}</Text>
+                        </TouchableOpacity>
+                      ))}
                   </View>
                 </ScrollView>
               </View>
-            ) : availablePairs.length === 1 ? (
-              <View style={[styles.section, { paddingVertical: 4 }]}>
-                <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>
-                  Par: <Text style={{ color: colors.text, fontWeight: fontWeights.bold }}>{tradingPair}</Text>
-                  {pairPriceLoading ? ' ⏳' : ''}
-                </Text>
-              </View>
             ) : null}
 
-            {/* PASSO 1: Comprar/Vender — habilitado quando par está carregado */}
-            <View style={[styles.section, (pairsLoading || !!pairsError) && styles.sectionDisabled]}>
-              <Text style={[styles.stepLabel, { color: (!pairsLoading && !pairsError) ? colors.textSecondary : colors.border }]}>1. Selecione a operação</Text>
-              <View style={styles.tabs}>
+            {/* Buy / Sell segmented */}
+            <View style={styles.formSection}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Operação</Text>
+              <View style={[styles.segmented, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    { 
-                      backgroundColor: orderSide === 'buy' ? '#10b98115' : colors.surface,
-                      borderColor: orderSide === 'buy' ? '#10b981' : colors.border
-                    }
-                  ]}
+                  style={[styles.segmentItem, orderSide === 'buy' && { backgroundColor: '#00c076' }]}
                   onPress={() => { setOrderSide('buy'); setAmount(''); setSelectedPercent(null); }}
                   disabled={pairsLoading || !!pairsError}
                 >
-                  <Text style={[
-                    styles.tabText,
-                    { color: orderSide === 'buy' ? '#10b981' : colors.textSecondary }
-                  ]}>
+                  <Text style={[styles.segmentText, { color: orderSide === 'buy' ? '#fff' : colors.textSecondary }]}>
                     Comprar
                   </Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    { 
-                      backgroundColor: orderSide === 'sell' ? '#ef444415' : colors.surface,
-                      borderColor: orderSide === 'sell' ? '#ef4444' : colors.border
-                    }
-                  ]}
+                  style={[styles.segmentItem, orderSide === 'sell' && { backgroundColor: '#ff3b30' }]}
                   onPress={() => { setOrderSide('sell'); setAmount(''); setSelectedPercent(null); }}
                   disabled={pairsLoading || !!pairsError}
                 >
-                  <Text style={[
-                    styles.tabText,
-                    { color: orderSide === 'sell' ? '#ef4444' : colors.textSecondary }
-                  ]}>
+                  <Text style={[styles.segmentText, { color: orderSide === 'sell' ? '#fff' : colors.textSecondary }]}>
                     Vender
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* PASSO 2: Tipo de Ordem — só habilita após selecionar lado */}
-            <View style={[styles.section, !sideSelected && styles.sectionDisabled]}>
-              <Text style={[styles.stepLabel, { color: sideSelected ? colors.textSecondary : colors.border }]}>
-                2. Tipo de ordem
-              </Text>
-              <View style={styles.orderTypeButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.orderTypeButton,
-                    orderType === 'limit' && styles.orderTypeButtonActive,
-                    !sideSelected && styles.buttonDisabled,
-                    { 
-                      backgroundColor: orderType === 'limit' ? colors.primary : colors.surface,
-                      borderColor: orderType === 'limit' ? colors.primary : colors.border,
-                      opacity: sideSelected ? 1 : 0.4,
-                    }
-                  ]}
-                  onPress={() => setOrderType('limit')}
-                  disabled={!sideSelected}
-                >
-                  <Text style={[
-                    styles.orderTypeButtonText,
-                    { color: orderType === 'limit' ? colors.primaryText : colors.textSecondary }
-                  ]}>
-                    Limit
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.orderTypeButton,
-                    orderType === 'market' && styles.orderTypeButtonActive,
-                    !sideSelected && styles.buttonDisabled,
-                    { 
-                      backgroundColor: orderType === 'market' ? colors.primary : colors.surface,
-                      borderColor: orderType === 'market' ? colors.primary : colors.border,
-                      opacity: sideSelected ? 1 : 0.4,
-                    }
-                  ]}
-                  onPress={() => {
-                    setOrderType('market')
-                    setPrice(currentPrice.toString())
-                  }}
-                  disabled={!sideSelected}
-                >
-                  <Text style={[
-                    styles.orderTypeButtonText,
-                    { color: orderType === 'market' ? colors.primaryText : colors.textSecondary }
-                  ]}>
-                    Market
-                  </Text>
-                </TouchableOpacity>
+            {/* Tipo de Ordem */}
+            <View style={[styles.formSection, !sideSelected && { opacity: 0.4 }]}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tipo de Ordem</Text>
+              <View style={[styles.segmented, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {(['limit', 'market'] as const).map(type => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.segmentItem, orderType === type && { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      setOrderType(type);
+                      if (type === 'market') setPrice(currentPrice.toString());
+                    }}
+                    disabled={!sideSelected}
+                  >
+                    <Text style={[styles.segmentText, { color: orderType === type ? '#fff' : colors.textSecondary }]}>
+                      {type === 'limit' ? 'Limit' : 'Market'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
 
-            {/* PASSO 3: Preço (só para limit) e Quantidade — habilita após tipo selecionado */}
+            {/* Preço (limit) */}
             {orderType === 'limit' && (
-              <View style={[styles.section, !typeSelected && styles.sectionDisabled]}>
-                <View style={styles.labelRow}>
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.stepLabel, { color: typeSelected ? colors.textSecondary : colors.border }]}>
-                    3. Preço
+              <View style={styles.formSection}>
+                <View style={styles.fieldLabelRow}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+                    Preço ({String(quoteCurrency)})
                   </Text>
                   {priceDifference && (
-                    <Text style={[
-                      styles.priceDifferenceText,
-                      { color: colors.textSecondary }
-                    ]}>
-                      {priceDifference.isHigher ? '+' : '-'}{priceDifference.percentage.toFixed(2)}%
+                    <Text style={[styles.priceDiffBadge, { color: priceDifference.isHigher ? colors.success : colors.danger }]}>
+                      {priceDifference.isHigher ? '▲' : '▼'} {priceDifference.percentage.toFixed(2)}%
                     </Text>
                   )}
                 </View>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { 
-                      backgroundColor: colors.surface,
-                      color: typeSelected ? colors.text : colors.border,
-                      borderColor: colors.border,
-                      opacity: typeSelected ? 1 : 0.4,
-                    }
-                  ]}
-                  value={price}
-                  onChangeText={setPrice}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                  placeholderTextColor={colors.textSecondary}
-                  editable={typeSelected}
-                />
+                <View style={[styles.stepperWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.stepperBtn}
+                    onPress={() => {
+                      const v = parseFloat(price || '0');
+                      const step = v >= 100 ? 1 : v >= 1 ? 0.01 : 0.0001;
+                      setPrice(Math.max(0, v - step).toFixed(v < 1 ? 4 : 2));
+                    }}
+                  >
+                    <Text style={[styles.stepperIcon, { color: colors.textSecondary }]}>−</Text>
+                  </TouchableOpacity>
+                  <TextInput
+                    style={[styles.stepperInput, { color: colors.text }]}
+                    value={price}
+                    onChangeText={setPrice}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    placeholderTextColor={colors.textTertiary}
+                  />
+                  <TouchableOpacity
+                    style={styles.stepperBtn}
+                    onPress={() => {
+                      const v = parseFloat(price || '0');
+                      const step = v >= 100 ? 1 : v >= 1 ? 0.01 : 0.0001;
+                      setPrice((v + step).toFixed(v < 1 ? 4 : 2));
+                    }}
+                  >
+                    <Text style={[styles.stepperIcon, { color: colors.textSecondary }]}>+</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
             {/* Quantidade */}
-            <View style={[styles.section, !typeSelected && styles.sectionDisabled]}>
-              <View style={styles.labelRow}>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.stepLabel, { color: typeSelected ? colors.textSecondary : colors.border }]}>
-                  {orderType === 'limit' ? '4' : '3'}. Quantidade ({String(amountCurrency)})
+            <View style={[styles.formSection, !typeSelected && { opacity: 0.4 }]}>
+              <View style={styles.fieldLabelRow}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+                  Quantidade ({String(amountCurrency)})
                 </Text>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.balanceText, { color: typeSelected ? colors.textSecondary : colors.border }]}> 
-                  Disponível: {String(
-                    amountCurrency === 'BRL'
-                      ? `R$ ${availableBalance.toFixed(2)}`
-                      : availableBalance > 0
-                        ? `${availableBalance.toFixed(amountCurrency === baseCurrency ? 8 : 4)} ${amountCurrency}`
-                        : `-- ${amountCurrency}`
-                  )}
+                <Text style={[styles.availableText, { color: colors.textSecondary }]}>
+                  Disp: {amountCurrency === 'BRL'
+                    ? `R$ ${availableBalance.toFixed(2)}`
+                    : `${availableBalance > 0 ? availableBalance.toFixed(amountCurrency === baseCurrency ? 8 : 4) : '--'} ${amountCurrency}`}
                 </Text>
               </View>
-              <TextInput
-                style={[
-                  styles.input,
-                  { 
-                    backgroundColor: colors.surface,
-                    color: typeSelected ? colors.text : colors.border,
-                    borderColor: colors.border,
-                    opacity: typeSelected ? 1 : 0.4,
-                  }
-                ]}
-                value={amount}
-                onChangeText={(text) => { setAmount(text); setSelectedPercent(null) }}
-                keyboardType="decimal-pad"
-                placeholder="0.00000000"
-                placeholderTextColor={colors.textSecondary}
-                editable={typeSelected}
-              />
+              <View style={[styles.stepperWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const v = parseFloat(amount || '0');
+                    const step = v >= 1 ? 0.01 : 0.0001;
+                    const next = Math.max(0, v - step);
+                    setAmount(next > 0 ? next.toFixed(v < 1 ? 8 : 4) : '');
+                    setSelectedPercent(null);
+                  }}
+                  disabled={!typeSelected}
+                >
+                  <Text style={[styles.stepperIcon, { color: colors.textSecondary }]}>−</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={[styles.stepperInput, { color: colors.text }]}
+                  value={amount}
+                  onChangeText={(text) => { setAmount(text); setSelectedPercent(null); }}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={colors.textTertiary}
+                  editable={typeSelected}
+                />
+                <TouchableOpacity
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const v = parseFloat(amount || '0');
+                    const step = v >= 1 ? 0.01 : 0.0001;
+                    setAmount((v + step).toFixed(v < 1 ? 8 : 4));
+                    setSelectedPercent(null);
+                  }}
+                  disabled={!typeSelected}
+                >
+                  <Text style={[styles.stepperIcon, { color: colors.textSecondary }]}>+</Text>
+                </TouchableOpacity>
+              </View>
 
-              {/* Botões de Porcentagem */}
-              <View style={styles.percentageButtons}>
-                {[25, 50, 75, 100].map((percent) => {
-                  const isSelected = selectedPercent === percent
-                  return (
-                    <TouchableOpacity
-                      key={percent}
-                      style={[
-                        styles.percentageButton,
-                        { 
-                          borderColor: isSelected ? colors.primary : colors.border,
-                          backgroundColor: isSelected ? `${colors.primary}20` : 'transparent',
-                          opacity: typeSelected ? 1 : 0.4,
-                        }
-                      ]}
-                      onPress={() => handlePercentage(percent)}
-                      disabled={!typeSelected}
-                    >
-                      <Text style={[
-                        styles.percentageButtonText,
-                        { 
-                          color: isSelected ? colors.primary : colors.textSecondary,
-                          fontWeight: isSelected ? fontWeights.bold : fontWeights.medium,
-                        }
-                      ]}>
-                        {String(percent)}%
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
+              {/* Percent grid */}
+              <View style={styles.percentGrid}>
+                {[25, 50, 75, 100].map(pct => (
+                  <TouchableOpacity
+                    key={pct}
+                    style={[styles.percentBtn, {
+                      backgroundColor: selectedPercent === pct ? `${colors.primary}20` : colors.surface,
+                      borderColor: selectedPercent === pct ? colors.primary : colors.border,
+                      opacity: typeSelected ? 1 : 0.4,
+                    }]}
+                    onPress={() => handlePercentage(pct)}
+                    disabled={!typeSelected}
+                  >
+                    <Text style={[styles.percentBtnText, {
+                      color: selectedPercent === pct ? colors.primary : colors.textSecondary,
+                      fontWeight: selectedPercent === pct ? fontWeights.bold : fontWeights.medium,
+                    }]}>
+                      {pct === 100 ? 'Max' : `${pct}%`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-              
-              {/* Aviso sobre margem de segurança */}
-              {typeSelected && (
-                <Text style={[styles.safetyMarginText, { color: colors.textSecondary }]}>
-                  💡 100% usa 99.5% do saldo (margem para taxas)
-                </Text>
-              )}
             </View>
 
-            {/* Preview do Total — só mostra quando tem dados */}
-            {typeSelected && (
+            {/* Preview total */}
+            {typeSelected && hasValidAmount && (
               <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.previewRow}>
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
-                    Total {isBuy ? 'a Pagar' : 'a Receber'} ({String(quoteCurrency)})
+                  <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
+                    {isBuy ? 'Total a Pagar' : 'Total a Receber'} ({String(quoteCurrency)})
                   </Text>
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
+                  <Text style={[styles.previewValue, { color: isBuy ? '#00c076' : '#ff3b30' }]}>
                     {quoteCurrency === 'BRL' ? `R$ ${total.toFixed(2)}` : `${apiService.formatUSD(total)} ${quoteCurrency}`}
                   </Text>
                 </View>
-                
                 {orderType === 'limit' && (
                   <>
                     <View style={styles.previewRow}>
-                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
-                        Preço ({String(quoteCurrency)})
-                      </Text>
-                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
-                        {parseFloat(price || '0') < 0.01 
-                          ? parseFloat(price || '0').toFixed(10).replace(/\.?0+$/, '') 
-                          : apiService.formatUSD(parseFloat(price || '0'))}
-                      </Text>
-                    </View>
-                    <View style={styles.previewRow}>
-                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
+                      <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
                         Qtd. base ({String(baseCurrency)})
                       </Text>
-                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
+                      <Text style={[styles.previewValue, { color: colors.text }]}>
                         {String((() => {
-                          const qty = baseAmount
-                          if (qty === 0) return '0.00'
-                          if (qty >= 1000000) return `${(qty / 1000000).toFixed(2)}Mi`
-                          if (qty >= 1000) return `${(qty / 1000).toFixed(2)}K`
-                          if (qty < 1) return qty.toFixed(8).replace(/\.?0+$/, '')
-                          return qty.toFixed(4)
+                          const qty = baseAmount;
+                          if (qty === 0) return '0.00';
+                          if (qty < 1) return qty.toFixed(8).replace(/\.?0+$/, '');
+                          return qty.toFixed(4);
                         })())} {String(baseCurrency)}
                       </Text>
                     </View>
                     {isTokenTheQuote && (
                       <View style={styles.previewRow}>
-                        <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewLabel, { color: colors.textSecondary }]}> 
+                        <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
                           Qtd. informada ({String(amountCurrency)})
                         </Text>
-                        <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.previewValue, { color: colors.text }]}> 
-                          {amountCurrency === 'BRL' 
+                        <Text style={[styles.previewValue, { color: colors.text }]}>
+                          {amountCurrency === 'BRL'
                             ? `R$ ${parseFloat(amount || '0').toFixed(2)}`
-                            : `${parseFloat(amount || '0').toFixed(4)} ${amountCurrency}`
-                          }
+                            : `${parseFloat(amount || '0').toFixed(4)} ${amountCurrency}`}
                         </Text>
                       </View>
                     )}
@@ -994,66 +895,50 @@ export function TradeModal({
               </View>
             )}
 
-            {/* Botão Enviar — só habilita quando tudo preenchido */}
-            {(() => {
-              const sideColor = isBuy ? '#10b981' : (orderSide === 'sell' ? '#ef4444' : colors.border)
-              const buttonLabel = createOrderLoading 
-                ? 'Criando ordem...' 
-                : !sideSelected 
-                  ? 'Selecione Comprar ou Vender'
-                  : !typeSelected 
-                    ? 'Selecione Limit ou Market'
-                    : !hasValidAmount 
-                      ? 'Informe a quantidade'
-                      : `${isBuy ? 'Comprar' : 'Vender'} ${tradingPair}`
-              
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    { 
-                      backgroundColor: isFormComplete ? (isBuy ? '#10b98120' : '#ef444420') : `${colors.border}15`,
-                      borderColor: isFormComplete ? sideColor : colors.border,
-                    },
-                    !isFormComplete && styles.submitButtonDisabled,
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={!isFormComplete}
-                >
-                  <Text style={[
-                    styles.submitButtonText,
-                    { color: isFormComplete ? sideColor : colors.textSecondary }
-                  ]}>
-                    {String(buttonLabel)}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })()}
-
             {/* Erro de criação */}
             {createOrderError && (
-              <View style={styles.errorContainerClean}>
-                <Text style={[styles.errorMessageText, { color: '#ef4444' }]}>
-                  {(() => {
-                    const parsed = parseErrorResponse(createOrderError)
-                    return parsed.message
-                  })()}
-                </Text>
-                {(() => {
-                  const parsed = parseErrorResponse(createOrderError)
-                  return parsed.code ? (
-                    <Text style={[styles.errorCodeText, { color: colors.textSecondary }]}>
-                      Código: {parsed.code}
-                    </Text>
-                  ) : null
-                })()}
+              <View style={[styles.errorBox, { backgroundColor: '#ef444420', borderColor: '#ef4444' }]}>
+                <Text style={[styles.errorText, { color: '#ef4444' }]}>{parseErrorResponse(createOrderError).message}</Text>
+                {parseErrorResponse(createOrderError).code && (
+                  <Text style={[styles.errorCodeText, { color: colors.textSecondary }]}>
+                    Código: {parseErrorResponse(createOrderError).code}
+                  </Text>
+                )}
               </View>
             )}
+
+            {/* CTA Button */}
+            {(() => {
+              const sideColor = isBuy ? '#00c076' : (orderSide === 'sell' ? '#ff3b30' : colors.border);
+              const label = createOrderLoading
+                ? 'Criando ordem...'
+                : !sideSelected ? 'Selecione Comprar ou Vender'
+                : !typeSelected ? 'Selecione Limit ou Market'
+                : !hasValidAmount ? 'Informe a quantidade'
+                : `${isBuy ? 'Comprar' : 'Vender'} ${String(baseCurrency)}`;
+
+              return (
+                <TouchableOpacity
+                  style={[styles.submitButton, {
+                    backgroundColor: isFormComplete ? sideColor : colors.border,
+                  }]}
+                  onPress={handleSubmit}
+                  disabled={!isFormComplete}
+                  activeOpacity={0.85}
+                >
+                  {createOrderLoading
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <Text style={styles.submitButtonText}>{String(label)}</Text>
+                  }
+                </TouchableOpacity>
+              );
+            })()}
+
           </ScrollView>
+
         </View>
       </View>
-
-      {/* Modal de Confirmação de Ordem - DENTRO do modal principal */}
+      {/* Modal de Confirmação de Ordem */}
       <Modal
         visible={confirmVisible}
         animationType="fade"
@@ -1081,7 +966,7 @@ export function TradeModal({
                 </View>
                 <View style={styles.confirmRow}>
                   <Text style={[styles.confirmLabel, { color: colors.textSecondary }]}>{t('trade.side')}</Text>
-                  <Text style={[styles.confirmValue, { color: isBuy ? '#10b981' : '#ef4444' }]}>
+                  <Text style={[styles.confirmValue, { color: isBuy ? '#00c076' : '#ff3b30' }]}>
                     {String(isBuy ? t('trade.buy') : t('trade.sell'))}
                   </Text>
                 </View>
@@ -1137,7 +1022,7 @@ export function TradeModal({
                   <Text style={[styles.confirmLabelBold, { color: colors.text }]}>
                     {String(isBuy ? t('trade.totalToPay') : t('trade.totalToReceive'))}
                   </Text>
-                  <Text style={[styles.confirmValueBold, { color: isBuy ? '#10b981' : '#ef4444' }]}>
+                  <Text style={[styles.confirmValueBold, { color: isBuy ? '#00c076' : '#ff3b30' }]}>
                     {String(quoteCurrency === 'BRL' ? `R$ ${total.toFixed(2)}` : `${apiService.formatUSD(total)} ${quoteCurrency}`)}
                   </Text>
                 </View>
@@ -1152,7 +1037,7 @@ export function TradeModal({
                   <Text style={[styles.confirmCancelText, { color: colors.text }]}>{t('common.back')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.confirmOkBtn, { backgroundColor: isBuy ? '#10b981' : '#ef4444' }]} 
+                  style={[styles.confirmOkBtn, { backgroundColor: isBuy ? '#00c076' : '#ff3b30' }]} 
                   onPress={executeOrder}
                 >
                   <Text style={styles.confirmOkText}>
@@ -1169,9 +1054,10 @@ export function TradeModal({
 }
 
 const styles = StyleSheet.create({
+  // ─── Overlay / Container ───────────────────────────────────
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1182,24 +1068,32 @@ const styles = StyleSheet.create({
     height: '85%',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 4,
   },
+
+  // ─── Header ────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
   },
-  title: {
-    fontSize: typography.h4,
-    fontWeight: fontWeights.medium,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  subtitle: {
-    fontSize: typography.body,
+  headerTitle: {
+    fontSize: typography.h4,
+    fontWeight: fontWeights.bold,
+  },
+  headerSubtitle: {
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     marginTop: 2,
   },
@@ -1207,188 +1101,206 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   closeButtonText: {
-    fontSize: typography.h1,
-    fontWeight: fontWeights.light,
-  },
-  content: {
-    padding: 24,
-  },
-  tabs: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  tabActive: {
-    // Applied via backgroundColor
-  },
-  tabText: {
     fontSize: typography.h4,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.regular,
   },
-  stepLabel: {
-    fontSize: typography.caption,
+
+  // ─── Content ───────────────────────────────────────────────
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+
+  // ─── Form sections ─────────────────────────────────────────
+  formSection: {
+    gap: 8,
+  },
+  fieldLabel: {
+    fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
-    marginBottom: 10,
-    textTransform: 'uppercase' as const,
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginTop: 4,
   },
-  sectionDisabled: {
-    opacity: 0.4,
-  },
-  buttonDisabled: {
-    // opacity controlled inline
-  },
-  section: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.medium,
-    marginBottom: 10,
-    flexShrink: 1,
-  },
-  labelRow: {
+  fieldLabelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-    gap: 10,
-  },
-  priceDifferenceText: {
-    fontSize: typography.tiny,
-    fontWeight: fontWeights.semibold,
-    letterSpacing: 0.3,
-  },
-  balanceText: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.regular,
-    flexShrink: 1,
-    textAlign: 'right',
-  },
-  orderTypeButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  orderTypeButton: {
-    flex: 1,
-    paddingVertical: 12,         // 10→12 (padrão secondary button)
-    borderRadius: 10,            // 8→10 (padrão secondary button)
-    borderWidth: 1,              // 1.5→1 (padrão secondary button)
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
   },
-  orderTypeButtonActive: {
-    // Applied via backgroundColor
+  availableText: {
+    fontSize: typography.caption,
+    fontWeight: fontWeights.regular,
   },
-  orderTypeButtonText: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.medium, // bold→medium
+  priceDiffBadge: {
+    fontSize: typography.caption,
+    fontWeight: fontWeights.bold,
   },
-  input: {
-    paddingHorizontal: 16,
-    paddingVertical: 12, // 14→12
-    borderRadius: 10, // 12→10
-    borderWidth: 1.5, // 2→1.5
+
+  // ─── Segmented control ─────────────────────────────────────
+  segmented: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  segmentItem: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 9,
+  },
+  segmentText: {
     fontSize: typography.bodySmall,
-    fontWeight: fontWeights.medium,
-    minHeight: 48, // 52→48
+    fontWeight: fontWeights.semibold,
   },
-  percentageButtons: {
+
+  // ─── Par chips ─────────────────────────────────────────────
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: typography.bodySmall,
+    paddingVertical: 2,
+  },
+  pairChips: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 12,
   },
-  percentageButton: {
-    flex: 1,
-    paddingVertical: 8, // 10→8
-    borderRadius: 6, // 8→6
-    borderWidth: 1, // 1.5→1
+  pairChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  pairChipText: {
+    fontSize: typography.bodySmall,
+  },
+
+  // ─── Stepper inputs ────────────────────────────────────────
+  stepperWrap: {
+    flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 36, // 40→36
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  stepperBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  percentageButtonText: {
+  stepperIcon: {
+    fontSize: typography.h3,
+    fontWeight: fontWeights.light,
+    lineHeight: typography.h3 + 2,
+  },
+  stepperInput: {
+    flex: 1,
+    textAlign: 'center',
     fontSize: typography.body,
     fontWeight: fontWeights.medium,
+    paddingVertical: 0,
   },
-  safetyMarginText: {
-    fontSize: typography.caption,
-    fontStyle: 'italic',
-    opacity: 0.7,
-    marginTop: 8,
-    textAlign: 'center',
+
+  // ─── Percent grid ──────────────────────────────────────────
+  percentGrid: {
+    flexDirection: 'row',
+    gap: 8,
   },
+  percentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  percentBtnText: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
+  },
+
+  // ─── Preview card ──────────────────────────────────────────
   previewCard: {
-    padding: 18, // 20→18
-    borderRadius: 12, // 16→12
-    borderWidth: 1.5, // 2→1.5
-    marginBottom: 24,
-    gap: 12,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
   },
   previewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 8,
   },
   previewLabel: {
     fontSize: typography.caption,
     fontWeight: fontWeights.regular,
     flex: 1,
-    flexShrink: 1,
   },
   previewValue: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.medium, // bold→medium
-    flex: 1,
-    flexShrink: 1,
+    fontSize: typography.caption,
+    fontWeight: fontWeights.semibold,
     textAlign: 'right',
   },
+
+  // ─── Error box ─────────────────────────────────────────────
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: typography.caption,
+    fontWeight: fontWeights.medium,
+  },
+  errorCodeText: {
+    fontSize: typography.caption,
+    opacity: 0.7,
+    marginTop: 4,
+  },
+
+  // ─── Submit button ─────────────────────────────────────────
   submitButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,       // Adiciona padding horizontal padrão
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    minHeight: 48,               // 50→48 (padrão primary button)
-    borderWidth: 2,
-  },
-  submitButtonDisabled: {
-    opacity: 0.5, // 0.6→0.5
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 20,
   },
   submitButtonText: {
-    fontSize: typography.h4,
-    fontWeight: fontWeights.medium, // bold→medium
+    color: '#fff',
+    fontSize: typography.button,
+    fontWeight: fontWeights.bold,
   },
-  // Estilos do modal de confirmação
+
+  // ─── Confirm modal ─────────────────────────────────────────
   confirmOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  confirmSafeArea: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   confirmContainer: {
     borderRadius: 20,
-    width: "100%",
+    width: '100%',
     maxWidth: 400,
     elevation: 5,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1411,9 +1323,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   confirmRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   confirmLabel: {
     fontSize: typography.body,
@@ -1436,7 +1348,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   confirmFooter: {
-    flexDirection: "row",
+    flexDirection: 'row',
     paddingHorizontal: 20,
     paddingBottom: 20,
     gap: 12,
@@ -1446,7 +1358,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    alignItems: "center",
+    alignItems: 'center',
   },
   confirmCancelText: {
     fontSize: typography.body,
@@ -1456,39 +1368,11 @@ const styles = StyleSheet.create({
     flex: 1.5,
     paddingVertical: 14,
     borderRadius: 12,
-    alignItems: "center",
+    alignItems: 'center',
   },
   confirmOkText: {
     fontSize: typography.body,
     fontWeight: fontWeights.bold,
     color: '#fff',
   },
-  // Estilos para loading e erro
-  loadingContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    paddingVertical: 20,
-  },
-  loadingText: {
-    fontSize: typography.body,
-    textAlign: "center",
-  },
-  errorContainerClean: {
-    alignItems: "center",
-    paddingVertical: 12,
-    gap: 4,
-  },
-  errorCodeText: {
-    fontSize: typography.caption,
-    opacity: 0.7,
-    marginTop: 4,
-  },
-  errorMessageText: {
-    fontSize: typography.body,
-    textAlign: "center",
-    lineHeight: 22,
-    marginTop: 8,
-  },
 })
-

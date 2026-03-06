@@ -38,7 +38,7 @@ export function QRScanner({ visible, onClose, onScan, title }: QRScannerProps) {
         )
       }
     } catch (error) {
-      console.error('Error requesting camera permission:', error)
+      console.warn('Error requesting camera permission:', error)
       Alert.alert(t('common.error'), t('error.cameraAccess'))
       onClose()
     }

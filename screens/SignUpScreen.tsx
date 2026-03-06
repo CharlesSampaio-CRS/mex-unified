@@ -209,11 +209,7 @@ export function SignUpScreen({ navigation }: SignUpScreenProps) {
         t('common.success') || 'Sucesso',
         'info'
       )
-      
-      // Aguarda um momento para o usuário ver a mensagem antes de navegar
-      setTimeout(() => {
-        navigation.reset({ index: 0, routes: [{ name: 'Home' }] })
-      }, 1500)
+      // AppNavigator detecta isAuthenticated = true e redireciona automaticamente para Home
     } catch (error: any) {
       console.log('🔴 Erro no registro:', error)
       console.log('🔴 Tipo do erro:', typeof error)

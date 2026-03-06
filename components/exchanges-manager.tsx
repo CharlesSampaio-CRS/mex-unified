@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, RefreshControl, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator } from "react-native"
-import { useEffect, useState, useMemo, useCallback, memo } from "react"
+import { useEffect, useState, useMemo, useCallback, memo, useRef } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
 import { AvailableExchange, LinkedExchange } from "@/types/api"
@@ -31,6 +31,74 @@ const exchangeLogos: Record<string, any> = {
 
 interface ExchangesManagerProps {
   initialTab?: 'all' | 'available' | 'linked'
+}
+
+// Formata datas vindas da API de forma segura (string ISO, timestamp ms ou s)
+// Extrai valor primitivo de um campo que pode vir como MongoDB Extended JSON
+// Ex: { "$date": "2025-12-06T..." } ou { "$date": { "$numberLong": "1733521955043" } }
+function extractMongoDate(value: any): string | number | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'string' || typeof value === 'number') return value
+  if (typeof value === 'object') {
+    // { "$date": "ISO" } ou { "$date": { "$numberLong": "ms" } }
+    const d = value['$date'] ?? value['date']
+    if (d !== undefined) {
+      if (typeof d === 'string' || typeof d === 'number') return d
+      if (typeof d === 'object') {
+        // { "$numberLong": "1733521955043" }
+        const n = d['$numberLong'] ?? d['numberLong']
+        if (n !== undefined) return Number(n)
+      }
+    }
+  }
+  return null
+}
+
+function safeFormatDate(value: any, opts?: Intl.DateTimeFormatOptions): string {
+  if (value === null || value === undefined || value === '') return 'N/A'
+
+  let date: Date
+  const extracted = extractMongoDate(value)
+
+  if (extracted === null) return 'N/A'
+
+  if (typeof extracted === 'number') {
+    date = new Date(extracted < 1e10 ? extracted * 1000 : extracted)
+  } else {
+    const str = String(extracted).trim()
+
+    // Número puro em string (timestamp ms ou s)
+    if (/^\d{10,13}$/.test(str)) {
+      const n = Number(str)
+      date = new Date(str.length <= 10 ? n * 1000 : n)
+    }
+    // Formato do backend: "2026-02-19 22:44:53.923 +00:00:00"
+    // Extrai só "YYYY-MM-DDTHH:MM:SS" e descarta milissegundos e timezone
+    else if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}/.test(str)) {
+      // Captura: data (1) e hora (2), ignora ms e timezone
+      const match = str.match(/^(\d{4}-\d{2}-\d{2})[\sT](\d{2}:\d{2}:\d{2})/)
+      if (match) {
+        date = new Date(`${match[1]}T${match[2]}Z`)
+      } else {
+        date = new Date(str)
+      }
+    }
+    // Qualquer outro
+    else {
+      date = new Date(str)
+    }
+  }
+
+  if (isNaN(date.getTime())) {
+    console.warn('[safeFormatDate] failed to parse:', JSON.stringify(value))
+    return 'N/A'
+  }
+
+  return date.toLocaleDateString('pt-BR', opts ?? {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
 // Subcomponente memoizado para renderizar cada card de exchange
@@ -78,11 +146,7 @@ const LinkedExchangeCard = memo(({
   const formattedDate = useMemo(() => {
     if (isRefreshing) return t('home.updating') || 'Updating...'
     if (!linkedExchange.linked_at) return t('exchanges.noDate') || 'N/A'
-    try {
-      return new Date(linkedExchange.linked_at).toLocaleDateString('pt-BR')
-    } catch (error) {
-      return 'N/A'
-    }
+    return safeFormatDate(linkedExchange.linked_at)
   }, [linkedExchange.linked_at, t, isRefreshing])
 
   return (
@@ -278,6 +342,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const hasLoadedOnceRef = useRef(false) // Ref para evitar closure stale no cache
   const [activeTab, setActiveTab] = useState<'all' | 'available' | 'linked'>(initialTab === 'available' ? 'available' : initialTab === 'linked' ? 'linked' : 'all')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -312,14 +377,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [detailsType, setDetailsType] = useState<'linked' | 'available'>('linked')
   const [detailsFullData, setDetailsFullData] = useState<any>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false) // Cache: carrega só uma vez
+  // hasLoadedOnce como Ref evita closure stale no useCallback do fetchExchanges
 
   const fetchExchanges = useCallback(async (forceRefresh: boolean = false, silent: boolean = false) => {
     if (!user?.id) {
       setLoading(false)
       return
     }
-    if (hasLoadedOnce && !forceRefresh) {
+    if (hasLoadedOnceRef.current && !forceRefresh) {
       return
     }
     try {
@@ -334,7 +399,9 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         ccxt_id: ex.exchange_type || ex.ccxt_id,
         icon: ex.icon || ex.logo,
         status: ex.is_active ? 'active' : 'inactive',
-        linked_at: ex.created_at,
+        // Normaliza datas que podem vir como objeto MongoDB { "$date": "..." }
+        linked_at: extractMongoDate(ex.created_at) ?? ex.created_at,
+        updated_at: extractMongoDate(ex.updated_at) ?? ex.updated_at,
         api_key_expiry_days: ex.api_key_expiry_days,
         days_until_expiry: ex.days_until_expiry,
         api_key_expires_at: ex.api_key_expires_at,
@@ -345,24 +412,24 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       try {
         availableData = await apiService.getAvailableExchanges(user.id, forceRefresh)
       } catch (apiError) {
-        console.error('❌ [ExchangesManager] Erro ao buscar catálogo:', apiError)
+        console.warn('❌ [ExchangesManager] Erro ao buscar catálogo:', apiError)
         availableData = { exchanges: [] }
       }
       setAvailableExchanges(availableData.exchanges || [])
       setRefreshKey(prev => prev + 1)
-      setHasLoadedOnce(true)
+      hasLoadedOnceRef.current = true
       setTimeout(() => {}, 100)
     } catch (err) {
-      console.error('❌ Error fetching exchanges:', err)
+      console.warn('❌ Error fetching exchanges:', err)
       setError(t('exchanges.error'))
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [user?.id, hasLoadedOnce, t])
+  }, [user?.id, t])
 
   // Função para limpar cache e forçar refresh SILENCIOSO (usar após conectar/desconectar)
   const invalidateCacheAndRefresh = useCallback(async () => {
-    setHasLoadedOnce(false) // Limpa o flag de cache
+    hasLoadedOnceRef.current = false // Limpa o flag de cache
     await fetchExchanges(true, true) // forceRefresh=true (força API), silent=true (sem loading)
   }, [fetchExchanges])
 
@@ -392,7 +459,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       await fetchExchanges(true, false)
       console.log('✅ [ExchangesManager] Exchanges atualizadas')
     } catch (error) {
-      console.error(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
+      console.warn(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
     } finally {
       setRefreshing(false)
     }
@@ -449,7 +516,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       setConfirmToggleModalVisible(false)
       
     } catch (error) {
-      console.error("❌ Erro ao atualizar status da exchange:", error)
+      console.warn("❌ Erro ao atualizar status da exchange:", error)
       setToggleLoading(false)
       setConfirmToggleModalVisible(false)
       alert(t("error.updateExchangeStatus"))
@@ -496,7 +563,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     } catch (err) {
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.error('❌ Erro ao desconectar exchange:', err)
+      console.warn('❌ Erro ao desconectar exchange:', err)
       alert(t('error.disconnectExchange'))
     }
   }, [confirmExchangeId, confirmExchangeName, onExchangeModified, t, user?.id])
@@ -550,7 +617,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     } catch (err) {
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.error('❌ Erro ao deletar exchange:', err)
+      console.warn('❌ Erro ao deletar exchange:', err)
       alert(t('error.deleteExchange'))
     }
   }, [confirmExchangeId, confirmExchangeName, onExchangeModified, t, user?.id])
@@ -774,7 +841,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         console.log('✅ [MongoDB] Exchange salva com sucesso!', response.exchange_id)
         
       } catch (apiError) {
-        console.error('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
+        console.warn('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
         Alert.alert(
           t('common.error'),
           t('exchanges.connectError')
@@ -793,7 +860,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       await onExchangeModified()
       
     } catch (err) {
-      console.error('❌ [Error] Erro ao salvar exchange:', err)
+      console.warn('❌ [Error] Erro ao salvar exchange:', err)
       alert(t('error.connectExchange'))
     } finally {
       setConnecting(false)
@@ -1541,7 +1608,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
               {/* Header */}
               <View style={[styles.confirmModalHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.confirmModalTitle, { color: colors.text }]}>
-                  {detailsType === 'linked' ? '🔗 Exchange Conectada' : '🌐 Detalhes da Exchange'}
+                  {detailsType === 'linked' ? 'Exchange Conectada' : 'Detalhes da Exchange'}
                 </Text>
                 <TouchableOpacity onPress={closeDetailsModal} style={styles.confirmModalCloseButton}>
                   <Text style={[styles.confirmModalCloseIcon, { color: colors.text }]}>✕</Text>
@@ -1581,7 +1648,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               />
                             )
                           }
-                          return <Text style={styles.detailsIconText}>🔗</Text>
+                          return <Text style={styles.detailsIconText}></Text>
                         })()}
                       </View>
                       <View style={styles.detailsHeaderText}>
@@ -1664,7 +1731,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                                   {t('exchanges.connectedAt')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                  {new Date(detailsExchange.linked_at).toLocaleDateString('pt-BR', {
+                                  {safeFormatDate(detailsExchange.linked_at, {
                                     day: '2-digit',
                                     month: 'long',
                                     year: 'numeric',
@@ -1680,7 +1747,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                                     {t('exchanges.lastUpdate')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                    {new Date(detailsExchange.updated_at).toLocaleDateString('pt-BR', {
+                                    {safeFormatDate(detailsExchange.updated_at, {
                                       day: '2-digit',
                                       month: 'short',
                                       year: 'numeric',

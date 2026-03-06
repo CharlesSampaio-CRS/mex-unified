@@ -108,7 +108,7 @@ export function StrategyDetailsModal({
         }
       }
     } catch (err: any) {
-      console.error(`❌ [StrategyDetails] Erro ao buscar estratégia:`, err)
+      console.warn(`❌ [StrategyDetails] Erro ao buscar estratégia:`, err)
       setError(err.message || t('strategy.notFound') || 'Erro ao carregar estratégia')
     } finally {
       setLoading(false)
@@ -150,7 +150,7 @@ export function StrategyDetailsModal({
       // Refresh strategy data
       await fetchStrategy(strategyId)
     } catch (err: any) {
-      console.error('❌ [StrategyDetails] Tick failed:', err)
+      console.warn('❌ [StrategyDetails] Tick failed:', err)
       const errorMsg = err?.response?.data?.error || err?.message || 'Unknown error'
       setTickResult({
         success: false,
@@ -284,7 +284,7 @@ export function StrategyDetailsModal({
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.unrealizedPnl') || 'Unrealized P&L'}</Text>
             <Text style={[styles.infoValue, { color: (pos.unrealized_pnl ?? 0) >= 0 ? '#10b981' : '#ef4444' }]}>
-              {formatCurrency(pos.unrealized_pnl)} ({(pos.unrealized_pnl_percent ?? 0) >= 0 ? '+' : ''}{(pos.unrealized_pnl_percent ?? 0).toFixed(2)}%)
+              {formatCurrency(pos.unrealized_pnl)} ({(pos.unrealized_pnl_percent ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(pos.unrealized_pnl_percent ?? 0).toFixed(2)}%)
             </Text>
           </View>
         </View>
@@ -860,7 +860,7 @@ export function StrategyDetailsModal({
                     borderRadius: 4,
                   }}>
                     <Text style={{ fontSize: typography.caption, fontWeight: fontWeights.semibold, color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>
-                      {(sig.price_change_percent ?? 0) >= 0 ? '▲' : '▼'} {(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%
+                      {(sig.price_change_percent ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(sig.price_change_percent ?? 0).toFixed(2)}%
                     </Text>
                   </View>
                 </View>
@@ -1082,7 +1082,7 @@ export function StrategyDetailsModal({
                                     )}
                                   </View>
                                   <Text style={{ fontSize: typography.tiny, fontWeight: fontWeights.medium, color: (sig.price_change_percent ?? 0) >= 0 ? '#10b981' : '#ef4444', flexShrink: 0 }}>
-                                    {(sig.price_change_percent ?? 0) >= 0 ? '+' : ''}{(sig.price_change_percent ?? 0).toFixed(2)}%
+                                    {(sig.price_change_percent ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(sig.price_change_percent ?? 0).toFixed(2)}%
                                   </Text>
                                 </View>
                                 <Text style={{ fontSize: typography.caption, color: colors.text, lineHeight: 18 }} numberOfLines={3}>{sig.message}</Text>

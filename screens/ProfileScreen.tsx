@@ -60,13 +60,9 @@ export function ProfileScreen({ navigation }: any) {
   const confirmLogout = async () => {
     try {
       await logout()
-      if (navigation?.reset) {
-        navigation.reset({ index: 0, routes: [{ name: 'Login' }] })
-      } else if (navigation?.navigate) {
-        navigation.navigate('Login')
-      }
+      // AppNavigator detecta isAuthenticated = false e redireciona automaticamente
     } catch (error) {
-      console.error('❌ Erro no logout:', error)
+      console.warn('❌ Erro no logout:', error)
       Alert.alert(t('common.error'), t('profile.logoutError'))
     }
   }
@@ -470,15 +466,9 @@ export function ProfileScreen({ navigation }: any) {
                             await deleteAccount()
                             setDeleteAccountModalVisible(false)
                             Alert.alert('✓', t('settings.deleteAccountSuccess'))
-                            setTimeout(() => {
-                              if (navigation?.reset) {
-                                navigation.reset({ index: 0, routes: [{ name: 'Login' }] })
-                              } else if (navigation?.navigate) {
-                                navigation.navigate('Login')
-                              }
-                            }, 1500)
+                            // AppNavigator detecta isAuthenticated = false e redireciona automaticamente
                           } catch (error) {
-                            console.error('❌ Erro ao excluir conta:', error)
+                            console.warn('❌ Erro ao excluir conta:', error)
                             Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.')
                           }
                         }
@@ -496,15 +486,9 @@ export function ProfileScreen({ navigation }: any) {
                                   await deleteAccount()
                                   setDeleteAccountModalVisible(false)
                                   Alert.alert('✓', t('settings.deleteAccountSuccess'))
-                                  setTimeout(() => {
-                                    if (navigation?.reset) {
-                                      navigation.reset({ index: 0, routes: [{ name: 'Login' }] })
-                                    } else if (navigation?.navigate) {
-                                      navigation.navigate('Login')
-                                    }
-                                  }, 1500)
+                                  // AppNavigator detecta isAuthenticated = false e redireciona automaticamente
                                 } catch (error) {
-                                  console.error('❌ Erro ao excluir conta:', error)
+                                  console.warn('❌ Erro ao excluir conta:', error)
                                   Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.')
                                 }
                               }

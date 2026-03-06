@@ -187,7 +187,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setTheme(savedTheme)
         }
       } catch (error) {
-        console.error('Error loading theme:', error)
+        console.warn('Error loading theme:', error)
       } finally {
         setIsLoading(false)
       }
@@ -208,7 +208,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme)
       setTheme(newTheme)
     } catch (error) {
-      console.error('Error saving theme:', error)
+      console.warn('Error saving theme:', error)
       // Still update the state even if storage fails
       setTheme(newTheme)
     }

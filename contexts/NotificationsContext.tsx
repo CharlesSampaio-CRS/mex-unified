@@ -60,7 +60,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       
       setNotifications(converted)
     } catch (error) {
-      console.error('❌ [NotificationsContext] Erro ao carregar notificações:', error)
+      console.warn('❌ [NotificationsContext] Erro ao carregar notificações:', error)
       setNotifications([])
     } finally {
       setIsLoading(false)
@@ -108,7 +108,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         setNotifications(prev => [newNotification, ...prev])
       }
     } catch (error) {
-      console.error('❌ [NotificationsContext] Erro ao criar notificação:', error)
+      console.warn('❌ [NotificationsContext] Erro ao criar notificação:', error)
     }
   }, [user?.id])
 
@@ -130,7 +130,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         )
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error)
+      console.warn('Error marking notification as read:', error)
     }
   }, [user?.id])
 
@@ -150,13 +150,13 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         )
       }
     } catch (error) {
-      console.error('Error marking all notifications as read:', error)
+      console.warn('Error marking all notifications as read:', error)
     }
   }, [user?.id])
 
   const deleteNotification = useCallback(async (id: string) => {
     if (!user?.id || !id || id === 'undefined') {
-      console.error('Invalid notification ID:', id)
+      console.warn('Invalid notification ID:', id)
       return
     }
 
@@ -172,7 +172,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         console.warn('Notification deletion returned false, but UI was already updated')
       }
     } catch (error) {
-      console.error('Error deleting notification:', error)
+      console.warn('Error deleting notification:', error)
       // Refetch to ensure consistency
       await loadNotifications()
     }
@@ -192,7 +192,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         setNotifications([])
       }
     } catch (error) {
-      console.error('❌ [NotificationsContext] Erro ao limpar notificações:', error)
+      console.warn('❌ [NotificationsContext] Erro ao limpar notificações:', error)
     }
   }, [user?.id])
 

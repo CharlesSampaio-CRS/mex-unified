@@ -137,7 +137,7 @@ class StrategiesService {
 
     if (!response.ok) {
       const error = await response.json()
-      console.error("❌ Erro na resposta da API:", error)
+      console.warn("❌ Erro na resposta da API:", error)
       throw new Error(error.error || "Failed to create strategy")
     }
 
@@ -264,7 +264,7 @@ class StrategiesService {
       } catch (e) {
         errorMessage = `HTTP ${response.status}: ${response.statusText}`
       }
-      console.error("❌ Delete failed:", errorMessage)
+      console.warn("❌ Delete failed:", errorMessage)
       throw new Error(errorMessage)
     }
   }
@@ -317,7 +317,7 @@ class StrategiesService {
       
       // Apenas loga erro se não for 404 (estratégia nova sem stats ainda)
       if (response.status !== 404) {
-        console.error(`❌ Error fetching stats for strategy ${strategyId}:`, errorMessage)
+        console.warn(`❌ Error fetching stats for strategy ${strategyId}:`, errorMessage)
       }
       
       throw new Error(errorMessage)
@@ -410,7 +410,7 @@ class StrategiesService {
       // Ordena por data (mais recente primeiro)
       return executions.sort((a, b) => b.executedAt.getTime() - a.executedAt.getTime())
     } catch (error) {
-      console.error("Error loading user executions:", error)
+      console.warn("Error loading user executions:", error)
       return []
     }
   }

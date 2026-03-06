@@ -138,8 +138,8 @@ const translations = {
     'strategy.conservativeDesc': 'Proteção máxima (2 TPs, trailing stop)',
     'strategy.aggressive': 'Agressiva',
     'strategy.aggressiveDesc': 'Máximo lucro (3 TPs, DCA ativo)',
-    'strategy.templates': 'Templates de Estratégia',
-    'strategy.templatesSubtitle': 'Detalhes de cada estratégia padrão',
+    'strategy.templates': 'Estratégias Padrão',
+    'strategy.templatesSubtitle': 'Detalhes estratégia padrão',
     'strategy.createNew': 'Criar Nova Estratégia',
     'strategy.riskLevel': 'Risco',
     'strategy.configs': 'Configurações',
@@ -1624,7 +1624,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           setLanguage(savedLanguage)
         }
       } catch (error) {
-        console.error('Error loading language:', error)
+        console.warn('Error loading language:', error)
       } finally {
         setIsLoading(false)
       }
@@ -1639,7 +1639,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newLanguage)
       setLanguage(newLanguage)
     } catch (error) {
-      console.error('Error saving language:', error)
+      console.warn('Error saving language:', error)
       // Still update the state even if storage fails
       setLanguage(newLanguage)
     }

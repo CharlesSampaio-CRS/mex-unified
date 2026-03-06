@@ -70,7 +70,7 @@ export function AlertsList({ filterSymbol, exchanges }: AlertsListProps) {
     try {
       await toggleAlert(alertId, !currentEnabled);
     } catch (err) {
-      console.error('[AlertsList] Erro ao alternar alerta:', err);
+      console.warn('[AlertsList] Erro ao alternar alerta:', err);
     }
   }, [toggleAlert]);
 
@@ -90,7 +90,7 @@ export function AlertsList({ filterSymbol, exchanges }: AlertsListProps) {
       await deleteAlert(alertToDelete.id);
       console.log('[AlertsList] ✅ Alerta removido com sucesso');
     } catch (err) {
-      console.error('[AlertsList] ❌ Erro ao remover alerta:', err);
+      console.warn('[AlertsList] ❌ Erro ao remover alerta:', err);
     } finally {
       setAlertToDelete(null);
     }

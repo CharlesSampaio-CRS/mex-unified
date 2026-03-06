@@ -126,7 +126,7 @@ export function OpenOrdersModal({
       
       
     } catch (err: any) {
-      console.error('❌ Erro ao carregar ordens:', err)
+      console.warn('❌ Erro ao carregar ordens:', err)
       setError(err.message || 'Erro ao carregar ordens')
       setOrders([])
     } finally {
@@ -376,11 +376,11 @@ export function OpenOrdersModal({
         setCancellingOrderId(null)
         
         // Atualiza em background (silencioso)
-        refreshBalance().catch(console.error)
+        refreshBalance().catch((e) => console.warn(e))
         
         // ⚡ Sincroniza apenas ESTA exchange (antes: recarregava TODAS)
         setTimeout(() => {
-          refreshExchange(exchangeId).catch(console.error)
+          refreshExchange(exchangeId).catch((e) => console.warn(e))
         }, 2000)
         
         // Chama callback se existir
@@ -389,7 +389,7 @@ export function OpenOrdersModal({
         }
       } else {
         // ❌ API retornou success=false (erro lógico)
-        console.error('❌ [OpenOrdersModal] API retornou success=false:', result)
+        console.warn('❌ [OpenOrdersModal] API retornou success=false:', result)
         const errorMsg = result.error || result.message || t('orders.cancelOrderError')
         setCancelError(errorMsg)
         setCancelLoading(false)
@@ -402,8 +402,8 @@ export function OpenOrdersModal({
       }
     } catch (error: any) {
       // ❌ Erro de rede, timeout, ou HTTP 400/500
-      console.error('❌ [OpenOrdersModal] Erro ao cancelar:', error)
-      console.error('❌ [OpenOrdersModal] Stack:', error.stack)
+      console.warn('❌ [OpenOrdersModal] Erro ao cancelar:', error)
+      console.warn('❌ [OpenOrdersModal] Stack:', error.stack)
       
       // Mensagem de erro mais específica
       let errorMessage = t('orders.unknownCancelError')
@@ -453,7 +453,7 @@ export function OpenOrdersModal({
         
         // Se TODAS falharam, mostra erro no modal
         if (cancelledCount === 0 && failedCount > 0 && result.failed_orders && result.failed_orders.length > 0) {
-          console.error('❌ [OpenOrdersModal] Todas as ordens falharam:', result.failed_orders)
+          console.warn('❌ [OpenOrdersModal] Todas as ordens falharam:', result.failed_orders)
           const firstError = result.failed_orders[0].error || 'Erro ao cancelar ordens'
           setCancelAllError(firstError)
           setCancelAllLoading(false)
@@ -481,7 +481,7 @@ export function OpenOrdersModal({
           })
           
           // ✅ Atualiza balance/assets imediatamente (fundos parcialmente liberados)
-          refreshBalance().catch(console.error)
+          refreshBalance().catch((e) => console.warn(e))
           
           // NÃO fecha o modal para mostrar o erro
           return
@@ -503,11 +503,11 @@ export function OpenOrdersModal({
         setCancelAllLoading(false)
         
         // ✅ Atualiza balance/assets imediatamente (fundos liberados ao cancelar)
-        refreshBalance().catch(console.error)
+        refreshBalance().catch((e) => console.warn(e))
         
         // ⚡ Sincroniza apenas ESTA exchange (antes: recarregava TODAS)
         setTimeout(() => {
-          refreshExchange(exchangeId).catch(console.error)
+          refreshExchange(exchangeId).catch((e) => console.warn(e))
         }, 2000)
         
         // Chama callback
@@ -521,7 +521,7 @@ export function OpenOrdersModal({
         }, 100)
       } else {
         // ❌ API retornou success=false (erro lógico)
-        console.error('❌ [OpenOrdersModal] API retornou success=false:', result)
+        console.warn('❌ [OpenOrdersModal] API retornou success=false:', result)
         
         // Tenta extrair mensagem de erro de diferentes campos
         let errorMsg = 'Erro ao cancelar ordens'
@@ -543,7 +543,7 @@ export function OpenOrdersModal({
       }
     } catch (error: any) {
       // ❌ Erro de rede, timeout, ou HTTP 400/500
-      console.error('❌ [OpenOrdersModal] Erro ao cancelar todas:', error)
+      console.warn('❌ [OpenOrdersModal] Erro ao cancelar todas:', error)
       
       // Mensagem de erro mais específica
       let errorMessage = 'Erro desconhecido ao cancelar ordens'

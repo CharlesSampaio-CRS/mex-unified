@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Pressable } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useBalance } from '../contexts/BalanceContext';
@@ -18,7 +18,7 @@ interface TokenWithChange {
 
 type ModalType = 'gainers' | 'losers' | null;
 
-export const TopGainersLosers: React.FC = () => {
+export const TopGainersLosers = memo(function TopGainersLosers() {
   const { colors } = useTheme();
   const { data, isLoading } = useBalance();
   const { t } = useLanguage();
@@ -145,14 +145,12 @@ export const TopGainersLosers: React.FC = () => {
   };
 
   const formatChange = (change: number) => {
-    const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(2)}%`;
+    const arrow = change >= 0 ? '▲' : '▼';
+    return `${arrow} ${Math.abs(change).toFixed(2)}%`;
   };
 
   const renderTokenItem = (token: TokenWithChange, isGainer: boolean) => {
     const changeColor = isGainer ? colors.success : colors.danger;
-    const icon = isGainer ? 'trending-up' : 'trending-down';
-
     return (
       <TouchableOpacity
         key={`${token.symbol}-${token.exchange}`}
@@ -160,12 +158,6 @@ export const TopGainersLosers: React.FC = () => {
         activeOpacity={0.7}
       >
         <View style={styles.tokenLeft}>
-          <Ionicons 
-            name={icon as any} 
-            size={20} 
-            color={changeColor} 
-            style={styles.tokenIcon}
-          />
           <View style={styles.tokenInfo}>
             <Text style={[styles.tokenSymbol, { color: colors.text }]}>
               {token.symbol}
@@ -202,7 +194,6 @@ export const TopGainersLosers: React.FC = () => {
       {/* Top Gainers - Maiores Altas (24h) */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.header}>
-          <Ionicons name="trending-up" size={20} color={colors.success} />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {t('topGainersLosers.gainersTitle')}
           </Text>
@@ -254,7 +245,6 @@ export const TopGainersLosers: React.FC = () => {
       {/* Top Losers - Maiores Baixas (24h) */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.header}>
-          <Ionicons name="trending-down" size={20} color={colors.danger} />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {t('topGainersLosers.losersTitle')}
           </Text>
@@ -316,11 +306,6 @@ export const TopGainersLosers: React.FC = () => {
               {/* Header do Modal */}
               <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
                 <View style={styles.modalTitleContainer}>
-                  <Ionicons
-                    name={modalType === 'gainers' ? 'trending-up' : 'trending-down'}
-                    size={24}
-                    color={modalType === 'gainers' ? colors.success : colors.danger}
-                  />
                   <Text style={[styles.modalTitle, { color: colors.text }]}>
                     {modalType === 'gainers' 
                       ? t('topGainersLosers.allGainersTitle') 
@@ -354,7 +339,7 @@ export const TopGainersLosers: React.FC = () => {
       </Modal>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

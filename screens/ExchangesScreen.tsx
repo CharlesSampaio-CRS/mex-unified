@@ -35,7 +35,7 @@ export function ExchangesScreen({ route, navigation }: any) {
       setLinkedCount(counts.connected)
       setAvailableCount(counts.available)
     } catch (error) {
-      console.error('❌ [ExchangesScreen] Error loading exchanges counts:', error)
+      console.warn('❌ [ExchangesScreen] Error loading exchanges counts:', error)
     }
   }, [user?.id])
   

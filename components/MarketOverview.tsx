@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -28,7 +28,7 @@ const MAIN_TOKENS = [
   { symbol: 'LINK', name: 'Chainlink' },
 ];
 
-export const MarketOverview: React.FC = () => {
+export const MarketOverview = memo(function MarketOverview() {
   const { colors, theme } = useTheme();
   const { t } = useLanguage();
   const [tokens, setTokens] = useState<MarketToken[]>([]);
@@ -88,7 +88,7 @@ export const MarketOverview: React.FC = () => {
       
       console.log(`[MarketOverview] ✅ ${tokensData.length} tokens carregados`);
     } catch (err) {
-      console.error('[MarketOverview] ❌ Erro ao carregar dados:', err);
+      console.warn('[MarketOverview] ❌ Erro ao carregar dados:', err);
       setError('Erro ao carregar dados do mercado');
     } finally {
       setLoading(false);
@@ -147,7 +147,7 @@ export const MarketOverview: React.FC = () => {
         setChartData(null);
       }
     } catch (error) {
-      console.error('[MarketOverview] ❌ Erro ao carregar gráfico:', error);
+      console.warn('[MarketOverview] ❌ Erro ao carregar gráfico:', error);
       setChartData(null);
     } finally {
       setLoadingChart(false);
@@ -185,8 +185,8 @@ export const MarketOverview: React.FC = () => {
   };
 
   const formatChange = (change: number): string => {
-    const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(2)}%`;
+    const arrow = change >= 0 ? '▲' : '▼';
+    return `${arrow} ${Math.abs(change).toFixed(2)}%`;
   };
 
   if (loading && tokens.length === 0) {
@@ -296,11 +296,6 @@ export const MarketOverview: React.FC = () => {
                   },
                 ]}
               >
-                <Ionicons
-                  name={token.change24h >= 0 ? 'trending-up' : 'trending-down'}
-                  size={12}
-                  color={token.change24h >= 0 ? '#22c55e' : '#ef4444'}
-                />
                 <Text
                   style={[
                     styles.changeText,
@@ -315,25 +310,34 @@ export const MarketOverview: React.FC = () => {
         ))}
       </ScrollView>
 
-      {/* Modal de Detalhes do Token */}
+      {/* Modal de Detalhes do Token — padrão centered fade */}
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {selectedToken?.name} ({selectedToken?.symbol})
-              </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close-outline" size={24} color={colors.text} />
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+
+            {/* Header */}
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <View style={styles.modalHeaderLeft}>
+                <Text style={[styles.modalTitle, { color: colors.text }]} numberOfLines={1}>
+                  {selectedToken?.symbol}
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {selectedToken?.name}
+                  {selectedToken ? ` · ${formatPrice(selectedToken.price)}` : ''}
+                  {selectedToken ? ` · ${formatChange(selectedToken.change24h)}` : ''}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
               {selectedToken && (
                 <>
                   {/* Gráfico de Evolução */}
@@ -352,7 +356,7 @@ export const MarketOverview: React.FC = () => {
                       <View style={styles.chartLoading}>
                         <Text style={[styles.errorText, { color: colors.textSecondary, textAlign: 'center' }]}>
                           ⚠️ {t('market.chartUnavailable')}{'\n'}
-                          <Text style={{ fontSize: typography.tiny }}>
+                          <Text style={{ fontSize: typography.micro }}>
                             {t('market.apiTemporary')}
                           </Text>
                         </Text>
@@ -360,50 +364,44 @@ export const MarketOverview: React.FC = () => {
                     )}
                   </View>
 
-                  {/* Preço Atual */}
-                  <View style={styles.detailSection}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      {t('market.currentPrice')}
-                    </Text>
-                    <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {formatPrice(selectedToken.price)}
-                    </Text>
-                  </View>
-
-                  {/* Variação 24h */}
-                  <View style={styles.detailSection}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                      {t('market.change24h')}
-                    </Text>
+                  {/* Preço e variação */}
+                  <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.detailRow}>
-                      <Text style={[
-                        styles.detailValue,
-                        { color: selectedToken.change24h >= 0 ? '#22c55e' : '#ef4444' }
-                      ]}>
-                        {formatChange(selectedToken.change24h)}
-                      </Text>
-                      <Ionicons
-                        name={selectedToken.change24h >= 0 ? 'trending-up' : 'trending-down'}
-                        size={20}
-                        color={selectedToken.change24h >= 0 ? '#22c55e' : '#ef4444'}
-                      />
-                    </View>
-                  </View>
-
-                  {/* Volume 24h */}
-                  {selectedToken.volume24h && (
-                    <View style={styles.detailSection}>
                       <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                        Volume 24h
+                        {t('market.currentPrice')}
                       </Text>
                       <Text style={[styles.detailValue, { color: colors.text }]}>
-                        ${selectedToken.volume24h.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                        {formatPrice(selectedToken.price)}
                       </Text>
                     </View>
-                  )}
+                    <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                        {t('market.change24h')}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={[styles.detailValue, { color: selectedToken.change24h >= 0 ? '#22c55e' : '#ef4444' }]}>
+                          {formatChange(selectedToken.change24h)}
+                        </Text>
+                      </View>
+                    </View>
+                    {selectedToken.volume24h ? (
+                      <>
+                        <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
+                        <View style={styles.detailRow}>
+                          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                            Volume 24h
+                          </Text>
+                          <Text style={[styles.detailValue, { color: colors.text }]}>
+                            ${selectedToken.volume24h.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                          </Text>
+                        </View>
+                      </>
+                    ) : null}
+                  </View>
 
-                  {/* Informações Adicionais */}
-                  <View style={[styles.infoBox, { backgroundColor: colors.surfaceSecondary }]}>
+                  {/* Fonte dos dados */}
+                  <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <Text style={[styles.infoText, { color: colors.textSecondary }]}>
                       💡 Dados em tempo real fornecidos por CoinGecko
                     </Text>
@@ -416,7 +414,7 @@ export const MarketOverview: React.FC = () => {
       </Modal>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -531,60 +529,93 @@ const styles = StyleSheet.create({
     fontSize: typography.micro,
     fontWeight: fontWeights.medium,
   },
-  // Modal styles
+  // Modal styles — padrão centered fade (igual create-order-modal)
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
+    borderRadius: 20,
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  modalHeaderLeft: {
+    flex: 1,
+    minWidth: 0,
   },
   modalTitle: {
-    fontSize: typography.bodyLarge,
-    fontWeight: fontWeights.semibold,
-    flex: 1,
+    fontSize: typography.h4,
+    fontWeight: fontWeights.bold,
+  },
+  modalSubtitle: {
+    fontSize: typography.micro,
+    fontWeight: fontWeights.regular,
+    marginTop: 2,
+  },
+  closeButton: {
+    padding: 4,
   },
   modalBody: {
     flex: 1,
+    padding: 16,
   },
-  detailSection: {
-    marginBottom: 16,
+  detailCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 42,
+  },
+  detailDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 14,
   },
   detailLabel: {
-    fontSize: typography.tiny,
-    fontWeight: fontWeights.medium,
-    marginBottom: 6,
+    fontSize: typography.body,
+    flex: 1,
   },
   detailValue: {
     fontSize: typography.body,
     fontWeight: fontWeights.semibold,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flexShrink: 0,
+    textAlign: 'right',
   },
   infoBox: {
-    marginTop: 12,
     padding: 12,
     borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 4,
   },
   infoText: {
-    fontSize: typography.tiny,
+    fontSize: typography.caption,
     lineHeight: 18,
   },
   chartSection: {
-    marginBottom: 20,
+    marginBottom: 16,
     alignItems: 'center',
   },
   chartLoading: {

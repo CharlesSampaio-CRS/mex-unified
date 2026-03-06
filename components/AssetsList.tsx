@@ -542,7 +542,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           console.log(`⚠️ Token ${upperToken} não encontrado em ${exchangeName}: ${result.message}`)
         }
       } catch (error: any) {
-        console.error(`❌ Erro ao buscar ${upperToken} em ${exchangeName}:`, error)
+        console.warn(`❌ Erro ao buscar ${upperToken} em ${exchangeName}:`, error)
         lastError = error
         // Continua tentando outras exchanges
       }
@@ -1060,38 +1060,44 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                         setTokenModalVisible(true)
                       }}
                     >
-                      {/* Symbol */}
-                      <View style={styles.assetSymbolContainer}>
-                        <Text style={[styles.assetSymbolText, { color: colors.text }]} numberOfLines={1}>
-                          {String(asset.symbol)}
-                        </Text>
-                      </View>
-
-                      {/* Variation badge */}
-                      {!asset.isStablecoin && asset.variation24h !== undefined ? (
-                        <View style={[styles.assetVariationBadge, { 
-                          backgroundColor: (asset.variation24h >= 0 ? colors.success : colors.danger) + '10' 
-                        }]}>
-                          <Text style={[styles.assetVariationText, { 
-                            color: asset.variation24h >= 0 ? colors.success : colors.danger 
-                          }]}>
-                            {String((asset.variation24h >= 0 ? '+' : '') + asset.variation24h.toFixed(1))}%
+                      {/* Two-line layout:
+                           Linha 1: [NomeToken]                    [precoToken]
+                           Linha 2: [qtdToken]  [valorUSD]  [var%]            */}
+                      <View style={styles.assetTwoLineContainer}>
+                        {/* Linha 1: símbolo à esquerda, preço à direita */}
+                        <View style={styles.assetRow1}>
+                          <Text style={[styles.assetSymbolText, { color: colors.text }]} numberOfLines={1}>
+                            {String(asset.symbol)}
+                          </Text>
+                          <Text style={[styles.assetPriceText, { color: colors.text }]} numberOfLines={1}>
+                            {asset.priceUSD > 0
+                              ? `$${asset.priceUSD < 0.01 ? asset.priceUSD.toFixed(6) : asset.priceUSD < 1 ? asset.priceUSD.toFixed(4) : asset.priceUSD.toFixed(2)}`
+                              : '—'}
                           </Text>
                         </View>
-                      ) : (
-                        <View style={styles.assetVariationBadge}>
-                          <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.4 }]}>—</Text>
-                        </View>
-                      )}
 
-                      {/* Amount + Value inline */}
-                      <View style={styles.assetValuesContainer}>
-                        <Text style={[styles.assetAmountText, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {String(asset.amount)}
-                        </Text>
-                        <Text style={[styles.assetValueText, { color: colors.text }]} numberOfLines={1}>
-                          {String(valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD))}
-                        </Text>
+                        {/* Linha 2: quantidade · valor USD · variação */}
+                        <View style={styles.assetRow2}>
+                          <Text style={[styles.assetAmountText, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {valuesHidden
+                              ? '****'
+                              : `${parseFloat(asset.amount) < 0.0001 ? parseFloat(asset.amount).toFixed(8) : parseFloat(asset.amount) < 1 ? parseFloat(asset.amount).toFixed(4) : parseFloat(asset.amount).toFixed(2)} ${asset.symbol}`}
+                          </Text>
+                          <View style={styles.assetRow2Right}>
+                            <Text style={[styles.assetValueText, { color: colors.textSecondary }]} numberOfLines={1}>
+                              {valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD)}
+                            </Text>
+                            {!asset.isStablecoin && asset.variation24h !== undefined && asset.variation24h !== null ? (
+                              <Text style={[styles.assetVariationText, {
+                                color: asset.variation24h >= 0 ? colors.success : colors.danger
+                              }]} numberOfLines={1}>
+                                {(asset.variation24h >= 0 ? '▲' : '▼') + ' ' + Math.abs(Number(asset.variation24h)).toFixed(2)}%
+                              </Text>
+                            ) : (
+                              <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.3 }]}>—</Text>
+                            )}
+                          </View>
+                        </View>
                       </View>
                     </BlinkingAssetCard>
                   ))}
@@ -1517,32 +1523,68 @@ const styles = StyleSheet.create({
   exchangeCardBody: {
     // Container for asset rows inside the card
   },
-  // Asset item row - compact inline like order items
+  // Asset item row - duas linhas
   assetItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 7,
+    paddingVertical: 9,
     paddingHorizontal: 12,
     borderBottomWidth: 0.5,
-    gap: 8,
+  },
+  // Container que ocupa toda a largura e organiza as 2 linhas
+  assetTwoLineContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    gap: 3,
+  },
+  // Linha 1: símbolo (esquerda) + preço (direita)
+  assetRow1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  // Linha 2: quantidade (esquerda) + [valor + variação] (direita)
+  assetRow2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  assetRow2Right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   assetSymbolContainer: {
-    minWidth: 52,
+    minWidth: 48,
+    maxWidth: 60,
   },
   assetSymbolText: {
-    fontSize: typography.tiny,
+    fontSize: typography.bodySmall,
     fontWeight: fontWeights.semibold,
   },
+  assetPriceText: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
+  },
+  assetAmountText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.regular,
+  },
+  assetValueText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.medium,
+  },
+  assetVariationText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.bold,
+  },
+  // Mantido para compatibilidade (não usado no novo layout)
   assetVariationBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
     minWidth: 42,
     alignItems: 'center',
-  },
-  assetVariationText: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.bold,
   },
   assetValuesContainer: {
     flex: 1,
@@ -1551,17 +1593,18 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
-  assetAmountText: {
-    fontSize: typography.tiny,
-    fontWeight: fontWeights.regular,
-    minWidth: 50,
-    textAlign: 'right',
+  // Mantidos para compatibilidade
+  assetPriceContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 2,
   },
-  assetValueText: {
-    fontSize: typography.tiny,
-    fontWeight: fontWeights.semibold,
-    minWidth: 56,
-    textAlign: 'right',
+  assetHoldingsContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 2,
+    minWidth: 72,
   },
   list: {
     gap: 8,

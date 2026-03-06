@@ -82,7 +82,7 @@ export function TokenSearchModal({ visible, onClose }: TokenSearchModalProps) {
         
         
       } catch (error) {
-        console.error('❌ Erro ao buscar CoinGecko:', error)
+        console.warn('❌ Erro ao buscar CoinGecko:', error)
         setCoinGeckoResults([])
       } finally {
         setSearchingCoinGecko(false)

@@ -113,27 +113,10 @@ export function SettingsScreen({ navigation, route }: any) {
 
   const confirmLogout = async () => {
     try {
-      console.log('✅ Usuário confirmou logout, executando...')
-      console.log('📤 Chamando função logout do AuthContext...')
       await logout()
-      console.log('✅ Logout executado com sucesso!')
-      console.log('🔄 Tentando resetar navegação...')
-      
-      // Tenta diferentes formas de resetar a navegação
-      if (navigation?.reset) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }]
-        })
-        console.log('✅ Navegação resetada via navigation.reset')
-      } else if (navigation?.navigate) {
-        navigation.navigate('Login')
-        console.log('✅ Navegação via navigation.navigate')
-      } else {
-        console.error('❌ Nenhum método de navegação disponível')
-      }
+      // AppNavigator detecta isAuthenticated = false e redireciona automaticamente
     } catch (error) {
-      console.error('❌ Erro no logout:', error)
+      console.warn('❌ Erro no logout:', error)
       Alert.alert(t('common.error'), t('profile.logoutError'))
     }
   }
@@ -163,7 +146,7 @@ export function SettingsScreen({ navigation, route }: any) {
       const data = await response.json()
       setDeviceIp(data.ip)
     } catch (error) {
-      console.error('Error fetching IP:', error)
+      console.warn('Error fetching IP:', error)
       setDeviceIp('Não disponível')
     }
   }
@@ -1172,24 +1155,12 @@ export function SettingsScreen({ navigation, route }: any) {
                         const confirmed = window.confirm(t('settings.deleteAccountConfirm'))
                         if (confirmed) {
                           try {
-                            console.log('🗑️ Usuário confirmou exclusão da conta')
                             await deleteAccount()
                             setDeleteAccountModalVisible(false)
                             Alert.alert('✓', t('settings.deleteAccountSuccess'))
-                            
-                            // Redireciona para login após um pequeno delay
-                            setTimeout(() => {
-                              if (navigation?.reset) {
-                                navigation.reset({
-                                  index: 0,
-                                  routes: [{ name: 'Login' }]
-                                })
-                              } else if (navigation?.navigate) {
-                                navigation.navigate('Login')
-                              }
-                            }, 1500)
+                            // AppNavigator detecta isAuthenticated = false e redireciona automaticamente
                           } catch (error) {
-                            console.error('❌ Erro ao excluir conta:', error)
+                            console.warn('❌ Erro ao excluir conta:', error)
                             Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.')
                           }
                         }
@@ -1207,24 +1178,12 @@ export function SettingsScreen({ navigation, route }: any) {
                               style: 'destructive',
                               onPress: async () => {
                                 try {
-                                  console.log('🗑️ Usuário confirmou exclusão da conta')
                                   await deleteAccount()
                                   setDeleteAccountModalVisible(false)
                                   Alert.alert('✓', t('settings.deleteAccountSuccess'))
-                                  
-                                  // Redireciona para login após um pequeno delay
-                                  setTimeout(() => {
-                                    if (navigation?.reset) {
-                                      navigation.reset({
-                                        index: 0,
-                                        routes: [{ name: 'Login' }]
-                                      })
-                                    } else if (navigation?.navigate) {
-                                      navigation.navigate('Login')
-                                    }
-                                  }, 1500)
+                                  // AppNavigator detecta isAuthenticated = false e redireciona automaticamente
                                 } catch (error) {
-                                  console.error('❌ Erro ao excluir conta:', error)
+                                  console.warn('❌ Erro ao excluir conta:', error)
                                   Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.')
                                 }
                               }

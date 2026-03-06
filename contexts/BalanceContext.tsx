@@ -52,7 +52,6 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
     try {
       const cached = await loadBalanceFromLocalCache()
       if (cached?.data) {
-        console.log('⚡ [BalanceContext] Cache local carregado instantaneamente!')
         setData(cached.data)
         setIsStale(true)
         setLoading(false) // 🚀 Remove loading imediatamente!
@@ -70,11 +69,9 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
    */
   const loadFromBackendCache = useCallback(async (): Promise<boolean> => {
     try {
-      console.log('⚡ [BalanceContext] Buscando cache do backend...')
       const cached = await apiService.getBalancesCached()
       
       if (cached?.data && cached.cached_at) {
-        console.log(`✅ [BalanceContext] Cache do backend recebido (age: ${cached.age_seconds}s)`)
         setData(cached.data)
         setIsStale(true)
         setLoading(false)
@@ -97,16 +94,12 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
     // 🔒 PROTEÇÃO: Se já está buscando...
     if (isFetchingRef.current) {
       if (forceRefresh && !silent) {
-        console.log('🔄 [BalanceContext] Fetch em andamento, mas forceRefresh=true — aguardando...')
         setRefreshing(true)
-      } else {
-        console.log('⏭️ [BalanceContext] Fetch já em andamento, ignorando...')
       }
       return
     }
     
     isFetchingRef.current = true
-    console.log('🔐 [BalanceContext] Lock adquirido, iniciando fetch CCXT...')
     
     // ✅ Loading states: só mostra loading se NÃO tem dados (nem do cache)
     if (!silent && !data) {
@@ -126,7 +119,6 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
 
       if (data) {
         // Tem dados do cache → mantém exibindo, sem erro visível
-        console.log('ℹ️ [BalanceContext] Dados do cache mantidos, sem erro para o usuário')
         setIsStale(true)
       } else {
         // Sem nenhum dado → mostra erro para o usuário poder tentar novamente
@@ -145,12 +137,9 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       
       setError(null)
       
-      console.log('📡 [BalanceContext] Chamando apiService.getBalances() (CCXT real-time)...')
       const response = await apiService.getBalances(user.id, forceRefresh)
-      console.log('✅ [BalanceContext] Dados frescos recebidos!')
       
       if (!response) {
-        console.log('⚠️ [BalanceContext] Nenhuma resposta da API')
         isFetchingRef.current = false
         setLoading(false)
         setRefreshing(false)
@@ -177,7 +166,7 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
         : (data?.total_usd || 0)
       
       if (allExchangesFailed && hasTimeout && data && currentTotal > 0) {
-        console.warn('⚠️ Todas exchanges falharam por timeout. Mantendo dados do cache.')
+        console.warn('⚠️ [BalanceContext] Todas exchanges falharam por timeout. Mantendo dados do cache.')
         setIsStale(true)
         isFetchingRef.current = false
         return
@@ -196,25 +185,20 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch balances'
-      console.error('❌ [BalanceContext] Error:', errorMsg)
+      console.warn('[BalanceContext] Erro ao buscar balances:', errorMsg)
       setError(errorMsg)
     } finally {
-      console.log('🧹 [BalanceContext] Finalizando fetch, removendo loading...')
       await new Promise(resolve => setTimeout(resolve, 50))
       
       setLoading(false)
       setRefreshing(false)
       isFetchingRef.current = false
-      console.log('✅ [BalanceContext] Loading removido, isFetching=false')
       clearTimeout(safetyTimeout)
     }
   }, [user?.id, data])
 
   const refresh = useCallback(async () => {
-    console.log('🟠 [BALANCE-CONTEXT] refresh() chamado')
-    const startTime = Date.now()
     await fetchBalances(true, false)
-    console.log(`🟠 [BALANCE-CONTEXT] refresh() concluído em ${Date.now() - startTime}ms`)
   }, [fetchBalances])
 
   const loadFullBalances = useCallback(async () => {
@@ -232,27 +216,19 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       hasFetchedInitialRef.current = true
       
       const initWithCacheFirst = async () => {
-        console.log('🚀 [BalanceContext] === CACHE-FIRST INIT ===')
         const startTime = Date.now()
         
         // FASE 1: Cache local (instantâneo, ~10-50ms)
         const hasLocalCache = await loadFromLocalCache()
-        if (hasLocalCache) {
-          console.log(`⚡ [BalanceContext] FASE 1 OK: Cache local em ${Date.now() - startTime}ms`)
-        }
         
         // FASE 2: Cache do backend (~100ms) - só se não tem cache local
         if (!hasLocalCache) {
-          const hasBackendCache = await loadFromBackendCache()
-          if (hasBackendCache) {
-            console.log(`⚡ [BalanceContext] FASE 2 OK: Backend cache em ${Date.now() - startTime}ms`)
-          }
+          await loadFromBackendCache()
         }
         
         // FASE 3: Dados frescos via CCXT (background, ~5-25s)
-        console.log('🔄 [BalanceContext] FASE 3: Buscando dados frescos em background...')
         fetchBalances(false, hasLocalCache).catch(err => {
-          console.error('Error in background refresh:', err)
+          console.warn('[BalanceContext] Erro no background refresh:', err)
         })
       }
       
@@ -296,7 +272,7 @@ export function BalanceProvider({ children }: { children: React.ReactNode }) {
       const details = await apiService.getExchangeDetails(user.id, exchangeId, true)
       return details
     } catch (err) {
-      console.error('Error fetching exchange details:', err)
+      console.warn('[BalanceContext] Erro ao buscar detalhes da exchange:', err)
       throw err
     }
   }, [])

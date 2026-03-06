@@ -415,7 +415,7 @@ function tokenSuddenChange(
   addNotification({
     type: 'info',
     title: `⚡ ${params.symbol} - Mudança Rápida`,
-    message: `${params.symbol} ${dir} rapidamente. Variação: ${params.variation > 0 ? '+' : ''}${params.variation.toFixed(2)}%. Preço: $${params.price}`,
+    message: `${params.symbol} ${dir} rapidamente. Variação: ${params.variation > 0 ? '▲' : '▼'} ${Math.abs(params.variation).toFixed(2)}%. Preço: $${params.price}`,
     icon: '⚡',
     data: { category: 'alert', action: 'token_sudden_change', symbol: params.symbol, variation: params.variation },
   })

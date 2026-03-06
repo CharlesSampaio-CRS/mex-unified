@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -18,12 +18,12 @@ interface HomeVerticalLayoutProps {
   isUpdating?: boolean
 }
 
-export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({ 
+export const HomeVerticalLayout = memo(function HomeVerticalLayout({ 
   pnl, 
   pnlLoading = false,
   snapshots,
   isUpdating = false 
-}) => {
+}: HomeVerticalLayoutProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   
@@ -45,7 +45,7 @@ export const HomeVerticalLayout: React.FC<HomeVerticalLayoutProps> = ({
       <AssetsList />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   updatingBanner: {

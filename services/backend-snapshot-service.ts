@@ -89,7 +89,7 @@ class BackendSnapshotService {
       
       return []
     } catch (error) {
-      console.error('❌ Erro ao buscar snapshots:', error)
+      console.warn('❌ Erro ao buscar snapshots:', error)
       throw error
     }
   }
@@ -110,7 +110,7 @@ class BackendSnapshotService {
       
       console.log('✅ Snapshot salvo com sucesso')
     } catch (error) {
-      console.error('❌ Erro ao salvar snapshot:', error)
+      console.warn('❌ Erro ao salvar snapshot:', error)
       throw error
     }
   }
@@ -141,7 +141,7 @@ class BackendSnapshotService {
         month: this.calculatePeriodPnL(currentBalance, snapshots, thirtyDaysAgo, '30d'),
       }
     } catch (error) {
-      console.error('❌ Erro ao calcular PnL:', error)
+      console.warn('❌ Erro ao calcular PnL:', error)
       return this.createEmptyPnL(currentBalance)
     }
   }
@@ -315,7 +315,7 @@ class BackendSnapshotService {
         allTimeLow,
       }
     } catch (error) {
-      console.error('❌ Erro ao buscar estatísticas:', error)
+      console.warn('❌ Erro ao buscar estatísticas:', error)
       throw error
     }
   }
@@ -371,7 +371,7 @@ class BackendSnapshotService {
         timestamps,
       }
     } catch (error) {
-      console.error('❌ Erro ao buscar dados de evolução:', error)
+      console.warn('❌ Erro ao buscar dados de evolução:', error)
       throw error
     }
   }

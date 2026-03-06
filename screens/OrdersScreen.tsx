@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Animated, Image, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, TextInput, Animated, Image, ActivityIndicator, Alert, InteractionManager, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -70,6 +70,13 @@ export function OrdersScreen({ navigation }: any) {
   const { data: balanceData, refresh: refreshBalance } = useBalance();
   const { hideValue } = usePrivacy();
   const { unreadCount, addNotification } = useNotifications();
+
+  // 🚀 Aguarda animação de transição antes de renderizar lista pesada
+  const [isReady, setIsReady] = useState(false);
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setIsReady(true));
+    return () => task.cancel();
+  }, []);
   
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState<'All' | 'buy' | 'sell'>('All');
@@ -271,14 +278,14 @@ export function OrdersScreen({ navigation }: any) {
       });
       
       // ✅ Atualiza balance/assets imediatamente (fundos liberados ao cancelar)
-      refreshBalance().catch(console.error);
+      refreshBalance().catch((e) => console.warn(e));
       
       // Sincroniza com backend em background (silencioso, não bloqueia UI)
       setTimeout(() => {
         refresh();
       }, 2000);
     } catch (error: any) {
-      console.error('Erro ao cancelar ordem:', error);
+      console.warn('Erro ao cancelar ordem:', error);
       notify.orderError(addNotification, {
         symbol: order.symbol || '',
         action: 'Cancelar Ordem',
@@ -395,9 +402,9 @@ export function OrdersScreen({ navigation }: any) {
     }
 
     // Atualiza balance e sincroniza com backend
-    refreshBalance().catch(console.error);
+    refreshBalance().catch((e) => console.warn(e));
     setTimeout(() => {
-      refreshExchange(exchangeId).catch(console.error);
+      refreshExchange(exchangeId).catch((e) => console.warn(e));
     }, 2000);
 
     setCancelAllExchangeLoading(false);
@@ -462,58 +469,40 @@ export function OrdersScreen({ navigation }: any) {
           onPress={() => handleOrderPress(order)}
           disabled={isCancelling}
         >
-          {/* Linha única compacta */}
-          <View style={styles.cardRow}>
-            {/* Lado esquerdo: Ícone + Info */}
-            <View style={styles.cardLeft}>
+          {/* Linha 1: símbolo + badge (esquerda) · valor USD (direita) */}
+          <View style={styles.cardRow1}>
+            <View style={styles.cardRow1Left}>
+              <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
+                {String(order.symbol || 'N/A')}
+              </Text>
               <View style={[
-                styles.typeIcon,
+                styles.sideBadge,
                 { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
               ]}>
-                <Ionicons 
-                  name={isBuy ? 'arrow-up-outline' : 'arrow-down-outline'} 
-                  size={16} 
-                  color={isBuy ? colors.success : colors.danger}
-                />
-              </View>
-              <View style={styles.cardInfo}>
-                <View style={styles.cardInfoTop}>
-                  <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
-                    {String(order.symbol || 'N/A')}
-                  </Text>
-                  <View style={[
-                    styles.sideBadge,
-                    { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-                  ]}>
-                    <Text style={[
-                      styles.sideBadgeText,
-                      { color: isBuy ? colors.success : colors.danger }
-                    ]}>
-                      {String(isBuy ? 'C' : 'V')}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
-                  {String(hideValue(`${apiService.formatTokenAmount(String(amount))} @ $${apiService.formatUSD(price, priceDecimals)}`))}
+                <Text style={[styles.sideBadgeText, { color: isBuy ? colors.success : colors.danger }]}>
+                  {String(isBuy ? 'COMPRA' : 'VENDA')}
                 </Text>
               </View>
             </View>
+            <Text style={[styles.orderValue, { color: colors.text }]} numberOfLines={1}>
+              {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
+            </Text>
+          </View>
 
-            {/* Lado direito: Valor + PnL */}
-            <View style={styles.cardRight}>
-              <Text style={[styles.orderValue, { color: colors.text }]} numberOfLines={1}>
-                {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
+          {/* Linha 2: qtd @ preço (esquerda) · PnL% ou tipo (direita) */}
+          <View style={styles.cardRow2}>
+            <Text style={[styles.cardSubtext, { color: colors.textSecondary }]} numberOfLines={1}>
+              {String(hideValue(`${apiService.formatTokenAmount(String(amount))} @ $${apiService.formatUSD(price, priceDecimals)}`))}
+            </Text>
+            {hasPnl ? (
+              <Text style={[styles.pnlText, { color: isPnlPositive ? colors.success : colors.danger }]} numberOfLines={1}>
+                {hideValue(`${isPnlPositive ? '▲' : '▼'} ${Math.abs(pnlPercent).toFixed(2)}%`)}
               </Text>
-              {hasPnl ? (
-                <Text style={[styles.pnlText, { color: isPnlPositive ? colors.success : colors.danger }]} numberOfLines={1}>
-                  {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
-                </Text>
-              ) : (
-                <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
-                  {String((order.type || 'LIMIT').toString().toUpperCase())}
-                </Text>
-              )}
-            </View>
+            ) : (
+              <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                {String((order.type || 'LIMIT').toString().toUpperCase())}
+              </Text>
+            )}
           </View>
 
           {/* Botões de ação: Clonar + Cancelar */}
@@ -557,6 +546,78 @@ export function OrdersScreen({ navigation }: any) {
       </AnimatedOrderCard>
     );
   }, [cancellingOrderIds, recentlyAddedIds, colors, hideValue, handleOrderPress, handleCancelOrder, handleCloneOrder, tokenPrices]);
+
+  // 🚀 Lista "flat" para FlatList — headers de exchange + cards de ordem
+  type OrderFlatItem =
+    | { type: 'header'; key: string; exchangeId: string; exchangeName: string; orderCount: number }
+    | { type: 'order';  key: string; order: OpenOrder; exchangeId: string; exchangeName: string };
+
+  const flatOrderItems = useMemo((): OrderFlatItem[] => {
+    const result: OrderFlatItem[] = [];
+    filteredSections.forEach(section => {
+      result.push({
+        type: 'header',
+        key: `hdr-${section.exchangeId}`,
+        exchangeId: section.exchangeId,
+        exchangeName: section.exchangeName,
+        orderCount: section.orders.length,
+      });
+      section.orders.forEach(order => {
+        result.push({
+          type: 'order',
+          key: `ord-${section.exchangeId}-${String(order.id || order.exchange_order_id)}`,
+          order,
+          exchangeId: section.exchangeId,
+          exchangeName: section.exchangeName,
+        });
+      });
+    });
+    return result;
+  }, [filteredSections]);
+
+  const renderOrderFlatItem = useCallback(({ item: flatItem }: { item: OrderFlatItem }) => {
+    if (flatItem.type === 'header') {
+      return (
+        <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+          <View style={styles.exchangeCardLeft}>
+            <View style={styles.exchangeLogoContainer}>
+              <Image
+                source={getExchangeLogo(flatItem.exchangeName)}
+                style={styles.exchangeCardLogo}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={[styles.exchangeCardName, { color: colors.text }]}>
+              {String(flatItem.exchangeName)}
+            </Text>
+          </View>
+          <View style={styles.exchangeHeaderRight}>
+            <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
+              {String(flatItem.orderCount)} {String(flatItem.orderCount === 1 ? 'ordem' : 'ordens')}
+            </Text>
+            {cancellingExchangeIds.has(flatItem.exchangeId) ? (
+              <View style={styles.cancelAllExchangeButton}>
+                <ActivityIndicator size="small" color={colors.danger} />
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.cancelAllExchangeButton, { borderColor: colors.danger + '40', backgroundColor: colors.danger + '10' }]}
+                onPress={() => handleCancelAllByExchange(flatItem.exchangeId, flatItem.exchangeName, flatItem.orderCount)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="trash-outline" size={13} color={colors.danger} />
+                <Text style={[styles.cancelAllExchangeText, { color: colors.danger }]}>Cancel All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      );
+    }
+    return renderOrderCard(flatItem.order, flatItem.exchangeId, flatItem.exchangeName);
+  }, [colors, cancellingExchangeIds, handleCancelAllByExchange, renderOrderCard]);
+
+  const orderKeyExtractor = useCallback((item: OrderFlatItem) => item.key, []);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -651,90 +712,52 @@ export function OrdersScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </View>
-      
-      <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-        contentContainerStyle={{ paddingBottom: 32 }}
-      >
-        {loading && filteredSections.length === 0 ? (
-          <View style={styles.emptyState}>
-            <ActivityIndicator size="small" />
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}> 
-              Carregando ordens...
-            </Text>
-          </View>
-        ) : filteredSections.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={64} color={colors.textTertiary} />
-            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
-              Nenhuma ordem encontrada
-            </Text>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-              {search || selectedType !== 'All' 
-                ? 'Tente ajustar os filtros' 
-                : 'Você não possui ordens abertas'}
-            </Text>
-            {!search && selectedType === 'All' && (
-              <TouchableOpacity
-                style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
-                onPress={() => { setCloneOrderData(null); setCreateOrderVisible(true); }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add-circle-outline" size={18} color="#fff" />
-                <Text style={styles.emptyStateButtonText}>Nova Ordem</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <View style={styles.ordersListContainer}>
-            {filteredSections.map((section) => (
-              <View key={section.exchangeId} style={styles.exchangeSection}>
-                {/* Exchange Header - mesmo estilo dos Assets */}
-                <View style={[styles.exchangeCardHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                  <View style={styles.exchangeCardLeft}>
-                    <View style={styles.exchangeLogoContainer}>
-                      <Image 
-                        source={getExchangeLogo(section.exchangeName)} 
-                        style={styles.exchangeCardLogo}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <Text style={[styles.exchangeCardName, { color: colors.text }]}>
-                      {String(section.exchangeName)}
-                    </Text>
-                  </View>
-                  <View style={styles.exchangeHeaderRight}>
-                    <Text style={[styles.exchangeCardCount, { color: colors.textSecondary }]}>
-                      {String(section.orders.length)} {String(section.orders.length === 1 ? 'ordem' : 'ordens')}
-                    </Text>
-                    {cancellingExchangeIds.has(section.exchangeId) ? (
-                      <View style={styles.cancelAllExchangeButton}>
-                        <ActivityIndicator size="small" color={colors.danger} />
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        style={[styles.cancelAllExchangeButton, { 
-                          borderColor: colors.danger + '40',
-                          backgroundColor: colors.danger + '10',
-                        }]}
-                        onPress={() => handleCancelAllByExchange(section.exchangeId, section.exchangeName, section.orders.length)}
-                        activeOpacity={0.7}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Ionicons name="trash-outline" size={13} color={colors.danger} />
-                        <Text style={[styles.cancelAllExchangeText, { color: colors.danger }]}>
-                          Cancel All
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-                {section.orders.map(order => renderOrderCard(order, section.exchangeId, section.exchangeName))}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+
+      {/* 🚀 FlatList virtualizada */}
+      {!isReady || (loading && flatOrderItems.length === 0) ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="small" />
+          <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            Carregando ordens...
+          </Text>
+        </View>
+      ) : flatOrderItems.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="document-text-outline" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+            Nenhuma ordem encontrada
+          </Text>
+          <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            {search || selectedType !== 'All'
+              ? 'Tente ajustar os filtros'
+              : 'Você não possui ordens abertas'}
+          </Text>
+          {!search && selectedType === 'All' && (
+            <TouchableOpacity
+              style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
+              onPress={() => { setCloneOrderData(null); setCreateOrderVisible(true); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-circle-outline" size={18} color="#fff" />
+              <Text style={styles.emptyStateButtonText}>Nova Ordem</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <FlatList
+          data={flatOrderItems}
+          renderItem={renderOrderFlatItem}
+          keyExtractor={orderKeyExtractor}
+          contentContainerStyle={styles.ordersListContainer}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          initialNumToRender={10}
+          updateCellsBatchingPeriod={50}
+        />
+      )}
 
       {selectedOrder && (
         <OrderDetailsModal
@@ -966,7 +989,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 8,
     overflow: 'hidden',
+    paddingHorizontal: 14,
+    paddingTop: 11,
+    paddingBottom: 0,
   },
+  // Linha 1: símbolo + badge (esquerda) · valor USD (direita)
+  cardRow1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 3,
+  },
+  cardRow1Left: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
+  },
+  // Linha 2: qtd@preço (esquerda) · PnL% ou tipo (direita)
+  cardRow2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  // Mantidos para compatibilidade
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1002,7 +1050,6 @@ const styles = StyleSheet.create({
   orderSymbol: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
-    flexShrink: 1,
   },
   sideBadge: {
     paddingHorizontal: 5,
@@ -1027,8 +1074,8 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.bold,
   },
   pnlText: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.semibold,
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.bold,
   },
   cancelButton: {
     flexDirection: 'row',

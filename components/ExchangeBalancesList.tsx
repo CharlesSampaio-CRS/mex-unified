@@ -210,7 +210,7 @@ export const ExchangeBalancesList = memo(function ExchangeBalancesList({ usdToBr
                       ]}
                       numberOfLines={1}
                     >
-                      {hideValue(`${ex.pnl.change >= 0 ? '+' : ''}${ex.pnl.changePercent.toFixed(1)}%`)}
+                      {hideValue(`${ex.pnl.change >= 0 ? '▲' : '▼'} ${Math.abs(ex.pnl.changePercent.toFixed(1))}%`)}
                     </Text>
                   </View>
                 ) : usdToBrlRate ? (

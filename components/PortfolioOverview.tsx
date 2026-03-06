@@ -11,6 +11,7 @@ import { currencyService } from "@/services/currencyService"
 import { SkeletonPortfolioOverview } from "./SkeletonLoaders"
 import { PortfolioChart } from "./PortfolioChart"
 import { DistributionCharts } from "./DistributionCharts"
+import { ExchangeBalancesList } from "./ExchangeBalancesList"
 import { GradientCard } from "./GradientCard"
 import { typography, fontWeights } from "@/lib/typography"
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion"
@@ -230,7 +231,7 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
       })
       setEvolutionData(data)
     } catch (error) {
-      console.error('❌ Erro ao carregar dados de evolução:', error)
+      console.warn('❌ Erro ao carregar dados de evolução:', error)
     } finally {
       setEvolutionLoading(false)
     }
@@ -308,6 +309,9 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
             </View>
           )}
         </View>
+
+        {/* Saldos por Exchange */}
+        <ExchangeBalancesList usdToBrlRate={usdToBrlRate} exchangePnl={exchangePnl} />
 
         {/* PNL Cards - Diário e Período separados */}
         <View style={styles.pnlCardsRow}>

@@ -31,7 +31,7 @@ class AsyncStorageNotificationService {
     try {
       await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
     } catch (error) {
-      console.error('[NotificationService] Error saving:', error);
+      console.warn('[NotificationService] Error saving:', error);
     }
   }
 
@@ -62,7 +62,7 @@ class AsyncStorageNotificationService {
       const notifications = stored ? JSON.parse(stored) : [];
       return notifications.sort((a: Notification, b: Notification) => b.created_at - a.created_at);
     } catch (error) {
-      console.error('[NotificationService] Error loading:', error);
+      console.warn('[NotificationService] Error loading:', error);
       return [];
     }
   }

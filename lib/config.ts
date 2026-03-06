@@ -66,7 +66,7 @@ export async function getUserId(): Promise<string | null> {
     const userId = await secureStorage.getItemAsync('user_id')
     return userId
   } catch (error) {
-    console.error('Error getting user_id:', error)
+    console.warn('Error getting user_id:', error)
     return null
   }
 }

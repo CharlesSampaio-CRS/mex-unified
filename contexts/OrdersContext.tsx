@@ -59,7 +59,6 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
         const oid = String(order.id || '');
         const eoid = String(order.exchange_order_id || '');
         const isCancelled = recentlyCancelledRef.current.has(oid) || recentlyCancelledRef.current.has(eoid);
-        if (isCancelled) console.log('�️ [ORDERS-CONTEXT] Filtrando ordem cancelada do refresh:', oid);
         return !isCancelled;
       })
     })).filter(ex => ex.orders.length > 0);
@@ -98,10 +97,6 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const fetchOrders = useCallback(async (forceRefresh = false, silent = false) => {
     if (!user?.id) return
     
-    console.log('🟣 [ORDERS-CONTEXT] ========================================')
-    console.log('🟣 [ORDERS-CONTEXT] Iniciando busca de ordens')
-    console.log('🟣 [ORDERS-CONTEXT] ForceRefresh:', forceRefresh, 'Silent:', silent)
-    
     if (!silent) {
       if (forceRefresh) {
         setRefreshing(true);
@@ -113,12 +108,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      const startTime = Date.now()
-      
       const response = await apiService.getOrdersSecure();
-      
-      const apiTime = Date.now() - startTime
-      console.log(`🟣 [ORDERS-CONTEXT] Resposta recebida em ${apiTime}ms — ${response?.orders?.length || 0} ordens`)
       
       if (!response?.success || !response.orders) {
         setOrdersByExchange([]);
@@ -129,15 +119,11 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       const results = groupOrdersFromResponse(response.orders);
       const filteredResults = filterCancelledOrders(results);
       
-      filteredResults.forEach(ex => {
-        console.log(`  📦 ${ex.exchangeName}: ${ex.orders.length} ordens`)
-      })
-      
       setOrdersByExchange(filteredResults);
       setTimestamp(Date.now());
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch orders';
-      console.error('❌ [ORDERS-CONTEXT] Erro ao buscar ordens:', errorMsg)
+      console.warn('[OrdersContext] Erro ao buscar ordens:', errorMsg)
       setError(errorMsg);
       setOrdersByExchange([]);
     } finally {
@@ -151,14 +137,8 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   const refreshExchange = useCallback(async (exchangeId: string) => {
     if (!user?.id) return
     
-    console.log(`⚡ [ORDERS-CONTEXT] Refresh rápido da exchange ${exchangeId}`)
-    const startTime = Date.now()
-    
     try {
       const response = await apiService.getOrdersByExchange(exchangeId);
-      
-      const apiTime = Date.now() - startTime
-      console.log(`⚡ [ORDERS-CONTEXT] Exchange ${exchangeId} respondeu em ${apiTime}ms — ${response?.orders?.length || 0} ordens`)
       
       if (!response?.success) return;
       
@@ -172,7 +152,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       });
       setTimestamp(Date.now());
     } catch (err) {
-      console.error(`❌ [ORDERS-CONTEXT] Erro no refresh da exchange ${exchangeId}:`, err)
+      console.warn(`[OrdersContext] Erro no refresh da exchange ${exchangeId}:`, err)
       // Não seta error global — falha de 1 exchange não deve bloquear o contexto
     }
   }, [user?.id, groupOrdersFromResponse, filterCancelledOrders]);
@@ -183,9 +163,7 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
 
   // Helper: Marca um símbolo como recém-afetado (animação piscante no Assets por 4s)
   const markSymbolAffected = useCallback((symbol: string) => {
-    // Extrai o token base do par (ex: "BTC/USDT" → "BTC")
     const baseToken = symbol.split('/')[0]?.toUpperCase() || symbol.toUpperCase()
-    console.log('✨ [ORDERS-CONTEXT] Marcando token como afetado:', baseToken)
     setRecentlyAffectedSymbols(prev => new Set(prev).add(baseToken))
     setTimeout(() => {
       setRecentlyAffectedSymbols(prev => {
@@ -198,8 +176,6 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
 
   // 🚀 Remoção otimista: Remove uma ordem da lista localmente sem esperar API
   const removeOrder = useCallback((orderId: string, symbol?: string) => {
-    console.log('🗑️ [ORDERS-CONTEXT] Remoção otimista da ordem:', orderId)
-    
     // 🛡️ Registra o orderId no grace period para evitar reaparecimento fantasma
     const now = Date.now()
     recentlyCancelledRef.current.set(orderId, now)
@@ -209,7 +185,6 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       const order = exchange.orders.find(o => o.id === orderId)
       if (order) {
         if (!symbol) symbol = order.symbol
-        // Registra também o exchange_order_id (pode ser diferente do id)
         if (order.exchange_order_id && order.exchange_order_id !== orderId) {
           recentlyCancelledRef.current.set(order.exchange_order_id, now)
         }
@@ -217,20 +192,15 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
       }
     }
     
-    console.log('🛡️ [ORDERS-CONTEXT] IDs protegidos contra reaparecimento:', [...recentlyCancelledRef.current.keys()])
-    
     setOrdersByExchange(prev => {
       const updated = prev.map(exchange => ({
         ...exchange,
         orders: exchange.orders.filter(order => order.id !== orderId)
       })).filter(exchange => exchange.orders.length > 0)
-      
-      console.log('🗑️ [ORDERS-CONTEXT] Ordens restantes:', updated.reduce((sum, ex) => sum + ex.orders.length, 0))
       return updated
     })
     setTimestamp(Date.now())
     
-    // ✨ Marca o token como afetado para animação na lista de Assets
     if (symbol) {
       markSymbolAffected(symbol)
     }
@@ -238,35 +208,26 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
 
   // 🚀 Remoção otimista em massa: Remove TODAS as ordens de uma exchange
   const removeOrdersByExchange = useCallback((exchangeId: string) => {
-    console.log('🗑️ [ORDERS-CONTEXT] Remoção otimista de TODAS ordens da exchange:', exchangeId)
-    
     const now = Date.now()
     const targetExchange = ordersByExchange.find(ex => ex.exchangeId === exchangeId)
     
     if (targetExchange) {
-      // Registra todas as ordens no grace period
       targetExchange.orders.forEach(order => {
         recentlyCancelledRef.current.set(String(order.id || ''), now)
         if (order.exchange_order_id) {
           recentlyCancelledRef.current.set(String(order.exchange_order_id), now)
         }
-        // Marca símbolos como afetados
         if (order.symbol) markSymbolAffected(order.symbol)
       })
     }
     
-    setOrdersByExchange(prev => {
-      const updated = prev.filter(ex => ex.exchangeId !== exchangeId)
-      console.log('🗑️ [ORDERS-CONTEXT] Ordens restantes após remoção em massa:', updated.reduce((sum, ex) => sum + ex.orders.length, 0))
-      return updated
-    })
+    setOrdersByExchange(prev => prev.filter(ex => ex.exchangeId !== exchangeId))
     setTimestamp(Date.now())
   }, [ordersByExchange, markSymbolAffected])
 
   // 🚀 Inserção otimista: Adiciona uma ordem na lista localmente sem esperar API
   const addOrder = useCallback((order: OpenOrder, exchangeId: string, exchangeName: string) => {
     const orderId = String(order.id || `temp_${Date.now()}`)
-    console.log('➕ [ORDERS-CONTEXT] Inserção otimista da ordem:', orderId, order.symbol)
     
     setOrdersByExchange(prev => {
       const existingExchange = prev.find(ex => ex.exchangeId === exchangeId)
@@ -317,7 +278,6 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     if (!user?.id) return;
 
     const interval = setInterval(() => {
-      console.log('⏰ [ORDERS-CONTEXT] Auto-refresh (30s)');
       fetchOrders(true, true);
     }, 30 * 1000);
 

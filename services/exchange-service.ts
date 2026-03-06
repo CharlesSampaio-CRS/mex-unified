@@ -82,7 +82,7 @@ class ExchangeService {
         total: totalCatalog
       }
     } catch (error) {
-      console.error('❌ [ExchangeService] Erro ao calcular contadores:', error)
+      console.warn('❌ [ExchangeService] Erro ao calcular contadores:', error)
       return {
         connected: 0,
         available: 0,
@@ -114,7 +114,7 @@ class ExchangeService {
       const activeCount = response.exchanges.filter(ex => ex.is_active).length
       return activeCount
     } catch (error) {
-      console.error('❌ [ExchangeService] Erro ao contar exchanges ativas:', error)
+      console.warn('❌ [ExchangeService] Erro ao contar exchanges ativas:', error)
       return 0
     }
   }
@@ -155,7 +155,7 @@ class ExchangeService {
       
       return exchange
     } catch (error) {
-      console.error('❌ [ExchangeService] Erro ao buscar exchange por ID:', error)
+      console.warn('❌ [ExchangeService] Erro ao buscar exchange por ID:', error)
       return null
     }
   }

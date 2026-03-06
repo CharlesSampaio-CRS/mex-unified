@@ -181,13 +181,13 @@ export function useTokenMonitor(tokens: TokenVariation[]) {
           if (alert.condition === 'below' && token.price <= alert.value) {
             shouldAlert = true
             alertTitle = `💰 ${token.symbol} Abaixo de $${formatPrice(alert.value)}`
-            alertMessage = `${token.symbol} atingiu $${formatPrice(token.price)} (limite: $${formatPrice(alert.value)}). Variação: ${token.variation24h > 0 ? '+' : ''}${token.variation24h.toFixed(2)}%`
+            alertMessage = `${token.symbol} atingiu $${formatPrice(token.price)} (limite: $${formatPrice(alert.value)}). Variação: ${token.variation24h > 0 ? '▲' : '▼'} ${Math.abs(token.variation24h.toFixed(2))}%`
             alertType = 'warning'
             alertIcon = '📉'
           } else if (alert.condition === 'above' && token.price >= alert.value) {
             shouldAlert = true
             alertTitle = `💰 ${token.symbol} Acima de $${formatPrice(alert.value)}`
-            alertMessage = `${token.symbol} atingiu $${formatPrice(token.price)} (limite: $${formatPrice(alert.value)}). Variação: ${token.variation24h > 0 ? '+' : ''}${token.variation24h.toFixed(2)}%`
+            alertMessage = `${token.symbol} atingiu $${formatPrice(token.price)} (limite: $${formatPrice(alert.value)}). Variação: ${token.variation24h > 0 ? '▲' : '▼'} ${Math.abs(token.variation24h.toFixed(2))}%`
             alertType = 'success'
             alertIcon = '🚀'
           }

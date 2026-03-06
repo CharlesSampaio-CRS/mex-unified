@@ -28,7 +28,6 @@ export function CacheInvalidationProvider({ children }: CacheInvalidationProvide
    * Agora suporta múltiplos callbacks simultâneos
    */
   const registerExchangesRefreshCallback = useCallback((callback: () => Promise<void>) => {
-    console.log('📝 [CacheInvalidation] Registrando callback, total:', exchangesRefreshCallbacksRef.current.size + 1)
     exchangesRefreshCallbacksRef.current.add(callback)
   }, [])
 
@@ -36,7 +35,6 @@ export function CacheInvalidationProvider({ children }: CacheInvalidationProvide
    * Remove callback específico quando o componente desmonta
    */
   const unregisterExchangesRefreshCallback = useCallback((callback: () => Promise<void>) => {
-    console.log('🗑️ [CacheInvalidation] Removendo callback, total restante:', exchangesRefreshCallbacksRef.current.size - 1)
     exchangesRefreshCallbacksRef.current.delete(callback)
   }, [])
 
@@ -59,7 +57,7 @@ export function CacheInvalidationProvider({ children }: CacheInvalidationProvide
     try {
       await refreshOnExchangeChange()
     } catch (error) {
-      console.error('[CacheInvalidation] Error invalidating home data:', error)
+      console.warn('[CacheInvalidation] Erro ao invalidar home data:', error)
       throw error
     }
   }, [refreshOnExchangeChange])
@@ -75,40 +73,29 @@ export function CacheInvalidationProvider({ children }: CacheInvalidationProvide
    * IMPORTANTE: Também atualiza a lista de exchanges no ExchangesManager
    */
   const onExchangeModified = useCallback(async () => {
-    console.log('🔄 [CacheInvalidation] Exchange modificada - notificando', exchangesRefreshCallbacksRef.current.size, 'callbacks')
-    
     // Executa os callbacks E atualiza home screen em paralelo (evita dupla chamada sequencial)
     await Promise.all([
       // 1. Atualizar TODOS os callbacks registrados (ExchangesManager + ExchangesScreen)
       (async () => {
         if (exchangesRefreshCallbacksRef.current.size > 0) {
           const callbacks = Array.from(exchangesRefreshCallbacksRef.current)
-          
-          // Executa todos os callbacks em paralelo
           await Promise.all(
             callbacks.map(async (callback, index) => {
               try {
-                console.log(`  ↳ Executando callback ${index + 1}/${callbacks.length}...`)
                 await callback()
               } catch (error) {
-                console.error(`[CacheInvalidation] Error in callback ${index + 1}:`, error)
+                console.warn(`[CacheInvalidation] Erro no callback ${index + 1}:`, error)
               }
             })
           )
-          
-          console.log('✅ [CacheInvalidation] Todos os callbacks executados')
         }
       })(),
       
       // 2. Atualizar home screen (em paralelo com os callbacks acima)
       (async () => {
-        console.log('  ↳ Atualizando home screen (balances)...')
         await invalidateHomeData()
-        console.log('✅ [CacheInvalidation] Home screen atualizado')
       })()
     ])
-    
-    console.log('🎉 [CacheInvalidation] onExchangeModified concluído')
   }, [invalidateHomeData])
 
   /**
@@ -122,37 +109,26 @@ export function CacheInvalidationProvider({ children }: CacheInvalidationProvide
    * - Portfolio (via PortfolioContext que escuta balance changes)
    */
   const invalidateAll = useCallback(async () => {
-    console.log('🔄 [CacheInvalidation] invalidateAll() iniciado - atualizando TUDO')
-    
     try {
       // Executa TODAS as atualizações em paralelo
       await Promise.all([
         // 1. Atualizar balances (inclui daily PnL)
-        (async () => {
-          console.log('  ↳ Atualizando balances...')
-          await refreshOnExchangeChange()
-          console.log('  ✅ Balances atualizados')
-        })(),
+        refreshOnExchangeChange(),
         
         // 2. Atualizar exchanges lists (todos os callbacks registrados)
         (async () => {
           if (exchangesRefreshCallbacksRef.current.size > 0) {
-            console.log(`  ↳ Atualizando exchanges (${exchangesRefreshCallbacksRef.current.size} callbacks)...`)
             const callbacks = Array.from(exchangesRefreshCallbacksRef.current)
             await Promise.all(callbacks.map(cb => cb()))
-            console.log('  ✅ Exchanges atualizadas')
           }
         })()
         
         // NOTA: Orders e Portfolio são atualizados automaticamente via:
         // - OrdersContext escuta onBalanceLoaded
         // - PortfolioContext escuta mudanças em balanceData
-        // Portanto não precisamos chamá-los explicitamente
       ])
-      
-      console.log('🎉 [CacheInvalidation] invalidateAll() concluído - TUDO atualizado!')
     } catch (error) {
-      console.error('❌ [CacheInvalidation] Erro em invalidateAll():', error)
+      console.warn('[CacheInvalidation] Erro em invalidateAll():', error)
       throw error
     }
   }, [refreshOnExchangeChange])
