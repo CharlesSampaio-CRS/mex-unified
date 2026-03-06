@@ -72,9 +72,8 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       await priceAlertService.initialize();
       await priceAlertService.startMonitoring();
       setIsMonitoring(true);
-      console.log('[AlertsContext] ✅ Monitoramento iniciado');
     } catch (err) {
-      console.error('[AlertsContext] ❌ Erro ao inicializar monitoramento:', err);
+      console.warn('[AlertsContext] Erro ao inicializar monitoramento:', err);
     }
   };
 
@@ -90,12 +89,11 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       if (stored) {
         const loadedAlerts: TokenAlert[] = JSON.parse(stored);
         setAlerts(loadedAlerts);
-        console.log(`[AlertsContext] ✅ ${loadedAlerts.length} alertas carregados`);
       }
       hasLoadedRef.current = true;
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar alertas');
-      console.error('[AlertsContext] ❌ Erro ao carregar alertas:', err);
+      console.warn('[AlertsContext] Erro ao carregar alertas:', err);
     } finally {
       setLoading(false);
     }
@@ -108,7 +106,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(alertsToSave));
     } catch (err) {
-      console.error('[AlertsContext] ❌ Erro ao salvar alertas:', err);
+      console.warn('[AlertsContext] Erro ao salvar alertas:', err);
     }
   };
 
@@ -146,11 +144,10 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       // Atualiza estado local
       setAlerts(prev => [...prev, newAlert]);
       
-      console.log('[AlertsContext] ✅ Alerta criado:', newAlert.symbol);
       return newAlert;
     } catch (err: any) {
       setError(err.message || 'Erro ao criar alerta');
-      console.error('[AlertsContext] ❌ Erro ao criar alerta:', err);
+      console.warn('[AlertsContext] Erro ao criar alerta:', err);
       return null;
     }
   }, [user]);
@@ -177,10 +174,9 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
           : alert
       ));
       
-      console.log('[AlertsContext] ✅ Alerta atualizado:', id);
     } catch (err: any) {
       setError(err.message || 'Erro ao atualizar alerta');
-      console.error('[AlertsContext] ❌ Erro ao atualizar alerta:', err);
+      console.warn('[AlertsContext] Erro ao atualizar alerta:', err);
       throw err;
     }
   }, []);
@@ -189,27 +185,25 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
    * Remove alerta
    */
   const deleteAlert = useCallback(async (id: string) => {
-    console.log('[AlertsContext] 🗑️ Iniciando remoção do alerta:', id);
-    
     try {
       setError(null);
       
       // Update otimista - remove da UI e salva no storage imediatamente
       setAlerts(prev => {
         const filtered = prev.filter(alert => alert.id !== id);
-        console.log('[AlertsContext] 📊 Alertas antes:', prev.length, 'depois:', filtered.length);
         // Salva direto no storage para garantir persistência imediata
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered)).catch(console.error);
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered)).catch(e =>
+          console.warn('[AlertsContext] Erro ao persistir remoção:', e)
+        );
         return filtered;
       });
       
       // Também remove no serviço (mantém sincronizado)
       await priceAlertService.deleteAlert(id);
       
-      console.log('[AlertsContext] ✅ Alerta removido com sucesso:', id);
     } catch (err: any) {
       setError(err.message || 'Erro ao remover alerta');
-      console.error('[AlertsContext] ❌ Erro ao remover alerta:', err);
+      console.warn('[AlertsContext] Erro ao remover alerta:', err);
       
       // Em caso de erro, recarrega os alertas para garantir consistência
       await loadAlerts();
@@ -232,10 +226,9 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       
       await updateAlert(id, { enabled: newEnabled });
       
-      console.log(`[AlertsContext] ${newEnabled ? '✅' : '⏸️'} Alerta ${newEnabled ? 'ativado' : 'pausado'}:`, id);
     } catch (err: any) {
       setError(err.message || 'Erro ao alternar alerta');
-      console.error('[AlertsContext] ❌ Erro ao alternar alerta:', err);
+      console.warn('[AlertsContext] Erro ao alternar alerta:', err);
     }
   }, [alerts, updateAlert]);
 
@@ -282,9 +275,8 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
     try {
       await priceAlertService.startMonitoring();
       setIsMonitoring(true);
-      console.log('[AlertsContext] 🚀 Monitoramento iniciado');
     } catch (err) {
-      console.error('[AlertsContext] ❌ Erro ao iniciar monitoramento:', err);
+      console.warn('[AlertsContext] Erro ao iniciar monitoramento:', err);
     }
   }, []);
 
@@ -294,7 +286,6 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
   const stopMonitoring = useCallback(() => {
     priceAlertService.stopMonitoring();
     setIsMonitoring(false);
-    console.log('[AlertsContext] ⏸️ Monitoramento pausado');
   }, []);
 
   // Alertas ativos
