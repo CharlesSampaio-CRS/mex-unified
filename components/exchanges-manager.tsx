@@ -48,13 +48,25 @@ function safeFormatDate(value: any, opts?: Intl.DateTimeFormatOptions): string {
     // Timestamp Unix em segundos → ms
     date = new Date(value < 1e10 ? value * 1000 : value)
   } else {
-    // String: tenta vários formatos
     const str = String(value).trim()
 
     // Número em string (ex: "1709654400000")
     if (/^\d{10,13}$/.test(str)) {
       const n = Number(str)
       date = new Date(n < 1e10 ? n * 1000 : n)
+    }
+    // Rust BSON driver serializa DateTime como "data:YYYY-MM-DDTHH:MM:SS..."
+    // ou "data:0000..." (milissegundos desde epoch em decimal após "data:")
+    else if (str.startsWith('data:')) {
+      const after = str.slice(5) // remove "data:"
+      // Se for número puro (ms desde epoch)
+      if (/^\d+$/.test(after)) {
+        const n = Number(after)
+        date = new Date(after.length <= 10 ? n * 1000 : n)
+      } else {
+        // Assume ISO string após o prefixo
+        date = new Date(after.replace(' ', 'T'))
+      }
     }
     // ISO / datetime com espaço separador
     else if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}/.test(str)) {
@@ -371,7 +383,10 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       const { exchanges: linkedList = [] } = await apiService.listExchanges()
       // Log para debug da data
       if (linkedList.length > 0) {
-        console.log('[ExchangesManager] created_at raw:', JSON.stringify(linkedList[0].created_at))
+        const raw = linkedList[0].created_at
+        console.log('[ExchangesManager] created_at raw:', JSON.stringify(raw))
+        console.log('[ExchangesManager] created_at type:', typeof raw)
+        console.log('[ExchangesManager] created_at full:', String(raw))
       }
       // Mapear para o formato esperado pelo componente
       const mappedExchanges = linkedList.map((ex: any) => ({
