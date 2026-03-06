@@ -1115,14 +1115,17 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     padding: 4,
-    minWidth: 60,
   },
   cancelText: {
     fontSize: typography.body,
     fontWeight: fontWeights.medium,
   },
+  title: {
+    fontSize: typography.h4,
+    fontWeight: fontWeights.bold,
+  },
   headerSpacer: {
-    minWidth: 60,
+    width: 60,
   },
 
   // ─── Scroll ────────────────────────────────────────────────
@@ -1136,13 +1139,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
     borderBottomWidth: 1,
+    minHeight: 80,
   },
   tokenIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1208,7 +1212,7 @@ const styles = StyleSheet.create({
   },
   segmentItem: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     borderRadius: 9,
   },
@@ -1348,15 +1352,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: '#19a1e6',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
   ctaText: {
     fontSize: typography.bodyLarge,
     fontWeight: fontWeights.bold,
+    color: '#FFFFFF',
   },
 
   // ─── Confirm modal ─────────────────────────────────────────
