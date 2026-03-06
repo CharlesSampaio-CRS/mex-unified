@@ -121,6 +121,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
   const hasProcessedOAuth = useRef(false)
   const [isProcessingOAuth, setIsProcessingOAuth] = useState(false)
   const hasTriedAutoAuth = useRef(false)
@@ -298,12 +299,27 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       return
     }
 
+    setLoginError(null)
     setIsLoggingIn(true)
     try {
       await login(email, password)
     } catch (error: any) {
       console.warn('❌ Erro no login:', error)
       setIsLoggingIn(false)
+      const msg = String(error?.message || error || '').toLowerCase()
+      if (
+        msg.includes('401') ||
+        msg.includes('invalid') ||
+        msg.includes('incorrect') ||
+        msg.includes('unauthorized') ||
+        msg.includes('wrong') ||
+        msg.includes('inválid') ||
+        msg.includes('credencial')
+      ) {
+        setLoginError('E-mail ou senha inválidos. Verifique seus dados.')
+      } else {
+        setLoginError('Não foi possível fazer login. Tente novamente.')
+      }
     }
   }
 
@@ -520,6 +536,21 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       fontWeight: fontWeights.regular,
       marginLeft: 4,
     },
+    errorBanner: {
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(239, 68, 68, 0.3)',
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      marginBottom: 16,
+    },
+    errorBannerText: {
+      color: '#ef4444',
+      fontSize: typography.body,
+      fontWeight: fontWeights.regular,
+      textAlign: 'center',
+    },
   })
 
   const handleRefresh = useCallback(async () => {
@@ -557,7 +588,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             placeholder={t('login.emailPlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(v) => { setEmail(v); setLoginError(null) }}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -573,7 +604,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
               placeholder={t('login.passwordPlaceholder')}
               placeholderTextColor={colors.textSecondary}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(v) => { setPassword(v); setLoginError(null) }}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
@@ -593,6 +624,12 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
         <TouchableOpacity style={styles.forgotPassword}>
           <Text style={styles.forgotPasswordText}>{t('login.forgotPassword')}</Text>
         </TouchableOpacity>
+
+        {loginError && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>⚠️ {loginError}</Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={[
