@@ -27,7 +27,7 @@ export const FavoritesScreen = memo(function FavoritesScreen({ navigation }: any
   }, [watchlist.length]);
 
   useHeader({
-    title: '⭐ Favoritos',
+    title: 'Favoritos',
     subtitle: headerSubtitle,
     onNotificationsPress,
     unreadCount,
