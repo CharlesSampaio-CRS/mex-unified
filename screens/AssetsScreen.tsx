@@ -614,7 +614,7 @@ export const AssetsScreen = memo(function AssetsScreen({ navigation }: any) {
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: commonStyles.screenContainer,
