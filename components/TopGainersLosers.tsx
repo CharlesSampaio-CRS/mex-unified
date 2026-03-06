@@ -151,8 +151,6 @@ export const TopGainersLosers: React.FC = () => {
 
   const renderTokenItem = (token: TokenWithChange, isGainer: boolean) => {
     const changeColor = isGainer ? colors.success : colors.danger;
-    const icon = isGainer ? 'trending-up' : 'trending-down';
-
     return (
       <TouchableOpacity
         key={`${token.symbol}-${token.exchange}`}
@@ -160,12 +158,6 @@ export const TopGainersLosers: React.FC = () => {
         activeOpacity={0.7}
       >
         <View style={styles.tokenLeft}>
-          <Ionicons 
-            name={icon as any} 
-            size={20} 
-            color={changeColor} 
-            style={styles.tokenIcon}
-          />
           <View style={styles.tokenInfo}>
             <Text style={[styles.tokenSymbol, { color: colors.text }]}>
               {token.symbol}
@@ -254,7 +246,6 @@ export const TopGainersLosers: React.FC = () => {
       {/* Top Losers - Maiores Baixas (24h) */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.header}>
-          <Ionicons name="trending-down" size={20} color={colors.danger} />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {t('topGainersLosers.losersTitle')}
           </Text>
@@ -316,11 +307,6 @@ export const TopGainersLosers: React.FC = () => {
               {/* Header do Modal */}
               <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
                 <View style={styles.modalTitleContainer}>
-                  <Ionicons
-                    name={modalType === 'gainers' ? 'trending-up' : 'trending-down'}
-                    size={24}
-                    color={modalType === 'gainers' ? colors.success : colors.danger}
-                  />
                   <Text style={[styles.modalTitle, { color: colors.text }]}>
                     {modalType === 'gainers' 
                       ? t('topGainersLosers.allGainersTitle') 
