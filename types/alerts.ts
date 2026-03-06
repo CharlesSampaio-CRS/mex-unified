@@ -137,7 +137,7 @@ export function validateAlert(alert: Partial<CreateAlertInput>): string[] {
 // Helpers
 export function formatAlertCondition(alert: TokenAlert): string {
   const valueStr = alert.alertType === 'percentage' 
-    ? `${alert.value > 0 ? '+' : ''}${alert.value}%`
+    ? `${alert.value > 0 ? '▲' : '▼'} ${Math.abs(alert.value)}%`
     : `$${alert.value.toFixed(2)}`;
   
   const conditionStr = {
