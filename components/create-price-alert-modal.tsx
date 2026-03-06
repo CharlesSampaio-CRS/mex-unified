@@ -434,20 +434,41 @@ export function CreateAlertModal({
               )}
             </View>
 
-            {/* ── Opções avançadas ──────────────────────────── */}
-            <View style={[styles.toggleRow, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-              <View style={styles.toggleInfo}>
-                <Text style={[styles.toggleTitle, { color: colors.text }]}>Alerta persistente</Text>
-                <Text style={[styles.toggleSubtitle, { color: colors.textSecondary }]}>
-                  Notificar sempre que o preço cruzar
-                </Text>
+            {/* ── Frequência de notificação ─────────────────── */}
+            <View style={styles.formSection}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Frequência</Text>
+              <View style={styles.freqGrid}>
+                {([
+                  ['once',     '1×',         'Uma vez'],
+                  ['hourly',   '⏱',          'Por hora'],
+                  ['daily',    '📅',          'Diário'],
+                  ['weekly',   '📆',          'Semanal'],
+                  ['repeated', '🔁',          'Sempre'],
+                ] as const).map(([freq, icon, label]) => {
+                  const isActive = frequency === freq;
+                  return (
+                    <TouchableOpacity
+                      key={freq}
+                      style={[
+                        styles.freqBtn,
+                        {
+                          borderColor: isActive ? colors.primary : colors.border,
+                          backgroundColor: isActive ? `${colors.primary}18` : colors.surface,
+                        },
+                      ]}
+                      onPress={() => setFrequency(freq)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.freqIcon, { color: isActive ? colors.primary : colors.textSecondary }]}>
+                        {icon}
+                      </Text>
+                      <Text style={[styles.freqLabel, { color: isActive ? colors.primary : colors.textSecondary, fontWeight: isActive ? fontWeights.bold : fontWeights.medium }]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-              <Switch
-                value={frequency === 'repeated'}
-                onValueChange={(v) => setFrequency(v ? 'repeated' : 'once')}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#ffffff"
-              />
             </View>
 
             <View style={[styles.toggleRow, { borderColor: colors.border, backgroundColor: colors.surface }]}>
@@ -737,6 +758,31 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginTop: 4,
+  },
+
+  // ─── Frequência grid ───────────────────────────────────────
+  freqGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  freqBtn: {
+    flex: 1,
+    minWidth: '28%',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 4,
+  },
+  freqIcon: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  freqLabel: {
+    fontSize: typography.micro,
+    textAlign: 'center',
   },
 
   // ─── Toggle rows ───────────────────────────────────────────

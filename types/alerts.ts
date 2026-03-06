@@ -12,8 +12,10 @@ export type AlertCondition =
 
 export type AlertFrequency = 
   | 'once'       // Notifica apenas uma vez
-  | 'repeated'   // Notifica sempre que a condição for verdadeira
-  | 'daily';     // Notifica uma vez por dia quando condição for verdadeira
+  | 'hourly'     // Notifica de hora em hora enquanto condição for verdadeira
+  | 'daily'      // Notifica uma vez por dia quando condição for verdadeira
+  | 'weekly'     // Notifica uma vez por semana quando condição for verdadeira
+  | 'repeated';  // Notifica sempre que a condição for verdadeira (cada verificação)
 
 export type AlertStatus = 
   | 'active'     // Ativo, monitorando
@@ -161,8 +163,10 @@ export function getAlertIcon(condition: AlertCondition): string {
 
 export function getAlertFrequencyLabel(frequency: AlertFrequency): string {
   return {
-    once: 'Uma vez',
+    once:     'Uma vez',
+    hourly:   'A cada hora',
+    daily:    'Diário',
+    weekly:   'Semanal',
     repeated: 'Sempre',
-    daily: 'Uma vez por dia',
   }[frequency];
 }
