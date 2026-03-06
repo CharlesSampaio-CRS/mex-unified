@@ -73,13 +73,15 @@ function safeFormatDate(value: any, opts?: Intl.DateTimeFormatOptions): string {
       date = new Date(str.length <= 10 ? n * 1000 : n)
     }
     // Formato do backend: "2026-02-19 22:44:53.923 +00:00:00"
-    // Normaliza: espaço→T, remove segundos do timezone "+00:00:00"→"+00:00"
+    // Extrai só "YYYY-MM-DDTHH:MM:SS" e descarta milissegundos e timezone
     else if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}/.test(str)) {
-      const normalized = str
-        .replace(' ', 'T')                          // espaço → T
-        .replace(/([+-]\d{2}:\d{2}):\d{2}$/, '$1') // remove :ss do timezone
-        .replace(' ', '')                            // remove espaço extra antes do tz
-      date = new Date(normalized)
+      // Captura: data (1) e hora (2), ignora ms e timezone
+      const match = str.match(/^(\d{4}-\d{2}-\d{2})[\sT](\d{2}:\d{2}:\d{2})/)
+      if (match) {
+        date = new Date(`${match[1]}T${match[2]}Z`)
+      } else {
+        date = new Date(str)
+      }
     }
     // Qualquer outro
     else {
@@ -1606,7 +1608,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
               {/* Header */}
               <View style={[styles.confirmModalHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.confirmModalTitle, { color: colors.text }]}>
-                  {detailsType === 'linked' ? '🔗 Exchange Conectada' : '🌐 Detalhes da Exchange'}
+                  {detailsType === 'linked' ? 'Exchange Conectada' : 'Detalhes da Exchange'}
                 </Text>
                 <TouchableOpacity onPress={closeDetailsModal} style={styles.confirmModalCloseButton}>
                   <Text style={[styles.confirmModalCloseIcon, { color: colors.text }]}>✕</Text>
@@ -1646,7 +1648,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                               />
                             )
                           }
-                          return <Text style={styles.detailsIconText}>🔗</Text>
+                          return <Text style={styles.detailsIconText}></Text>
                         })()}
                       </View>
                       <View style={styles.detailsHeaderText}>
