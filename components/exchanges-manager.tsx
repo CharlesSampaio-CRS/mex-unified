@@ -385,6 +385,12 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       setError(null)
       // Buscar exchanges conectadas do MongoDB
       const { exchanges: linkedList = [] } = await apiService.listExchanges()
+      // LOG TEMPORÁRIO — mostra exatamente o que o servidor manda
+      if (linkedList.length > 0) {
+        console.log('[DEBUG created_at]', JSON.stringify(linkedList[0].created_at))
+        console.log('[DEBUG typeof]', typeof linkedList[0].created_at)
+        console.log('[DEBUG keys]', typeof linkedList[0].created_at === 'object' ? Object.keys(linkedList[0].created_at) : 'primitivo')
+      }
       // Mapear para o formato esperado pelo componente
       const mappedExchanges = linkedList.map((ex: any) => ({
         ...ex,
