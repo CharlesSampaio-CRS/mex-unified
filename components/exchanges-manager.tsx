@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, RefreshControl, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator } from "react-native"
-import { useEffect, useState, useMemo, useCallback, memo } from "react"
+import { useEffect, useState, useMemo, useCallback, memo, useRef } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "@/services/api"
 import { AvailableExchange, LinkedExchange } from "@/types/api"
@@ -319,6 +319,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const hasLoadedOnceRef = useRef(false) // Ref para evitar closure stale no cache
   const [activeTab, setActiveTab] = useState<'all' | 'available' | 'linked'>(initialTab === 'available' ? 'available' : initialTab === 'linked' ? 'linked' : 'all')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -353,14 +354,14 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
   const [detailsType, setDetailsType] = useState<'linked' | 'available'>('linked')
   const [detailsFullData, setDetailsFullData] = useState<any>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false) // Cache: carrega só uma vez
+  // hasLoadedOnce como Ref evita closure stale no useCallback do fetchExchanges
 
   const fetchExchanges = useCallback(async (forceRefresh: boolean = false, silent: boolean = false) => {
     if (!user?.id) {
       setLoading(false)
       return
     }
-    if (hasLoadedOnce && !forceRefresh) {
+    if (hasLoadedOnceRef.current && !forceRefresh) {
       return
     }
     try {
@@ -368,6 +369,10 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       setError(null)
       // Buscar exchanges conectadas do MongoDB
       const { exchanges: linkedList = [] } = await apiService.listExchanges()
+      // Log para debug da data
+      if (linkedList.length > 0) {
+        console.log('[ExchangesManager] created_at raw:', JSON.stringify(linkedList[0].created_at))
+      }
       // Mapear para o formato esperado pelo componente
       const mappedExchanges = linkedList.map((ex: any) => ({
         ...ex,
@@ -391,7 +396,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       }
       setAvailableExchanges(availableData.exchanges || [])
       setRefreshKey(prev => prev + 1)
-      setHasLoadedOnce(true)
+      hasLoadedOnceRef.current = true
       setTimeout(() => {}, 100)
     } catch (err) {
       console.error('❌ Error fetching exchanges:', err)
@@ -399,11 +404,11 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [user?.id, hasLoadedOnce, t])
+  }, [user?.id, t])
 
   // Função para limpar cache e forçar refresh SILENCIOSO (usar após conectar/desconectar)
   const invalidateCacheAndRefresh = useCallback(async () => {
-    setHasLoadedOnce(false) // Limpa o flag de cache
+    hasLoadedOnceRef.current = false // Limpa o flag de cache
     await fetchExchanges(true, true) // forceRefresh=true (força API), silent=true (sem loading)
   }, [fetchExchanges])
 
