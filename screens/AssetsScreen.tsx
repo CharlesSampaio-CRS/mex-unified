@@ -412,10 +412,11 @@ export function AssetsScreen({ navigation }: any) {
                         {hideValue(
                           `${(() => {
                             const amt = parseFloat(String(item.amount || 0))
-                            if (amt < 0.000001) return amt.toFixed(10)
-                            if (amt < 0.0001)   return amt.toFixed(8)
-                            if (amt < 1)        return amt.toFixed(4)
-                            return               amt.toFixed(2)
+                            if (amt < 0.00000001) return amt.toFixed(10)
+                            if (amt < 0.000001)   return amt.toFixed(8)
+                            if (amt < 0.0001)     return amt.toFixed(6)
+                            if (amt < 1)          return amt.toFixed(4)
+                            return                 amt.toFixed(2)
                           })()} ${item.symbol}`
                         )}
                       </Text>
@@ -427,7 +428,7 @@ export function AssetsScreen({ navigation }: any) {
                           <Text style={[styles.variationText, {
                             color: item.variation24h >= 0 ? colors.success : colors.danger
                           }]} numberOfLines={1}>
-                            {item.variation24h >= 0 ? '+' : ''}{String(item.variation24h.toFixed(2))}%
+                            {item.variation24h >= 0 ? '▲' : '▼'} {Math.abs(item.variation24h).toFixed(2)}%
                           </Text>
                         ) : (
                           <Text style={[styles.variationText, { color: colors.textTertiary, opacity: 0.4 }]}>—</Text>

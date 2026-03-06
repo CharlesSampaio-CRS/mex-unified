@@ -1091,7 +1091,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                               <Text style={[styles.assetVariationText, {
                                 color: asset.variation24h >= 0 ? colors.success : colors.danger
                               }]} numberOfLines={1}>
-                                {(asset.variation24h >= 0 ? '+' : '') + Number(asset.variation24h).toFixed(2)}%
+                                {(asset.variation24h >= 0 ? '▲' : '▼') + ' ' + Math.abs(Number(asset.variation24h)).toFixed(2)}%
                               </Text>
                             ) : (
                               <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.3 }]}>—</Text>

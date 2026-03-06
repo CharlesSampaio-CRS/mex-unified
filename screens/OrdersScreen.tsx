@@ -489,7 +489,7 @@ export function OrdersScreen({ navigation }: any) {
             </Text>
             {hasPnl ? (
               <Text style={[styles.pnlText, { color: isPnlPositive ? colors.success : colors.danger }]} numberOfLines={1}>
-                {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
+                {hideValue(`${isPnlPositive ? '▲' : '▼'} ${Math.abs(pnlPercent).toFixed(2)}%`)}
               </Text>
             ) : (
               <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
