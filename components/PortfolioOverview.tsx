@@ -231,7 +231,7 @@ export const PortfolioOverview = memo(function PortfolioOverview({ pnl, pnlLoadi
       })
       setEvolutionData(data)
     } catch (error) {
-      console.error('❌ Erro ao carregar dados de evolução:', error)
+      console.warn('❌ Erro ao carregar dados de evolução:', error)
     } finally {
       setEvolutionLoading(false)
     }

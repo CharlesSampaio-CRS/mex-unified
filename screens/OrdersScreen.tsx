@@ -278,14 +278,14 @@ export function OrdersScreen({ navigation }: any) {
       });
       
       // ✅ Atualiza balance/assets imediatamente (fundos liberados ao cancelar)
-      refreshBalance().catch(console.error);
+      refreshBalance().catch((e) => console.warn(e));
       
       // Sincroniza com backend em background (silencioso, não bloqueia UI)
       setTimeout(() => {
         refresh();
       }, 2000);
     } catch (error: any) {
-      console.error('Erro ao cancelar ordem:', error);
+      console.warn('Erro ao cancelar ordem:', error);
       notify.orderError(addNotification, {
         symbol: order.symbol || '',
         action: 'Cancelar Ordem',
@@ -402,9 +402,9 @@ export function OrdersScreen({ navigation }: any) {
     }
 
     // Atualiza balance e sincroniza com backend
-    refreshBalance().catch(console.error);
+    refreshBalance().catch((e) => console.warn(e));
     setTimeout(() => {
-      refreshExchange(exchangeId).catch(console.error);
+      refreshExchange(exchangeId).catch((e) => console.warn(e));
     }, 2000);
 
     setCancelAllExchangeLoading(false);

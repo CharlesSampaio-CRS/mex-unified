@@ -38,7 +38,7 @@ export function useBackendSnapshots(currentBalance?: number) {
         setPnl(pnlData)
       }
     } catch (err: any) {
-      console.error('❌ Erro ao buscar snapshots:', err)
+      console.warn('❌ Erro ao buscar snapshots:', err)
       setError(err.message || 'Falha ao carregar snapshots')
     } finally {
       setLoading(false)
@@ -60,7 +60,7 @@ export function useBackendSnapshots(currentBalance?: number) {
       
       return { success: true }
     } catch (err: any) {
-      console.error('❌ Erro ao salvar snapshot:', err)
+      console.warn('❌ Erro ao salvar snapshot:', err)
       setError(err.message || 'Falha ao salvar snapshot')
       return { success: false, error: err.message }
     } finally {
@@ -75,7 +75,7 @@ export function useBackendSnapshots(currentBalance?: number) {
     try {
       return await backendSnapshotService.getStats()
     } catch (err: any) {
-      console.error('❌ Erro ao buscar estatísticas:', err)
+      console.warn('❌ Erro ao buscar estatísticas:', err)
       return null
     }
   }, [])
@@ -87,7 +87,7 @@ export function useBackendSnapshots(currentBalance?: number) {
     try {
       return await backendSnapshotService.getEvolutionData(days)
     } catch (err: any) {
-      console.error('❌ Erro ao buscar dados de evolução:', err)
+      console.warn('❌ Erro ao buscar dados de evolução:', err)
       return { values_usd: [], timestamps: [] }
     }
   }, [])

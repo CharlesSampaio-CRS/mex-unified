@@ -88,7 +88,7 @@ export const MarketOverview = memo(function MarketOverview() {
       
       console.log(`[MarketOverview] ✅ ${tokensData.length} tokens carregados`);
     } catch (err) {
-      console.error('[MarketOverview] ❌ Erro ao carregar dados:', err);
+      console.warn('[MarketOverview] ❌ Erro ao carregar dados:', err);
       setError('Erro ao carregar dados do mercado');
     } finally {
       setLoading(false);
@@ -147,7 +147,7 @@ export const MarketOverview = memo(function MarketOverview() {
         setChartData(null);
       }
     } catch (error) {
-      console.error('[MarketOverview] ❌ Erro ao carregar gráfico:', error);
+      console.warn('[MarketOverview] ❌ Erro ao carregar gráfico:', error);
       setChartData(null);
     } finally {
       setLoadingChart(false);

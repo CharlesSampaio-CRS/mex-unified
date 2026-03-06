@@ -62,7 +62,7 @@ function xorDecrypt(encrypted: string, key: string): string {
     }
     return result;
   } catch (error) {
-    console.error('❌ [Encryption] Decryption failed:', error);
+    console.warn('❌ [Encryption] Decryption failed:', error);
     throw new Error('Failed to decrypt data');
   }
 }

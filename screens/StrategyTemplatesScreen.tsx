@@ -60,7 +60,7 @@ export const StrategyTemplatesScreen = memo(function StrategyTemplatesScreen({ n
         setTemplates(body.templates)
       }
     } catch (e) {
-      console.error("❌ Erro ao carregar templates:", e)
+      console.warn("❌ Erro ao carregar templates:", e)
     } finally {
       setLoading(false)
     }

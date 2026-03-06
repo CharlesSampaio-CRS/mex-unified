@@ -49,7 +49,7 @@ export const PrivacyProvider = ({ children }: PrivacyProviderProps) => {
           setHideZeroBalances(JSON.parse(savedZero))
         }
       } catch (error) {
-        console.error('Error loading privacy preference:', error)
+        console.warn('Error loading privacy preference:', error)
       } finally {
         setIsLoading(false)
       }
@@ -65,7 +65,7 @@ export const PrivacyProvider = ({ children }: PrivacyProviderProps) => {
       await AsyncStorage.setItem(PRIVACY_KEY, JSON.stringify(newValue))
       setValuesHidden(newValue)
     } catch (error) {
-      console.error('Error saving privacy preference:', error)
+      console.warn('Error saving privacy preference:', error)
       setValuesHidden(!valuesHidden)
     }
   }, [valuesHidden])
@@ -76,7 +76,7 @@ export const PrivacyProvider = ({ children }: PrivacyProviderProps) => {
       await AsyncStorage.setItem(HIDE_ZERO_KEY, JSON.stringify(newValue))
       setHideZeroBalances(newValue)
     } catch (error) {
-      console.error('Error saving hide zero preference:', error)
+      console.warn('Error saving hide zero preference:', error)
       setHideZeroBalances(!hideZeroBalances)
     }
   }, [hideZeroBalances])

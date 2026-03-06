@@ -108,7 +108,7 @@ export function StrategyDetailsModal({
         }
       }
     } catch (err: any) {
-      console.error(`❌ [StrategyDetails] Erro ao buscar estratégia:`, err)
+      console.warn(`❌ [StrategyDetails] Erro ao buscar estratégia:`, err)
       setError(err.message || t('strategy.notFound') || 'Erro ao carregar estratégia')
     } finally {
       setLoading(false)
@@ -150,7 +150,7 @@ export function StrategyDetailsModal({
       // Refresh strategy data
       await fetchStrategy(strategyId)
     } catch (err: any) {
-      console.error('❌ [StrategyDetails] Tick failed:', err)
+      console.warn('❌ [StrategyDetails] Tick failed:', err)
       const errorMsg = err?.response?.data?.error || err?.message || 'Unknown error'
       setTickResult({
         success: false,

@@ -542,7 +542,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
           console.log(`⚠️ Token ${upperToken} não encontrado em ${exchangeName}: ${result.message}`)
         }
       } catch (error: any) {
-        console.error(`❌ Erro ao buscar ${upperToken} em ${exchangeName}:`, error)
+        console.warn(`❌ Erro ao buscar ${upperToken} em ${exchangeName}:`, error)
         lastError = error
         // Continua tentando outras exchanges
       }

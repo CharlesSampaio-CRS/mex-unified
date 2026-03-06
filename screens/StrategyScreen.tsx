@@ -144,7 +144,7 @@ export function StrategyScreen({ navigation, route }: any) {
       
       console.log('✅ Strategy updated in MongoDB')
     } catch (error) {
-      console.error("❌ Error toggling strategy:", error)
+      console.warn("❌ Error toggling strategy:", error)
       notify.strategyError(addNotification, {
         name,
         action: newIsActive ? 'ativar' : 'pausar',
@@ -179,7 +179,7 @@ export function StrategyScreen({ navigation, route }: any) {
       
       console.log('✅ Strategy archived in MongoDB')
     } catch (error: any) {
-      console.error("❌ Error archiving strategy:", error)
+      console.warn("❌ Error archiving strategy:", error)
       notify.strategyError(addNotification, {
         name,
         action: 'arquivar',
@@ -277,7 +277,7 @@ export function StrategyScreen({ navigation, route }: any) {
     try {
       await loadStrategies()
     } catch (error) {
-      console.error('❌ [StrategyScreen] Erro ao atualizar:', error)
+      console.warn('❌ [StrategyScreen] Erro ao atualizar:', error)
     }
   }, [loadStrategies])
 

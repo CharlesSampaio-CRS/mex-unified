@@ -184,7 +184,7 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
       
       setTokenData(response)
     } catch (err: any) {
-      console.error('❌ Erro ao carregar token:', err)
+      console.warn('❌ Erro ao carregar token:', err)
       setError(err.message || 'Erro ao carregar dados')
     } finally {
       setLoading(false)

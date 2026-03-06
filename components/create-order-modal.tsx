@@ -171,7 +171,7 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
         setExchanges(active)
       }
     } catch (error: any) {
-      console.error('❌ Error fetching exchanges:', error)
+      console.warn('❌ Error fetching exchanges:', error)
       notify.orderError(addNotification, {
         symbol: '',
         action: 'Carregar Exchanges',
@@ -226,7 +226,7 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
         setPairsError(`Nenhum par de trading encontrado para ${tokenInput.toUpperCase()} nesta exchange`)
       }
     } catch (error: any) {
-      console.error('❌ Error fetching pairs:', error)
+      console.warn('❌ Error fetching pairs:', error)
       setPairsError(error.message || 'Erro ao buscar pares')
     } finally {
       setPairsLoading(false)
@@ -566,8 +566,8 @@ export function CreateOrderModal({ visible, onClose, cloneData }: CreateOrderMod
 
         // 4. Sync in background — ⚡ apenas esta exchange
         setTimeout(() => {
-          refreshExchange(exchangeId).catch(console.error)
-          refreshBalance().catch(console.error)
+          refreshExchange(exchangeId).catch((e) => console.warn(e))
+          refreshBalance().catch((e) => console.warn(e))
         }, 3000)
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem'

@@ -123,7 +123,7 @@ async function silentTokenRefresh(): Promise<string | null> {
 
       return newAccessToken || null;
     } catch (error) {
-      console.error('🔇 [Silent Refresh] Erro ao renovar token:', error);
+      console.warn('🔇 [Silent Refresh] Erro ao renovar token:', error);
       return null;
     } finally {
       isRefreshing = false;
@@ -255,7 +255,7 @@ async function buildExchangesPayload(userId: string) {
             passphrase,
           };
         } catch (error) {
-          console.error(`❌ Erro ao decriptar exchange ${ex.exchange_name}:`, error);
+          console.warn(`❌ Erro ao decriptar exchange ${ex.exchange_name}:`, error);
           return null;
         }
       })
@@ -263,7 +263,7 @@ async function buildExchangesPayload(userId: string) {
 
     return exchangesData.filter((ex) => ex !== null);
   } catch (error) {
-    console.error('❌ Falha ao montar exchanges locais:', error);
+    console.warn('❌ Falha ao montar exchanges locais:', error);
     return [];
   }
 }
@@ -308,7 +308,7 @@ export const apiService = {
       const data: BalanceResponse = await response.json();
       return data;
     } catch (error) {
-      console.error('❌ [API] Erro ao buscar balances (seguro):', error);
+      console.warn('❌ [API] Erro ao buscar balances (seguro):', error);
       throw error;
     }
   },
@@ -336,7 +336,7 @@ export const apiService = {
 
       return await response.json();
     } catch (error) {
-      console.error('❌ [API] Erro ao buscar balances cached:', error);
+      console.warn('❌ [API] Erro ao buscar balances cached:', error);
       return { from_cache: true, cached_at: null, age_seconds: null, data: null };
     }
   },
@@ -372,7 +372,7 @@ export const apiService = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('❌ [API] Erro ao adicionar exchange:', error);
+      console.warn('❌ [API] Erro ao adicionar exchange:', error);
       throw error;
     }
   },
@@ -412,7 +412,7 @@ export const apiService = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('❌ [API] Erro ao listar exchanges:', error);
+      console.warn('❌ [API] Erro ao listar exchanges:', error);
       throw error;
     }
   },
@@ -448,7 +448,7 @@ export const apiService = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('❌ [API] Erro ao atualizar exchange:', error);
+      console.warn('❌ [API] Erro ao atualizar exchange:', error);
       throw error;
     }
   },
@@ -475,7 +475,7 @@ export const apiService = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('❌ [API] Erro ao remover exchange:', error);
+      console.warn('❌ [API] Erro ao remover exchange:', error);
       throw error;
     }
   },
@@ -810,7 +810,7 @@ export const apiService = {
       const data = await response.json();
       return data;
     } catch (error: any) {
-      console.error('❌ Get User Exchanges Error:', error);
+      console.warn('❌ Get User Exchanges Error:', error);
       throw new Error(error.message || 'Erro ao buscar exchanges do usuário');
     }
   },
@@ -1260,7 +1260,7 @@ export const apiService = {
 
       return await response.json();
     } catch (error: any) {
-      console.error('❌ Get Orders Error:', error);
+      console.warn('❌ Get Orders Error:', error);
       throw error;
     }
   },
@@ -1299,7 +1299,7 @@ export const apiService = {
 
       return await response.json();
     } catch (error: any) {
-      console.error('❌ Get Orders By Exchange Error:', error);
+      console.warn('❌ Get Orders By Exchange Error:', error);
       throw error;
     }
   },
@@ -1364,7 +1364,7 @@ export const apiService = {
       const data = await response.json();
       return data;
     } catch (error: any) {
-      console.error('❌ Create Order Error:', error);
+      console.warn('❌ Create Order Error:', error);
       throw error;
     }
   },
@@ -1415,7 +1415,7 @@ export const apiService = {
       const data = await response.json();
       return data;
     } catch (error: any) {
-      console.error('❌ Cancel Order Error:', error);
+      console.warn('❌ Cancel Order Error:', error);
       throw error;
     }
   },
@@ -1690,7 +1690,7 @@ export const apiService = {
 
       return;
     } catch (error) {
-      console.error('❌ Error deleting account:', error);
+      console.warn('❌ Error deleting account:', error);
       throw error;
     }
   },
@@ -1995,7 +1995,7 @@ export const apiService = {
 
       return await response.json();
     } catch (error: any) {
-      console.error('❌ Get Pair Ticker Error:', error);
+      console.warn('❌ Get Pair Ticker Error:', error);
       throw error;
     }
   },
@@ -2054,7 +2054,7 @@ export const apiService = {
 
       return await response.json();
     } catch (error: any) {
-      console.error('❌ Get Available Pairs Error:', error);
+      console.warn('❌ Get Available Pairs Error:', error);
       throw error;
     }
   },

@@ -412,7 +412,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       try {
         availableData = await apiService.getAvailableExchanges(user.id, forceRefresh)
       } catch (apiError) {
-        console.error('❌ [ExchangesManager] Erro ao buscar catálogo:', apiError)
+        console.warn('❌ [ExchangesManager] Erro ao buscar catálogo:', apiError)
         availableData = { exchanges: [] }
       }
       setAvailableExchanges(availableData.exchanges || [])
@@ -420,7 +420,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       hasLoadedOnceRef.current = true
       setTimeout(() => {}, 100)
     } catch (err) {
-      console.error('❌ Error fetching exchanges:', err)
+      console.warn('❌ Error fetching exchanges:', err)
       setError(t('exchanges.error'))
     } finally {
       if (!silent) setLoading(false)
@@ -459,7 +459,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       await fetchExchanges(true, false)
       console.log('✅ [ExchangesManager] Exchanges atualizadas')
     } catch (error) {
-      console.error(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
+      console.warn(`❌ [ExchangesManager] Erro ao atualizar aba ${activeTab}:`, error)
     } finally {
       setRefreshing(false)
     }
@@ -516,7 +516,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       setConfirmToggleModalVisible(false)
       
     } catch (error) {
-      console.error("❌ Erro ao atualizar status da exchange:", error)
+      console.warn("❌ Erro ao atualizar status da exchange:", error)
       setToggleLoading(false)
       setConfirmToggleModalVisible(false)
       alert(t("error.updateExchangeStatus"))
@@ -563,7 +563,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     } catch (err) {
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.error('❌ Erro ao desconectar exchange:', err)
+      console.warn('❌ Erro ao desconectar exchange:', err)
       alert(t('error.disconnectExchange'))
     }
   }, [confirmExchangeId, confirmExchangeName, onExchangeModified, t, user?.id])
@@ -617,7 +617,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
     } catch (err) {
       setConfirmLoading(false)
       setConfirmModalVisible(false)
-      console.error('❌ Erro ao deletar exchange:', err)
+      console.warn('❌ Erro ao deletar exchange:', err)
       alert(t('error.deleteExchange'))
     }
   }, [confirmExchangeId, confirmExchangeName, onExchangeModified, t, user?.id])
@@ -841,7 +841,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         console.log('✅ [MongoDB] Exchange salva com sucesso!', response.exchange_id)
         
       } catch (apiError) {
-        console.error('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
+        console.warn('❌ [MongoDB] Erro ao salvar no MongoDB:', apiError)
         Alert.alert(
           t('common.error'),
           t('exchanges.connectError')
@@ -860,7 +860,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       await onExchangeModified()
       
     } catch (err) {
-      console.error('❌ [Error] Erro ao salvar exchange:', err)
+      console.warn('❌ [Error] Erro ao salvar exchange:', err)
       alert(t('error.connectExchange'))
     } finally {
       setConnecting(false)

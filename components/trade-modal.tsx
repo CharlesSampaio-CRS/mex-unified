@@ -231,7 +231,7 @@ export function TradeModal({
   //         })
   //       }
   //     } catch (error) {
-  //       console.error('Error fetching market limits:', error)
+  //       console.warn('Error fetching market limits:', error)
   //     }
   //   }
   //   if (visible && symbol && exchangeId) {
@@ -307,7 +307,7 @@ export function TradeModal({
             setPairsError(`Nenhum par de trading ativo encontrado para ${symbol} nesta exchange`)
           }
         } catch (error: any) {
-          console.error('❌ Error fetching pairs:', error)
+          console.warn('❌ Error fetching pairs:', error)
           const fallbackPair = `${symbol.toUpperCase()}/USDT`
           setSelectedPair(fallbackPair)
           setAvailablePairs([{
@@ -566,8 +566,8 @@ export function TradeModal({
         
         // 4. Sincroniza com backend em background (silencioso, corrige dados reais)
         setTimeout(() => {
-          refreshExchange(exchangeId).catch(console.error)
-          refreshBalance().catch(console.error)
+          refreshExchange(exchangeId).catch((e) => console.warn(e))
+          refreshBalance().catch((e) => console.warn(e))
         }, 3000);
       } else {
         const errorMsg = result.details || result.error || result.message || 'Erro ao criar ordem';

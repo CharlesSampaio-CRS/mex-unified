@@ -85,7 +85,7 @@ export const getBalances = async (
 
     return allBalances
   } catch (error) {
-    console.error('❌ [BalanceService] Erro ao buscar balances:', error)
+    console.warn('❌ [BalanceService] Erro ao buscar balances:', error)
     return []
   }
 }
@@ -141,7 +141,7 @@ export const getBalanceSummary = async (
       lastUpdate: new Date(),
     }
   } catch (error) {
-    console.error('❌ [BalanceService] Erro ao buscar summary:', error)
+    console.warn('❌ [BalanceService] Erro ao buscar summary:', error)
     return {
       totalUsd: 0,
       totalBrl: 0,
@@ -182,7 +182,7 @@ export const getBalanceEvolution = async (
       brl: values_brl?.[index] || 0,
     }))
   } catch (error) {
-    console.error('❌ [BalanceService] Erro ao buscar evolução:', error)
+    console.warn('❌ [BalanceService] Erro ao buscar evolução:', error)
     return []
   }
 }
@@ -200,7 +200,7 @@ export const syncBalances = async (userId: string): Promise<Balance[]> => {
     
     return await getBalances(userId)
   } catch (error) {
-    console.error('❌ [BalanceService] Erro ao sincronizar:', error)
+    console.warn('❌ [BalanceService] Erro ao sincronizar:', error)
     return []
   }
 }

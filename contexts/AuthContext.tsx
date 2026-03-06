@@ -86,31 +86,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('  - Refresh token:', hasRefreshToken ? 'SIM' : 'NÃO')
         console.log('  - Biometria habilitada:', hasBiometric === 'true')
         
-        // ✅ SESSÃO PERSISTENTE: Se tem tokens e user_data, verifica como proceder
+        // ✅ SESSÃO PERSISTENTE:
         if (hasUserData && (hasAccessToken || hasRefreshToken)) {
-          console.log('🔐 Sessão encontrada - verificando validade...')
-          
           if (hasBiometric === 'true') {
             // Biometria habilitada → aguarda desbloqueio local (FaceID/TouchID)
-            console.log('🔒 Biometria ativa - aguardando desbloqueio local')
-            // Mantém tokens salvos mas NÃO seta user (mostra tela de login com opção de biometria)
             setUser(null)
           } else {
             // Sem biometria → NÃO restaura automaticamente, exige login com senha
-            // Os tokens ficam salvos para caso o user faça login com email/senha corretos
-            console.log('🔒 Sem biometria - exigindo login com senha')
             setUser(null)
           }
         } else {
-          console.log('📭 Nenhuma sessão salva - mostrando login')
           setUser(null)
         }
       } catch (error) {
-        console.error('❌ Erro ao inicializar autenticação:', error)
+        console.warn('[AuthContext] Erro ao inicializar autenticação:', error)
         setUser(null)
       } finally {
-        // Sempre marca como não loading após inicialização
-        console.log('✅ Inicialização completa')
         setIsLoading(false)
       }
     }
@@ -139,18 +130,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           })
           
           if (!response.ok) {
-            console.error(`❌ Token validation failed: ${response.status}`)
+            console.warn(`[AuthContext] Token validation failed: ${response.status}`)
             throw new Error(`Token validation failed: ${response.status}`)
           }
           
           const validationData = await response.json()
           
           if (!validationData.valid || validationData.user_id !== user_id) {
-            console.error('❌ Token inválido ou user_id não corresponde')
+            console.warn('[AuthContext] Token inválido ou user_id não corresponde')
             throw new Error('Token inválido ou não pertence ao usuário')
           }
-          
-          console.log('✅ Token validado com sucesso no handler')
           
           // 🚀 OTIMIZAÇÃO: Salva access_token PRIMEIRO (necessário para chamadas de dados)
           await secureStorage.setItemAsync('access_token', access_token)
@@ -164,7 +153,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
           
           // 🚀 IMEDIATAMENTE seta o usuário para disparar carregamento de dados
-          console.log('✅ Setando usuário autenticado no estado (via evento)...')
           setHasValidToken(true)
           setUser(userData)
           
@@ -176,10 +164,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
             secureStorage.setItemAsync('user_id', user_id),
           ]).catch(err => {
-            console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+            console.warn('[AuthContext] Erro ao salvar dados persistentes (não crítico):', err)
           })
         } catch (error) {
-          console.error('❌ Error processing OAuth callback:', error)
+          console.warn('[AuthContext] Erro ao processar OAuth callback:', error)
           // Limpa qualquer dado que possa ter sido salvo parcialmente
           await secureStorage.deleteItemAsync('access_token')
           await secureStorage.deleteItemAsync('refresh_token')
@@ -223,7 +211,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
     } catch (error) {
-      console.error('Error checking biometric:', error)
+      console.warn('[AuthContext] Erro ao verificar biometria:', error)
     }
   }
 
@@ -236,7 +224,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const autoLogin = await secureStorage.getItemAsync('auto_login_enabled')
       setIsAutoLoginEnabledState(autoLogin === null ? true : autoLogin === 'true')
     } catch (error) {
-      console.error('Error checking biometric enabled:', error)
+      console.warn('[AuthContext] Erro ao verificar biometria habilitada:', error)
     }
   }
 
@@ -249,12 +237,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const tryRefreshToken = async (): Promise<string | null> => {
     try {
       const refreshToken = await secureStorage.getItemAsync('refresh_token')
-      if (!refreshToken) {
-        console.log('❌ Sem refresh token salvo')
-        return null
-      }
+      if (!refreshToken) return null
       
-      console.log('🔄 Renovando access token via refresh token...')
       const response = await fetch(`${config.kongBaseUrl}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -262,7 +246,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       })
       
       if (!response.ok) {
-        console.error(`❌ Refresh falhou: ${response.status}`)
         // Refresh token expirou (30 dias) - limpa tudo
         await secureStorage.deleteItemAsync('access_token')
         await secureStorage.deleteItemAsync('refresh_token')
@@ -274,16 +257,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (newAccessToken) {
         await secureStorage.setItemAsync('access_token', newAccessToken)
-        console.log('✅ Access token renovado com sucesso')
       }
       if (data.refresh_token) {
         await secureStorage.setItemAsync('refresh_token', data.refresh_token)
-        console.log('✅ Refresh token também renovado')
       }
       
       return newAccessToken || null
     } catch (error) {
-      console.error('❌ Erro ao renovar token:', error)
+      console.warn('[AuthContext] Erro ao renovar token:', error)
       return null
     }
   }
@@ -318,33 +299,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           if (response.ok) {
             const data = await response.json()
             if (data.valid) {
-              console.log('✅ Access token válido - sessão restaurada')
               setHasValidToken(true)
               setUser(parsedUser)
               return true
             }
           }
         } catch (e) {
-          console.log('⚠️ Erro ao verificar token, tentando refresh...')
+          // token inválido/expirado — tenta refresh abaixo
         }
       }
       
       // Access token inválido/expirado → tenta refresh
       const newToken = await tryRefreshToken()
       if (newToken) {
-        console.log('✅ Sessão restaurada via refresh token')
         setHasValidToken(true)
         setUser(parsedUser)
         return true
       }
       
       // Tudo falhou - limpa sessão
-      console.log('❌ Não foi possível restaurar sessão')
       await secureStorage.deleteItemAsync('access_token')
       await secureStorage.deleteItemAsync('refresh_token')
       return false
     } catch (error) {
-      console.error('❌ Erro ao restaurar sessão:', error)
+      console.warn('[AuthContext] Erro ao restaurar sessão:', error)
       return false
     }
   }
@@ -369,7 +347,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     // Se 401, tenta refresh e retry UMA vez
     if (response.status === 401) {
-      console.log('⚠️ 401 recebido - tentando refresh automático...')
       const newToken = await tryRefreshToken()
       
       if (newToken) {
@@ -381,7 +358,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return fetch(url, { ...options, headers: retryHeaders })
       } else {
         // Refresh falhou → sessão expirou → logout
-        console.log('❌ Refresh falhou - fazendo logout automático')
         await logout()
         return response
       }
@@ -403,8 +379,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (userData && accessToken) {
         // ✅ SEMPRE VALIDA O TOKEN ANTES DE CARREGAR O USUÁRIO
-        console.log('🔍 Validando token salvo antes de carregar usuário...')
-        
         try {
           const response = await fetch(`${config.kongBaseUrl}/auth/verify`, {
             method: 'GET',
@@ -415,7 +389,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           })
           
           if (!response.ok) {
-            console.error(`❌ Token salvo inválido: ${response.status}`)
             throw new Error('Token expired or invalid')
           }
           
@@ -423,14 +396,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const parsedUser = JSON.parse(userData)
           
           if (!validationData.valid || validationData.user_id !== parsedUser.id) {
-            console.error('❌ Token não pertence ao usuário salvo')
             throw new Error('Token does not match user')
           }
           
-          console.log('✅ Token salvo é válido, carregando usuário')
           setUser(parsedUser)
         } catch (validationError) {
-          console.error('❌ Erro ao validar token salvo:', validationError)
+          console.warn('[AuthContext] Erro ao validar token salvo:', validationError)
           // Limpa dados inválidos
           await secureStorage.deleteItemAsync('access_token')
           await secureStorage.deleteItemAsync('refresh_token')
@@ -440,7 +411,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
     } catch (error) {
-      console.error('Error loading user:', error)
+      console.warn('[AuthContext] Erro ao carregar usuário:', error)
       setUser(null)
     } finally {
       setIsLoading(false)
@@ -452,7 +423,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await secureStorage.setItemAsync('user_data', JSON.stringify(userData))
       setUser(userData)
     } catch (error) {
-      console.error('Error saving user:', error)
+      console.warn('[AuthContext] Erro ao salvar usuário:', error)
       throw error
     }
   }
@@ -493,8 +464,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       // 🚀 IMEDIATAMENTE seta o usuário no estado para disparar o carregamento de dados
-      // BalanceContext e OrdersContext reagem ao user?.id via useEffect
-      console.log('✅ Setando usuário autenticado no estado...')
       setHasValidToken(true)
       setUser(userData)
       
@@ -507,12 +476,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         secureStorage.setItemAsync('user_email', data.user.email),
         secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
       ]).catch(err => {
-        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+        console.warn('[AuthContext] Erro ao salvar dados persistentes (não crítico):', err)
       })
       
-      console.log('✅ Login completo! Dados sendo carregados em background...')
     } catch (error) {
-      console.error('Login error:', error)
+      console.warn('[AuthContext] Erro no login:', error)
       setHasValidToken(false)
       throw error
     } finally {
@@ -537,47 +505,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       })
 
       if (result.success) {
-        // ✅ FaceID/TouchID autenticou com sucesso!
-        // Agora usa os tokens JÁ SALVOS no SecureStore
-        console.log('✅ Biometria OK - desbloqueio local aprovado')
-        
-        // Busca dados do usuário salvos
         const userData = await secureStorage.getItemAsync('user_data')
         
         if (!userData) {
-          console.error('❌ Dados do usuário não encontrados')
           throw new Error('Dados do usuário não encontrados. Faça login novamente.')
         }
         
         const parsedUser = JSON.parse(userData)
-        console.log('� Restaurando sessão para:', parsedUser.email || parsedUser.name)
         
-        // Tenta restaurar sessão (access token ou refresh)
-        // Funciona com QUALQUER authProvider: email, google, apple
         const restored = await tryRestoreSession()
         
         if (restored) {
-          console.log('✅ Sessão restaurada com sucesso via biometria')
-          // setUser já foi chamado dentro de tryRestoreSession
           return
         }
         
-        // Se refresh token também expirou (>30 dias), precisa login completo
-        console.log('⚠️ Sessão expirada (refresh token vencido) - precisa login completo')
         throw new Error('Sua sessão expirou. Faça login novamente.')
         
-        // O loading será desativado pelo App.tsx quando os dados estiverem prontos
       } else {
         // ❌ Usuário cancelou ou falhou a autenticação
-        console.log('👤 Usuário cancelou a autenticação biométrica')
-        
-        // Cria erro específico para cancelamento
         const cancelError = new Error('User canceled biometric authentication')
         cancelError.name = 'BiometricCancelError'
         throw cancelError
       }
     } catch (error: any) {
-      console.error('Biometric login error:', error)
+      console.warn('[AuthContext] Erro no login biométrico:', error)
       
       // Se já é um erro de cancelamento, apenas repropaga
       if (error.name === 'BiometricCancelError') {
@@ -602,7 +553,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('Auth URL request failed:', response.status, errorText)
+        console.warn('[AuthContext] Auth URL request failed:', response.status, errorText)
         throw new Error(`Trading Service returned ${response.status}: ${response.statusText}`)
       }
       
@@ -633,7 +584,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               const { access_token, refresh_token, user_id, email, name } = event.data
               
               if (!access_token || !user_id || !email) {
-                console.error('Invalid OAuth response - missing required fields')
+                console.warn('[AuthContext] OAuth response inválida — campos obrigatórios ausentes')
                 reject(new Error('Invalid OAuth response'))
                 return
               }
@@ -648,7 +599,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 })
                 
                 if (!verifyResponse.ok) {
-                  console.error(`❌ Token validation failed: ${verifyResponse.status}`)
+                  console.warn(`[AuthContext] Token validation failed: ${verifyResponse.status}`)
                   throw new Error(`Token validation failed: ${verifyResponse.status}`)
                 }
                 
@@ -676,12 +627,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                   name ? secureStorage.setItemAsync('user_name', name) : Promise.resolve(),
                   secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
                 ]).catch(err => {
-                  console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+                  console.warn('[AuthContext] Erro ao salvar dados persistentes (não crítico):', err)
                 })
                 
                 resolve()
               } catch (saveError) {
-                console.error('❌ Error validating or saving user data:', saveError)
+                console.warn('[AuthContext] Erro ao validar ou salvar dados do usuário:', saveError)
                 // Limpa dados parciais em caso de erro
                 await secureStorage.deleteItemAsync('access_token')
                 await secureStorage.deleteItemAsync('refresh_token')
@@ -715,7 +666,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           )
           
           if (!popup) {
-            console.error('Failed to open popup - blocked by browser')
+            console.warn('[AuthContext] Popup bloqueado pelo browser')
             window.removeEventListener('message', messageHandler)
             reject(new Error('Failed to open OAuth popup - please allow popups'))
             return
@@ -765,7 +716,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 // Processa como se fosse postMessage com o formato correto
                 messageHandler({ data: oauthData } as MessageEvent)
               } catch (err) {
-                console.error('❌ Failed to parse OAuth result:', err)
+                console.warn('❌ Failed to parse OAuth result:', err)
                 reject(new Error('Failed to parse OAuth result'))
               }
             }
@@ -826,14 +777,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             name ? secureStorage.setItemAsync('user_name', name) : Promise.resolve(),
             secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
           ]).catch(err => {
-            console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+            console.warn('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
           })
         } else {
           throw new Error('OAuth cancelled or failed')
         }
       }
     } catch (error) {
-      console.error('Google login error:', error)
+      console.warn('Google login error:', error)
       throw error
     } finally {
       setIsLoading(false)
@@ -863,10 +814,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Salva dados persistentes em background (não bloqueia)
       saveUser(mockUser).catch(err => {
-        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+        console.warn('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
       })
     } catch (error) {
-      console.error('Apple login error:', error)
+      console.warn('Apple login error:', error)
       throw error
     } finally {
       setIsLoading(false)
@@ -906,9 +857,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (!response.ok) {
         const errorMessage = (data && data.error) || responseText || 'Registration failed'
-        console.error('[REGISTER] ❌ Erro do servidor:', errorMessage)
-        console.error('[REGISTER] ❌ Status HTTP:', response.status)
-        console.error('[REGISTER] ❌ Data completo:', data)
+        console.warn('[REGISTER] ❌ Erro do servidor:', errorMessage)
+        console.warn('[REGISTER] ❌ Status HTTP:', response.status)
+        console.warn('[REGISTER] ❌ Data completo:', data)
         throw new Error(errorMessage)
       }
 
@@ -937,12 +888,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         secureStorage.setItemAsync('user_email', data.user.email),
         secureStorage.setItemAsync('user_data', JSON.stringify(userData)),
       ]).catch(err => {
-        console.error('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
+        console.warn('⚠️ Erro ao salvar dados persistentes (não crítico):', err)
       })
 
       console.log('✅ Registro completo! Dados sendo carregados em background...')
     } catch (error) {
-      console.error('Register error:', error)
+      console.warn('Register error:', error)
       setHasValidToken(false)
       throw error
     } finally {
@@ -993,7 +944,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           localStorage.removeItem('oauth_result')
           console.log('✅ localStorage limpo')
         } catch (error) {
-          console.error('❌ Erro ao limpar localStorage:', error)
+          console.warn('❌ Erro ao limpar localStorage:', error)
         }
       }
       
@@ -1008,7 +959,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       console.log('✅ Logout completo - todos os dados limpos')
     } catch (error) {
-      console.error('❌ Logout error:', error)
+      console.warn('❌ Logout error:', error)
       throw error
     }
   }
@@ -1052,7 +1003,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             
             console.log('✅ Bancos locais deletados')
           } catch (idbError) {
-            console.error('⚠️ Erro ao deletar IndexedDB:', idbError)
+            console.warn('⚠️ Erro ao deletar IndexedDB:', idbError)
           }
         }
         
@@ -1073,7 +1024,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       console.log('✅ Conta excluída com sucesso!')
     } catch (error) {
-      console.error('❌ Erro ao deletar conta:', error)
+      console.warn('❌ Erro ao deletar conta:', error)
       throw error
     }
   }
@@ -1097,7 +1048,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       return false
     } catch (error) {
-      console.error('Enable biometric error:', error)
+      console.warn('Enable biometric error:', error)
       return false
     }
   }
@@ -1107,7 +1058,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await secureStorage.deleteItemAsync('biometric_enabled')
       setIsBiometricEnabled(false)
     } catch (error) {
-      console.error('Disable biometric error:', error)
+      console.warn('Disable biometric error:', error)
     }
   }
 
@@ -1116,7 +1067,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await secureStorage.setItemAsync('auto_login_enabled', enabled ? 'true' : 'false')
       setIsAutoLoginEnabledState(enabled)
     } catch (error) {
-      console.error('Error setting auto login:', error)
+      console.warn('Error setting auto login:', error)
     }
   }
 

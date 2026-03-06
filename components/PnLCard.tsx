@@ -97,7 +97,7 @@ export default function PnLCard({ userId, refreshTrigger }: PnLCardProps) {
         isProfit: change >= 0
       }
     } catch (error) {
-      console.error('❌ [PnLCard] Erro no cálculo:', error)
+      console.warn('❌ [PnLCard] Erro no cálculo:', error)
       return previousPnlData.current || null
     }
   }, [balanceData, balanceLoading])

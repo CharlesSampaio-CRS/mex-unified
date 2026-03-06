@@ -142,7 +142,7 @@ export function useOpenOrdersSync({
 
     } catch (error) {
       const totalTime = Date.now() - startTime
-      console.error(`❌ [OpenOrdersSync] Failed after ${totalTime}ms:`, error)
+      console.warn(`❌ [OpenOrdersSync] Failed after ${totalTime}ms:`, error)
       onSyncError?.(error instanceof Error ? error : new Error(String(error)))
     } finally {
       isSyncingRef.current = false

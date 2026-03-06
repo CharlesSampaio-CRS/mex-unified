@@ -732,7 +732,7 @@ export async function loadLanguage(): Promise<Language> {
       return savedLanguage
     }
   } catch (error) {
-    console.error('Error loading language:', error)
+    console.warn('Error loading language:', error)
   }
   return 'en-US' // default
 }
@@ -744,7 +744,7 @@ export async function saveLanguage(language: Language): Promise<void> {
   try {
     await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, language)
   } catch (error) {
-    console.error('Error saving language:', error)
+    console.warn('Error saving language:', error)
     throw error
   }
 }

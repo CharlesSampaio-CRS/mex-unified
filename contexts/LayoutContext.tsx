@@ -28,7 +28,7 @@ export const LayoutProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setLayoutState(savedLayout as LayoutType);
       }
     } catch (error) {
-      console.error('Error loading layout preference:', error);
+      console.warn('Error loading layout preference:', error);
     } finally {
       setIsLoading(false);
     }
@@ -39,7 +39,7 @@ export const LayoutProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       await AsyncStorage.setItem(LAYOUT_STORAGE_KEY, newLayout);
       setLayoutState(newLayout);
     } catch (error) {
-      console.error('Error saving layout preference:', error);
+      console.warn('Error saving layout preference:', error);
     }
   };
 

@@ -66,7 +66,7 @@ export function ProfileScreen({ navigation }: any) {
         navigation.navigate('Login')
       }
     } catch (error) {
-      console.error('❌ Erro no logout:', error)
+      console.warn('❌ Erro no logout:', error)
       Alert.alert(t('common.error'), t('profile.logoutError'))
     }
   }
@@ -478,7 +478,7 @@ export function ProfileScreen({ navigation }: any) {
                               }
                             }, 1500)
                           } catch (error) {
-                            console.error('❌ Erro ao excluir conta:', error)
+                            console.warn('❌ Erro ao excluir conta:', error)
                             Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.')
                           }
                         }
@@ -504,7 +504,7 @@ export function ProfileScreen({ navigation }: any) {
                                     }
                                   }, 1500)
                                 } catch (error) {
-                                  console.error('❌ Erro ao excluir conta:', error)
+                                  console.warn('❌ Erro ao excluir conta:', error)
                                   Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.')
                                 }
                               }

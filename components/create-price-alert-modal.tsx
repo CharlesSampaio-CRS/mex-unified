@@ -162,7 +162,7 @@ export function CreateAlertModal({
         setErrors(['Erro ao criar alerta. Tente novamente.']);
       }
     } catch (err: any) {
-      console.error('[CreateAlertModal] ❌ Erro:', err);
+      console.warn('[CreateAlertModal] ❌ Erro:', err);
       setErrors([err.message || 'Erro ao criar alerta']);
     } finally {
       setLoading(false);

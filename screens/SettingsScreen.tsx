@@ -130,10 +130,10 @@ export function SettingsScreen({ navigation, route }: any) {
         navigation.navigate('Login')
         console.log('✅ Navegação via navigation.navigate')
       } else {
-        console.error('❌ Nenhum método de navegação disponível')
+        console.warn('❌ Nenhum método de navegação disponível')
       }
     } catch (error) {
-      console.error('❌ Erro no logout:', error)
+      console.warn('❌ Erro no logout:', error)
       Alert.alert(t('common.error'), t('profile.logoutError'))
     }
   }
@@ -163,7 +163,7 @@ export function SettingsScreen({ navigation, route }: any) {
       const data = await response.json()
       setDeviceIp(data.ip)
     } catch (error) {
-      console.error('Error fetching IP:', error)
+      console.warn('Error fetching IP:', error)
       setDeviceIp('Não disponível')
     }
   }
@@ -1189,7 +1189,7 @@ export function SettingsScreen({ navigation, route }: any) {
                               }
                             }, 1500)
                           } catch (error) {
-                            console.error('❌ Erro ao excluir conta:', error)
+                            console.warn('❌ Erro ao excluir conta:', error)
                             Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.')
                           }
                         }
@@ -1224,7 +1224,7 @@ export function SettingsScreen({ navigation, route }: any) {
                                     }
                                   }, 1500)
                                 } catch (error) {
-                                  console.error('❌ Erro ao excluir conta:', error)
+                                  console.warn('❌ Erro ao excluir conta:', error)
                                   Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.')
                                 }
                               }

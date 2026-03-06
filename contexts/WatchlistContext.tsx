@@ -41,12 +41,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       if (stored) {
         const parsed = JSON.parse(stored)
         setWatchlist(parsed)
-        console.log('[WatchlistContext] ✅ Watchlist carregada:', parsed.length, 'tokens')
-      } else {
-        console.log('[WatchlistContext] ℹ️ Nenhuma watchlist salva')
       }
     } catch (error) {
-      console.error('[WatchlistContext] ❌ Erro ao carregar watchlist:', error)
+      console.warn('[WatchlistContext] Erro ao carregar watchlist:', error)
     } finally {
       setLoading(false)
     }
@@ -56,19 +53,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   const saveWatchlist = async (newWatchlist: WatchlistToken[]) => {
     try {
       await AsyncStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(newWatchlist))
-      console.log('[WatchlistContext] 💾 Watchlist salva:', newWatchlist.length, 'tokens')
     } catch (error) {
-      console.error('[WatchlistContext] ❌ Erro ao salvar watchlist:', error)
+      console.warn('[WatchlistContext] Erro ao salvar watchlist:', error)
     }
   }
 
-  // Adicionar token à watchlist
   const addToken = useCallback(async (symbol: string, name?: string) => {
     const upperSymbol = symbol.toUpperCase()
     
-    // Verifica se já existe
     if (watchlist.some(token => token.symbol === upperSymbol)) {
-      console.log('[WatchlistContext] ℹ️ Token já está na watchlist:', upperSymbol)
       return
     }
 
@@ -81,17 +74,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     const newWatchlist = [...watchlist, newToken]
     setWatchlist(newWatchlist)
     await saveWatchlist(newWatchlist)
-    console.log('[WatchlistContext] ⭐ Token adicionado:', upperSymbol)
   }, [watchlist])
 
-  // Remover token da watchlist
   const removeToken = useCallback(async (symbol: string) => {
     const upperSymbol = symbol.toUpperCase()
     const newWatchlist = watchlist.filter(token => token.symbol !== upperSymbol)
-    
     setWatchlist(newWatchlist)
     await saveWatchlist(newWatchlist)
-    console.log('[WatchlistContext] 🗑️ Token removido:', upperSymbol)
   }, [watchlist])
 
   // Verificar se um token está na watchlist
@@ -104,7 +93,6 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   const clearWatchlist = useCallback(async () => {
     setWatchlist([])
     await AsyncStorage.removeItem(WATCHLIST_STORAGE_KEY)
-    console.log('[WatchlistContext] 🧹 Watchlist limpa')
   }, [])
 
   return (

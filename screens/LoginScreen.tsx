@@ -253,7 +253,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             // Só marca como não processando após tudo concluir
             setIsProcessingOAuth(false)
           } catch (error) {
-            console.error('❌ Falha na validação do token OAuth:', error)
+            console.warn('❌ Falha na validação do token OAuth:', error)
             setIsProcessingOAuth(false)
             Alert.alert(
               'Erro de autenticação',
@@ -302,7 +302,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     try {
       await login(email, password)
     } catch (error: any) {
-      console.error('❌ Erro no login:', error)
+      console.warn('❌ Erro no login:', error)
       setIsLoggingIn(false)
     }
   }
@@ -323,7 +323,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       }
       
       // Para outros erros, mostra alerta
-      console.error('❌ Erro no login biométrico:', error)
+      console.warn('❌ Erro no login biométrico:', error)
       Alert.alert(
         'Erro de Autenticação',
         'Não foi possível autenticar com biometria. Tente novamente ou use outro método de login.'
@@ -335,7 +335,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     try {
       await loginWithGoogle()
     } catch (error: any) {
-      console.error('❌ Erro no login com Google:', error)
+      console.warn('❌ Erro no login com Google:', error)
     }
   }
 
@@ -343,7 +343,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     try {
       await loginWithApple()
     } catch (error: any) {
-      console.error('❌ Erro no login com Apple:', error)
+      console.warn('❌ Erro no login com Apple:', error)
     }
   }
 

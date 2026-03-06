@@ -219,7 +219,7 @@ export const PortfolioChart = memo(function PortfolioChart({
     
     // Verifica se a data é válida
     if (isNaN(date.getTime())) {
-      console.error('❌ [PortfolioChart] Data inválida:', timestamp)
+      console.warn('❌ [PortfolioChart] Data inválida:', timestamp)
       return 'Data inválida'
     }
     

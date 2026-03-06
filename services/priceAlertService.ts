@@ -64,7 +64,7 @@ class PriceAlertService {
       
       console.log('[PriceAlerts] ✅ Serviço mobile inicializado');
     } catch (error) {
-      console.error('[PriceAlerts] ❌ Erro ao inicializar:', error);
+      console.warn('[PriceAlerts] ❌ Erro ao inicializar:', error);
     }
   }
 
@@ -138,7 +138,7 @@ class PriceAlertService {
       await this.savePriceCache();
 
     } catch (error) {
-      console.error('[PriceAlerts] ❌ Erro ao verificar alertas:', error);
+      console.warn('[PriceAlerts] ❌ Erro ao verificar alertas:', error);
     }
   }
 
@@ -271,7 +271,7 @@ class PriceAlertService {
     currentPrice: number
   ): boolean {
     if (!alert.basePrice || alert.basePrice <= 0) {
-      console.error(`[PriceAlerts] ❌ Alerta ${alert.id} de porcentagem sem basePrice válido!`);
+      console.warn(`[PriceAlerts] ❌ Alerta ${alert.id} de porcentagem sem basePrice válido!`);
       alert.basePrice = currentPrice;
       return false;
     }
@@ -346,7 +346,7 @@ class PriceAlertService {
 
       console.log(`[PriceAlerts] ✅ Notificação enviada: ${message}`);
     } catch (error) {
-      console.error(`[PriceAlerts] ❌ Erro ao disparar alerta:`, error);
+      console.warn(`[PriceAlerts] ❌ Erro ao disparar alerta:`, error);
     }
   }
 
@@ -396,7 +396,7 @@ class PriceAlertService {
         trigger: null, // Imediato
       });
     } catch (error) {
-      console.error('[PriceAlerts] ❌ Erro ao enviar notificação:', error);
+      console.warn('[PriceAlerts] ❌ Erro ao enviar notificação:', error);
     }
   }
 
@@ -474,7 +474,7 @@ class PriceAlertService {
             console.warn(`[PriceAlerts] ⚠️ Ticker inválido para ${symbol} na exchange ${exchangeId}`);
           }
         } catch (error: any) {
-          console.error(`[PriceAlerts] ❌ Erro ao buscar preço de ${symbol} (${exchangeId}):`, error.message);
+          console.warn(`[PriceAlerts] ❌ Erro ao buscar preço de ${symbol} (${exchangeId}):`, error.message);
         }
       })();
 
@@ -497,7 +497,7 @@ class PriceAlertService {
       const stored = await AsyncStorage.getItem(ALERTS_STORAGE_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('[PriceAlerts] ❌ Erro ao carregar alertas:', error);
+      console.warn('[PriceAlerts] ❌ Erro ao carregar alertas:', error);
       return [];
     }
   }
@@ -511,7 +511,7 @@ class PriceAlertService {
     try {
       await AsyncStorage.setItem(ALERTS_STORAGE_KEY, JSON.stringify(alerts));
     } catch (error) {
-      console.error('[PriceAlerts] ❌ Erro ao salvar alertas:', error);
+      console.warn('[PriceAlerts] ❌ Erro ao salvar alertas:', error);
     }
   }
 
@@ -558,7 +558,7 @@ class PriceAlertService {
       const stored = await AsyncStorage.getItem(PRICE_CACHE_KEY);
       this.priceCache = stored ? JSON.parse(stored) : {};
     } catch (error) {
-      console.error('[PriceAlerts] ❌ Erro ao carregar cache:', error);
+      console.warn('[PriceAlerts] ❌ Erro ao carregar cache:', error);
       this.priceCache = {};
     }
   }
@@ -567,7 +567,7 @@ class PriceAlertService {
     try {
       await AsyncStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(this.priceCache));
     } catch (error) {
-      console.error('[PriceAlerts] ❌ Erro ao salvar cache:', error);
+      console.warn('[PriceAlerts] ❌ Erro ao salvar cache:', error);
     }
   }
 
@@ -600,7 +600,7 @@ class PriceAlertService {
 
       await this.savePriceCache();
     } catch (error) {
-      console.error('[PriceAlerts] ❌ Erro ao limpar:', error);
+      console.warn('[PriceAlerts] ❌ Erro ao limpar:', error);
     }
   }
 }

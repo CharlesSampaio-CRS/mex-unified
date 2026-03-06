@@ -1624,7 +1624,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           setLanguage(savedLanguage)
         }
       } catch (error) {
-        console.error('Error loading language:', error)
+        console.warn('Error loading language:', error)
       } finally {
         setIsLoading(false)
       }
@@ -1639,7 +1639,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newLanguage)
       setLanguage(newLanguage)
     } catch (error) {
-      console.error('Error saving language:', error)
+      console.warn('Error saving language:', error)
       // Still update the state even if storage fails
       setLanguage(newLanguage)
     }

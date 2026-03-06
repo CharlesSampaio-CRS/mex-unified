@@ -243,7 +243,7 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       console.log(`✅ [useBackendStrategies] ${data.length} estratégias carregadas`);
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao carregar estratégias';
-      console.error('❌ [useBackendStrategies] Erro:', errorMessage);
+      console.warn('❌ [useBackendStrategies] Erro:', errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -259,7 +259,7 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       setArchivedStrategies(data);
       console.log(`✅ [useBackendStrategies] ${data.length} estratégias arquivadas`);
     } catch (err: any) {
-      console.error('❌ [useBackendStrategies] Erro histórico:', err.message);
+      console.warn('❌ [useBackendStrategies] Erro histórico:', err.message);
     }
   }, []);
 
@@ -278,7 +278,7 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       return newStrategy;
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao criar estratégia';
-      console.error('❌ [useBackendStrategies] Erro ao criar:', errorMessage);
+      console.warn('❌ [useBackendStrategies] Erro ao criar:', errorMessage);
       setError(errorMessage);
       throw err;
     }
@@ -301,7 +301,7 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       return updatedStrategy;
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao atualizar estratégia';
-      console.error(`❌ [useBackendStrategies] Erro ao atualizar ${id}:`, errorMessage);
+      console.warn(`❌ [useBackendStrategies] Erro ao atualizar ${id}:`, errorMessage);
       setError(errorMessage);
       throw err;
     }
@@ -320,7 +320,7 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       console.log('✅ [useBackendStrategies] Estratégia arquivada:', id);
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao arquivar estratégia';
-      console.error(`❌ [useBackendStrategies] Erro ao arquivar ${id}:`, errorMessage);
+      console.warn(`❌ [useBackendStrategies] Erro ao arquivar ${id}:`, errorMessage);
       setError(errorMessage);
       throw err;
     }
@@ -345,7 +345,7 @@ export const useBackendStrategies = (autoLoad: boolean = true): UseBackendStrate
       return updatedStrategy;
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao alternar status';
-      console.error(`❌ [useBackendStrategies] Erro ao alternar ${id}:`, errorMessage);
+      console.warn(`❌ [useBackendStrategies] Erro ao alternar ${id}:`, errorMessage);
       setError(errorMessage);
       throw err;
     }
