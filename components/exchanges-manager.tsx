@@ -35,19 +35,38 @@ interface ExchangesManagerProps {
 
 // Formata datas vindas da API de forma segura (string ISO, timestamp ms ou s)
 function safeFormatDate(value: string | number | null | undefined, opts?: Intl.DateTimeFormatOptions): string {
-  if (!value) return 'N/A'
+  if (value === null || value === undefined || value === '') return 'N/A'
+
   let date: Date
 
   if (typeof value === 'number') {
-    // Timestamp em segundos (Unix) → converte para ms
+    // Timestamp Unix em segundos → ms
     date = new Date(value < 1e10 ? value * 1000 : value)
   } else {
-    // String ISO: normaliza separador para '-' e 'T' para garantir parse correto no Hermes
-    const normalized = value.replace(' ', 'T')
-    date = new Date(normalized)
+    // Loga o valor recebido para debug
+    console.log('[safeFormatDate] raw value:', JSON.stringify(value))
+
+    // Tenta vários formatos:
+    // 1) Se for só número em string (ex: "1709654400000")
+    if (/^\d{10,13}$/.test(value.trim())) {
+      const n = Number(value)
+      date = new Date(n < 1e10 ? n * 1000 : n)
+    }
+    // 2) Formato "YYYY-MM-DD HH:MM:SS[.mmm][+TZ]" — substitui espaço por T
+    else if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}/.test(value)) {
+      const normalized = value.replace(' ', 'T')
+      date = new Date(normalized)
+    }
+    // 3) Qualquer outro formato — tenta direto
+    else {
+      date = new Date(value)
+    }
   }
 
-  if (isNaN(date.getTime())) return 'N/A'
+  if (isNaN(date.getTime())) {
+    console.warn('[safeFormatDate] failed to parse:', JSON.stringify(value))
+    return 'N/A'
+  }
 
   return date.toLocaleDateString('pt-BR', opts ?? {
     day: '2-digit',
