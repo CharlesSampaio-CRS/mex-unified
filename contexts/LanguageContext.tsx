@@ -139,7 +139,7 @@ const translations = {
     'strategy.aggressive': 'Agressiva',
     'strategy.aggressiveDesc': 'Máximo lucro (3 TPs, DCA ativo)',
     'strategy.templates': 'Estratégias Padrão',
-    'strategy.templatesSubtitle': 'Detalhes de cada estratégia padrão',
+    'strategy.templatesSubtitle': 'Detalhes estratégia padrão',
     'strategy.createNew': 'Criar Nova Estratégia',
     'strategy.riskLevel': 'Risco',
     'strategy.configs': 'Configurações',
