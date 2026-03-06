@@ -124,7 +124,7 @@ type FlatItem =
   | { type: 'header'; key: string; exchangeName: string; itemCount: number; exchangeId: string }
   | { type: 'asset';  key: string; item: any };
 
-
+export const AssetsScreen = memo(function AssetsScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { data: balanceData, loading: balanceLoading, refresh: refreshBalance, refreshing } = useBalance();
