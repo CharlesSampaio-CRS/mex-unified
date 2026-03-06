@@ -1103,7 +1103,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
                     <View style={styles.metric}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>P&L Realizado</Text>
                       <Text style={[styles.metricValue, { color: result.realizedPnl >= 0 ? '#10b981' : '#ef4444' }]}>
-                        {result.realizedPnl >= 0 ? '+' : ''}{formatUSD(result.realizedPnl)}
+                        {result.realizedPnl >= 0 ? '▲' : '▼'} {formatUSD(result.realizedPnl)}
                       </Text>
                       <Text style={[styles.metricSub, { color: result.realizedPnlPercent >= 0 ? '#10b981' : '#ef4444' }]}>
                         {formatPct(result.realizedPnlPercent)}
@@ -1113,7 +1113,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>P&L Não Real.</Text>
                       <Text style={[styles.metricValue, { color: result.unrealizedPnl >= 0 ? '#10b981' : '#ef4444' }]}>
                         {result.remainingQuantity > 0
-                          ? `${result.unrealizedPnl >= 0 ? '+' : ''}${formatUSD(result.unrealizedPnl)}`
+                          ? `${result.unrealizedPnl >= 0 ? '▲' : '▼'} ${formatUSD(result.unrealizedPnl)}`
                           : '—'}
                       </Text>
                       <Text style={[styles.metricSub, { color: colors.textSecondary }]}>
@@ -1125,7 +1125,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
                     <View style={styles.metric}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>P&L Total</Text>
                       <Text style={[styles.metricValue, { color: result.totalPnl >= 0 ? '#10b981' : '#ef4444' }]}>
-                        {result.totalPnl >= 0 ? '+' : ''}{formatUSD(result.totalPnl)}
+                        {result.totalPnl >= 0 ? '▲' : '▼'} {formatUSD(result.totalPnl)}
                       </Text>
                       <Text style={[styles.metricSub, { color: result.totalPnlPercent >= 0 ? '#10b981' : '#ef4444' }]}>
                         {formatPct(result.totalPnlPercent)}
@@ -1250,7 +1250,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
                                 <View style={styles.eventStat}>
                                   <Text style={[styles.eventStatLabel, { color: colors.textSecondary }]}>P&L</Text>
                                   <Text style={[styles.eventStatValue, { color: ev.pnl >= 0 ? '#10b981' : '#ef4444' }]}>
-                                    {ev.pnl >= 0 ? '+' : ''}{formatUSD(ev.pnl)}
+                                    {ev.pnl >= 0 ? '▲' : '▼'} {formatUSD(Math.abs(ev.pnl))}
                                   </Text>
                                   <Text style={[styles.eventStatLabel, { color: ev.pnl >= 0 ? '#10b981' : '#ef4444' }]}>
                                     {formatPct(ev.pnlPercent)}
