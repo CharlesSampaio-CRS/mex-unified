@@ -72,9 +72,14 @@ function safeFormatDate(value: any, opts?: Intl.DateTimeFormatOptions): string {
       const n = Number(str)
       date = new Date(str.length <= 10 ? n * 1000 : n)
     }
-    // ISO / datetime com espaço
+    // Formato do backend: "2026-02-19 22:44:53.923 +00:00:00"
+    // Normaliza: espaço→T, remove segundos do timezone "+00:00:00"→"+00:00"
     else if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}/.test(str)) {
-      date = new Date(str.replace(' ', 'T'))
+      const normalized = str
+        .replace(' ', 'T')                          // espaço → T
+        .replace(/([+-]\d{2}:\d{2}):\d{2}$/, '$1') // remove :ss do timezone
+        .replace(' ', '')                            // remove espaço extra antes do tz
+      date = new Date(normalized)
     }
     // Qualquer outro
     else {
@@ -385,12 +390,6 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
       setError(null)
       // Buscar exchanges conectadas do MongoDB
       const { exchanges: linkedList = [] } = await apiService.listExchanges()
-      // LOG TEMPORÁRIO — mostra exatamente o que o servidor manda
-      if (linkedList.length > 0) {
-        console.log('[DEBUG created_at]', JSON.stringify(linkedList[0].created_at))
-        console.log('[DEBUG typeof]', typeof linkedList[0].created_at)
-        console.log('[DEBUG keys]', typeof linkedList[0].created_at === 'object' ? Object.keys(linkedList[0].created_at) : 'primitivo')
-      }
       // Mapear para o formato esperado pelo componente
       const mappedExchanges = linkedList.map((ex: any) => ({
         ...ex,
