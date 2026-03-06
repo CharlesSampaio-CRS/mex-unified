@@ -394,43 +394,42 @@ export function AssetsScreen({ navigation }: any) {
                       setTokenModalVisible(true);
                     }}
                   >
-                    {/* Linha principal: Logo + Info + Preço */}
-                    <View style={styles.cardRow}>
-                      {/* Logo / Ícone */}
-                      <View style={[styles.tokenIcon, { backgroundColor: `${colors.primary}18` }]}>
-                        <Text style={[styles.tokenIconText, { color: colors.primary }]}>
-                          {String((item.symbol || '?').charAt(0))}
-                        </Text>
-                      </View>
+                    {/* Linha 1: símbolo (esquerda) + preço de mercado (direita) */}
+                    <View style={styles.cardRow1}>
+                      <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
+                        {String(item.symbol || 'Unknown')}
+                      </Text>
+                      <Text style={[styles.assetPrice, { color: colors.text }]} numberOfLines={1}>
+                        {item.priceUSD > 0
+                          ? `$${item.priceUSD < 0.01 ? item.priceUSD.toFixed(6) : item.priceUSD < 1 ? item.priceUSD.toFixed(4) : item.priceUSD.toFixed(2)}`
+                          : '—'}
+                      </Text>
+                    </View>
 
-                      {/* Nome + Exchange */}
-                      <View style={styles.cardInfo}>
-                        <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
-                          {String(item.symbol || 'Unknown')}
-                        </Text>
-                        <Text style={[styles.cardSubtext, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {String(hideValue(apiService.formatTokenAmount(String(item.amount || 0))))}
-                          {' · '}
-                          {String(capitalizeExchangeName(item.exchangeName))}
-                        </Text>
-                      </View>
-
-                      {/* Preço + Variação */}
-                      <View style={styles.cardRight}>
-                        <Text style={[styles.assetValue, { color: colors.text }]} numberOfLines={1}>
-                          {String(hideValue(`$${apiService.formatUSD(item.valueUSD || 0)}`))}
+                    {/* Linha 2: quantidade · valor USD holdings · variação% */}
+                    <View style={styles.cardRow2}>
+                      <Text style={[styles.cardSubtext, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {hideValue(
+                          `${parseFloat(String(item.amount || 0)) < 0.0001
+                            ? parseFloat(String(item.amount || 0)).toFixed(8)
+                            : parseFloat(String(item.amount || 0)) < 1
+                              ? parseFloat(String(item.amount || 0)).toFixed(4)
+                              : parseFloat(String(item.amount || 0)).toFixed(2)
+                          } ${item.symbol}`
+                        )}
+                      </Text>
+                      <View style={styles.cardRow2Right}>
+                        <Text style={[styles.assetValue, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {hideValue(`$${apiService.formatUSD(item.valueUSD || 0)}`)}
                         </Text>
                         {item.variation24h !== null && item.variation24h !== undefined && !item.isStablecoin ? (
-                          <Text style={[
-                            styles.variationText,
-                            { color: item.variation24h >= 0 ? colors.success : colors.danger }
-                          ]}>
+                          <Text style={[styles.variationText, {
+                            color: item.variation24h >= 0 ? colors.success : colors.danger
+                          }]} numberOfLines={1}>
                             {item.variation24h >= 0 ? '+' : ''}{String(item.variation24h.toFixed(2))}%
                           </Text>
                         ) : (
-                          <Text style={[styles.cardSubtext, { color: colors.textTertiary }]}>
-                            {String(hideValue(`@ $${apiService.formatUSD(item.priceUSD || 0)}`))}
-                          </Text>
+                          <Text style={[styles.variationText, { color: colors.textTertiary, opacity: 0.4 }]}>—</Text>
                         )}
                       </View>
                     </View>
@@ -690,6 +689,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 8,
     overflow: 'hidden',
+    paddingHorizontal: 14,
+    paddingTop: 11,
+    paddingBottom: 0,
+  },
+  // Linha 1: símbolo (esquerda) + preço de mercado (direita)
+  cardRow1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 3,
+  },
+  // Linha 2: quantidade · valor holdings · variação%
+  cardRow2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  cardRow2Right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   cardRow: {
     flexDirection: 'row',
@@ -727,15 +748,18 @@ const styles = StyleSheet.create({
   assetSymbol: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
-    flexShrink: 1,
+  },
+  assetPrice: {
+    fontSize: typography.bodySmall,
+    fontWeight: fontWeights.medium,
   },
   assetValue: {
-    fontSize: typography.bodySmall,
-    fontWeight: fontWeights.bold,
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.medium,
   },
   variationText: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.semibold,
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.bold,
   },
   // Action bar com 3 botões
   actionBar: {

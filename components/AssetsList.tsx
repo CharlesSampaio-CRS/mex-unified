@@ -1530,7 +1530,6 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
     borderBottomWidth: 0.5,
-    backgroundColor: 'red', // TESTE - remover depois
   },
   // Container que ocupa toda a largura e organiza as 2 linhas
   assetTwoLineContainer: {
