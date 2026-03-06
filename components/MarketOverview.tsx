@@ -185,8 +185,8 @@ export const MarketOverview: React.FC = () => {
   };
 
   const formatChange = (change: number): string => {
-    const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(2)}%`;
+    const arrow = change >= 0 ? '▲' : '▼';
+    return `${arrow} ${Math.abs(change).toFixed(2)}%`;
   };
 
   if (loading && tokens.length === 0) {

@@ -145,8 +145,8 @@ export const TopGainersLosers: React.FC = () => {
   };
 
   const formatChange = (change: number) => {
-    const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(2)}%`;
+    const arrow = change >= 0 ? '▲' : '▼';
+    return `${arrow} ${Math.abs(change).toFixed(2)}%`;
   };
 
   const renderTokenItem = (token: TokenWithChange, isGainer: boolean) => {

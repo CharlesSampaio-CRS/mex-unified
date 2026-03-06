@@ -131,7 +131,7 @@ const EvolutionChart = memo(function EvolutionChart({
               {hideValue(`$${apiService.formatUSD(Math.abs(change))}`)}
             </Text>
             <Text style={[evoStyles.summaryPct, { color: lineColor }]}>
-              {hideValue(`${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%`)}
+              {hideValue(`${changePct >= 0 ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%`)}
             </Text>
           </View>
         </View>
@@ -315,7 +315,7 @@ const ComparisonChart = memo(function ComparisonChart({
 
   const fmtPct = (v: number | null | undefined) => {
     const n = v ?? 0
-    return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
+    return `${n >= 0 ? '▲' : '▼'} ${Math.abs(n).toFixed(2)}%`
   }
 
   // Seleção por toque

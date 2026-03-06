@@ -225,8 +225,9 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
   const formatPercent = (percent: string | number | null) => {
     if (!percent) return 'N/A'
     const numPercent = typeof percent === 'string' ? parseFloat(percent) : percent
-    const sign = numPercent >= 0 ? '+' : ''
-    return `${sign}${numPercent.toFixed(2)}%`
+    if (isNaN(numPercent)) return 'N/A'
+    const arrow = numPercent >= 0 ? '▲' : '▼'
+    return `${arrow} ${Math.abs(numPercent).toFixed(2)}%`
   }
 
   const getChangeColor = (percent: string | number | null) => {

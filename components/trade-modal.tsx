@@ -742,7 +742,7 @@ export function TradeModal({
                   </Text>
                   {priceDifference && (
                     <Text style={[styles.priceDiffBadge, { color: priceDifference.isHigher ? colors.success : colors.danger }]}>
-                      {priceDifference.isHigher ? '+' : ''}{priceDifference.percentage.toFixed(2)}%
+                      {priceDifference.isHigher ? '▲' : '▼'} {priceDifference.percentage.toFixed(2)}%
                     </Text>
                   )}
                 </View>

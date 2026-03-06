@@ -196,11 +196,11 @@ export function StrategyScreen({ navigation, route }: any) {
   }, [loadStrategies])
 
   const formatCurrency = useCallback((value: number) => {
-    const sign = value >= 0 ? '+' : '';
-    return `${sign}${new Intl.NumberFormat("pt-BR", {
+    const arrow = value >= 0 ? '▲' : '▼';
+    return `${arrow} ${new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "USD",
-    }).format(value)}`;
+    }).format(Math.abs(value))}`;
   }, [])
 
   const getStatusLabel = useCallback((status: StrategyStatus): string => {

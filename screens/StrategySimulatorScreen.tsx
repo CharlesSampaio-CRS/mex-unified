@@ -594,7 +594,7 @@ export function StrategySimulatorScreen({ navigation }: any) {
     return `$${v.toFixed(4)}`
   }
 
-  const formatPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
+  const formatPct = (v: number) => `${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toFixed(2)}%`
 
   const eventTypeLabel = (type: string, lot?: number) => {
     if (type === 'take_profit') return lot ? `✅ TP - Lote ${lot}` : '✅ Take Profit Total'
