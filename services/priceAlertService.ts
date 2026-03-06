@@ -371,7 +371,7 @@ class PriceAlertService {
       const templateKey = percentChange > 0 ? 'percentage_above' : 'percentage_below';
       const template = ALERT_TEMPLATES[templateKey];
       return template ? template(alert.symbol, percentChange, currentPrice) :
-        `${alert.symbol}: ${percentChange > 0 ? '+' : ''}${percentChange.toFixed(2)}%`;
+        `${alert.symbol}: ${percentChange > 0 ? '▲' : '▼'} ${Math.abs(percentChange).toFixed(2)}%`;
     }
   }
 
