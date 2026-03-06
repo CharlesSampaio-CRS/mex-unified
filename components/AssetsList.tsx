@@ -1060,37 +1060,40 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                         setTokenModalVisible(true)
                       }}
                     >
-                      {/* Symbol */}
+                      {/* Left: symbol */}
                       <View style={styles.assetSymbolContainer}>
                         <Text style={[styles.assetSymbolText, { color: colors.text }]} numberOfLines={1}>
                           {String(asset.symbol)}
                         </Text>
                       </View>
 
-                      {/* Variation badge */}
-                      {!asset.isStablecoin && asset.variation24h !== undefined ? (
-                        <View style={[styles.assetVariationBadge, { 
-                          backgroundColor: (asset.variation24h >= 0 ? colors.success : colors.danger) + '10' 
-                        }]}>
-                          <Text style={[styles.assetVariationText, { 
-                            color: asset.variation24h >= 0 ? colors.success : colors.danger 
-                          }]}>
-                            {String((asset.variation24h >= 0 ? '+' : '') + asset.variation24h.toFixed(1))}%
-                          </Text>
-                        </View>
-                      ) : (
-                        <View style={styles.assetVariationBadge}>
-                          <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.4 }]}>—</Text>
-                        </View>
-                      )}
-
-                      {/* Amount + Value inline */}
-                      <View style={styles.assetValuesContainer}>
-                        <Text style={[styles.assetAmountText, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {String(asset.amount)}
+                      {/* Center: price + variation (two lines) */}
+                      <View style={styles.assetPriceContainer}>
+                        {/* Price */}
+                        <Text style={[styles.assetPriceText, { color: colors.text }]} numberOfLines={1}>
+                          {asset.priceUSD > 0 ? `$${asset.priceUSD < 0.01 ? asset.priceUSD.toFixed(6) : asset.priceUSD < 1 ? asset.priceUSD.toFixed(4) : asset.priceUSD.toFixed(2)}` : '—'}
                         </Text>
+                        {/* Variation */}
+                        {!asset.isStablecoin && asset.variation24h !== undefined && asset.variation24h !== null ? (
+                          <Text style={[styles.assetVariationText, {
+                            color: asset.variation24h >= 0 ? colors.success : colors.danger
+                          }]} numberOfLines={1}>
+                            {String((asset.variation24h >= 0 ? '+' : '') + Number(asset.variation24h).toFixed(2))}%
+                          </Text>
+                        ) : (
+                          <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.35 }]}>—</Text>
+                        )}
+                      </View>
+
+                      {/* Right: my holdings (two lines) */}
+                      <View style={styles.assetHoldingsContainer}>
+                        {/* USD value of holdings */}
                         <Text style={[styles.assetValueText, { color: colors.text }]} numberOfLines={1}>
                           {String(valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD))}
+                        </Text>
+                        {/* Token amount */}
+                        <Text style={[styles.assetAmountText, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {valuesHidden ? '****' : `${parseFloat(asset.amount) < 0.0001 ? parseFloat(asset.amount).toFixed(8) : parseFloat(asset.amount) < 1 ? parseFloat(asset.amount).toFixed(4) : parseFloat(asset.amount).toFixed(2)} ${asset.symbol}`}
                         </Text>
                       </View>
                     </BlinkingAssetCard>
@@ -1521,28 +1524,40 @@ const styles = StyleSheet.create({
   assetItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderBottomWidth: 0.5,
     gap: 8,
   },
   assetSymbolContainer: {
-    minWidth: 52,
+    minWidth: 48,
+    maxWidth: 60,
   },
   assetSymbolText: {
     fontSize: typography.tiny,
     fontWeight: fontWeights.semibold,
   },
-  assetVariationBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
-    minWidth: 42,
-    alignItems: 'center',
+  // Center column: price + variation
+  assetPriceContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 2,
+  },
+  assetPriceText: {
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.medium,
   },
   assetVariationText: {
     fontSize: typography.micro,
     fontWeight: fontWeights.bold,
+  },
+  // Right column: holdings value + amount
+  assetHoldingsContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 2,
+    minWidth: 72,
   },
   assetValuesContainer: {
     flex: 1,
@@ -1552,16 +1567,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   assetAmountText: {
-    fontSize: typography.tiny,
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
-    minWidth: 50,
     textAlign: 'right',
   },
   assetValueText: {
     fontSize: typography.tiny,
     fontWeight: fontWeights.semibold,
-    minWidth: 56,
     textAlign: 'right',
+  },
+  assetVariationBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    minWidth: 42,
+    alignItems: 'center',
   },
   list: {
     gap: 8,
