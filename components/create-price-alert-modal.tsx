@@ -351,12 +351,6 @@ export function CreateAlertModal({
                 {alertType === 'price' ? 'Preço alvo' : 'Variação (%)'}
               </Text>
               <View style={[styles.inputWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Ionicons
-                  name={alertType === 'price' ? 'cash-outline' : 'trending-up-outline'}
-                  size={20}
-                  color={colors.textTertiary}
-                  style={styles.inputIcon}
-                />
                 <TextInput
                   style={[styles.priceInput, { color: colors.text }]}
                   placeholder={alertType === 'price' ? '0.00' : '0.00'}

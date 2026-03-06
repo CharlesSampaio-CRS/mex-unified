@@ -296,11 +296,6 @@ export const MarketOverview: React.FC = () => {
                   },
                 ]}
               >
-                <Ionicons
-                  name={token.change24h >= 0 ? 'trending-up' : 'trending-down'}
-                  size={12}
-                  color={token.change24h >= 0 ? '#22c55e' : '#ef4444'}
-                />
                 <Text
                   style={[
                     styles.changeText,
@@ -385,11 +380,6 @@ export const MarketOverview: React.FC = () => {
                         {t('market.change24h')}
                       </Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Ionicons
-                          name={selectedToken.change24h >= 0 ? 'trending-up' : 'trending-down'}
-                          size={16}
-                          color={selectedToken.change24h >= 0 ? '#22c55e' : '#ef4444'}
-                        />
                         <Text style={[styles.detailValue, { color: selectedToken.change24h >= 0 ? '#22c55e' : '#ef4444' }]}>
                           {formatChange(selectedToken.change24h)}
                         </Text>

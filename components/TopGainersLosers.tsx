@@ -194,7 +194,6 @@ export const TopGainersLosers: React.FC = () => {
       {/* Top Gainers - Maiores Altas (24h) */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.header}>
-          <Ionicons name="trending-up" size={20} color={colors.success} />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {t('topGainersLosers.gainersTitle')}
           </Text>
