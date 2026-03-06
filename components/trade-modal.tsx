@@ -594,52 +594,38 @@ export function TradeModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
 
-          {/* Handle */}
-          <View style={styles.handleRow}>
-            <View style={[styles.handle, { backgroundColor: colors.border }]} />
-          </View>
-
-          {/* Header — padrão idêntico ao CreateAlertModal */}
+          {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
-              <Text style={[styles.cancelText, { color: colors.primary }]}>Fechar</Text>
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: colors.text }]}>
-              {tradingPair || symbol.toUpperCase()}
-            </Text>
-            <View style={styles.headerSpacer} />
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
-            {/* Token info row — par, exchange e preço */}
-            <View style={[styles.tokenRow, { borderBottomColor: colors.border }]}>
-              <View style={[styles.tokenIconWrap, { backgroundColor: `${colors.primary}20`, borderColor: `${colors.primary}40` }]}>
-                <Text style={[styles.tokenIconText, { color: colors.primary }]}>
-                  {(tradingPair || symbol).charAt(0).toUpperCase()}
+            <View style={styles.headerLeft}>
+              <View>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>
+                  {tradingPair || symbol.toUpperCase()}
                 </Text>
-              </View>
-              <View style={styles.tokenInfoLeft}>
-                <Text style={[styles.tokenSymbol, { color: colors.text }]}>{tradingPair || symbol.toUpperCase()}</Text>
-                <Text style={[styles.tokenExchange, { color: colors.textSecondary }]}>
-                  {exchangeName}{pairPriceLoading ? ' ⏳' : ''}
-                </Text>
-              </View>
-              <View style={styles.tokenPriceWrap}>
-                <Text style={[styles.tokenPrice, { color: colors.text }]}>
-                  {parseFloat(price || '0') < 0.01
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+                  {exchangeName}{pairPriceLoading ? ' ⏳' : ''}{' · '}{parseFloat(price || '0') < 0.01
                     ? parseFloat(price || '0').toFixed(8).replace(/\.?0+$/, '')
                     : apiService.formatUSD(parseFloat(price || '0'))}
                 </Text>
               </View>
             </View>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
+          >
 
             {/* Par selector (só quando há mais de 1 par) */}
             {pairsLoading ? (
@@ -911,8 +897,8 @@ export function TradeModal({
 
             {/* Erro de criação */}
             {createOrderError && (
-              <View style={[styles.errorBox, { backgroundColor: '#ef444415' }]}>
-                <Text style={styles.errorText}>{parseErrorResponse(createOrderError).message}</Text>
+              <View style={[styles.errorBox, { backgroundColor: '#ef444420', borderColor: '#ef4444' }]}>
+                <Text style={[styles.errorText, { color: '#ef4444' }]}>{parseErrorResponse(createOrderError).message}</Text>
                 {parseErrorResponse(createOrderError).code && (
                   <Text style={[styles.errorCodeText, { color: colors.textSecondary }]}>
                     Código: {parseErrorResponse(createOrderError).code}
@@ -921,10 +907,7 @@ export function TradeModal({
               </View>
             )}
 
-          </ScrollView>
-
-          {/* CTA Button */}
-          <View style={[styles.ctaWrap, { borderTopColor: colors.border }]}>
+            {/* CTA Button */}
             {(() => {
               const sideColor = isBuy ? '#00c076' : (orderSide === 'sell' ? '#ff3b30' : colors.border);
               const label = createOrderLoading
@@ -936,11 +919,8 @@ export function TradeModal({
 
               return (
                 <TouchableOpacity
-                  style={[styles.ctaButton, {
-                    backgroundColor: isFormComplete ? sideColor : colors.surface,
-                    borderWidth: 1,
-                    borderColor: isFormComplete ? sideColor : colors.border,
-                    opacity: isFormComplete ? 1 : 0.6,
+                  style={[styles.submitButton, {
+                    backgroundColor: isFormComplete ? sideColor : colors.border,
                   }]}
                   onPress={handleSubmit}
                   disabled={!isFormComplete}
@@ -948,14 +928,13 @@ export function TradeModal({
                 >
                   {createOrderLoading
                     ? <ActivityIndicator size="small" color="#fff" />
-                    : <Text style={[styles.ctaText, { color: isFormComplete ? '#fff' : colors.textSecondary }]}>
-                        {String(label)}
-                      </Text>
+                    : <Text style={styles.submitButtonText}>{String(label)}</Text>
                   }
                 </TouchableOpacity>
               );
             })()}
-          </View>
+
+          </ScrollView>
 
         </View>
       </View>
@@ -1075,124 +1054,78 @@ export function TradeModal({
 }
 
 const styles = StyleSheet.create({
-  // ─── Overlay / Sheet ───────────────────────────────────────
+  // ─── Overlay / Container ───────────────────────────────────
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '92%',
+  container: {
+    borderRadius: 20,
+    width: '90%',
+    maxHeight: '85%',
+    height: '85%',
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    elevation: 20,
-  },
-
-  // ─── Handle ────────────────────────────────────────────────
-  handleRow: {
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
-  handle: {
-    width: 40,
-    height: 5,
-    borderRadius: 3,
+    elevation: 4,
   },
 
   // ─── Header ────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
   },
-  cancelBtn: {
-    padding: 4,
-  },
-  cancelText: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.medium,
-  },
-  title: {
-    fontSize: typography.h4,
-    fontWeight: fontWeights.bold,
-  },
-  headerSpacer: {
-    width: 60,
-  },
-
-  // ─── Scroll ────────────────────────────────────────────────
-  scrollContent: {
-    paddingBottom: 20,
-  },
-
-  // ─── Token row ─────────────────────────────────────────────
-  tokenRow: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    minHeight: 80,
+    gap: 10,
   },
-  tokenIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    flexShrink: 0,
-  },
-  tokenIconText: {
+  headerTitle: {
     fontSize: typography.h4,
     fontWeight: fontWeights.bold,
   },
-  tokenInfoLeft: {
-    flex: 1,
-  },
-  tokenSymbol: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.bold,
-  },
-  tokenExchange: {
-    fontSize: typography.caption,
+  headerSubtitle: {
+    fontSize: typography.micro,
     fontWeight: fontWeights.regular,
     marginTop: 2,
   },
-  tokenPriceWrap: {
-    alignItems: 'flex-end',
+  closeButton: {
+    padding: 4,
   },
-  tokenPrice: {
-    fontSize: typography.body,
-    fontWeight: fontWeights.bold,
+  closeButtonText: {
+    fontSize: typography.h4,
+    fontWeight: fontWeights.regular,
+  },
+
+  // ─── Content ───────────────────────────────────────────────
+  content: {
+    flex: 1,
+    padding: 16,
   },
 
   // ─── Form sections ─────────────────────────────────────────
   formSection: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    gap: 8,
   },
   fieldLabel: {
-    fontSize: typography.caption,
+    fontSize: typography.micro,
     fontWeight: fontWeights.semibold,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 10,
+    letterSpacing: 0.5,
+    marginTop: 4,
   },
   fieldLabelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
   },
   availableText: {
     fontSize: typography.caption,
@@ -1229,7 +1162,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    marginBottom: 10,
     gap: 6,
   },
   searchInput: {
@@ -1240,7 +1172,6 @@ const styles = StyleSheet.create({
   pairChips: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 4,
   },
   pairChip: {
     paddingHorizontal: 14,
@@ -1256,13 +1187,13 @@ const styles = StyleSheet.create({
   stepperWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     overflow: 'hidden',
   },
   stepperBtn: {
     paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1274,36 +1205,34 @@ const styles = StyleSheet.create({
   stepperInput: {
     flex: 1,
     textAlign: 'center',
-    fontSize: typography.h3,
-    fontWeight: fontWeights.semibold,
-    paddingVertical: 16,
+    fontSize: typography.body,
+    fontWeight: fontWeights.medium,
+    paddingVertical: 0,
   },
 
   // ─── Percent grid ──────────────────────────────────────────
   percentGrid: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 12,
   },
   percentBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
   },
   percentBtnText: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.micro,
+    fontWeight: fontWeights.semibold,
   },
 
   // ─── Preview card ──────────────────────────────────────────
   previewCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    gap: 10,
+    gap: 8,
   },
   previewRow: {
     flexDirection: 'row',
@@ -1312,27 +1241,29 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   previewLabel: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.caption,
     fontWeight: fontWeights.regular,
     flex: 1,
   },
   previewValue: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.caption,
     fontWeight: fontWeights.semibold,
     textAlign: 'right',
   },
 
   // ─── Error box ─────────────────────────────────────────────
   errorBox: {
-    marginHorizontal: 20,
-    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     padding: 12,
     borderRadius: 10,
+    borderWidth: 1,
   },
   errorText: {
-    fontSize: typography.bodySmall,
-    color: '#ef4444',
-    marginBottom: 4,
+    flex: 1,
+    fontSize: typography.caption,
+    fontWeight: fontWeights.medium,
   },
   errorCodeText: {
     fontSize: typography.caption,
@@ -1340,28 +1271,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // ─── CTA ───────────────────────────────────────────────────
-  ctaWrap: {
-    padding: 20,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-  },
-  ctaButton: {
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 14,
+  // ─── Submit button ─────────────────────────────────────────
+  submitButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#19a1e6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 6,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 20,
   },
-  ctaText: {
-    fontSize: typography.bodyLarge,
+  submitButtonText: {
+    color: '#fff',
+    fontSize: typography.button,
     fontWeight: fontWeights.bold,
-    color: '#FFFFFF',
   },
 
   // ─── Confirm modal ─────────────────────────────────────────
