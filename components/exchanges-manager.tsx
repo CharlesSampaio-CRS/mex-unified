@@ -34,45 +34,49 @@ interface ExchangesManagerProps {
 }
 
 // Formata datas vindas da API de forma segura (string ISO, timestamp ms ou s)
+// Extrai valor primitivo de um campo que pode vir como MongoDB Extended JSON
+// Ex: { "$date": "2025-12-06T..." } ou { "$date": { "$numberLong": "1733521955043" } }
+function extractMongoDate(value: any): string | number | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'string' || typeof value === 'number') return value
+  if (typeof value === 'object') {
+    // { "$date": "ISO" } ou { "$date": { "$numberLong": "ms" } }
+    const d = value['$date'] ?? value['date']
+    if (d !== undefined) {
+      if (typeof d === 'string' || typeof d === 'number') return d
+      if (typeof d === 'object') {
+        // { "$numberLong": "1733521955043" }
+        const n = d['$numberLong'] ?? d['numberLong']
+        if (n !== undefined) return Number(n)
+      }
+    }
+  }
+  return null
+}
+
 function safeFormatDate(value: any, opts?: Intl.DateTimeFormatOptions): string {
   if (value === null || value === undefined || value === '') return 'N/A'
 
   let date: Date
+  const extracted = extractMongoDate(value)
 
-  // MongoDB Extended JSON: { "$date": "2025-12-06T20:52:35.043Z" }
-  if (typeof value === 'object' && value !== null) {
-    const isoStr = value['$date'] ?? value['date']
-    if (!isoStr) return 'N/A'
-    date = new Date(typeof isoStr === 'string' ? isoStr : Number(isoStr))
-  } else if (typeof value === 'number') {
-    // Timestamp Unix em segundos → ms
-    date = new Date(value < 1e10 ? value * 1000 : value)
+  if (extracted === null) return 'N/A'
+
+  if (typeof extracted === 'number') {
+    date = new Date(extracted < 1e10 ? extracted * 1000 : extracted)
   } else {
-    const str = String(value).trim()
+    const str = String(extracted).trim()
 
-    // Número em string (ex: "1709654400000")
+    // Número puro em string (timestamp ms ou s)
     if (/^\d{10,13}$/.test(str)) {
       const n = Number(str)
-      date = new Date(n < 1e10 ? n * 1000 : n)
+      date = new Date(str.length <= 10 ? n * 1000 : n)
     }
-    // Rust BSON driver serializa DateTime como "data:YYYY-MM-DDTHH:MM:SS..."
-    // ou "data:0000..." (milissegundos desde epoch em decimal após "data:")
-    else if (str.startsWith('data:')) {
-      const after = str.slice(5) // remove "data:"
-      // Se for número puro (ms desde epoch)
-      if (/^\d+$/.test(after)) {
-        const n = Number(after)
-        date = new Date(after.length <= 10 ? n * 1000 : n)
-      } else {
-        // Assume ISO string após o prefixo
-        date = new Date(after.replace(' ', 'T'))
-      }
-    }
-    // ISO / datetime com espaço separador
+    // ISO / datetime com espaço
     else if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}/.test(str)) {
       date = new Date(str.replace(' ', 'T'))
     }
-    // Qualquer outro formato
+    // Qualquer outro
     else {
       date = new Date(str)
     }
@@ -395,7 +399,9 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
         ccxt_id: ex.exchange_type || ex.ccxt_id,
         icon: ex.icon || ex.logo,
         status: ex.is_active ? 'active' : 'inactive',
-        linked_at: ex.created_at,
+        // Normaliza datas que podem vir como objeto MongoDB { "$date": "..." }
+        linked_at: extractMongoDate(ex.created_at) ?? ex.created_at,
+        updated_at: extractMongoDate(ex.updated_at) ?? ex.updated_at,
         api_key_expiry_days: ex.api_key_expiry_days,
         days_until_expiry: ex.days_until_expiry,
         api_key_expires_at: ex.api_key_expires_at,
