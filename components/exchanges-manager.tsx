@@ -33,6 +33,29 @@ interface ExchangesManagerProps {
   initialTab?: 'all' | 'available' | 'linked'
 }
 
+// Formata datas vindas da API de forma segura (string ISO, timestamp ms ou s)
+function safeFormatDate(value: string | number | null | undefined, opts?: Intl.DateTimeFormatOptions): string {
+  if (!value) return 'N/A'
+  let date: Date
+
+  if (typeof value === 'number') {
+    // Timestamp em segundos (Unix) → converte para ms
+    date = new Date(value < 1e10 ? value * 1000 : value)
+  } else {
+    // String ISO: normaliza separador para '-' e 'T' para garantir parse correto no Hermes
+    const normalized = value.replace(' ', 'T')
+    date = new Date(normalized)
+  }
+
+  if (isNaN(date.getTime())) return 'N/A'
+
+  return date.toLocaleDateString('pt-BR', opts ?? {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
 // Subcomponente memoizado para renderizar cada card de exchange
 const LinkedExchangeCard = memo(({ 
   linkedExchange, 
@@ -78,11 +101,7 @@ const LinkedExchangeCard = memo(({
   const formattedDate = useMemo(() => {
     if (isRefreshing) return t('home.updating') || 'Updating...'
     if (!linkedExchange.linked_at) return t('exchanges.noDate') || 'N/A'
-    try {
-      return new Date(linkedExchange.linked_at).toLocaleDateString('pt-BR')
-    } catch (error) {
-      return 'N/A'
-    }
+    return safeFormatDate(linkedExchange.linked_at)
   }, [linkedExchange.linked_at, t, isRefreshing])
 
   return (
@@ -1664,7 +1683,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                                   {t('exchanges.connectedAt')}:
                                 </Text>
                                 <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                  {new Date(detailsExchange.linked_at).toLocaleDateString('pt-BR', {
+                                  {safeFormatDate(detailsExchange.linked_at, {
                                     day: '2-digit',
                                     month: 'long',
                                     year: 'numeric',
@@ -1680,7 +1699,7 @@ export function ExchangesManager({ initialTab = 'linked' }: ExchangesManagerProp
                                     {t('exchanges.lastUpdate')}:
                                   </Text>
                                   <Text style={[styles.detailsInfoValue, { color: colors.text }]}>
-                                    {new Date(detailsExchange.updated_at).toLocaleDateString('pt-BR', {
+                                    {safeFormatDate(detailsExchange.updated_at, {
                                       day: '2-digit',
                                       month: 'short',
                                       year: 'numeric',
