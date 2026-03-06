@@ -550,6 +550,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     width: '90%',
     maxHeight: '85%',
+    height: '85%',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

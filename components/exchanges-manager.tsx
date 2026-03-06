@@ -34,32 +34,35 @@ interface ExchangesManagerProps {
 }
 
 // Formata datas vindas da API de forma segura (string ISO, timestamp ms ou s)
-function safeFormatDate(value: string | number | null | undefined, opts?: Intl.DateTimeFormatOptions): string {
+function safeFormatDate(value: any, opts?: Intl.DateTimeFormatOptions): string {
   if (value === null || value === undefined || value === '') return 'N/A'
 
   let date: Date
 
-  if (typeof value === 'number') {
+  // MongoDB Extended JSON: { "$date": "2025-12-06T20:52:35.043Z" }
+  if (typeof value === 'object' && value !== null) {
+    const isoStr = value['$date'] ?? value['date']
+    if (!isoStr) return 'N/A'
+    date = new Date(typeof isoStr === 'string' ? isoStr : Number(isoStr))
+  } else if (typeof value === 'number') {
     // Timestamp Unix em segundos → ms
     date = new Date(value < 1e10 ? value * 1000 : value)
   } else {
-    // Loga o valor recebido para debug
-    console.log('[safeFormatDate] raw value:', JSON.stringify(value))
+    // String: tenta vários formatos
+    const str = String(value).trim()
 
-    // Tenta vários formatos:
-    // 1) Se for só número em string (ex: "1709654400000")
-    if (/^\d{10,13}$/.test(value.trim())) {
-      const n = Number(value)
+    // Número em string (ex: "1709654400000")
+    if (/^\d{10,13}$/.test(str)) {
+      const n = Number(str)
       date = new Date(n < 1e10 ? n * 1000 : n)
     }
-    // 2) Formato "YYYY-MM-DD HH:MM:SS[.mmm][+TZ]" — substitui espaço por T
-    else if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}/.test(value)) {
-      const normalized = value.replace(' ', 'T')
-      date = new Date(normalized)
+    // ISO / datetime com espaço separador
+    else if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}/.test(str)) {
+      date = new Date(str.replace(' ', 'T'))
     }
-    // 3) Qualquer outro formato — tenta direto
+    // Qualquer outro formato
     else {
-      date = new Date(value)
+      date = new Date(str)
     }
   }
 
