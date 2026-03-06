@@ -462,58 +462,40 @@ export function OrdersScreen({ navigation }: any) {
           onPress={() => handleOrderPress(order)}
           disabled={isCancelling}
         >
-          {/* Linha única compacta */}
-          <View style={styles.cardRow}>
-            {/* Lado esquerdo: Ícone + Info */}
-            <View style={styles.cardLeft}>
+          {/* Linha 1: símbolo + badge (esquerda) · valor USD (direita) */}
+          <View style={styles.cardRow1}>
+            <View style={styles.cardRow1Left}>
+              <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
+                {String(order.symbol || 'N/A')}
+              </Text>
               <View style={[
-                styles.typeIcon,
+                styles.sideBadge,
                 { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
               ]}>
-                <Ionicons 
-                  name={isBuy ? 'arrow-up-outline' : 'arrow-down-outline'} 
-                  size={16} 
-                  color={isBuy ? colors.success : colors.danger}
-                />
-              </View>
-              <View style={styles.cardInfo}>
-                <View style={styles.cardInfoTop}>
-                  <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
-                    {String(order.symbol || 'N/A')}
-                  </Text>
-                  <View style={[
-                    styles.sideBadge,
-                    { backgroundColor: isBuy ? colors.successLight : colors.dangerLight }
-                  ]}>
-                    <Text style={[
-                      styles.sideBadgeText,
-                      { color: isBuy ? colors.success : colors.danger }
-                    ]}>
-                      {String(isBuy ? 'C' : 'V')}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
-                  {String(hideValue(`${apiService.formatTokenAmount(String(amount))} @ $${apiService.formatUSD(price, priceDecimals)}`))}
+                <Text style={[styles.sideBadgeText, { color: isBuy ? colors.success : colors.danger }]}>
+                  {String(isBuy ? 'COMPRA' : 'VENDA')}
                 </Text>
               </View>
             </View>
+            <Text style={[styles.orderValue, { color: colors.text }]} numberOfLines={1}>
+              {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
+            </Text>
+          </View>
 
-            {/* Lado direito: Valor + PnL */}
-            <View style={styles.cardRight}>
-              <Text style={[styles.orderValue, { color: colors.text }]} numberOfLines={1}>
-                {String(hideValue(`$${apiService.formatUSD(orderValue, orderValue < 1 ? 6 : 2)}`))}
+          {/* Linha 2: qtd @ preço (esquerda) · PnL% ou tipo (direita) */}
+          <View style={styles.cardRow2}>
+            <Text style={[styles.cardSubtext, { color: colors.textSecondary }]} numberOfLines={1}>
+              {String(hideValue(`${apiService.formatTokenAmount(String(amount))} @ $${apiService.formatUSD(price, priceDecimals)}`))}
+            </Text>
+            {hasPnl ? (
+              <Text style={[styles.pnlText, { color: isPnlPositive ? colors.success : colors.danger }]} numberOfLines={1}>
+                {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
               </Text>
-              {hasPnl ? (
-                <Text style={[styles.pnlText, { color: isPnlPositive ? colors.success : colors.danger }]} numberOfLines={1}>
-                  {String(hideValue(`${isPnlPositive ? '+' : ''}${pnlPercent.toFixed(2)}%`))}
-                </Text>
-              ) : (
-                <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
-                  {String((order.type || 'LIMIT').toString().toUpperCase())}
-                </Text>
-              )}
-            </View>
+            ) : (
+              <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                {String((order.type || 'LIMIT').toString().toUpperCase())}
+              </Text>
+            )}
           </View>
 
           {/* Botões de ação: Clonar + Cancelar */}
@@ -966,7 +948,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 8,
     overflow: 'hidden',
+    paddingHorizontal: 14,
+    paddingTop: 11,
+    paddingBottom: 0,
   },
+  // Linha 1: símbolo + badge (esquerda) · valor USD (direita)
+  cardRow1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 3,
+  },
+  cardRow1Left: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
+  },
+  // Linha 2: qtd@preço (esquerda) · PnL% ou tipo (direita)
+  cardRow2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  // Mantidos para compatibilidade
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1002,7 +1009,6 @@ const styles = StyleSheet.create({
   orderSymbol: {
     fontSize: typography.bodySmall,
     fontWeight: fontWeights.bold,
-    flexShrink: 1,
   },
   sideBadge: {
     paddingHorizontal: 5,
@@ -1027,8 +1033,8 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.bold,
   },
   pnlText: {
-    fontSize: typography.micro,
-    fontWeight: fontWeights.semibold,
+    fontSize: typography.tiny,
+    fontWeight: fontWeights.bold,
   },
   cancelButton: {
     flexDirection: 'row',
