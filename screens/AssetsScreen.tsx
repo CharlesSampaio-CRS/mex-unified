@@ -410,12 +410,13 @@ export function AssetsScreen({ navigation }: any) {
                     <View style={styles.cardRow2}>
                       <Text style={[styles.cardSubtext, { color: colors.textSecondary }]} numberOfLines={1}>
                         {hideValue(
-                          `${parseFloat(String(item.amount || 0)) < 0.0001
-                            ? parseFloat(String(item.amount || 0)).toFixed(8)
-                            : parseFloat(String(item.amount || 0)) < 1
-                              ? parseFloat(String(item.amount || 0)).toFixed(4)
-                              : parseFloat(String(item.amount || 0)).toFixed(2)
-                          } ${item.symbol}`
+                          `${(() => {
+                            const amt = parseFloat(String(item.amount || 0))
+                            if (amt < 0.000001) return amt.toFixed(10)
+                            if (amt < 0.0001)   return amt.toFixed(8)
+                            if (amt < 1)        return amt.toFixed(4)
+                            return               amt.toFixed(2)
+                          })()} ${item.symbol}`
                         )}
                       </Text>
                       <View style={styles.cardRow2Right}>
