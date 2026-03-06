@@ -279,14 +279,13 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     t('loading.almostReady'),
   ]
 
-  // 🆕 Se está fazendo login, mostra tela full-screen idêntica ao AppNavigator
-  // isLoggingIn é setado ANTES de chamar login() → sem flash
-  if (isLoggingIn || isProcessingOAuth) {
+  // 🆕 Se está processando OAuth, mostra tela full-screen
+  if (isProcessingOAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <AnimatedLogoIcon 
           size={48} 
-          messages={isProcessingOAuth ? [t('auth.completingLogin')] : loadingMessages}
+          messages={[t('auth.completingLogin')]}
           textColor={colors.text}
           fontSize={14}
         />
@@ -303,6 +302,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     setIsLoggingIn(true)
     try {
       await login(email, password)
+      // Se chegou aqui, login foi bem sucedido — AppNavigator vai redirecionar
     } catch (error: any) {
       console.warn('❌ Erro no login:', error)
       const msg = String(error?.message || error || '').toLowerCase()
@@ -318,8 +318,8 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
         msg.includes('failed')
           ? 'E-mail ou senha inválidos. Verifique seus dados.'
           : 'Não foi possível fazer login. Tente novamente.'
-      // Define o erro ANTES de remover o loading para evitar race condition
       setLoginError(friendlyMsg)
+    } finally {
       setIsLoggingIn(false)
     }
   }
@@ -636,10 +636,14 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
           style={[
             styles.loginButton, 
             { backgroundColor: colors.surface, borderColor: '#3b82f6' },
+            isLoggingIn && styles.loginButtonDisabled,
           ]}
           onPress={handleLogin}
+          disabled={isLoggingIn}
         >
-          <Text style={styles.loginButtonText}>{t('login.signIn')}</Text>
+          <Text style={styles.loginButtonText}>
+            {isLoggingIn ? '...' : t('login.signIn')}
+          </Text>
         </TouchableOpacity>
 
         {biometricAvailable && isBiometricEnabled && (
