@@ -70,7 +70,7 @@ function BlinkingAssetCard({
   }, [isAffected]);
 
   return (
-    <Animated.View style={{ opacity: isAffected ? blinkAnim : 1 }}>
+    <Animated.View style={{ opacity: isAffected ? blinkAnim : 1, flex: 1 }}>
       <TouchableOpacity style={style} onPress={onPress}>
         {children}
       </TouchableOpacity>
@@ -1066,7 +1066,7 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                                     Linha 2: [qtdToken] [USD] [var%]         */}
                       <View style={styles.assetItemInner}>
                         {/* Ícone do token — fora do bloco de texto para não comprimir */}
-                        <TokenIcon symbol={asset.symbol} size={24} style={styles.assetTokenIcon} />
+                        <TokenIcon symbol={asset.symbol} size={28} style={styles.assetTokenIcon} />
 
                         <View style={styles.assetTwoLineContainer}>
                           {/* Linha 1: símbolo à esquerda, preço à direita */}
