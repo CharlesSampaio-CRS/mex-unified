@@ -420,7 +420,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
               backgroundColor: `${colors.primary}08`, flexDirection: 'row', alignItems: 'center', gap: 12,
             }}
           >
-            <Text style={{ fontSize: typography.displayLarge }}>🪙</Text>
+            <TokenIcon symbol={token.split('/')[0]} size={40} style={{ flexShrink: 0 }} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: typography.h1, fontWeight: fontWeights.bold, color: colors.primary, letterSpacing: 1 }}>{token}</Text>
               <Text style={{ fontSize: typography.caption, color: colors.textSecondary, marginTop: 2 }}>{t('strategy.tapToChange')}</Text>
