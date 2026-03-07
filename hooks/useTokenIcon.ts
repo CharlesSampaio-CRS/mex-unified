@@ -5,26 +5,20 @@
  * GET /api/v1/token-icons/{symbol}/url
  *
  * Estratégia:
- *  - Cache em memória de módulo (Map) → mesma URL não é re-buscada durante
- *    a sessão, mesmo se o componente for desmontado e remontado.
- *  - Sentinel "NOT_FOUND" armazenado para não repetir chamadas frustradas.
+ *  - Cache em memória de módulo (Map) → mesma URL válida não é re-buscada
+ *    durante a sessão enquanto o componente está montado.
+ *  - Tokens não encontrados NÃO são cacheados — toda vez que o componente
+ *    montar (ex: pull-to-refresh, troca de tela) tenta novamente.
  *  - Silencia erros: nunca quebra a UI se o endpoint falhar.
  */
 
 import { useState, useEffect, useRef } from 'react'
 import { apiService } from '@/services/api'
 
-// ─── Cache em memória de módulo (sobrevive re-renders e re-mounts) ────────────
-// Valores possíveis:
-//   string  → URL válida do ícone (cache permanente na sessão)
-//   'NOT_FOUND' → já tentamos, não existe — expira em NOT_FOUND_TTL_MS
-//   undefined   → ainda não tentamos
+// ─── Cache em memória — apenas URLs válidas ───────────────────────────────────
+// Guarda somente ícones encontrados. Tokens sem ícone não entram aqui,
+// então serão re-buscados quando o componente montar novamente.
 const iconCache = new Map<string, string>()
-const iconCacheTime = new Map<string, number>()
-
-const NOT_FOUND = '__NOT_FOUND__'
-/** Tempo em ms que um NOT_FOUND fica em cache antes de tentar de novo (5 min) */
-const NOT_FOUND_TTL_MS = 5 * 60 * 1000
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -47,10 +41,8 @@ export function useTokenIcon(
 
   // Resolve estado inicial a partir do cache (evita flash de loading)
   const cached = upperSymbol ? iconCache.get(upperSymbol) : undefined
-  const notFoundExpired = cached === NOT_FOUND &&
-    (Date.now() - (iconCacheTime.get(upperSymbol) ?? 0)) >= NOT_FOUND_TTL_MS
-  const initialUrl = cached && cached !== NOT_FOUND ? cached : null
-  const alreadyResolved = cached !== undefined && !notFoundExpired
+  const initialUrl = cached ?? null
+  const alreadyResolved = cached !== undefined
 
   const [iconUrl, setIconUrl] = useState<string | null>(initialUrl)
   const [loading, setLoading] = useState(!alreadyResolved && !!upperSymbol && enabled)
@@ -69,38 +61,22 @@ export function useTokenIcon(
       return
     }
 
-    // Se já está em cache, resolve imediatamente
-    // (NOT_FOUND expira após NOT_FOUND_TTL_MS para permitir retry)
+    // Se URL válida já está em cache, resolve imediatamente
     const cached = iconCache.get(upperSymbol)
     if (cached !== undefined) {
-      if (cached === NOT_FOUND) {
-        const cachedAt = iconCacheTime.get(upperSymbol) ?? 0
-        if (Date.now() - cachedAt < NOT_FOUND_TTL_MS) {
-          // ainda dentro do TTL — não tenta de novo
-          setIconUrl(null)
-          setLoading(false)
-          return
-        }
-        // TTL expirado — remove do cache e tenta de novo
-        iconCache.delete(upperSymbol)
-        iconCacheTime.delete(upperSymbol)
-      } else {
-        setIconUrl(cached)
-        setLoading(false)
-        return
-      }
+      setIconUrl(cached)
+      setLoading(false)
+      return
     }
 
-    // Busca via API
+    // Busca via API (não encontrado não vai para cache → tenta de novo na próxima montagem)
     let cancelled = false
     setLoading(true)
 
     apiService.getTokenIconUrl(upperSymbol)
       .then((url) => {
         if (cancelled) return
-        const value = url ?? NOT_FOUND
-        iconCache.set(upperSymbol, value)
-        if (value === NOT_FOUND) iconCacheTime.set(upperSymbol, Date.now())
+        if (url) iconCache.set(upperSymbol, url) // só cacheia se encontrou
         if (mountedRef.current) {
           setIconUrl(url)
           setLoading(false)
@@ -108,8 +84,7 @@ export function useTokenIcon(
       })
       .catch(() => {
         if (cancelled) return
-        iconCache.set(upperSymbol, NOT_FOUND)
-        iconCacheTime.set(upperSymbol, Date.now())
+        // não cacheia erro — tentará novamente na próxima montagem
         if (mountedRef.current) {
           setIconUrl(null)
           setLoading(false)
@@ -123,9 +98,8 @@ export function useTokenIcon(
 }
 
 /**
- * Limpa o cache em memória (útil em testes ou após logout)
+ * Limpa o cache em memória (útil após logout ou pull-to-refresh manual)
  */
 export function clearTokenIconCache() {
   iconCache.clear()
-  iconCacheTime.clear()
 }
