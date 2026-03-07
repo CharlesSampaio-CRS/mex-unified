@@ -118,53 +118,60 @@ export function TokensList({ exchange }: TokensListProps) {
             onPress={() => handleTokenPress(symbol)}
             activeOpacity={0.7}
           >
-            <View style={styles.tokenHeader}>
-              <View style={styles.symbolContainer}>
-                <TokenIcon symbol={symbol} size={22} />
-                <Text style={styles.symbol}>{symbol.toLowerCase()}</Text>
-              </View>
-              <View style={styles.headerRight}>
-                <TouchableOpacity
-                  style={styles.alertButton}
-                  onPress={(e) => {
-                    e.stopPropagation()
-                    handleCreateAlert(symbol, priceUSD)
-                  }}
-                  activeOpacity={0.6}
-                >
-                  <Ionicons 
-                    name={hasAlerts ? "notifications" : "notifications-outline"} 
-                    size={20} 
-                    color={hasAlerts ? "#3b82f6" : "#94a3b8"}
-                  />
-                </TouchableOpacity>
-                <View style={styles.valueContainer}>
-                  <Text style={styles.value}>{displayValue}</Text>
-                  {priceUSD > 0 && (
-                    <Text style={styles.price}>{apiService.formatUSD(priceUSD)}</Text>
-                  )}
-                </View>
-              </View>
-            </View>
+            <View style={styles.tokenCardInner}>
+              {/* Ícone à esquerda */}
+              <TokenIcon symbol={symbol} size={36} style={styles.tokenCardIcon} />
 
-            <View style={styles.tokenDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{t('token.amount')}</Text>
-                <Text style={styles.detailValue}>
-                  {apiService.formatTokenAmount(amount.toString())}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{t('token.price')}</Text>
-                <Text style={styles.detailValue}>
-                  {priceUSD > 0 ? apiService.formatUSD(priceUSD) : '-'}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{t('token.value')}</Text>
-                <Text style={styles.detailValue}>
-                  {displayValue}
-                </Text>
+              {/* Conteúdo à direita */}
+              <View style={styles.tokenCardContent}>
+                <View style={styles.tokenHeader}>
+                  <View style={styles.symbolContainer}>
+                    <Text style={styles.symbol}>{symbol.toLowerCase()}</Text>
+                  </View>
+                  <View style={styles.headerRight}>
+                    <TouchableOpacity
+                      style={styles.alertButton}
+                      onPress={(e) => {
+                        e.stopPropagation()
+                        handleCreateAlert(symbol, priceUSD)
+                      }}
+                      activeOpacity={0.6}
+                    >
+                      <Ionicons 
+                        name={hasAlerts ? "notifications" : "notifications-outline"} 
+                        size={20} 
+                        color={hasAlerts ? "#3b82f6" : "#94a3b8"}
+                      />
+                    </TouchableOpacity>
+                    <View style={styles.valueContainer}>
+                      <Text style={styles.value}>{displayValue}</Text>
+                      {priceUSD > 0 && (
+                        <Text style={styles.price}>{apiService.formatUSD(priceUSD)}</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.tokenDetails}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{t('token.amount')}</Text>
+                    <Text style={styles.detailValue}>
+                      {apiService.formatTokenAmount(amount.toString())}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{t('token.price')}</Text>
+                    <Text style={styles.detailValue}>
+                      {priceUSD > 0 ? apiService.formatUSD(priceUSD) : '-'}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{t('token.value')}</Text>
+                    <Text style={styles.detailValue}>
+                      {displayValue}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
           </TouchableOpacity>
@@ -235,9 +242,9 @@ const styles = StyleSheet.create({
   tokenCard: {
     backgroundColor: "#ffffff",
     borderRadius: 16,
-    padding: 20, // 16→20
-    marginHorizontal: 20, // 16→20
-    marginBottom: 16, // 12→16
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: "#e3f2fd",
     shadowColor: "#000",
@@ -246,21 +253,33 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  tokenCardInner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  tokenCardIcon: {
+    flexShrink: 0,
+    marginTop: 2,
+  },
+  tokenCardContent: {
+    flex: 1,
+    minWidth: 0,
+  },
   tokenHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16, // 12→16
+    marginBottom: 16,
   },
   symbolContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
     backgroundColor: "#e3f2fd",
-    paddingHorizontal: 12, // 8→12
-    paddingVertical: 6, // 4→6
-    borderRadius: 8, // 6→8
-    minWidth: 80,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    minWidth: 60,
   },
   symbol: {
     fontSize: typography.body, // tiny→body (16px)
