@@ -40,13 +40,15 @@ export function TokenIcon({ symbol, size = 32, style, enabled = true }: TokenIco
   }
 
   if (iconUrl) {
+    // ?v=2 força o React Native a ignorar o cache de imagem do dispositivo
+    // (pode ser removido após todos os devices terem baixado os ícones atualizados)
+    const uri = iconUrl.includes('?') ? `${iconUrl}&v=2` : `${iconUrl}?v=2`
     return (
       <View style={[containerStyle, styles.imageWrapper, style]}>
         <Image
-          source={{ uri: iconUrl }}
+          source={{ uri }}
           style={styles.image}
           resizeMode="contain"
-          // Fallback automático se a URL falhar no carregamento
           onError={() => {/* silencioso – o componente já trata com o fallback abaixo */}}
         />
       </View>
