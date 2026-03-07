@@ -20,6 +20,7 @@ import { getExchangeBalances, getExchangeId, getExchangeName, capitalizeExchange
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
+import { TokenIcon } from '@/components/TokenIcon';
 
 // ─── Sub-componente memoizado para cada card de asset ───────────────────────
 interface AssetCardProps {
@@ -53,11 +54,14 @@ const AssetCard = memo(function AssetCard({
       activeOpacity={0.7}
       onPress={onPress}
     >
-      {/* Linha 1 */}
+      {/* Linha 1: ícone + símbolo (esquerda) e preço (direita) */}
       <View style={styles.cardRow1}>
-        <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
-          {String(item.symbol || 'Unknown')}
-        </Text>
+        <View style={styles.cardSymbolGroup}>
+          <TokenIcon symbol={item.symbol} size={24} style={styles.cardTokenIcon} />
+          <Text style={[styles.assetSymbol, { color: colors.text }]} numberOfLines={1}>
+            {String(item.symbol || 'Unknown')}
+          </Text>
+        </View>
         <Text style={[styles.assetPrice, { color: colors.text }]} numberOfLines={1}>
           {item.priceUSD > 0
             ? `$${item.priceUSD < 0.01 ? item.priceUSD.toFixed(6) : item.priceUSD < 1 ? item.priceUSD.toFixed(4) : item.priceUSD.toFixed(2)}`
@@ -758,6 +762,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 3,
+  },
+  // Grupo ícone + símbolo na linha 1
+  cardSymbolGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
+  },
+  cardTokenIcon: {
+    flexShrink: 0,
   },
   // Linha 2: quantidade · valor holdings · variação%
   cardRow2: {

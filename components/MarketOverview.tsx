@@ -6,6 +6,7 @@ import { marketPriceService } from '../services/marketPriceService';
 import { PortfolioChart } from './PortfolioChart';
 import { typography, fontWeights } from '@/lib/typography';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { TokenIcon } from './TokenIcon';
 
 interface MarketToken {
   symbol: string;
@@ -270,6 +271,7 @@ export const MarketOverview = memo(function MarketOverview() {
             onPress={() => handleTokenPress(token)}
           >
             <View style={styles.tokenHeader}>
+              <TokenIcon symbol={token.symbol} size={28} style={styles.tokenIconStyle} />
               <Text style={[styles.tokenSymbol, { color: colors.text }]}>
                 {token.symbol}
               </Text>
@@ -495,6 +497,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tokenHeader: {
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  tokenIconStyle: {
     marginBottom: 4,
   },
   tokenSymbol: {
