@@ -20,6 +20,7 @@ import { typography, fontWeights } from "@/lib/typography"
 import { useTokenMonitor } from "@/hooks/use-token-monitor"
 import { useOpenOrdersSync } from "@/hooks/useOpenOrdersSync"
 import { getExchangeId, getExchangeName, getTotalUsd, getExchangeBalances } from "@/lib/exchange-helpers"
+import { TokenIcon } from "@/components/TokenIcon"
 
 // Lista de stablecoins e moedas fiat que não devem ter variação e botão de trade
 const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD', 'USDD', 'BRL', 'EUR', 'USD']
@@ -1064,11 +1065,14 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                            Linha 1: [NomeToken]                    [precoToken]
                            Linha 2: [qtdToken]  [valorUSD]  [var%]            */}
                       <View style={styles.assetTwoLineContainer}>
-                        {/* Linha 1: símbolo à esquerda, preço à direita */}
+                        {/* Linha 1: ícone + símbolo à esquerda, preço à direita */}
                         <View style={styles.assetRow1}>
-                          <Text style={[styles.assetSymbolText, { color: colors.text }]} numberOfLines={1}>
-                            {String(asset.symbol)}
-                          </Text>
+                          <View style={styles.assetSymbolRow}>
+                            <TokenIcon symbol={asset.symbol} size={20} style={styles.assetTokenIcon} />
+                            <Text style={[styles.assetSymbolText, { color: colors.text }]} numberOfLines={1}>
+                              {String(asset.symbol)}
+                            </Text>
+                          </View>
                           <Text style={[styles.assetPriceText, { color: colors.text }]} numberOfLines={1}>
                             {asset.priceUSD > 0
                               ? `$${asset.priceUSD < 0.01 ? asset.priceUSD.toFixed(6) : asset.priceUSD < 1 ? asset.priceUSD.toFixed(4) : asset.priceUSD.toFixed(2)}`
@@ -1542,6 +1546,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  // Ícone + símbolo lado a lado
+  assetSymbolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  assetTokenIcon: {
+    flexShrink: 0,
   },
   // Linha 2: quantidade (esquerda) + [valor + variação] (direita)
   assetRow2: {

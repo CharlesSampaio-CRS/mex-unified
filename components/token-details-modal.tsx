@@ -15,6 +15,7 @@ import { usePrivacy } from "@/contexts/PrivacyContext"
 import { capitalizeExchangeName, getExchangeName, getExchangeId } from "@/lib/exchange-helpers"
 import { typography, fontWeights } from "@/lib/typography"
 import { apiService } from "@/services/api"
+import { TokenIcon } from "@/components/TokenIcon"
 
 interface TokenDetailsModalProps {
   visible: boolean
@@ -282,14 +283,17 @@ export function TokenDetailsModal({ visible, onClose, exchangeId, symbol }: Toke
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-                {symbol?.toUpperCase() || 'Token'}
-              </Text>
-              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                {tokenData
-                  ? `${capitalizeExchangeName(tokenData.exchange?.name || 'Exchange')}${tokenData.pair ? ` · ${tokenData.pair}` : ''}${tokenData.price?.current ? ` · ${getQuoteSymbol()}${formatPrice(tokenData.price.current)}` : ''}`
-                  : capitalizeExchangeName(exchangeId) }
-              </Text>
+              <TokenIcon symbol={symbol} size={36} style={styles.headerTokenIcon} />
+              <View style={styles.headerTitles}>
+                <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+                  {symbol?.toUpperCase() || 'Token'}
+                </Text>
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {tokenData
+                    ? `${capitalizeExchangeName(tokenData.exchange?.name || 'Exchange')}${tokenData.pair ? ` · ${tokenData.pair}` : ''}${tokenData.price?.current ? ` · ${getQuoteSymbol()}${formatPrice(tokenData.price.current)}` : ''}`
+                    : capitalizeExchangeName(exchangeId) }
+                </Text>
+              </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
@@ -574,6 +578,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
+  },
+  headerTokenIcon: {
+    flexShrink: 0,
+  },
+  headerTitles: {
     flex: 1,
     minWidth: 0,
   },

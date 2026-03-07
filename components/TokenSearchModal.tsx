@@ -16,6 +16,7 @@ import { typography, fontWeights } from '../lib/typography'
 import { getExchangeBalances, getExchangeId, getExchangeName } from '../lib/exchange-helpers'
 import { TokenDetailsModal } from './token-details-modal'
 import { apiService } from '../services/api'
+import { TokenIcon } from './TokenIcon'
 
 // Icon components usando Ionicons (fonte única)
 const CloseIcon = ({ color }: { color: string }) => (
@@ -219,17 +220,23 @@ export function TokenSearchModal({ visible, onClose }: TokenSearchModalProps) {
         activeOpacity={0.7}
       >
         <View style={styles.cardRow}>
+          {/* Ícone do token (MongoDB) com fallback para badge de símbolo */}
+          <TokenIcon symbol={token.symbol} size={40} />
+
           {/* Token Symbol & Name */}
           <View style={styles.tokenInfo}>
-            <View style={[styles.symbolBadge, { backgroundColor: colors.primary + '15' }]}>
+            {!coinGeckoInfo && (
               <Text style={[styles.symbolText, { color: colors.primary }]}>
                 {token.symbol}
               </Text>
-            </View>
+            )}
             {coinGeckoInfo && (
               <View style={styles.tokenNames}>
                 <Text style={[styles.tokenName, { color: colors.text }]} numberOfLines={1}>
                   {coinGeckoInfo.name}
+                </Text>
+                <Text style={[styles.symbolText, { color: colors.primary, fontSize: typography.caption }]}>
+                  {token.symbol}
                 </Text>
                 <View style={styles.tokenMeta}>
                   <Text style={[styles.exchangeText, { color: colors.textSecondary }]}>

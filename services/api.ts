@@ -2058,6 +2058,65 @@ export const apiService = {
       throw error;
     }
   },
+
+  // ==================== 🖼️ TOKEN ICONS (MongoDB cache) ====================
+
+  /**
+   * 🖼️ Retorna apenas a icon_url (string leve, sem base64) de um token.
+   * Endpoint: GET /api/v1/token-icons/{symbol}/url
+   *
+   * O backend mantém uma coleção `token_icons` no MongoDB com ícones
+   * sincronizados do TrustWallet CDN + CoinGecko (job periódico).
+   * A resposta já possui Cache-Control de 7 dias no servidor.
+   *
+   * @param symbol Símbolo do token (ex: 'BTC', 'ETH', 'DOGE')
+   * @returns URL do ícone ou null se não encontrado
+   */
+  async getTokenIconUrl(symbol: string): Promise<string | null> {
+    try {
+      const upper = symbol.toUpperCase();
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/token-icons/${encodeURIComponent(upper)}/url`,
+        { method: 'GET' },
+        TIMEOUTS.FAST,
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return data?.icon_url ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * 🖼️ Retorna o ícone completo como base64 data-URI (pronto para <Image source={{ uri }} />).
+   * Endpoint: GET /api/v1/token-icons/{symbol}
+   *
+   * Use apenas quando precisar do ícone inline (ex: PDF, canvas).
+   * Para listagens prefira getTokenIconUrl() — muito mais leve.
+   *
+   * @param symbol Símbolo do token (ex: 'BTC', 'ETH')
+   * @returns data-URI base64 ou null se não encontrado
+   */
+  async getTokenIconDataUri(symbol: string): Promise<string | null> {
+    try {
+      const upper = symbol.toUpperCase();
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/token-icons/${encodeURIComponent(upper)}`,
+        { method: 'GET' },
+        TIMEOUTS.FAST,
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return data?.icon_data_uri ?? null;
+    } catch {
+      return null;
+    }
+  },
 };
 
 // Export default para facilitar imports
