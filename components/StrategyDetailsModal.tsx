@@ -19,6 +19,7 @@ import { apiService } from '@/services/api'
 import { capitalizeExchangeName } from '@/lib/exchange-helpers'
 import { typography, fontWeights } from '@/lib/typography'
 import { EditStrategyModal } from './edit-strategy-modal'
+import { TokenIcon } from './TokenIcon'
 
 interface StrategyDetailsModalProps {
   visible: boolean
@@ -360,7 +361,7 @@ export function StrategyDetailsModal({
           <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
-              <Text style={{ fontSize: typography.h4 }}>🪙</Text>
+              <TokenIcon symbol={strategy.symbol.split('/')[0]} size={18} />
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('strategy.tradingPair')}</Text>
             </View>
             <Text style={[styles.infoValue, { color: colors.text }]}>{strategy.symbol}</Text>

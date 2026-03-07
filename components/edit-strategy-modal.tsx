@@ -17,6 +17,7 @@ import { useTheme } from "@/contexts/ThemeContext"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useBackendStrategies, Strategy, UpdateStrategyRequest } from "@/hooks/useBackendStrategies"
 import { typography, fontWeights } from "@/lib/typography"
+import { TokenIcon } from "@/components/TokenIcon"
 
 interface EditStrategyModalProps {
   visible: boolean
@@ -143,7 +144,10 @@ export function EditStrategyModal({ visible, strategy, onClose, onSuccess }: Edi
               {/* Strategy Info (read-only) */}
               <View style={[styles.infoCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: typography.body, color: colors.textSecondary }}>🪙 {strategy.symbol}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TokenIcon symbol={strategy.symbol.split('/')[0]} size={20} />
+                    <Text style={{ fontSize: typography.body, color: colors.textSecondary }}>{strategy.symbol}</Text>
+                  </View>
                   <Text style={{ fontSize: typography.body, color: colors.textSecondary }}>
                     {strategy.exchange_name || strategy.exchange_id}
                   </Text>

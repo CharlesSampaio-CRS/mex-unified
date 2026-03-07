@@ -23,6 +23,7 @@ import { config } from "@/lib/config"
 import { capitalizeExchangeName } from "@/lib/exchange-helpers"
 import { useNotifications } from "@/contexts/NotificationsContext"
 import { notify } from "@/services/notify"
+import { TokenIcon } from "@/components/TokenIcon"
 
 interface LocalExchange {
   _id: string
@@ -468,7 +469,7 @@ export function CreateStrategyModal({ visible, onClose, onSuccess, userId, navig
                   onPress={() => { setToken(sym); setTokenSearchQuery(""); setShowTokenList(false); Keyboard.dismiss() }}
                   activeOpacity={0.5}
                 >
-                  <Text style={{ fontSize: typography.h3, marginRight: 12 }}>🪙</Text>
+                  <TokenIcon symbol={sym.split('/')[0]} size={24} style={{ marginRight: 12 }} />
                   <Text style={{ flex: 1, fontSize: typography.h3, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? colors.primary : colors.text }}>
                     {sym}
                   </Text>
