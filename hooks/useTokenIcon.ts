@@ -41,15 +41,18 @@ export function useTokenIcon(
 
     let cancelled = false
     setLoading(true)
+    console.log(`[useTokenIcon] fetch → ${upperSymbol}`)
 
     apiService.getTokenIconUrl(upperSymbol)
       .then((url) => {
         if (cancelled || !mountedRef.current) return
+        console.log(`[useTokenIcon] result → ${upperSymbol}: ${url ?? 'null'}`)
         setIconUrl(url)
         setLoading(false)
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled || !mountedRef.current) return
+        console.warn(`[useTokenIcon] error → ${upperSymbol}:`, err)
         setIconUrl(null)
         setLoading(false)
       })
