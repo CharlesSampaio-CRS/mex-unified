@@ -19,6 +19,7 @@ import { commonStyles } from '@/lib/layout';
 import { typography, fontWeights } from '@/lib/typography';
 import { getExchangeLogo } from '@/lib/exchange-logos';
 import { CreateOrderModal } from '@/components/create-order-modal';
+import { TokenIcon } from '@/components/TokenIcon';
 
 // Sub-componente com animação piscante para ordens sendo canceladas
 function AnimatedOrderCard({ 
@@ -472,6 +473,7 @@ export function OrdersScreen({ navigation }: any) {
           {/* Linha 1: símbolo + badge (esquerda) · valor USD (direita) */}
           <View style={styles.cardRow1}>
             <View style={styles.cardRow1Left}>
+              <TokenIcon symbol={baseToken} size={20} style={{ flexShrink: 0 }} />
               <Text style={[styles.orderSymbol, { color: colors.text }]} numberOfLines={1}>
                 {String(order.symbol || 'N/A')}
               </Text>

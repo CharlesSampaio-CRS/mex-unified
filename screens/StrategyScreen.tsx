@@ -14,6 +14,7 @@ import { useHeader } from "../contexts/HeaderContext"
 import { NotificationsModal } from "../components/NotificationsModal"
 import { typography, fontWeights } from "../lib/typography"
 import { commonStyles } from "@/lib/layout"
+import { TokenIcon } from "@/components/TokenIcon"
 
 /**
  * 🤖 Strategy Screen - MongoDB Backend
@@ -487,10 +488,13 @@ export function StrategyScreen({ navigation, route }: any) {
                               <Ionicons name="warning-outline" size={12} color="#ef4444" />
                             )}
                           </View>
-                          <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
-                            {strategy.exchange_name} • {strategy.symbol}
-                            {strategy.total_executions > 0 ? ` • ${strategy.total_executions} exec` : ''}
-                          </Text>
+                          <View style={styles.cardSubtextRow}>
+                            <TokenIcon symbol={strategy.symbol.split('/')[0]} size={14} style={{ flexShrink: 0 }} />
+                            <Text style={[styles.cardSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                              {strategy.exchange_name} • {strategy.symbol}
+                              {strategy.total_executions > 0 ? ` • ${strategy.total_executions} exec` : ''}
+                            </Text>
+                          </View>
                         </View>
                       </View>
 
@@ -844,6 +848,14 @@ const styles = StyleSheet.create({
   cardSubtext: {
     fontSize: typography.micro,
     fontWeight: fontWeights.regular,
+    flex: 1,
+    minWidth: 0,
+  },
+  cardSubtextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minWidth: 0,
   },
   cardRight: {
     alignItems: 'flex-end',
