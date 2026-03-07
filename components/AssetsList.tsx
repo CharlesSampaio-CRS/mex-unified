@@ -1062,44 +1062,46 @@ export const AssetsList = memo(function AssetsList({ onOpenOrdersPress, onRefres
                       }}
                     >
                       {/* Two-line layout:
-                           Linha 1: [NomeToken]                    [precoToken]
-                           Linha 2: [qtdToken]  [valorUSD]  [var%]            */}
-                      <View style={styles.assetTwoLineContainer}>
-                        {/* Linha 1: ícone + símbolo à esquerda, preço à direita */}
-                        <View style={styles.assetRow1}>
-                          <View style={styles.assetSymbolRow}>
-                            <TokenIcon symbol={asset.symbol} size={20} style={styles.assetTokenIcon} />
+                           [ícone]  Linha 1: [NomeToken]       [precoToken]
+                                    Linha 2: [qtdToken] [USD] [var%]         */}
+                      <View style={styles.assetItemInner}>
+                        {/* Ícone do token — fora do bloco de texto para não comprimir */}
+                        <TokenIcon symbol={asset.symbol} size={24} style={styles.assetTokenIcon} />
+
+                        <View style={styles.assetTwoLineContainer}>
+                          {/* Linha 1: símbolo à esquerda, preço à direita */}
+                          <View style={styles.assetRow1}>
                             <Text style={[styles.assetSymbolText, { color: colors.text }]} numberOfLines={1}>
                               {String(asset.symbol)}
                             </Text>
-                          </View>
-                          <Text style={[styles.assetPriceText, { color: colors.text }]} numberOfLines={1}>
-                            {asset.priceUSD > 0
-                              ? `$${asset.priceUSD < 0.01 ? asset.priceUSD.toFixed(6) : asset.priceUSD < 1 ? asset.priceUSD.toFixed(4) : asset.priceUSD.toFixed(2)}`
-                              : '—'}
-                          </Text>
-                        </View>
-
-                        {/* Linha 2: quantidade · valor USD · variação */}
-                        <View style={styles.assetRow2}>
-                          <Text style={[styles.assetAmountText, { color: colors.textSecondary }]} numberOfLines={1}>
-                            {valuesHidden
-                              ? '****'
-                              : `${parseFloat(asset.amount) < 0.0001 ? parseFloat(asset.amount).toFixed(8) : parseFloat(asset.amount) < 1 ? parseFloat(asset.amount).toFixed(4) : parseFloat(asset.amount).toFixed(2)} ${asset.symbol}`}
-                          </Text>
-                          <View style={styles.assetRow2Right}>
-                            <Text style={[styles.assetValueText, { color: colors.textSecondary }]} numberOfLines={1}>
-                              {valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD)}
+                            <Text style={[styles.assetPriceText, { color: colors.text }]} numberOfLines={1}>
+                              {asset.priceUSD > 0
+                                ? `$${asset.priceUSD < 0.01 ? asset.priceUSD.toFixed(6) : asset.priceUSD < 1 ? asset.priceUSD.toFixed(4) : asset.priceUSD.toFixed(2)}`
+                                : '—'}
                             </Text>
-                            {!asset.isStablecoin && asset.variation24h !== undefined && asset.variation24h !== null ? (
-                              <Text style={[styles.assetVariationText, {
-                                color: asset.variation24h >= 0 ? colors.success : colors.danger
-                              }]} numberOfLines={1}>
-                                {(asset.variation24h >= 0 ? '▲' : '▼') + ' ' + Math.abs(Number(asset.variation24h)).toFixed(2)}%
+                          </View>
+
+                          {/* Linha 2: quantidade · valor USD · variação */}
+                          <View style={styles.assetRow2}>
+                            <Text style={[styles.assetAmountText, { color: colors.textSecondary }]} numberOfLines={1}>
+                              {valuesHidden
+                                ? '****'
+                                : `${parseFloat(asset.amount) < 0.0001 ? parseFloat(asset.amount).toFixed(8) : parseFloat(asset.amount) < 1 ? parseFloat(asset.amount).toFixed(4) : parseFloat(asset.amount).toFixed(2)} ${asset.symbol}`}
+                            </Text>
+                            <View style={styles.assetRow2Right}>
+                              <Text style={[styles.assetValueText, { color: colors.textSecondary }]} numberOfLines={1}>
+                                {valuesHidden ? '****' : apiService.formatUSD(asset.valueUSD)}
                               </Text>
-                            ) : (
-                              <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.3 }]}>—</Text>
-                            )}
+                              {!asset.isStablecoin && asset.variation24h !== undefined && asset.variation24h !== null ? (
+                                <Text style={[styles.assetVariationText, {
+                                  color: asset.variation24h >= 0 ? colors.success : colors.danger
+                                }]} numberOfLines={1}>
+                                  {(asset.variation24h >= 0 ? '▲' : '▼') + ' ' + Math.abs(Number(asset.variation24h)).toFixed(2)}%
+                                </Text>
+                              ) : (
+                                <Text style={[styles.assetVariationText, { color: colors.textSecondary, opacity: 0.3 }]}>—</Text>
+                              )}
+                            </View>
                           </View>
                         </View>
                       </View>
@@ -1541,21 +1543,28 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 3,
   },
+  // Container principal da linha: [ícone] + [bloco de 2 linhas]
+  assetItemInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  assetTokenIcon: {
+    flexShrink: 0,
+  },
   // Linha 1: símbolo (esquerda) + preço (direita)
   assetRow1: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  // Ícone + símbolo lado a lado
+  // (mantido para compatibilidade, não usado no layout atual)
   assetSymbolRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     flex: 1,
-  },
-  assetTokenIcon: {
-    flexShrink: 0,
   },
   // Linha 2: quantidade (esquerda) + [valor + variação] (direita)
   assetRow2: {
