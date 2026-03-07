@@ -3,6 +3,7 @@ import { useTheme } from "../contexts/ThemeContext"
 import { useLanguage } from "../contexts/LanguageContext"
 import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder, getOrderId } from "../types/orders"
+import { TokenIcon } from "./TokenIcon"
 
 interface OrderDetailsModalProps {
   visible: boolean
@@ -86,9 +87,12 @@ export function OrderDetailsModal({ visible, onClose, order }: OrderDetailsModal
             {/* Header */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View style={styles.headerContent}>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.symbolText, { color: colors.text }]}>
-                  {order.symbol}
-                </Text>
+                <View style={styles.headerSymbolRow}>
+                  <TokenIcon symbol={order.symbol.split('/')[0]} size={24} style={styles.headerTokenIcon} />
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.symbolText, { color: colors.text }]}>
+                    {order.symbol}
+                  </Text>
+                </View>
                 <View style={styles.badges}>
                   <View style={[styles.typeBadge, { backgroundColor: getOrderTypeColor(order.type) + '20' }]}>
                     <Text style={[styles.typeText, { color: getOrderTypeColor(order.type) }]}>
@@ -284,6 +288,14 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 8,
+  },
+  headerSymbolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  headerTokenIcon: {
+    flexShrink: 0,
   },
   symbolText: {
     fontSize: typography.body,

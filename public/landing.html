@@ -1,0 +1,2568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CryptoHub — Multi-Exchange Unified Platform</title>
+  <meta name="description" content="Gerencie todas as suas exchanges de criptomoedas em um único lugar. Portfolio unificado, PnL em tempo real, estratégias e alertas." />
+  <link rel="icon" type="image/png" href="../assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─────────────────────────────────────────────────────────────
+       DESIGN TOKENS  (espelhando lib/design-tokens.ts)
+    ──────────────────────────────────────────────────────────────*/
+    :root {
+      /* Background */
+      --bg:             #18181b; /* Zinc 900 */
+      --bg-2:           #27272a; /* Zinc 800 */
+      --surface:        #3f3f46; /* Zinc 700 */
+      --surface-2:      #52525b; /* Zinc 600 */
+      --surface-hover:  #52525b;
+
+      /* Borders */
+      --border:         #3f3f46;
+      --border-light:   #27272a;
+      --border-mid:     #52525b;
+
+      /* Text */
+      --text:           #fafafa; /* Zinc 50 */
+      --text-secondary: #d4d4d8; /* Zinc 300 */
+      --text-tertiary:  #a1a1aa; /* Zinc 400 */
+
+      /* Primary */
+      --primary:        #3b82f6;
+      --primary-dark:   #2563eb;
+      --primary-light:  #60a5fa;
+
+      /* Semantic */
+      --success:        #10b981;
+      --success-light:  #065f46;
+      --danger:         #ef4444;
+      --warning:        #f59e0b;
+
+      /* Gradients */
+      --grad-primary:   linear-gradient(135deg, #3b82f6, #2563eb);
+      --grad-hero:      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(59,130,246,.18) 0%, transparent 70%), linear-gradient(180deg,#0d0d0f 0%,#18181b 60%,#1e1e23 100%);
+
+      /* Radii */
+      --radius-sm:  6px;
+      --radius-md:  10px;
+      --radius-lg:  12px;
+      --radius-xl:  16px;
+      --radius-xxl: 20px;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-sm:  0 1px  4px rgba(0,0,0,.35);
+      --shadow-md:  0 4px 20px rgba(0,0,0,.50);
+      --shadow-lg:  0 12px 48px rgba(0,0,0,.60);
+      --shadow-primary: 0 4px 24px rgba(59,130,246,.40);
+      --shadow-card: 0 0 0 1px rgba(255,255,255,.04), 0 4px 20px rgba(0,0,0,.45);
+    }
+
+    /* ─── RESET ─────────────────────────────────────────────────*/
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ─── SCROLLBAR ─────────────────────────────────────────────*/
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 3px; }
+
+    /* ─── UTILITIES ─────────────────────────────────────────────*/
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+    .section     { padding: 100px 0; }
+    .section-sm  { padding: 64px 0; }
+
+    /* Badge pill */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      background: rgba(59,130,246,.10);
+      border: 1px solid rgba(59,130,246,.22);
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary-light);
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .4; transform: scale(.85); }
+    }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(120deg, var(--primary-light) 0%, var(--primary) 55%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── NAVBAR ─────────────────────────────────────────────────*/
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      background: rgba(18,18,19,.82);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      transition: background .3s;
+    }
+    .navbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 66px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-logo-icon { width: 34px; height: 34px; }
+    .nav-logo-text {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.4px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ─── BUTTONS ────────────────────────────────────────────────*/
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all .22s ease;
+      border-radius: var(--radius-md);
+      padding: 10px 20px;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--grad-primary);
+      color: #fff;
+      box-shadow: var(--shadow-primary);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 32px rgba(59,130,246,.55);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost {
+      background: rgba(255,255,255,.05);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,.09);
+      color: var(--text);
+      border-color: rgba(255,255,255,.18);
+    }
+    .btn-lg {
+      font-size: 15px;
+      padding: 14px 30px;
+      border-radius: var(--radius-lg);
+    }
+    .btn-icon { width: 17px; height: 17px; }
+
+    /* ─── HERO ───────────────────────────────────────────────────*/
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding-top: 66px;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: var(--grad-hero);
+      z-index: 0;
+    }
+    /* Dot grid */
+    .hero-bg::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 36px 36px;
+      z-index: 1;
+    }
+    /* Glow blobs */
+    .hero-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(130px);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .hero-blob-1 {
+      width: 700px; height: 500px;
+      background: rgba(59,130,246,.11);
+      top: -160px; right: -60px;
+      animation: float1 12s ease-in-out infinite;
+    }
+    .hero-blob-2 {
+      width: 450px; height: 450px;
+      background: rgba(129,140,248,.08);
+      bottom: -180px; left: -80px;
+      animation: float2 16s ease-in-out infinite;
+    }
+    .hero-blob-3 {
+      width: 320px; height: 320px;
+      background: rgba(16,185,129,.06);
+      top: 38%; left: 42%;
+      animation: float3 10s ease-in-out infinite;
+    }
+    @keyframes float1 {
+      0%,100%  { transform: translate(0,0); }
+      50%      { transform: translate(-20px, 30px); }
+    }
+    @keyframes float2 {
+      0%,100%  { transform: translate(0,0); }
+      50%      { transform: translate(25px, -20px); }
+    }
+    @keyframes float3 {
+      0%,100%  { transform: translate(0,0) scale(1); }
+      50%      { transform: translate(-15px, 15px) scale(1.05); }
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 72px;
+      padding: 80px 0;
+    }
+    .hero-left { display: flex; flex-direction: column; gap: 26px; }
+    .hero-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .hero-version {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: .06em;
+    }
+    .hero-title {
+      font-size: clamp(38px, 5vw, 64px);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -2px;
+    }
+    .hero-subtitle {
+      font-size: clamp(15px, 1.8vw, 17px);
+      color: var(--text-secondary);
+      line-height: 1.75;
+      max-width: 460px;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .hero-divider {
+      height: 1px;
+      background: rgba(255,255,255,.07);
+      margin: 4px 0;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 36px;
+      padding-top: 4px;
+    }
+    .hero-stat { display: flex; flex-direction: column; gap: 2px; }
+    .hero-stat-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -.4px;
+    }
+    .hero-stat-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      letter-spacing: .02em;
+    }
+
+    /* ─── PHONE MOCKUP ───────────────────────────────────────────*/
+    .phone-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .phone-orbit {
+      position: absolute;
+      width: 340px; height: 340px;
+      border-radius: 50%;
+      border: 1px solid rgba(59,130,246,.10);
+      animation: rotate-slow 30s linear infinite;
+      z-index: 0;
+    }
+    .phone-orbit::before {
+      content: '';
+      position: absolute;
+      width: 8px; height: 8px;
+      background: var(--primary);
+      border-radius: 50%;
+      top: -4px; left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 10px rgba(59,130,246,.8);
+    }
+    @keyframes rotate-slow {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .phone-glow {
+      position: absolute;
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(59,130,246,.22) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .phone {
+      position: relative;
+      z-index: 1;
+      width: 256px;
+      background: #0f0f11;
+      border-radius: 42px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg), 0 0 0 1px rgba(59,130,246,.12), 0 0 80px rgba(59,130,246,.14);
+      animation: phone-float 6s ease-in-out infinite;
+    }
+    @keyframes phone-float {
+      0%,100% { transform: translateY(0); }
+      50%     { transform: translateY(-10px); }
+    }
+    /* Dynamic Island */
+    .phone-island {
+      height: 36px;
+      background: #0f0f11;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .phone-island-pill {
+      width: 96px; height: 12px;
+      background: #000;
+      border-radius: 12px;
+    }
+    .phone-screen { background: #18181b; }
+
+    /* ── Screen UI ── */
+    .ps-header {
+      background: #27272a;
+      padding: 10px 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+    .ps-header-brand {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ps-header-title {
+      font-size: 11px; font-weight: 700;
+      color: var(--text); letter-spacing: -.2px;
+    }
+    .ps-header-right {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ps-notif-dot {
+      width: 6px; height: 6px;
+      background: var(--danger);
+      border-radius: 50%;
+      position: absolute;
+      top: -1px; right: -1px;
+    }
+    .ps-notif-wrap { position: relative; }
+    .ps-avatar {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    }
+    /* Hero block */
+    .ps-hero-block {
+      padding: 14px 13px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+    .ps-value-label {
+      font-size: 8px; font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .ps-value {
+      font-size: 22px; font-weight: 800;
+      color: var(--text); letter-spacing: -.5px;
+      margin: 2px 0;
+    }
+    .ps-change-row {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 2px;
+    }
+    .ps-badge-pos {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: rgba(16,185,129,.15);
+      border: 1px solid rgba(16,185,129,.2);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 8px; font-weight: 700;
+      color: var(--success);
+    }
+    .ps-pnl-label {
+      font-size: 8px; color: var(--text-tertiary);
+    }
+    /* Tab strip */
+    .ps-tabs {
+      display: flex;
+      padding: 6px 13px;
+      gap: 6px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+    .ps-tab {
+      font-size: 8px; font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 5px;
+      color: var(--text-tertiary);
+    }
+    .ps-tab.active {
+      background: rgba(59,130,246,.2);
+      color: var(--primary-light);
+    }
+    /* Chart */
+    .ps-chart { padding: 8px 13px 0; }
+    .ps-chart svg { width: 100%; display: block; }
+    /* Exchange list */
+    .ps-exchanges { padding: 8px 13px 2px; }
+    .ps-exch-label {
+      font-size: 7px; font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .ps-exch-item {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 5px 8px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: 7px;
+      margin-bottom: 4px;
+    }
+    .ps-exch-left { display: flex; align-items: center; gap: 6px; }
+    .ps-exch-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .ps-exch-name { font-size: 8px; font-weight: 600; color: var(--text-secondary); }
+    .ps-exch-val  { font-size: 8px; font-weight: 700; color: var(--text); }
+    .ps-exch-pct  { font-size: 7px; font-weight: 600; color: var(--success); }
+    /* Bottom Nav */
+    .ps-nav {
+      background: #27272a;
+      padding: 8px 13px 12px;
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid rgba(255,255,255,.06);
+    }
+    .ps-nav-item {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 2px;
+      opacity: .4;
+    }
+    .ps-nav-item.active { opacity: 1; }
+    .ps-nav-icon { font-size: 13px; }
+    .ps-nav-label { font-size: 7px; font-weight: 600; color: var(--text-tertiary); }
+    .ps-nav-item.active .ps-nav-label { color: var(--primary); }
+    .ps-nav-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--primary); }
+
+    /* ─── EXCHANGES STRIP ────────────────────────────────────────*/
+    .exchanges-strip {
+      padding: 28px 0;
+      border-top: 1px solid rgba(255,255,255,.05);
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      background: rgba(39,39,42,.5);
+      overflow: hidden;
+    }
+    .strip-label {
+      text-align: center;
+      font-size: 11px; font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: .12em; text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .strip-track {
+      display: flex; gap: 0;
+      animation: marquee 30s linear infinite;
+      width: max-content;
+    }
+    .strip-group { display: flex; gap: 0; }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .exchange-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 18px;
+      margin: 0 7px;
+      background: rgba(63,63,70,.7);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-lg);
+      white-space: nowrap;
+      backdrop-filter: blur(6px);
+    }
+    .exchange-chip img {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      object-fit: contain;
+    }
+    .exchange-chip-name {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* ─── SECTION HEADER ─────────────────────────────────────────*/
+    .section-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    .section-title {
+      font-size: clamp(30px, 4vw, 44px);
+      font-weight: 900;
+      letter-spacing: -1.2px;
+      margin-top: 14px;
+      line-height: 1.12;
+    }
+    .section-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-top: 14px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.7;
+    }
+
+    /* ─── FEATURES ───────────────────────────────────────────────*/
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .feature-card {
+      background: rgba(39,39,42,.7);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-xl);
+      padding: 28px 24px;
+      transition: transform .28s, border-color .28s, box-shadow .28s;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(59,130,246,.28);
+      box-shadow: 0 20px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(59,130,246,.2);
+    }
+    .feature-card.featured {
+      background: linear-gradient(145deg, rgba(59,130,246,.10) 0%, rgba(39,39,42,.8) 60%);
+      border-color: rgba(59,130,246,.22);
+      grid-column: span 2;
+    }
+    .feature-icon {
+      width: 46px; height: 46px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 18px;
+    }
+    .fi-blue   { background: rgba(59,130,246,.14); box-shadow: 0 0 0 1px rgba(59,130,246,.2); }
+    .fi-green  { background: rgba(16,185,129,.14); box-shadow: 0 0 0 1px rgba(16,185,129,.2); }
+    .fi-purple { background: rgba(139,92,246,.14); box-shadow: 0 0 0 1px rgba(139,92,246,.2); }
+    .fi-yellow { background: rgba(245,158,11,.14); box-shadow: 0 0 0 1px rgba(245,158,11,.2); }
+    .fi-red    { background: rgba(239,68,68,.14);  box-shadow: 0 0 0 1px rgba(239,68,68,.2); }
+    .fi-cyan   { background: rgba(6,182,212,.14);  box-shadow: 0 0 0 1px rgba(6,182,212,.2); }
+    .feature-title {
+      font-size: 16px; font-weight: 700;
+      color: var(--text); margin-bottom: 8px;
+    }
+    .feature-desc {
+      font-size: 14px; color: var(--text-secondary);
+      line-height: 1.68;
+    }
+    .feature-tags {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 16px;
+    }
+    .feature-tag {
+      font-size: 11px; font-weight: 600;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      color: var(--text-tertiary);
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    /* ─── STATS ──────────────────────────────────────────────────*/
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .stat-card {
+      background: rgba(39,39,42,.7);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-xl);
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+      transition: border-color .2s, transform .2s;
+    }
+    .stat-card:hover {
+      border-color: rgba(59,130,246,.2);
+      transform: translateY(-2px);
+    }
+    .stat-number {
+      font-size: 40px; font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
+    /* ─── MINI CARDS ─────────────────────────────────────────────*/
+    .cards-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 48px;
+    }
+    .mini-card {
+      background: rgba(39,39,42,.7);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .mini-card-title {
+      font-size: 10px; font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: .07em; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .mini-card-value {
+      font-size: 26px; font-weight: 800;
+      color: var(--text); letter-spacing: -.5px;
+    }
+    .mini-card-change {
+      font-size: 12px; font-weight: 600; margin-top: 4px;
+    }
+    .up   { color: var(--success); }
+    .down { color: var(--danger); }
+    .sparkline { margin-top: 10px; }
+    .sparkline svg { width: 100%; }
+
+    /* ─── ARCH SECTION ───────────────────────────────────────────*/
+    .arch-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+      align-items: center;
+    }
+    .arch-diagram {
+      background: rgba(39,39,42,.7);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-xxl);
+      padding: 32px;
+      box-shadow: var(--shadow-card);
+    }
+    .arch-diagram-title {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: .1em; text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+    .arch-layer {
+      background: rgba(18,18,19,.7);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-lg);
+      padding: 13px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color .2s, background .2s;
+      cursor: default;
+    }
+    .arch-layer:hover {
+      border-color: rgba(59,130,246,.35);
+      background: rgba(59,130,246,.04);
+    }
+    .arch-layer-icon { font-size: 17px; flex-shrink: 0; }
+    .arch-layer-title { font-size: 12px; font-weight: 700; color: var(--text); }
+    .arch-layer-sub   { font-size: 10px; color: var(--text-tertiary); margin-top: 1px; }
+    .arch-arrow {
+      text-align: center;
+      color: rgba(59,130,246,.4);
+      font-size: 14px;
+      margin: 1px 0;
+    }
+    .arch-info { display: flex; flex-direction: column; gap: 22px; }
+    .arch-info-title {
+      font-size: clamp(26px, 3vw, 36px);
+      font-weight: 800; line-height: 1.2;
+      letter-spacing: -.6px;
+    }
+    .arch-info-text {
+      font-size: 15px; color: var(--text-secondary); line-height: 1.72;
+    }
+    .tech-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tech-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 13px;
+      background: rgba(39,39,42,.8);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius-full);
+      font-size: 12px; font-weight: 600;
+      color: var(--text-secondary);
+      transition: border-color .2s;
+    }
+    .tech-chip:hover { border-color: rgba(255,255,255,.18); }
+    .tech-chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* ─── SECURITY SECTION ───────────────────────────────────────*/
+    .security-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .security-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: rgba(39,39,42,.7);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      transition: border-color .22s, transform .22s;
+      box-shadow: var(--shadow-card);
+    }
+    .security-card:hover {
+      border-color: rgba(16,185,129,.25);
+      transform: translateY(-2px);
+    }
+    .security-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      background: rgba(16,185,129,.10);
+      flex-shrink: 0;
+    }
+    .security-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .security-text  { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+
+    /* ─── CTA BANNER ─────────────────────────────────────────────*/
+    .cta-banner {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-xxl);
+      padding: 72px 56px;
+      text-align: center;
+      background: linear-gradient(145deg, rgba(59,130,246,.12) 0%, rgba(129,140,248,.06) 50%, rgba(16,185,129,.05) 100%);
+      border: 1px solid rgba(59,130,246,.18);
+      box-shadow: 0 0 80px rgba(59,130,246,.08);
+    }
+    .cta-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 22px 22px;
+      pointer-events: none;
+    }
+    .cta-banner::after {
+      content: '';
+      position: absolute;
+      top: -120px; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, rgba(59,130,246,.14) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-content { position: relative; z-index: 1; }
+    .cta-title {
+      font-size: clamp(28px, 4vw, 46px);
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-top: 12px;
+    }
+    .cta-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin: 16px auto 36px;
+      max-width: 440px;
+      line-height: 1.7;
+    }
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    /* Contact info */
+    .contact-chips {
+      display: flex; justify-content: center; gap: 12px;
+      margin-top: 28px; flex-wrap: wrap;
+    }
+    .contact-chip {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: var(--radius-full);
+      font-size: 13px; font-weight: 500;
+      color: var(--text-secondary);
+      transition: border-color .2s, color .2s;
+    }
+    .contact-chip:hover { border-color: rgba(255,255,255,.2); color: var(--text); }
+    .contact-chip svg { width: 15px; height: 15px; opacity: .7; }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────*/
+    .footer {
+      border-top: 1px solid rgba(255,255,255,.06);
+      padding: 52px 0 32px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 52px;
+      padding-bottom: 52px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .footer-brand-text {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      line-height: 1.72;
+      margin-top: 14px;
+      max-width: 280px;
+    }
+    .footer-title {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 16px;
+    }
+    .footer-links {
+      list-style: none;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .footer-links a {
+      font-size: 14px;
+      color: var(--text-tertiary);
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--primary-light); }
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 28px;
+      font-size: 13px;
+      color: var(--text-tertiary);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-made { display: flex; align-items: center; gap: 6px; }
+    .footer-heart { color: #ef4444; }
+    .footer-social { display: flex; gap: 16px; }
+    .footer-social a {
+      color: var(--text-tertiary);
+      transition: color .2s;
+    }
+    .footer-social a:hover { color: var(--text); }
+    .footer-private-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius-full);
+      padding: 4px 12px;
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────*/
+    @media (max-width: 960px) {
+      .hero-content    { grid-template-columns: 1fr; gap: 56px; }
+      .phone-wrapper   { order: -1; }
+      .features-grid   { grid-template-columns: 1fr 1fr; }
+      .feature-card.featured { grid-column: span 1; }
+      .stats-grid      { grid-template-columns: repeat(2, 1fr); }
+      .arch-grid       { grid-template-columns: 1fr; gap: 40px; }
+      .security-grid   { grid-template-columns: 1fr; }
+      .cards-row       { grid-template-columns: 1fr; }
+      .footer-grid     { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .nav-links       { display: none; }
+      .cta-banner      { padding: 48px 32px; }
+    }
+    @media (max-width: 600px) {
+      .features-grid   { grid-template-columns: 1fr; }
+      .stats-grid      { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid     { grid-template-columns: 1fr; }
+      .hero-stats      { flex-wrap: wrap; gap: 20px; }
+      .cta-banner      { padding: 36px 20px; }
+      .container       { padding: 0 20px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════════════════════════-->
+<nav class="navbar">
+  <div class="container navbar-inner">
+    <!-- Logo -->
+    <a href="#" class="nav-logo">
+      <svg class="nav-logo-icon" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glo"><feGaussianBlur stdDeviation="10" result="c"/><feMerge><feMergeNode in="c"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <circle cx="512" cy="512" r="140" fill="#F59E0B" filter="url(#glo)"/>
+        <circle cx="512" cy="512" r="100" fill="#D97706"/>
+        <line x1="512" y1="412" x2="512" y2="220" stroke="#60A5FA" stroke-width="12" opacity=".7"/>
+        <line x1="612" y1="512" x2="804" y2="512" stroke="#60A5FA" stroke-width="12" opacity=".7"/>
+        <line x1="512" y1="612" x2="512" y2="804" stroke="#60A5FA" stroke-width="12" opacity=".7"/>
+        <line x1="412" y1="512" x2="220" y2="512" stroke="#60A5FA" stroke-width="12" opacity=".7"/>
+        <line x1="598" y1="426" x2="738" y2="286" stroke="#60A5FA" stroke-width="9" opacity=".4"/>
+        <line x1="598" y1="598" x2="738" y2="738" stroke="#60A5FA" stroke-width="9" opacity=".4"/>
+        <line x1="426" y1="598" x2="286" y2="738" stroke="#60A5FA" stroke-width="9" opacity=".4"/>
+        <line x1="426" y1="426" x2="286" y2="286" stroke="#60A5FA" stroke-width="9" opacity=".4"/>
+        <circle cx="512" cy="200" r="68" fill="#3B82F6" filter="url(#glo)"/>
+        <circle cx="512" cy="200" r="50" fill="#2563EB"/>
+        <circle cx="824" cy="512" r="68" fill="#3B82F6" filter="url(#glo)"/>
+        <circle cx="824" cy="512" r="50" fill="#2563EB"/>
+        <circle cx="512" cy="824" r="68" fill="#3B82F6" filter="url(#glo)"/>
+        <circle cx="512" cy="824" r="50" fill="#2563EB"/>
+        <circle cx="200" cy="512" r="68" fill="#3B82F6" filter="url(#glo)"/>
+        <circle cx="200" cy="512" r="50" fill="#2563EB"/>
+        <circle cx="268" cy="268" r="46" fill="#3B82F6" opacity=".75"/>
+        <circle cx="756" cy="268" r="46" fill="#3B82F6" opacity=".75"/>
+        <circle cx="756" cy="756" r="46" fill="#3B82F6" opacity=".75"/>
+        <circle cx="268" cy="756" r="46" fill="#3B82F6" opacity=".75"/>
+      </svg>
+      <span class="nav-logo-text">Crypto<span class="gradient-text">Hub</span></span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#features">Funcionalidades</a></li>
+      <li><a href="#exchanges">Exchanges</a></li>
+      <li><a href="#architecture">Tecnologia</a></li>
+      <li><a href="#security">Segurança</a></li>
+    </ul>
+
+    <div class="nav-cta">
+      <a href="https://github.com/CharlesSampaio-CRS" target="_blank" class="btn btn-ghost">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        GitHub
+      </a>
+      <a href="#contact" class="btn btn-primary">Entrar em Contato</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════════════-->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <div class="hero-blob hero-blob-3"></div>
+  </div>
+
+  <div class="container">
+    <div class="hero-content">
+      <!-- LEFT -->
+      <div class="hero-left">
+        <div class="hero-eyebrow">
+          <span class="badge">
+            <span class="badge-dot"></span>
+            Em produção · v1.0
+          </span>
+          <span class="hero-version">iOS &amp; Android</span>
+        </div>
+
+        <h1 class="hero-title">
+          Todas as suas<br/>
+          exchanges.<br/>
+          <span class="gradient-text">Um único app.</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Plataforma mobile privada para gestão unificada de portfólios
+          de criptomoedas. Saldos em tempo real, PnL histórico, estratégias
+          automatizadas e autenticação biométrica — tudo em um painel limpo
+          e veloz.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#features" class="btn btn-primary btn-lg">
+            Explorar Funcionalidades
+          </a>
+          <a href="#contact" class="btn btn-ghost btn-lg">
+            Solicitar Acesso
+          </a>
+        </div>
+
+        <div class="hero-divider"></div>
+
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-value gradient-text">11</span>
+            <span class="hero-stat-label">Exchanges integradas</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-value gradient-text">iOS + Android</span>
+            <span class="hero-stat-label">Plataformas nativas</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-value gradient-text">Rust</span>
+            <span class="hero-stat-label">Backend de alta performance</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT — Phone Mockup -->
+      <div class="phone-wrapper">
+        <div class="phone-orbit"></div>
+        <div class="phone-glow"></div>
+        <div class="phone">
+          <!-- Dynamic Island -->
+          <div class="phone-island">
+            <div class="phone-island-pill"></div>
+          </div>
+
+          <div class="phone-screen">
+            <!-- Header -->
+            <div class="ps-header">
+              <div class="ps-header-brand">
+                <svg width="16" height="16" viewBox="0 0 1024 1024" fill="none">
+                  <circle cx="512" cy="512" r="140" fill="#D97706"/>
+                  <circle cx="512" cy="200" r="55" fill="#2563EB"/>
+                  <circle cx="824" cy="512" r="55" fill="#2563EB"/>
+                  <circle cx="512" cy="824" r="55" fill="#2563EB"/>
+                  <circle cx="200" cy="512" r="55" fill="#2563EB"/>
+                </svg>
+                <span class="ps-header-title">CryptoHub</span>
+              </div>
+              <div class="ps-header-right">
+                <div class="ps-notif-wrap">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <div class="ps-notif-dot"></div>
+                </div>
+                <div class="ps-avatar"></div>
+              </div>
+            </div>
+
+            <!-- Portfolio value -->
+            <div class="ps-hero-block">
+              <div class="ps-value-label">Portfólio Total</div>
+              <div class="ps-value">$24,830.42</div>
+              <div class="ps-change-row">
+                <span class="ps-badge-pos">▲ +3.74%</span>
+                <span class="ps-pnl-label">+$895.20 hoje</span>
+              </div>
+            </div>
+
+            <!-- Tab strip -->
+            <div class="ps-tabs">
+              <div class="ps-tab active">7D</div>
+              <div class="ps-tab">1M</div>
+              <div class="ps-tab">3M</div>
+              <div class="ps-tab">1A</div>
+              <div class="ps-tab">Máx</div>
+            </div>
+
+            <!-- Mini chart -->
+            <div class="ps-chart">
+              <svg height="48" viewBox="0 0 230 48" fill="none">
+                <defs>
+                  <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3b82f6" stop-opacity=".22"/>
+                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0 38 C18 36,30 28,50 24 C70 20,88 30,108 20 C128 10,146 16,166 8 C186 2,210 7,230 4"
+                      stroke="#3b82f6" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <path d="M0 38 C18 36,30 28,50 24 C70 20,88 30,108 20 C128 10,146 16,166 8 C186 2,210 7,230 4 L230 48 L0 48 Z"
+                      fill="url(#cg)"/>
+                <!-- Dot at end -->
+                <circle cx="230" cy="4" r="3" fill="#3b82f6"/>
+                <circle cx="230" cy="4" r="6" fill="rgba(59,130,246,.25)"/>
+              </svg>
+            </div>
+
+            <!-- Exchange list -->
+            <div class="ps-exchanges">
+              <div class="ps-exch-label">Exchanges</div>
+              <div class="ps-exch-item">
+                <div class="ps-exch-left">
+                  <div class="ps-exch-dot" style="background:#f0b90b"></div>
+                  <span class="ps-exch-name">Binance</span>
+                </div>
+                <div style="text-align:right">
+                  <div class="ps-exch-val">$12,400</div>
+                  <div class="ps-exch-pct">▲ +2.1%</div>
+                </div>
+              </div>
+              <div class="ps-exch-item">
+                <div class="ps-exch-left">
+                  <div class="ps-exch-dot" style="background:#3b82f6"></div>
+                  <span class="ps-exch-name">Bybit</span>
+                </div>
+                <div style="text-align:right">
+                  <div class="ps-exch-val">$8,230</div>
+                  <div class="ps-exch-pct">▲ +4.8%</div>
+                </div>
+              </div>
+              <div class="ps-exch-item">
+                <div class="ps-exch-left">
+                  <div class="ps-exch-dot" style="background:#0052ff"></div>
+                  <span class="ps-exch-name">Coinbase</span>
+                </div>
+                <div style="text-align:right">
+                  <div class="ps-exch-val">$4,200</div>
+                  <div class="ps-exch-pct" style="color:var(--danger)">▼ -0.3%</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Nav -->
+            <div class="ps-nav">
+              <div class="ps-nav-item active">
+                <span class="ps-nav-icon">🏠</span>
+                <div class="ps-nav-dot"></div>
+                <span class="ps-nav-label">Home</span>
+              </div>
+              <div class="ps-nav-item">
+                <span class="ps-nav-icon">📊</span>
+                <span class="ps-nav-label">Assets</span>
+              </div>
+              <div class="ps-nav-item">
+                <span class="ps-nav-icon">📋</span>
+                <span class="ps-nav-label">Ordens</span>
+              </div>
+              <div class="ps-nav-item">
+                <span class="ps-nav-icon">🎯</span>
+                <span class="ps-nav-label">Estratégia</span>
+              </div>
+              <div class="ps-nav-item">
+                <span class="ps-nav-icon">⚙️</span>
+                <span class="ps-nav-label">Config</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     EXCHANGES STRIP
+═══════════════════════════════════════════════════════════════-->
+<div class="exchanges-strip" id="exchanges">
+  <p class="strip-label">Exchanges integradas</p>
+  <div style="overflow:hidden">
+    <div class="strip-track">
+      <div class="strip-group">
+        <div class="exchange-chip"><img src="../assets/binance.png" alt="Binance" onerror="this.style.display='none'"/><span class="exchange-chip-name">Binance</span></div>
+        <div class="exchange-chip"><img src="../assets/bybit.png" alt="Bybit" onerror="this.style.display='none'"/><span class="exchange-chip-name">Bybit</span></div>
+        <div class="exchange-chip"><img src="../assets/coinbase.png" alt="Coinbase" onerror="this.style.display='none'"/><span class="exchange-chip-name">Coinbase</span></div>
+        <div class="exchange-chip"><img src="../assets/okx.png" alt="OKX" onerror="this.style.display='none'"/><span class="exchange-chip-name">OKX</span></div>
+        <div class="exchange-chip"><img src="../assets/kucoin.png" alt="KuCoin" onerror="this.style.display='none'"/><span class="exchange-chip-name">KuCoin</span></div>
+        <div class="exchange-chip"><img src="../assets/mexc.png" alt="MEXC" onerror="this.style.display='none'"/><span class="exchange-chip-name">MEXC</span></div>
+        <div class="exchange-chip"><img src="../assets/bitget.png" alt="Bitget" onerror="this.style.display='none'"/><span class="exchange-chip-name">Bitget</span></div>
+        <div class="exchange-chip"><img src="../assets/gateio.png" alt="Gate.io" onerror="this.style.display='none'"/><span class="exchange-chip-name">Gate.io</span></div>
+        <div class="exchange-chip"><img src="../assets/kraken.png" alt="Kraken" onerror="this.style.display='none'"/><span class="exchange-chip-name">Kraken</span></div>
+        <div class="exchange-chip"><img src="../assets/novadax.png" alt="Novadax" onerror="this.style.display='none'"/><span class="exchange-chip-name">Novadax</span></div>
+        <div class="exchange-chip"><img src="../assets/coinex.png" alt="CoinEx" onerror="this.style.display='none'"/><span class="exchange-chip-name">CoinEx</span></div>
+      </div>
+      <!-- Duplicate for seamless loop -->
+      <div class="strip-group">
+        <div class="exchange-chip"><img src="../assets/binance.png" alt="Binance" onerror="this.style.display='none'"/><span class="exchange-chip-name">Binance</span></div>
+        <div class="exchange-chip"><img src="../assets/bybit.png" alt="Bybit" onerror="this.style.display='none'"/><span class="exchange-chip-name">Bybit</span></div>
+        <div class="exchange-chip"><img src="../assets/coinbase.png" alt="Coinbase" onerror="this.style.display='none'"/><span class="exchange-chip-name">Coinbase</span></div>
+        <div class="exchange-chip"><img src="../assets/okx.png" alt="OKX" onerror="this.style.display='none'"/><span class="exchange-chip-name">OKX</span></div>
+        <div class="exchange-chip"><img src="../assets/kucoin.png" alt="KuCoin" onerror="this.style.display='none'"/><span class="exchange-chip-name">KuCoin</span></div>
+        <div class="exchange-chip"><img src="../assets/mexc.png" alt="MEXC" onerror="this.style.display='none'"/><span class="exchange-chip-name">MEXC</span></div>
+        <div class="exchange-chip"><img src="../assets/bitget.png" alt="Bitget" onerror="this.style.display='none'"/><span class="exchange-chip-name">Bitget</span></div>
+        <div class="exchange-chip"><img src="../assets/gateio.png" alt="Gate.io" onerror="this.style.display='none'"/><span class="exchange-chip-name">Gate.io</span></div>
+        <div class="exchange-chip"><img src="../assets/kraken.png" alt="Kraken" onerror="this.style.display='none'"/><span class="exchange-chip-name">Kraken</span></div>
+        <div class="exchange-chip"><img src="../assets/novadax.png" alt="Novadax" onerror="this.style.display='none'"/><span class="exchange-chip-name">Novadax</span></div>
+        <div class="exchange-chip"><img src="../assets/coinex.png" alt="CoinEx" onerror="this.style.display='none'"/><span class="exchange-chip-name">CoinEx</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     STATS
+═══════════════════════════════════════════════════════════════-->
+<section class="section-sm">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number gradient-text">11</div>
+        <div class="stat-label">Exchanges integradas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:var(--success)">iOS + Android</div>
+        <div class="stat-label">Plataformas nativas suportadas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:var(--warning)">Rust</div>
+        <div class="stat-label">Backend de alta performance</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:#818cf8">Real-time</div>
+        <div class="stat-label">Dados de portfólio ao vivo</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     FEATURES
+═══════════════════════════════════════════════════════════════-->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Funcionalidades</span>
+      <h2 class="section-title">
+        Gestão completa de criptoativos<br/>
+        <span class="gradient-text">em um único painel</span>
+      </h2>
+      <p class="section-subtitle">
+        Desenvolvido em React Native com Expo para desempenho nativo real.
+        Interface fluida, responsiva e construída para traders sérios.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Featured -->
+      <div class="feature-card featured">
+        <div class="feature-icon fi-blue">📊</div>
+        <div class="feature-title">Portfólio Unificado</div>
+        <div class="feature-desc">
+          Saldo total consolidado de todas as exchanges em um único painel.
+          Gráficos interativos de evolução patrimonial com janelas de 7d, 15d, 30d,
+          90d, 1 ano e máximo histórico. Conversão automática USD → BRL com cotação
+          em tempo real.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Gráfico de evolução</span>
+          <span class="feature-tag">USD / BRL</span>
+          <span class="feature-tag">Pull-to-refresh</span>
+          <span class="feature-tag">PnL 24h</span>
+          <span class="feature-tag">Snapshots históricos</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-yellow">🔔</div>
+        <div class="feature-title">Alertas de Preço</div>
+        <div class="feature-desc">
+          Configure alertas personalizados para qualquer token em qualquer
+          exchange. Notificação imediata ao atingir o preço-alvo.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Acima / Abaixo</span>
+          <span class="feature-tag">Multi-token</span>
+          <span class="feature-tag">Multi-exchange</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-purple">🎯</div>
+        <div class="feature-title">Estratégias de Trading</div>
+        <div class="feature-desc">
+          Crie, gerencie e simule estratégias com templates prontos para
+          DCA, Scalping, Swing Trade e mais. Simulador integrado para backtesting.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Templates prontos</span>
+          <span class="feature-tag">Simulador</span>
+          <span class="feature-tag">Execução monitorada</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-green">📋</div>
+        <div class="feature-title">Ordens Abertas</div>
+        <div class="feature-desc">
+          Visualize e gerencie todas as ordens abertas de todas as exchanges
+          em um único lugar. Sincronização automática em background.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Sync automático</span>
+          <span class="feature-tag">Detalhes completos</span>
+          <span class="feature-tag">Cancelamento direto</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-red">🔐</div>
+        <div class="feature-title">Autenticação Biométrica</div>
+        <div class="feature-desc">
+          Face ID e Touch ID nativos via Expo Local Authentication.
+          Suporte a Google OAuth e Apple Sign In. Login automático
+          seguro ao abrir o app.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Face ID</span>
+          <span class="feature-tag">Touch ID</span>
+          <span class="feature-tag">Google</span>
+          <span class="feature-tag">Apple</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-cyan">🌙</div>
+        <div class="feature-title">Design System Premium</div>
+        <div class="feature-desc">
+          Design system completo com modo escuro e claro. Modo privacidade
+          para ocultar valores sensíveis. Animações fluidas e transições nativas.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Dark / Light</span>
+          <span class="feature-tag">Privacidade</span>
+          <span class="feature-tag">Animações nativas</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini PnL cards -->
+    <div class="cards-row">
+      <div class="mini-card">
+        <div class="mini-card-title">Portfólio Total</div>
+        <div class="mini-card-value">$24,830</div>
+        <div class="mini-card-change up">▲ +3.74% hoje</div>
+        <div class="sparkline">
+          <svg height="32" viewBox="0 0 160 32" fill="none">
+            <path d="M0 25 C25 24,40 15,60 12 C80 9,100 18,120 8 C140 2,150 6,160 3"
+                  stroke="#10b981" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">PnL 7 dias</div>
+        <div class="mini-card-value" style="color:var(--success)">+$1,240</div>
+        <div class="mini-card-change up">▲ +5.26% na semana</div>
+        <div class="sparkline">
+          <svg height="32" viewBox="0 0 160 32" fill="none">
+            <path d="M0 28 C20 26,50 20,70 15 C90 10,110 12,130 6 C145 2,155 5,160 3"
+                  stroke="#10b981" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">PnL 30 dias</div>
+        <div class="mini-card-value" style="color:var(--danger)">-$340</div>
+        <div class="mini-card-change down">▼ -1.35% no mês</div>
+        <div class="sparkline">
+          <svg height="32" viewBox="0 0 160 32" fill="none">
+            <path d="M0 8 C20 10,50 12,70 18 C90 22,110 16,130 20 C145 24,155 22,160 26"
+                  stroke="#ef4444" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     ARCHITECTURE
+═══════════════════════════════════════════════════════════════-->
+<section class="section" id="architecture" style="background: rgba(255,255,255,.012);">
+  <div class="container">
+    <div class="arch-grid">
+      <!-- Diagram -->
+      <div class="arch-diagram">
+        <div class="arch-diagram-title">Stack completa</div>
+
+        <div class="arch-layer">
+          <span class="arch-layer-icon">📱</span>
+          <div>
+            <div class="arch-layer-title">React Native + Expo</div>
+            <div class="arch-layer-sub">iOS &amp; Android · TypeScript 5 · Expo Router</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-layer">
+          <span class="arch-layer-icon">⚡</span>
+          <div>
+            <div class="arch-layer-title">Rust / Actix-web</div>
+            <div class="arch-layer-sub">Trading Service · AWS EC2 · API REST</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-layer">
+          <span class="arch-layer-icon">🍃</span>
+          <div>
+            <div class="arch-layer-title">MongoDB Atlas</div>
+            <div class="arch-layer-sub">Snapshots · Portfólios · Estratégias · Alertas</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-layer">
+          <span class="arch-layer-icon">🔌</span>
+          <div>
+            <div class="arch-layer-title">CCXT (Python)</div>
+            <div class="arch-layer-sub">Biblioteca unificada para 100+ exchanges</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-layer" style="opacity:.75">
+          <span class="arch-layer-icon">🏦</span>
+          <div>
+            <div class="arch-layer-title">Binance · Bybit · OKX · KuCoin · …</div>
+            <div class="arch-layer-sub">11 exchanges via API REST</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="arch-info">
+        <span class="badge">Arquitetura</span>
+        <h2 class="arch-info-title">
+          Backend em Rust para<br/>
+          <span class="gradient-text">máxima performance</span>
+        </h2>
+        <p class="arch-info-text">
+          O Trading Service foi construído em Rust com Actix-web — garantindo
+          latência mínima, uso eficiente de memória e segurança de tipos em
+          tempo de compilação. Toda comunicação com exchanges é feita via
+          CCXT (Python), unificando APIs distintas em uma interface consistente.
+        </p>
+        <p class="arch-info-text">
+          Portfólios e snapshots são persistidos no MongoDB Atlas, possibilitando
+          cálculo de PnL histórico com precisão. O app mobile consome os dados
+          via API REST segura com autenticação JWT.
+        </p>
+        <div class="tech-chips">
+          <div class="tech-chip"><div class="tech-chip-dot" style="background:#ef4444"></div>Rust</div>
+          <div class="tech-chip"><div class="tech-chip-dot" style="background:#3b82f6"></div>React Native</div>
+          <div class="tech-chip"><div class="tech-chip-dot" style="background:#3178c6"></div>TypeScript</div>
+          <div class="tech-chip"><div class="tech-chip-dot" style="background:#10b981"></div>MongoDB</div>
+          <div class="tech-chip"><div class="tech-chip-dot" style="background:#f59e0b"></div>Python / CCXT</div>
+          <div class="tech-chip"><div class="tech-chip-dot" style="background:#ff9900"></div>AWS EC2</div>
+          <div class="tech-chip"><div class="tech-chip-dot" style="background:#fff"></div>Expo</div>
+          <div class="tech-chip"><div class="tech-chip-dot" style="background:#818cf8"></div>JWT Auth</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     SECURITY
+═══════════════════════════════════════════════════════════════-->
+<section class="section" id="security">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Segurança</span>
+      <h2 class="section-title">
+        Seus ativos protegidos<br/>
+        <span class="gradient-text">em cada camada</span>
+      </h2>
+      <p class="section-subtitle">
+        Projetado desde o início com segurança como prioridade.
+        Seus dados financeiros nunca trafegam sem criptografia.
+      </p>
+    </div>
+
+    <div class="security-grid">
+      <div class="security-card">
+        <div class="security-icon">🔒</div>
+        <div>
+          <div class="security-title">Expo Secure Store</div>
+          <div class="security-text">
+            Chaves de API e tokens armazenados com criptografia nativa
+            no Keychain (iOS) e Keystore (Android). Nunca expostos em plain text
+            ou logs de sistema.
+          </div>
+        </div>
+      </div>
+      <div class="security-card">
+        <div class="security-icon">🤳</div>
+        <div>
+          <div class="security-title">Autenticação Biométrica</div>
+          <div class="security-text">
+            Face ID e Touch ID via Expo Local Authentication. Login automático
+            seguro com fallback para senha. Bloqueio automático por inatividade.
+          </div>
+        </div>
+      </div>
+      <div class="security-card">
+        <div class="security-icon">🛡️</div>
+        <div>
+          <div class="security-title">OAuth 2.0 + JWT</div>
+          <div class="security-text">
+            Login com Google e Apple via OAuth 2.0. Tokens JWT validados
+            e assinados no backend Rust antes de qualquer operação sensível.
+          </div>
+        </div>
+      </div>
+      <div class="security-card">
+        <div class="security-icon">🔑</div>
+        <div>
+          <div class="security-title">Somente leitura por padrão</div>
+          <div class="security-text">
+            Integrações com exchanges operam com permissões de leitura.
+            Nenhuma ordem é criada, modificada ou cancelada sem ação
+            explícita e confirmada do usuário.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     CTA / CONTACT
+═══════════════════════════════════════════════════════════════-->
+<section class="section" id="contact">
+  <div class="container">
+    <div class="cta-banner">
+      <div class="cta-content">
+        <span class="badge">Projeto Privado</span>
+        <h2 class="cta-title">
+          Desenvolvido sob medida.<br/>
+          <span class="gradient-text">Disponível mediante contato.</span>
+        </h2>
+        <p class="cta-subtitle">
+          Este é um projeto proprietário. Para demonstrações, licenciamento
+          ou integrações customizadas, entre em contato diretamente.
+        </p>
+        <div class="cta-actions">
+          <a href="https://github.com/CharlesSampaio-CRS" target="_blank" class="btn btn-primary btn-lg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            Ver Perfil no GitHub
+          </a>
+        </div>
+        <!-- Contact chips -->
+        <div class="contact-chips">
+          <a href="https://github.com/CharlesSampaio-CRS" target="_blank" class="contact-chip">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+            @CharlesSampaio-CRS
+          </a>
+          <span class="contact-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Brasil
+          </span>
+          <span class="contact-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="m22 3-10 7L2 3"/></svg>
+            Disponível para contato
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════════════-->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <!-- Brand -->
+      <div>
+        <div class="nav-logo">
+          <svg width="28" height="28" viewBox="0 0 1024 1024" fill="none">
+            <circle cx="512" cy="512" r="140" fill="#D97706"/>
+            <circle cx="512" cy="200" r="55" fill="#2563EB"/>
+            <circle cx="824" cy="512" r="55" fill="#2563EB"/>
+            <circle cx="512" cy="824" r="55" fill="#2563EB"/>
+            <circle cx="200" cy="512" r="55" fill="#2563EB"/>
+          </svg>
+          <span style="font-size:16px;font-weight:800;letter-spacing:-.3px">CryptoHub</span>
+        </div>
+        <p class="footer-brand-text">
+          Plataforma mobile proprietária para gestão unificada de portfólios
+          de criptomoedas em múltiplas exchanges. Desenvolvido no Brasil.
+        </p>
+      </div>
+
+      <!-- Links -->
+      <div>
+        <div class="footer-title">Produto</div>
+        <ul class="footer-links">
+          <li><a href="#features">Funcionalidades</a></li>
+          <li><a href="#architecture">Tecnologia</a></li>
+          <li><a href="#security">Segurança</a></li>
+          <li><a href="#contact">Contato</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-title">Tecnologias</div>
+        <ul class="footer-links">
+          <li><a href="https://reactnative.dev" target="_blank">React Native</a></li>
+          <li><a href="https://expo.dev" target="_blank">Expo</a></li>
+          <li><a href="https://www.rust-lang.org" target="_blank">Rust</a></li>
+          <li><a href="https://github.com/ccxt/ccxt" target="_blank">CCXT</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-title">Exchanges</div>
+        <ul class="footer-links">
+          <li><a href="https://www.binance.com" target="_blank">Binance</a></li>
+          <li><a href="https://www.bybit.com" target="_blank">Bybit</a></li>
+          <li><a href="https://www.okx.com" target="_blank">OKX</a></li>
+          <li><a href="https://www.kucoin.com" target="_blank">KuCoin</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-made">
+        Feito com <span class="footer-heart">❤️</span> por
+        <a href="https://github.com/CharlesSampaio-CRS" target="_blank"
+           style="color:var(--primary-light);margin-left:4px;font-weight:600;">
+          Charles Roberto Sampaio
+        </a>
+      </div>
+
+      <div class="footer-private-note">
+        🔒 Projeto Proprietário · Todos os direitos reservados
+      </div>
+
+      <div class="footer-social">
+        <a href="https://github.com/CharlesSampaio-CRS" target="_blank" title="GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── Scroll animation ──────────────────────────────────────-->
+<script>
+  // Fade-in on scroll
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1'
+        e.target.style.transform = 'translateY(0)'
+        io.unobserve(e.target)
+      }
+    })
+  }, { threshold: 0.10 })
+
+  document.querySelectorAll(
+    '.feature-card, .stat-card, .security-card, .arch-layer, .mini-card, .cta-banner'
+  ).forEach(el => {
+    el.style.opacity = '0'
+    el.style.transform = 'translateY(24px)'
+    el.style.transition = 'opacity .55s ease, transform .55s ease'
+    io.observe(el)
+  })
+
+  // Stagger children
+  document.querySelectorAll('.features-grid, .stats-grid, .security-grid, .cards-row').forEach(grid => {
+    Array.from(grid.children).forEach((child, i) => {
+      child.style.transitionDelay = `${i * 75}ms`
+    })
+  })
+
+  // Navbar scroll effect
+  const nav = document.querySelector('.navbar')
+  window.addEventListener('scroll', () => {
+    nav.style.background = window.scrollY > 40
+      ? 'rgba(12,12,13,.94)'
+      : 'rgba(18,18,19,.82)'
+  }, { passive: true })
+</script>
+
+</body>
+</html>
+        <defs>
+          <filter id="nav-glow">
+            <feGaussianBlur stdDeviation="8" result="cb"/>
+            <feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <circle cx="512" cy="512" r="140" fill="#FFC107" filter="url(#nav-glow)"/>
+        <circle cx="512" cy="512" r="100" fill="#F59E0B"/>
+        <line x1="512" y1="412" x2="512" y2="220" stroke="#60A5FA" stroke-width="12" opacity=".6"/>
+        <line x1="612" y1="512" x2="804" y2="512" stroke="#60A5FA" stroke-width="12" opacity=".6"/>
+        <line x1="512" y1="612" x2="512" y2="804" stroke="#60A5FA" stroke-width="12" opacity=".6"/>
+        <line x1="412" y1="512" x2="220" y2="512" stroke="#60A5FA" stroke-width="12" opacity=".6"/>
+        <line x1="598" y1="426" x2="738" y2="286" stroke="#60A5FA" stroke-width="10" opacity=".4"/>
+        <line x1="598" y1="598" x2="738" y2="738" stroke="#60A5FA" stroke-width="10" opacity=".4"/>
+        <line x1="426" y1="598" x2="286" y2="738" stroke="#60A5FA" stroke-width="10" opacity=".4"/>
+        <line x1="426" y1="426" x2="286" y2="286" stroke="#60A5FA" stroke-width="10" opacity=".4"/>
+        <circle cx="512" cy="200" r="70" fill="#3B82F6" filter="url(#nav-glow)"/>
+        <circle cx="512" cy="200" r="50" fill="#2563EB"/>
+        <circle cx="824" cy="512" r="70" fill="#3B82F6" filter="url(#nav-glow)"/>
+        <circle cx="824" cy="512" r="50" fill="#2563EB"/>
+        <circle cx="512" cy="824" r="70" fill="#3B82F6" filter="url(#nav-glow)"/>
+        <circle cx="512" cy="824" r="50" fill="#2563EB"/>
+        <circle cx="200" cy="512" r="70" fill="#3B82F6" filter="url(#nav-glow)"/>
+        <circle cx="200" cy="512" r="50" fill="#2563EB"/>
+        <circle cx="268" cy="268" r="50" fill="#3B82F6" opacity=".8"/>
+        <circle cx="756" cy="268" r="50" fill="#3B82F6" opacity=".8"/>
+        <circle cx="756" cy="756" r="50" fill="#3B82F6" opacity=".8"/>
+        <circle cx="268" cy="756" r="50" fill="#3B82F6" opacity=".8"/>
+      </svg>
+      <span class="nav-logo-text">Crypto<span class="gradient-text">Hub</span></span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#exchanges">Exchanges</a></li>
+      <li><a href="#architecture">Tecnologia</a></li>
+      <li><a href="#security">Segurança</a></li>
+    </ul>
+
+    <div class="nav-cta">
+      <a href="https://github.com/CharlesSampaio-CRS/mex-unified" target="_blank" class="btn btn-ghost">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        GitHub
+      </a>
+      <a href="https://github.com/CharlesSampaio-CRS/mex-unified" target="_blank" class="btn btn-primary">
+        Baixar App
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════════════-->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <div class="hero-blob hero-blob-3"></div>
+  </div>
+
+  <div class="container">
+    <div class="hero-content">
+      <!-- LEFT -->
+      <div class="hero-left">
+        <div>
+          <span class="badge">
+            <span class="badge-dot"></span>
+            Open Source · v1.0.0
+          </span>
+        </div>
+
+        <h1 class="hero-title">
+          Gerencie todas<br/>
+          suas exchanges<br/>
+          <span class="gradient-text">em um só lugar</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Portfolio unificado para múltiplas exchanges de criptomoedas.
+          Acompanhe saldos, PnL, ordens abertas e estratégias com autenticação
+          biométrica e dados em tempo real.
+        </p>
+
+        <div class="hero-actions">
+          <a href="https://github.com/CharlesSampaio-CRS/mex-unified" target="_blank" class="btn btn-primary btn-lg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            Ver no GitHub
+          </a>
+          <a href="#features" class="btn btn-ghost btn-lg">
+            Saiba mais ↓
+          </a>
+        </div>
+
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-value gradient-text">10+</div>
+            <div class="hero-stat-label">Exchanges suportadas</div>
+          </div>
+          <div>
+            <div class="hero-stat-value gradient-text">100%</div>
+            <div class="hero-stat-label">Open Source</div>
+          </div>
+          <div>
+            <div class="hero-stat-value gradient-text">iOS &amp; Android</div>
+            <div class="hero-stat-label">Plataformas</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT — Phone Mockup -->
+      <div class="phone-wrapper">
+        <div class="phone-glow"></div>
+        <div class="phone">
+          <!-- Notch -->
+          <div class="phone-notch">
+            <div class="phone-notch-pill"></div>
+          </div>
+
+          <!-- Screen -->
+          <div class="phone-screen">
+            <!-- Header -->
+            <div class="ps-header">
+              <div class="ps-logo-row">
+                <svg width="18" height="18" viewBox="0 0 1024 1024" fill="none">
+                  <circle cx="512" cy="512" r="140" fill="#F59E0B"/>
+                  <circle cx="512" cy="200" r="60" fill="#3B82F6"/>
+                  <circle cx="824" cy="512" r="60" fill="#3B82F6"/>
+                  <circle cx="512" cy="824" r="60" fill="#3B82F6"/>
+                  <circle cx="200" cy="512" r="60" fill="#3B82F6"/>
+                </svg>
+                <span class="ps-header-title">CryptoHub</span>
+              </div>
+              <div class="ps-avatar"></div>
+            </div>
+
+            <!-- Portfolio value -->
+            <div class="ps-hero-block">
+              <div class="ps-value-label">Portfolio Total</div>
+              <div class="ps-value">$24,830.42</div>
+              <span class="ps-badge-pos">▲ +3.74%&nbsp;&nbsp;+$895.20</span>
+            </div>
+
+            <!-- Mini chart -->
+            <div class="ps-chart">
+              <svg height="52" viewBox="0 0 232 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3b82f6" stop-opacity=".25"/>
+                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0 40 C20 38, 35 28, 55 25 C75 22, 90 32, 110 22 C130 12, 148 18, 168 10 C188 3, 210 8, 232 4"
+                      stroke="#3b82f6" stroke-width="2" fill="none" stroke-linejoin="round"/>
+                <path d="M0 40 C20 38, 35 28, 55 25 C75 22, 90 32, 110 22 C130 12, 148 18, 168 10 C188 3, 210 8, 232 4 L232 52 L0 52 Z"
+                      fill="url(#g1)"/>
+              </svg>
+            </div>
+
+            <!-- Exchange chips -->
+            <div class="ps-exchanges">
+              <div class="ps-exchange-chip">
+                <div class="ps-exchange-dot" style="background:#f0b90b"></div>
+                <span class="ps-exchange-name">Binance</span>
+                <span class="ps-exchange-val">$12,400</span>
+              </div>
+              <div class="ps-exchange-chip">
+                <div class="ps-exchange-dot" style="background:#3b82f6"></div>
+                <span class="ps-exchange-name">Bybit</span>
+                <span class="ps-exchange-val">$8,230</span>
+              </div>
+              <div class="ps-exchange-chip">
+                <div class="ps-exchange-dot" style="background:#0052ff"></div>
+                <span class="ps-exchange-name">Coinbase</span>
+                <span class="ps-exchange-val">$4,200</span>
+              </div>
+            </div>
+
+            <!-- Bottom Nav -->
+            <div class="ps-nav">
+              <div class="ps-nav-item active">
+                <span class="ps-nav-icon">🏠</span>
+                <div class="ps-nav-dot"></div>
+                <span class="ps-nav-label">Home</span>
+              </div>
+              <div class="ps-nav-item">
+                <span class="ps-nav-icon">📊</span>
+                <span class="ps-nav-label">Assets</span>
+              </div>
+              <div class="ps-nav-item">
+                <span class="ps-nav-icon">📋</span>
+                <span class="ps-nav-label">Orders</span>
+              </div>
+              <div class="ps-nav-item">
+                <span class="ps-nav-icon">🎯</span>
+                <span class="ps-nav-label">Strategy</span>
+              </div>
+              <div class="ps-nav-item">
+                <span class="ps-nav-icon">⚙️</span>
+                <span class="ps-nav-label">Settings</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     EXCHANGES STRIP
+═══════════════════════════════════════════════════════════════-->
+<div class="exchanges-strip" id="exchanges">
+  <p class="strip-label">Exchanges suportadas</p>
+  <div style="overflow:hidden">
+    <div class="strip-track">
+      <!-- Group 1 -->
+      <div class="strip-group">
+        <div class="exchange-chip">
+          <img src="../assets/binance.png" alt="Binance" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Binance</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/bybit.png" alt="Bybit" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Bybit</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/coinbase.png" alt="Coinbase" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Coinbase</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/okx.png" alt="OKX" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">OKX</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/kucoin.png" alt="KuCoin" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">KuCoin</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/mexc.png" alt="MEXC" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">MEXC</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/bitget.png" alt="Bitget" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Bitget</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/gateio.png" alt="Gate.io" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Gate.io</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/kraken.png" alt="Kraken" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Kraken</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/novadax.png" alt="Novadax" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Novadax</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/coinex.png" alt="CoinEx" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">CoinEx</span>
+        </div>
+      </div>
+      <!-- Group 2 (duplicate for seamless loop) -->
+      <div class="strip-group">
+        <div class="exchange-chip">
+          <img src="../assets/binance.png" alt="Binance" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Binance</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/bybit.png" alt="Bybit" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Bybit</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/coinbase.png" alt="Coinbase" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Coinbase</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/okx.png" alt="OKX" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">OKX</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/kucoin.png" alt="KuCoin" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">KuCoin</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/mexc.png" alt="MEXC" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">MEXC</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/bitget.png" alt="Bitget" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Bitget</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/gateio.png" alt="Gate.io" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Gate.io</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/kraken.png" alt="Kraken" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Kraken</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/novadax.png" alt="Novadax" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">Novadax</span>
+        </div>
+        <div class="exchange-chip">
+          <img src="../assets/coinex.png" alt="CoinEx" onerror="this.style.display='none'"/>
+          <span class="exchange-chip-name">CoinEx</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     STATS
+═══════════════════════════════════════════════════════════════-->
+<section class="section-sm">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number gradient-text">11</div>
+        <div class="stat-label">Exchanges integradas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:var(--success)">100%</div>
+        <div class="stat-label">Open Source &amp; gratuito</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:var(--warning)">iOS + Android</div>
+        <div class="stat-label">Plataformas suportadas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:#8b5cf6">Rust</div>
+        <div class="stat-label">Backend de alta performance</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     FEATURES
+═══════════════════════════════════════════════════════════════-->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Funcionalidades</span>
+      <h2 class="section-title">
+        Tudo que você precisa para<br/>
+        <span class="gradient-text">gerenciar suas cryptos</span>
+      </h2>
+      <p class="section-subtitle">
+        Construído com React Native + Expo para desempenho nativo em iOS e Android.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Featured card -->
+      <div class="feature-card featured">
+        <div class="feature-icon fi-blue">📊</div>
+        <div class="feature-title">Portfolio Unificado</div>
+        <div class="feature-desc">
+          Visualize o saldo total de todas as suas exchanges em um único painel. 
+          Gráficos interativos de evolução em 7d, 15d, 30d, 90d, 1 ano e máximo.
+          Conversão automática USD → BRL em tempo real.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Gráfico de evolução</span>
+          <span class="feature-tag">Conversão USD/BRL</span>
+          <span class="feature-tag">Pull-to-refresh</span>
+          <span class="feature-tag">PnL 24h</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-yellow">🔔</div>
+        <div class="feature-title">Alertas de Preço</div>
+        <div class="feature-desc">
+          Crie alertas personalizados para qualquer token. Seja notificado quando
+          o preço atingir seu alvo.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Acima / Abaixo</span>
+          <span class="feature-tag">Multi-token</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-purple">🎯</div>
+        <div class="feature-title">Estratégias de Trading</div>
+        <div class="feature-desc">
+          Crie, monitore e simule estratégias. Templates prontos para
+          DCA, Scalping e mais.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Templates</span>
+          <span class="feature-tag">Simulador</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-green">📋</div>
+        <div class="feature-title">Ordens Abertas</div>
+        <div class="feature-desc">
+          Acompanhe todas as ordens abertas de todas as exchanges em um 
+          único lugar com sincronização automática.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Sync automático</span>
+          <span class="feature-tag">Detalhes completos</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-red">🔐</div>
+        <div class="feature-title">Face ID / Touch ID</div>
+        <div class="feature-desc">
+          Login biométrico seguro com autenticação automática ao abrir 
+          o app. Suporte a Google OAuth e Apple Sign In.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Face ID</span>
+          <span class="feature-tag">Google</span>
+          <span class="feature-tag">Apple</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-cyan">🌙</div>
+        <div class="feature-title">Tema Dark / Light</div>
+        <div class="feature-desc">
+          Design system completo com suporte a tema escuro e claro. 
+          Modo privacidade para esconder valores sensíveis.
+        </div>
+        <div class="feature-tags">
+          <span class="feature-tag">Dark mode</span>
+          <span class="feature-tag">Privacidade</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini PnL cards -->
+    <div class="cards-row">
+      <div class="mini-card">
+        <div class="mini-card-title">Portfolio Total</div>
+        <div class="mini-card-value">$24,830</div>
+        <div class="mini-card-change up">▲ +3.74% hoje</div>
+        <div class="sparkline">
+          <svg height="32" viewBox="0 0 160 32" fill="none">
+            <path d="M0 25 C25 24, 40 15, 60 12 C80 9, 100 18, 120 8 C140 2, 150 6, 160 3"
+                  stroke="#10b981" stroke-width="1.5" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">PnL 7 dias</div>
+        <div class="mini-card-value" style="color:var(--success)">+$1,240</div>
+        <div class="mini-card-change up">▲ +5.26% na semana</div>
+        <div class="sparkline">
+          <svg height="32" viewBox="0 0 160 32" fill="none">
+            <path d="M0 28 C20 26, 50 20, 70 15 C90 10, 110 12, 130 6 C145 2, 155 5, 160 3"
+                  stroke="#10b981" stroke-width="1.5" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">PnL 30 dias</div>
+        <div class="mini-card-value" style="color:var(--danger)">-$340</div>
+        <div class="mini-card-change down">▼ -1.35% no mês</div>
+        <div class="sparkline">
+          <svg height="32" viewBox="0 0 160 32" fill="none">
+            <path d="M0 8 C20 10, 50 12, 70 18 C90 22, 110 16, 130 20 C145 24, 155 22, 160 26"
+                  stroke="#ef4444" stroke-width="1.5" fill="none"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     ARCHITECTURE
+═══════════════════════════════════════════════════════════════-->
+<section class="section" id="architecture" style="background: rgba(63,63,70,.2);">
+  <div class="container">
+    <div class="arch-grid">
+      <!-- Diagram -->
+      <div class="arch-diagram">
+        <div style="font-size:12px;font-weight:700;color:var(--text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px;">Stack completa</div>
+
+        <div class="arch-layer">
+          <span class="arch-layer-icon">📱</span>
+          <div>
+            <div class="arch-layer-title">React Native + Expo</div>
+            <div class="arch-layer-sub">iOS &amp; Android · TypeScript · Expo Router</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-layer">
+          <span class="arch-layer-icon">⚡</span>
+          <div>
+            <div class="arch-layer-title">Rust / Actix-web</div>
+            <div class="arch-layer-sub">Trading Service · AWS EC2 · Port 3002</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-layer">
+          <span class="arch-layer-icon">🍃</span>
+          <div>
+            <div class="arch-layer-title">MongoDB Atlas</div>
+            <div class="arch-layer-sub">Snapshots · Portfolios · Estratégias</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-layer">
+          <span class="arch-layer-icon">🔌</span>
+          <div>
+            <div class="arch-layer-title">CCXT (Python)</div>
+            <div class="arch-layer-sub">Exchanges APIs unificadas</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-layer" style="opacity:.7">
+          <span class="arch-layer-icon">🏦</span>
+          <div>
+            <div class="arch-layer-title">Binance · Bybit · OKX · KuCoin · ...</div>
+            <div class="arch-layer-sub">11 exchanges via API REST</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="arch-info">
+        <span class="badge">Arquitetura</span>
+        <h2 class="arch-info-title">
+          Backend em Rust para<br/>
+          <span class="gradient-text">máxima performance</span>
+        </h2>
+        <p class="arch-info-text">
+          O Trading Service foi construído em Rust com Actix-web, garantindo
+          latência mínima e uso eficiente de memória. Toda a comunicação com
+          as exchanges é feita via CCXT (Python), que unifica mais de 100 APIs
+          diferentes com uma interface única.
+        </p>
+        <p class="arch-info-text">
+          Os dados de portfolio e snapshots são persistidos no MongoDB Atlas,
+          permitindo cálculo de PnL histórico com precisão.
+        </p>
+        <div class="tech-chips">
+          <div class="tech-chip">
+            <div class="tech-chip-dot" style="background:#ef4444"></div>
+            Rust
+          </div>
+          <div class="tech-chip">
+            <div class="tech-chip-dot" style="background:#3b82f6"></div>
+            React Native
+          </div>
+          <div class="tech-chip">
+            <div class="tech-chip-dot" style="background:#3178c6"></div>
+            TypeScript
+          </div>
+          <div class="tech-chip">
+            <div class="tech-chip-dot" style="background:#10b981"></div>
+            MongoDB
+          </div>
+          <div class="tech-chip">
+            <div class="tech-chip-dot" style="background:#f59e0b"></div>
+            Python / CCXT
+          </div>
+          <div class="tech-chip">
+            <div class="tech-chip-dot" style="background:#ff9900"></div>
+            AWS EC2
+          </div>
+          <div class="tech-chip">
+            <div class="tech-chip-dot" style="background:#000"></div>
+            Expo
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     SECURITY
+═══════════════════════════════════════════════════════════════-->
+<section class="section" id="security">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Segurança</span>
+      <h2 class="section-title">
+        Seus dados protegidos<br/>
+        <span class="gradient-text">em cada camada</span>
+      </h2>
+      <p class="section-subtitle">
+        Construído com as melhores práticas de segurança para proteger
+        suas chaves de API e dados financeiros.
+      </p>
+    </div>
+
+    <div class="security-grid">
+      <div class="security-card">
+        <span class="security-icon">🔒</span>
+        <div>
+          <div class="security-title">Expo Secure Store</div>
+          <div class="security-text">
+            Chaves de API e tokens de acesso armazenados com criptografia
+            no Keychain (iOS) e Keystore (Android). Nunca expostos em plain text.
+          </div>
+        </div>
+      </div>
+      <div class="security-card">
+        <span class="security-icon">🤳</span>
+        <div>
+          <div class="security-title">Autenticação Biométrica</div>
+          <div class="security-text">
+            Face ID e Touch ID via Expo Local Authentication. Auto-login
+            seguro com fallback para senha.
+          </div>
+        </div>
+      </div>
+      <div class="security-card">
+        <span class="security-icon">🛡️</span>
+        <div>
+          <div class="security-title">OAuth 2.0</div>
+          <div class="security-text">
+            Login com Google e Apple via OAuth 2.0. Tokens validados
+            no backend Rust antes de qualquer operação.
+          </div>
+        </div>
+      </div>
+      <div class="security-card">
+        <span class="security-icon">🔑</span>
+        <div>
+          <div class="security-title">Somente leitura por padrão</div>
+          <div class="security-text">
+            As integrações com exchanges usam permissões de leitura. 
+            Nenhuma ordem é executada sem ação explícita do usuário.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     OPEN SOURCE / CTA
+═══════════════════════════════════════════════════════════════-->
+<section class="section">
+  <div class="container">
+    <div class="oss-banner">
+      <div class="oss-banner-content">
+        <span class="badge" style="margin-bottom:16px">100% Open Source</span>
+        <h2 class="oss-title">
+          Pronto para usar.<br/>
+          <span class="gradient-text">Grátis para sempre.</span>
+        </h2>
+        <p class="oss-subtitle">
+          Clone, contribua ou use como base para o seu próprio projeto.
+          MIT License — sem restrições.
+        </p>
+        <div class="oss-actions">
+          <a href="https://github.com/CharlesSampaio-CRS/mex-unified" target="_blank" class="btn btn-primary btn-lg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            ⭐ Star no GitHub
+          </a>
+          <a href="https://github.com/CharlesSampaio-CRS/mex-unified/archive/refs/heads/main-dev.zip" class="btn btn-ghost btn-lg">
+            ⬇ Download ZIP
+          </a>
+        </div>
+        <!-- Quick start -->
+        <div style="margin-top:32px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-xl); padding:20px 24px; font-family:'JetBrains Mono',monospace; font-size:13px; text-align:left; max-width:460px; margin-left:auto; margin-right:auto; margin-top:32px;">
+          <div style="color:var(--text-tertiary); font-size:10px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; font-family:'Inter',sans-serif;">Quick Start</div>
+          <div><span style="color:#10b981">$</span> <span style="color:var(--text-secondary)">git clone https://github.com/CharlesSampaio-CRS/mex-unified</span></div>
+          <div style="margin-top:6px"><span style="color:#10b981">$</span> <span style="color:var(--text-secondary)">cd mex-unified &amp;&amp; npm install</span></div>
+          <div style="margin-top:6px"><span style="color:#10b981">$</span> <span style="color:var(--primary-light)">npx expo start</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════════════-->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <!-- Brand -->
+      <div>
+        <div class="nav-logo">
+          <svg width="28" height="28" viewBox="0 0 1024 1024" fill="none">
+            <circle cx="512" cy="512" r="140" fill="#F59E0B"/>
+            <circle cx="512" cy="200" r="60" fill="#3B82F6"/>
+            <circle cx="824" cy="512" r="60" fill="#3B82F6"/>
+            <circle cx="512" cy="824" r="60" fill="#3B82F6"/>
+            <circle cx="200" cy="512" r="60" fill="#3B82F6"/>
+          </svg>
+          <span style="font-size:16px;font-weight:800;">CryptoHub</span>
+        </div>
+        <p class="footer-brand-text">
+          App mobile para gerenciar criptomoedas em múltiplas exchanges de forma unificada.
+          Open source, gratuito e feito com ❤️ no Brasil.
+        </p>
+      </div>
+
+      <!-- Links -->
+      <div>
+        <div class="footer-title">Projeto</div>
+        <ul class="footer-links">
+          <li><a href="https://github.com/CharlesSampaio-CRS/mex-unified" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/CharlesSampaio-CRS/mex-unified/blob/main-dev/README.md" target="_blank">Documentação</a></li>
+          <li><a href="https://github.com/CharlesSampaio-CRS/mex-unified/blob/main-dev/LICENSE" target="_blank">MIT License</a></li>
+          <li><a href="https://github.com/CharlesSampaio-CRS/mex-unified/issues" target="_blank">Issues</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-title">Tecnologias</div>
+        <ul class="footer-links">
+          <li><a href="https://reactnative.dev" target="_blank">React Native</a></li>
+          <li><a href="https://expo.dev" target="_blank">Expo</a></li>
+          <li><a href="https://www.rust-lang.org" target="_blank">Rust</a></li>
+          <li><a href="https://github.com/ccxt/ccxt" target="_blank">CCXT</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-title">Exchanges</div>
+        <ul class="footer-links">
+          <li><a href="https://www.binance.com" target="_blank">Binance</a></li>
+          <li><a href="https://www.bybit.com" target="_blank">Bybit</a></li>
+          <li><a href="https://www.coinbase.com" target="_blank">Coinbase</a></li>
+          <li><a href="https://www.okx.com" target="_blank">OKX</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-made">
+        Feito com <span class="footer-heart">❤️</span> por
+        <a href="https://github.com/CharlesSampaio-CRS" target="_blank" style="color:var(--primary-light);margin-left:4px;font-weight:600;">
+          Charles Roberto Sampaio
+        </a>
+      </div>
+      <div class="footer-social">
+        <a href="https://github.com/CharlesSampaio-CRS" target="_blank" title="GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+      </div>
+      <div style="color:var(--text-tertiary); font-size:12px;">© 2026 CryptoHub · MIT License</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── Scroll animation ──────────────────────────────────────-->
+<script>
+  // Fade-in on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1'
+        e.target.style.transform = 'translateY(0)'
+        observer.unobserve(e.target)
+      }
+    })
+  }, { threshold: 0.12 })
+
+  document.querySelectorAll(
+    '.feature-card, .stat-card, .security-card, .arch-layer, .mini-card'
+  ).forEach(el => {
+    el.style.opacity = '0'
+    el.style.transform = 'translateY(20px)'
+    el.style.transition = 'opacity .5s ease, transform .5s ease'
+    observer.observe(el)
+  })
+
+  // Stagger children
+  document.querySelectorAll('.features-grid, .stats-grid, .security-grid, .cards-row').forEach(grid => {
+    Array.from(grid.children).forEach((child, i) => {
+      child.style.transitionDelay = `${i * 80}ms`
+    })
+  })
+</script>
+
+</body>
+</html>

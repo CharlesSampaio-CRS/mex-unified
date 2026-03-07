@@ -9,6 +9,7 @@ import { typography, fontWeights } from "../lib/typography"
 import { OpenOrder } from "../types/orders"
 import { apiService } from "../services/api"
 import { notify } from "../services/notify"
+import { TokenIcon } from "./TokenIcon"
 
 interface OpenOrdersModalProps {
   visible: boolean
@@ -760,6 +761,7 @@ export function OpenOrdersModal({
                           activeOpacity={0.7}
                           style={styles.symbolContainer}
                         >
+                          <TokenIcon symbol={order.symbol.split('/')[0]} size={16} />
                           <Text style={[styles.orderSymbolCompact, { color: colors.text }]} numberOfLines={1}>
                             {order.symbol.toLowerCase()}
                           </Text>
@@ -1535,6 +1537,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   symbolContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     minWidth: 60,
   },
   orderSymbolCompact: {

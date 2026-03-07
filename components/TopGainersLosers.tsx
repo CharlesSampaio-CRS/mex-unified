@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 import { capitalizeExchangeName } from '../lib/exchange-helpers';
 import { typography, fontWeights } from '../lib/typography';
+import { TokenIcon } from './TokenIcon';
 
 interface TokenWithChange {
   symbol: string;
@@ -158,6 +159,7 @@ export const TopGainersLosers = memo(function TopGainersLosers() {
         activeOpacity={0.7}
       >
         <View style={styles.tokenLeft}>
+          <TokenIcon symbol={token.symbol} size={18} style={styles.tokenIcon} />
           <View style={styles.tokenInfo}>
             <Text style={[styles.tokenSymbol, { color: colors.text }]}>
               {token.symbol}
@@ -415,7 +417,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tokenIcon: {
-    width: 18,
+    flexShrink: 0,
   },
   tokenInfo: {
     flex: 1,

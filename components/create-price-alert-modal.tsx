@@ -31,6 +31,7 @@ import {
   getAlertIcon,
   getAlertFrequencyLabel,
 } from '../types/alerts';
+import { TokenIcon } from './TokenIcon';
 
 interface ExchangeOption {
   id: string;
@@ -247,9 +248,7 @@ export function CreateAlertModal({
             {/* ── Token / Exchange info ─────────────────────── */}
             {!isGenericMode ? (
               <View style={[styles.tokenCard, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}30` }]}>
-                <View style={[styles.tokenIconWrap, { backgroundColor: `${colors.primary}20`, borderColor: `${colors.primary}40` }]}>
-                  <Ionicons name="logo-bitcoin" size={22} color={colors.primary} />
-                </View>
+                <TokenIcon symbol={symbol || ''} size={36} style={styles.tokenIconWrap} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.tokenSymbol, { color: colors.text }]}>{symbol}/USDT</Text>
                   <Text style={[styles.tokenExchange, { color: colors.textSecondary }]}>{exchangeName || ''}</Text>
@@ -615,12 +614,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   tokenIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
     flexShrink: 0,
   },
   tokenSymbol: {

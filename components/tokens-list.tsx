@@ -9,6 +9,7 @@ import { CreateAlertModal } from "./create-price-alert-modal"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useAlerts } from "@/contexts/AlertsContext"
 import { getExchangeBalances, getExchangeId, getExchangeName, getTotalUsd } from "@/lib/exchange-helpers"
+import { TokenIcon } from "@/components/TokenIcon"
 
 interface TokensListProps {
   exchange: Exchange
@@ -119,6 +120,7 @@ export function TokensList({ exchange }: TokensListProps) {
           >
             <View style={styles.tokenHeader}>
               <View style={styles.symbolContainer}>
+                <TokenIcon symbol={symbol} size={22} />
                 <Text style={styles.symbol}>{symbol.toLowerCase()}</Text>
               </View>
               <View style={styles.headerRight}>
@@ -251,12 +253,14 @@ const styles = StyleSheet.create({
     marginBottom: 16, // 12→16
   },
   symbolContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     backgroundColor: "#e3f2fd",
     paddingHorizontal: 12, // 8→12
     paddingVertical: 6, // 4→6
     borderRadius: 8, // 6→8
     minWidth: 80,
-    alignItems: "center",
   },
   symbol: {
     fontSize: typography.body, // tiny→body (16px)

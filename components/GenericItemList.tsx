@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { GradientCard } from './GradientCard';
 import { typography, fontWeights } from '../lib/typography';
+import { TokenIcon } from './TokenIcon';
 
 // Tipo genérico para o item
 interface GenericItem {
@@ -145,6 +146,7 @@ export function GenericItemList<T extends GenericItem>({
                     {/* Header do card */}
                     <View style={styles.itemHeader}>
                       <View style={styles.symbolWithFavorite}>
+                        <TokenIcon symbol={item.symbol} size={20} style={styles.itemTokenIcon} />
                         <Text style={[styles.itemSymbol, { color: colors.text }]}>
                           {item.symbol}
                         </Text>
@@ -305,6 +307,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  itemTokenIcon: {
+    flexShrink: 0,
   },
   itemSymbol: {
     fontSize: typography.bodySmall,
